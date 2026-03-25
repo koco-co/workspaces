@@ -51,6 +51,7 @@
     "version": "[版本]",
     "requirement_name": "[需求名]",
     "requirement_id": "[PRD编号]",
+    "prd_path": "zentao-cases/.../PRD-xx-enhanced.md",
     "generated_at": "[ISO8601时间戳]",
     "agent_id": "writer-[模块简称]"
   },
