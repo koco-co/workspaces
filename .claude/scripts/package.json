@@ -1,0 +1,13 @@
+{
+  "name": "qa-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "QA test case automation scripts",
+  "scripts": {
+    "json-to-xmind": "node json-to-xmind.mjs"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "xmind-generator": "^1.0.1"
+  }
+}

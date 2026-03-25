@@ -1,0 +1,17 @@
+# Obsidian
+.obsidian/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Node.js
+node_modules/
+.npm/
+
+# Temp files
+**/temp/
+*.tmp
+
+# Git
+*.orig
