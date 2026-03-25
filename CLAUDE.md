@@ -51,12 +51,12 @@ WorkSpaces/
 ├── CLAUDE.md                              # 本文件
 ├── zentao-cases/                          # 测试用例输出目录
 │   ├── XMind/                             # XMind 文件存放
-│   │   ├── Assets/img/                    # 辅助图片资源
-│   │   ├── BatchWorks/                    # 离线开发测试用例
-│   │   ├── CustomItem/信永中和/            # 信永中和项目
-│   │   ├── DataAssets/                    # 数据资产测试用例
-│   │   ├── DataQuery/                     # 统一查询测试用例
-│   │   └── VariableCenter/                # 变量中心测试用例
+│   │   ├── 离线开发/                      # 离线开发测试用例
+│   │   ├── 数据资产/                      # 数据资产测试用例
+│   │   ├── 统一查询/                      # 统一查询测试用例
+│   │   ├── 变量中心/                      # 变量中心测试用例
+│   │   ├── 定制化/信永中和/               # 信永中和项目
+│   │   └── dtstack-platform/              # DTStack 平台测试用例
 │   ├── customItem-platform/信永中和/       # 信永中和需求文档与历史用例
 │   │   ├── Requirement/Story-YYYYMMDD/    # PRD 文档 + 临时文件（按 Story 隔离）
 │   │   │   ├── PRD-XX-xxx.md             # 原始 PRD
@@ -64,7 +64,12 @@ WorkSpaces/
 │   │   │   ├── temp/                     # 临时 JSON（生成完成后删除）
 │   │   │   └── .qa-state.json            # 断点续传状态文件（完成后删除）
 │   │   └── v0.x.x/                       # 历史 CSV 用例（部分模块，已迁移至 XMind）
-│   └── dtstack-platform/                  # DTStack 历史用例
+│   └── dtstack-platform/                  # DTStack 平台历史用例（Markdown 格式）
+│       ├── 离线开发/archive-cases/        # 按版本归档
+│       ├── 数据资产/archive-cases/
+│       ├── 统一查询/archive-cases/
+│       ├── 变量中心/archive-cases/
+│       └── 公共组件/archive-cases/
 ├── gitlab-projects/                       # 源码仓库（用于验证按钮/文案）
 │   ├── CustomItem/                        # 定制项目源码
 │   ├── dt-insight-engine/                 # 引擎层源码
@@ -79,7 +84,8 @@ WorkSpaces/
     │   └── xmind-converter/               # JSON → XMind 转换（含 --append 模式）
     └── scripts/
         ├── package.json                   # Node.js 依赖
-        └── json-to-xmind.mjs             # 转换脚本（支持 --append）
+        ├── json-to-xmind.mjs             # XMind 转换脚本（支持 --append）
+        └── convert-history-cases.mjs      # 历史用例转化脚本（CSV/XMind → MD）
 ```
 
 ---
@@ -223,10 +229,10 @@ Root (项目名)
 |------|---------|------|
 | `customItem-platform/信永中和/v0.x.x/*.csv` | `customItem-platform/信永中和/archive-cases/` | 完整用例（含步骤+预期） |
 | `XMind/CustomItem/信永中和/*.xmind` | `customItem-platform/信永中和/archive-cases/` | 标题树结构 |
-| `XMind/BatchWorks/*.xmind` | `dtstack-platform/离线开发/archive-cases/` | 标题树结构 |
-| `XMind/DataAssets/*.xmind` | `dtstack-platform/数据资产/archive-cases/` | 标题树结构 |
-| `XMind/DataQuery/*.xmind` | `dtstack-platform/统一查询/archive-cases/` | 标题树结构 |
-| `XMind/VariableCenter/*.xmind` | `dtstack-platform/变量中心/archive-cases/` | 标题树结构 |
+| `XMind/离线开发/*.xmind` | `dtstack-platform/离线开发/archive-cases/` | 标题树结构 |
+| `XMind/数据资产/*.xmind` | `dtstack-platform/数据资产/archive-cases/` | 标题树结构 |
+| `XMind/统一查询/*.xmind` | `dtstack-platform/统一查询/archive-cases/` | 标题树结构 |
+| `XMind/变量中心/*.xmind` | `dtstack-platform/变量中心/archive-cases/` | 标题树结构 |
 
 ### 更新历史用例
 
@@ -295,7 +301,7 @@ Reviewer 采用 3 级质量阈值自动决策：
 | 15% - 40% | 自动修正 + 质量警告，建议用户核查 |
 | > 40% | 立即停止，输出阻断报告，等待用户选择：修复 PRD 重跑 / 手动修正 / 强制继续 |
 
-问题率 = 含 F01-F07 任意问题的用例数 / 总用例数（一条用例多个问题只计 1 次）。
+问题率 = 含 F01-F09 任意问题的用例数 / 总用例数（一条用例多个问题只计 1 次）。
 
 ---
 

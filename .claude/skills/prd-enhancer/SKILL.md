@@ -73,6 +73,12 @@ Step 9: 向用户展示增强摘要
 
 如用户未明确指定，询问 PRD 文件路径。
 
+### 输出文件约定
+
+- **命名**：原文件名 + `-enhanced` 后缀，例如 `PRD-26-xxx.md` → `PRD-26-xxx-enhanced.md`
+- **位置**：与原 PRD 文件同级目录
+- **后续消费**：test-case-generator 的 Step 2 将自动查找 `-enhanced.md` 文件
+
 ---
 
 ## 四、Step 2: 扫描图片引用
