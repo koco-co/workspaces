@@ -10,6 +10,9 @@ node_modules/
 **/temp/
 *.tmp
 
+# QA workflow state files (auto-deleted on completion, but ignore if left over)
+**/.qa-state.json
+
 # Git
 *.orig
 
