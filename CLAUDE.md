@@ -57,6 +57,15 @@ WorkSpaces/
 │   │   ├── DataAssets/                    # 数据资产测试用例
 │   │   ├── DataQuery/                     # 统一查询测试用例
 │   │   └── VariableCenter/                # 变量中心测试用例
+│   ├── history-cases/                     # 预转化历史用例（AI 可直接读取）
+│   │   ├── 信永中和/                       # CSV + XMind 转化
+│   │   │   ├── v0.2.1-流程中心.md
+│   │   │   ├── v0.2.1-数据目录管理.md
+│   │   │   └── ...
+│   │   ├── 离线开发/
+│   │   ├── 数据资产/
+│   │   ├── 统一查询/
+│   │   └── 变量中心/
 │   ├── customItem-platform/信永中和/       # 信永中和需求文档与历史用例
 │   │   ├── Requirement/Story-YYYYMMDD/    # PRD 文档 + 临时文件（按 Story 隔离）
 │   │   │   ├── PRD-XX-xxx.md             # 原始 PRD
@@ -210,6 +219,35 @@ Root (项目名)
   | 操作成功 | 页面提示"新增成功"，列表页新增一条记录，问题名称显示为"原料批次不合格" |
   | 显示正确 | 列表第一行显示：行动编号"QA-2026-001"，问题分类"质量缺陷"，状态"待处理" |
   | 提交失败 | 「问题名称」输入框下方显示红色提示"请输入问题名称"，【提交】按钮保持不可点击状态 |
+
+---
+
+## 历史用例维护
+
+历史用例预先转化为 Markdown 格式，存放在 `zentao-cases/history-cases/` 目录，供工作流直接读取（无需实时解析 XMind 二进制文件）。
+
+### 转化来源
+
+| 来源 | 目标目录 | 格式 |
+|------|---------|------|
+| `customItem-platform/信永中和/v0.x.x/*.csv` | `history-cases/信永中和/` | 完整用例（含步骤+预期） |
+| `XMind/CustomItem/信永中和/*.xmind` | `history-cases/信永中和/` | 标题树结构 |
+| `XMind/BatchWorks/*.xmind` | `history-cases/离线开发/` | 标题树结构 |
+| `XMind/DataAssets/*.xmind` | `history-cases/数据资产/` | 标题树结构 |
+| `XMind/DataQuery/*.xmind` | `history-cases/统一查询/` | 标题树结构 |
+| `XMind/VariableCenter/*.xmind` | `history-cases/变量中心/` | 标题树结构 |
+
+### 更新历史用例
+
+每次新增或修改 XMind / CSV 用例文件后，运行转化脚本更新历史缓存：
+
+```bash
+cd .claude/scripts && node convert-history-cases.mjs
+# 强制重新生成所有文件：
+node convert-history-cases.mjs --force
+```
+
+> **何时需要更新**：新的 XMind 文件生成后（下次生成用例时即可作为历史参考）、CSV 文件有修改时。
 
 ---
 
