@@ -4,46 +4,69 @@
  * Step 1: CSV → MD  (then delete CSV)
  * Step 2: XMind L1 → MD  (with dedup against CSV-produced MDs)
  */
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, unlinkSync, statSync } from 'fs';
-import { join, basename } from 'path';
-import JSZip from 'jszip';
+import {
+  readFileSync,
+  writeFileSync,
+  readdirSync,
+  mkdirSync,
+  existsSync,
+  renameSync,
+  statSync,
+} from "fs";
+import { join, basename, dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+import JSZip from "jszip";
 
-const BASE = '/Users/poco/Documents/DTStack/WorkSpaces';
-const ARCHIVE = `${BASE}/zentao-cases/dtstack-platform/数据资产/archive-cases`;
-const XMIND_DIR = `${BASE}/zentao-cases/XMind/数据资产`;
+const __filename = fileURLToPath(import.meta.url);
+const __scriptdir = dirname(__filename);
+const BASE = resolve(__scriptdir, "../..");
+const ARCHIVE = join(BASE, "cases/archive/data-assets");
+const XMIND_DIR = join(BASE, "cases/xmind/data-assets");
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+const TRASH_DIR = join(BASE, ".trash", new Date().toISOString().slice(0, 10));
+
+/** Move file to .trash/ instead of permanent deletion */
+function moveToTrash(filePath) {
+  if (!existsSync(TRASH_DIR)) mkdirSync(TRASH_DIR, { recursive: true });
+  const dest = join(TRASH_DIR, basename(filePath));
+  renameSync(filePath, dest);
+}
+
 function stripHTML(str) {
-  if (!str) return '';
+  if (!str) return "";
   // Replace <br>, <br/>, <br /> with newline first
-  let s = str.replace(/<br\s*\/?>/gi, '\n');
+  let s = str.replace(/<br\s*\/?>/gi, "\n");
   // Remove remaining HTML tags
-  s = s.replace(/<[^>]+>/g, '');
+  s = s.replace(/<[^>]+>/g, "");
   // Decode HTML entities
-  s = s.replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
-        .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+  s = s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) =>
+      String.fromCharCode(parseInt(h, 16)),
+    );
   // Collapse excessive blank lines
-  s = s.replace(/\n{3,}/g, '\n\n').trim();
+  s = s.replace(/\n{3,}/g, "\n\n").trim();
   return s;
 }
 
 function mapPriority(raw) {
-  const v = String(raw || '').trim();
-  if (v === '0') return 'P0';
-  if (v === '1') return 'P1';
-  if (v === '2') return 'P2';
-  if (v === '3') return 'P3';
-  return 'P2';
+  const v = String(raw || "").trim();
+  if (v === "0") return "P0";
+  if (v === "1") return "P1";
+  if (v === "2") return "P2";
+  if (v === "3") return "P3";
+  return "P2";
 }
 
 /** RFC 4180 CSV parser – handles quoted fields with embedded commas/newlines */
 function parseCSV(text) {
-  const src = text.replace(/^\uFEFF/, ''); // strip BOM
+  const src = text.replace(/^\uFEFF/, ""); // strip BOM
   const rows = [];
   let i = 0;
   const n = src.length;
@@ -53,29 +76,37 @@ function parseCSV(text) {
     while (true) {
       if (i < n && src[i] === '"') {
         i++; // skip opening quote
-        let field = '';
+        let field = "";
         while (i < n) {
           if (src[i] === '"') {
-            if (i + 1 < n && src[i + 1] === '"') { field += '"'; i += 2; }
-            else { i++; break; }
+            if (i + 1 < n && src[i + 1] === '"') {
+              field += '"';
+              i += 2;
+            } else {
+              i++;
+              break;
+            }
           } else {
             field += src[i++];
           }
         }
         row.push(field);
       } else {
-        let field = '';
-        while (i < n && src[i] !== ',' && src[i] !== '\n' && src[i] !== '\r') {
+        let field = "";
+        while (i < n && src[i] !== "," && src[i] !== "\n" && src[i] !== "\r") {
           field += src[i++];
         }
         row.push(field);
       }
-      if (i < n && src[i] === ',') { i++; continue; }
+      if (i < n && src[i] === ",") {
+        i++;
+        continue;
+      }
       break;
     }
-    if (i < n && src[i] === '\r') i++;
-    if (i < n && src[i] === '\n') i++;
-    if (row.length > 0 && !(row.length === 1 && row[0] === '')) rows.push(row);
+    if (i < n && src[i] === "\r") i++;
+    if (i < n && src[i] === "\n") i++;
+    if (row.length > 0 && !(row.length === 1 && row[0] === "")) rows.push(row);
   }
   return rows;
 }
@@ -87,30 +118,37 @@ function splitToList(text) {
   // Try split on "N. " or "N、" at start of line
   const parts = clean.split(/\n(?=\d+[\.\、]\s*)/);
   if (parts.length > 1) {
-    return parts.map(s => s.replace(/^\d+[\.\、]\s*/, '').trim()).filter(Boolean);
+    return parts
+      .map((s) => s.replace(/^\d+[\.\、]\s*/, "").trim())
+      .filter(Boolean);
   }
-  return clean.split(/\n/).map(s => s.trim()).filter(Boolean);
+  return clean
+    .split(/\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 // ─── CSV → MD ────────────────────────────────────────────────────────────────
 
 function csvToMD(csvPath, version) {
-  const raw = readFileSync(csvPath, 'utf8');
+  const raw = readFileSync(csvPath, "utf8");
   const rows = parseCSV(raw);
   if (rows.length <= 1) return null;
 
   const header = rows[0];
   const colIndex = {};
-  header.forEach((h, i) => { colIndex[h.trim()] = i; });
+  header.forEach((h, i) => {
+    colIndex[h.trim()] = i;
+  });
 
-  const titleCol  = colIndex['用例标题'] ?? 1;
-  const preCol    = colIndex['前置条件'] ?? 2;
-  const stepCol   = colIndex['步骤']     ?? 3;
-  const expectCol = colIndex['预期结果'] ?? 4;
-  const priCol    = colIndex['优先级']   ?? 5;
+  const titleCol = colIndex["用例标题"] ?? 1;
+  const preCol = colIndex["前置条件"] ?? 2;
+  const stepCol = colIndex["步骤"] ?? 3;
+  const expectCol = colIndex["预期结果"] ?? 4;
+  const priCol = colIndex["优先级"] ?? 5;
 
-  const reqName = basename(csvPath, '.csv');
-  const relPath = csvPath.replace(BASE + '/', '');
+  const reqName = basename(csvPath, ".csv");
+  const relPath = csvPath.replace(BASE + "/", "");
   const caseCount = rows.length - 1;
 
   let md = `# ${reqName} ${version}\n`;
@@ -119,11 +157,11 @@ function csvToMD(csvPath, version) {
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
-    const title   = stripHTML(row[titleCol]  || '').trim();
-    const pre     = stripHTML(row[preCol]    || '').trim();
-    const steps   = splitToList(row[stepCol]   || '');
-    const expects = splitToList(row[expectCol] || '');
-    const pri     = mapPriority(row[priCol]);
+    const title = stripHTML(row[titleCol] || "").trim();
+    const pre = stripHTML(row[preCol] || "").trim();
+    const steps = splitToList(row[stepCol] || "");
+    const expects = splitToList(row[expectCol] || "");
+    const pri = mapPriority(row[priCol]);
 
     if (!title) continue;
 
@@ -131,10 +169,16 @@ function csvToMD(csvPath, version) {
     md += `**优先级**: ${pri}\n`;
     if (pre) md += `**前置条件**: ${pre}\n`;
     md += `\n**步骤**:\n`;
-    if (steps.length > 0) steps.forEach((s, i) => { md += `${i + 1}. ${s}\n`; });
+    if (steps.length > 0)
+      steps.forEach((s, i) => {
+        md += `${i + 1}. ${s}\n`;
+      });
     else md += `1. （无）\n`;
     md += `\n**预期**:\n`;
-    if (expects.length > 0) expects.forEach((e, i) => { md += `${i + 1}. ${e}\n`; });
+    if (expects.length > 0)
+      expects.forEach((e, i) => {
+        md += `${i + 1}. ${e}\n`;
+      });
     else md += `1. （无）\n`;
     md += `\n---\n`;
   }
@@ -145,22 +189,25 @@ function csvToMD(csvPath, version) {
 // ─── XMind helpers ───────────────────────────────────────────────────────────
 
 function sanitizeFileName(name) {
-  return name.replace(/[\/\\:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
+  return name
+    .replace(/[\/\\:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizeForDedup(name) {
   return name
-    .replace(/【[^】]*】/g, '')
-    .replace(/\(#\d+\)/g, '')
-    .replace(/（#\d+）/g, '')
-    .replace(/\s+/g, '')
+    .replace(/【[^】]*】/g, "")
+    .replace(/\(#\d+\)/g, "")
+    .replace(/（#\d+）/g, "")
+    .replace(/\s+/g, "")
     .toLowerCase()
     .trim();
 }
 
 function renderNode(node, depth) {
   const children = node.children?.attached || [];
-  let md = '';
+  let md = "";
   if (depth === 2) {
     md += `\n### ${node.title}\n`;
   } else if (depth === 3) {
@@ -175,7 +222,7 @@ function renderNode(node, depth) {
 }
 
 function xmindL1ToMD(l1Node, xmindFileName) {
-  const relXmind = `zentao-cases/XMind/数据资产/${xmindFileName}`;
+  const relXmind = `cases/xmind/data-assets/${xmindFileName}`;
   let md = `# ${l1Node.title}（XMind）\n`;
   md += `> 来源：${relXmind}\n\n---\n`;
 
@@ -206,7 +253,7 @@ function scanDir(dir) {
   for (const e of entries) {
     const full = join(dir, e.name);
     if (e.isDirectory()) csvs.push(...scanDir(full));
-    else if (e.name.endsWith('.csv')) csvs.push(full);
+    else if (e.name.endsWith(".csv")) csvs.push(full);
   }
   return csvs;
 }
@@ -220,13 +267,13 @@ async function main() {
   const csvMDNames = {}; // version → Set<normalizedName>
 
   // ── Step 1: CSV → MD ──────────────────────────────────────────────────────
-  console.log('=== Step 1: CSV → MD ===');
+  console.log("=== Step 1: CSV → MD ===");
   const allCSVs = scanDir(ARCHIVE);
   console.log(`Found ${allCSVs.length} CSV files\n`);
 
   for (const csvPath of allCSVs) {
-    const rel = csvPath.replace(ARCHIVE + '/', '');
-    const version = rel.split('/')[0];
+    const rel = csvPath.replace(ARCHIVE + "/", "");
+    const version = rel.split("/")[0];
 
     try {
       const result = csvToMD(csvPath, version);
@@ -234,34 +281,28 @@ async function main() {
         console.log(`  SKIP (empty): ${rel}`);
         continue;
       }
-      const mdPath = csvPath.replace(/\.csv$/, '.md');
-      writeFileSync(mdPath, result.md, 'utf8');
+      const mdPath = csvPath.replace(/\.csv$/, ".md");
+      writeFileSync(mdPath, result.md, "utf8");
       console.log(`  ✓ ${rel}  (${result.count} cases)`);
       csvConverted++;
 
       if (!csvMDNames[version]) csvMDNames[version] = new Set();
       csvMDNames[version].add(normalizeForDedup(result.reqName));
 
-      unlinkSync(csvPath);
+      moveToTrash(csvPath);
     } catch (err) {
       console.error(`  ✗ ERROR ${rel}: ${err.message}`);
     }
   }
 
   // ── Step 2: XMind → MD ────────────────────────────────────────────────────
-  console.log('\n=== Step 2: XMind → MD ===');
+  console.log("\n=== Step 2: XMind → MD ===");
 
-  const xmindVersionMap = {
-    '202508-数据资产v6.4.2.xmind':    'v6.4.2',
-    '202509-数据资产v6.4.3.xmind':    'v6.4.3',
-    '202510-数据资产v6.4.3.xmind':    'v6.4.3',
-    '202602-数据资产v6.4.8.xmind':    'v6.4.8',
-    '202603-数据资产v6.4.9.xmind':    'v6.4.9',
-    '数据资产-主流程用例.xmind':       '主流程',
-    '数据资产_岚图标品用例整理.xmind': '岚图标品',
-  };
+  const configPath = join(BASE, ".claude/config.json");
+  const config = JSON.parse(readFileSync(configPath, "utf8"));
+  const xmindVersionMap = config.dataAssetsVersionMap || {};
 
-  const xmindFiles = readdirSync(XMIND_DIR).filter(f => f.endsWith('.xmind'));
+  const xmindFiles = readdirSync(XMIND_DIR).filter((f) => f.endsWith(".xmind"));
 
   for (const xmindFile of xmindFiles) {
     const version = xmindVersionMap[xmindFile];
@@ -283,17 +324,19 @@ async function main() {
       continue;
     }
 
-    if (!zip.file('content.json')) {
+    if (!zip.file("content.json")) {
       console.log(`  SKIP (no content.json): ${xmindFile}`);
       continue;
     }
 
-    const json = await zip.file('content.json').async('string');
+    const json = await zip.file("content.json").async("string");
     const parsed = JSON.parse(json);
     const root = parsed[0].rootTopic;
     const l1s = root.children?.attached || [];
 
-    console.log(`\n  📦 ${xmindFile} → version=${version}, ${l1s.length} L1 nodes`);
+    console.log(
+      `\n  📦 ${xmindFile} → version=${version}, ${l1s.length} L1 nodes`,
+    );
 
     for (const l1 of l1s) {
       const normName = normalizeForDedup(l1.title);
@@ -310,7 +353,7 @@ async function main() {
 
       try {
         const md = xmindL1ToMD(l1, xmindFile);
-        writeFileSync(mdPath, md, 'utf8');
+        writeFileSync(mdPath, md, "utf8");
         console.log(`    ✓ ${version}/${safeTitle}.md`);
         xmindExtracted++;
 
@@ -323,12 +366,15 @@ async function main() {
   }
 
   // ── Summary ───────────────────────────────────────────────────────────────
-  console.log('\n══════════════════════════════════════');
+  console.log("\n══════════════════════════════════════");
   console.log(`✅ CSV → MD (deleted):      ${csvConverted}`);
   console.log(`✅ XMind L1 → MD:           ${xmindExtracted}`);
   console.log(`⟳  XMind L1 skipped (dup): ${xmindSkipped}`);
   console.log(`📄 Total MD files produced: ${csvConverted + xmindExtracted}`);
-  console.log('══════════════════════════════════════');
+  console.log("══════════════════════════════════════");
 }
 
-main().catch(err => { console.error('FATAL:', err); process.exit(1); });
+main().catch((err) => {
+  console.error("FATAL:", err);
+  process.exit(1);
+});

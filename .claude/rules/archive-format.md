@@ -1,0 +1,59 @@
+# 归档 MD 格式规范
+
+> 所有归档用例 Markdown 统一使用以下层级和格式。
+
+## 模板
+
+````markdown
+# 需求名称
+
+> 来源：path/to/source
+> 用例数：N
+
+---
+
+## 模块/菜单名称
+
+### 页面名称
+
+#### 功能点/子组名称
+
+##### 用例标题 「P1」
+
+> 前置条件
+> \```
+> 前置内容，没有则填：无
+> \```
+
+| 编号 | 步骤         | 预期         |
+| ---- | ------------ | ------------ |
+| 1    | 操作步骤描述 | 预期结果描述 |
+| 2    | 操作步骤描述 | 预期结果描述 |
+
+##### 下一条用例标题 「P2」
+
+...
+````
+
+## 层级映射
+
+| MD 层级 | 含义        | CSV 来源     | XMind 来源       | JSON 来源             |
+| ------- | ----------- | ------------ | ---------------- | --------------------- |
+| `#`     | 需求/文件名 | 文件名+版本  | 根节点标题       | meta.requirement_name |
+| `##`    | 模块/菜单   | 所属模块列   | depth 1          | modules[].name        |
+| `###`   | 页面        | （无，跳过） | depth 2          | pages[].name          |
+| `####`  | 功能点/子组 | （无，跳过） | depth 3          | sub_groups[].name     |
+| `#####` | 用例标题    | 用例标题列   | depth 4 / 叶节点 | test_cases[].title    |
+
+> CSV 数据仅有模块和用例两层，中间层级自然跳过。XMind 树型结构的深度自动映射到对应层级。
+
+## 转化来源映射
+
+| 来源                                  | 目标目录                         | 格式                    |
+| ------------------------------------- | -------------------------------- | ----------------------- |
+| `cases/history/xyzh/*.csv`            | `cases/archive/custom/xyzh/`     | 完整用例（含步骤+预期） |
+| `cases/xmind/custom/xyzh/*.xmind`     | `cases/archive/custom/xyzh/`     | 标题树结构              |
+| `cases/xmind/batch-works/*.xmind`     | `cases/archive/batch-works/`     | 标题树结构              |
+| `cases/xmind/data-assets/*.xmind`     | `cases/archive/data-assets/`     | 标题树结构              |
+| `cases/xmind/data-query/*.xmind`      | `cases/archive/data-query/`      | 标题树结构              |
+| `cases/xmind/variable-center/*.xmind` | `cases/archive/variable-center/` | 标题树结构              |

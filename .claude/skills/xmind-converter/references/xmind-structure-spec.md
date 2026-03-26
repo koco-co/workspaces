@@ -63,12 +63,12 @@ YYYYMM-<功能名>.xmind
 ## 输出目录规则
 
 ```
-zentao-cases/XMind/<项目名>/
+cases/xmind/<项目名>/
 ```
 
 示例：
-- 信永中和：`zentao-cases/XMind/定制化/信永中和/`
-- DTStack 数据资产：`zentao-cases/XMind/数据资产/`
-- DTStack 离线开发：`zentao-cases/XMind/离线开发/`
-- DTStack 统一查询：`zentao-cases/XMind/统一查询/`
-- DTStack 变量中心：`zentao-cases/XMind/变量中心/`
+- 信永中和：`cases/xmind/custom/xyzh/`
+- DTStack 数据资产：`cases/xmind/data-assets/`
+- DTStack 离线开发：`cases/xmind/batch-works/`
+- DTStack 统一查询：`cases/xmind/data-query/`
+- DTStack 变量中心：`cases/xmind/variable-center/`

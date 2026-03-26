@@ -17,20 +17,16 @@ import urllib.request
 import urllib.parse
 
 BASE_DIR = "/Users/poco/Documents/DTStack/WorkSpaces"
-IMAGES_DIR = os.path.join(BASE_DIR, "images")
-ZENTAO_DIR = os.path.join(BASE_DIR, "zentao-cases")
+IMAGES_DIR = os.path.join(BASE_DIR, "assets", "images")
+CASES_DIR = os.path.join(BASE_DIR, "cases")
 
 # Source directories for images
 STORY322_RESOURCES = os.path.join(
-    ZENTAO_DIR, "customItem-platform/信永中和/Requirement/Story-20260322/resources"
+    CASES_DIR, "requirements/xyzh/Story-20260322/resources"
 )
-ASSETS_IMG_DIR = os.path.join(ZENTAO_DIR, "XMind/Assets/img")
-STORY305_MEDIA = os.path.join(
-    ZENTAO_DIR, "customItem-platform/信永中和/Requirement/Story-20260305/media"
-)
-STORY311_MEDIA = os.path.join(
-    ZENTAO_DIR, "customItem-platform/信永中和/Requirement/Story-20260311/media"
-)
+ASSETS_IMG_DIR = os.path.join(CASES_DIR, "xmind/Assets/img")
+STORY305_MEDIA = os.path.join(CASES_DIR, "requirements/xyzh/Story-20260305/media")
+STORY311_MEDIA = os.path.join(CASES_DIR, "requirements/xyzh/Story-20260311/media")
 
 failures = []  # List of (url, reason) for download failures
 
@@ -46,12 +42,12 @@ def find_obsidian_image(filename, md_file):
     p = os.path.join(STORY322_RESOURCES, filename)
     if os.path.exists(p):
         return p
-    # Check XMind/Assets/img (for dtstack-platform Stories)
+    # Check xmind/Assets/img (for DTStack Stories)
     p = os.path.join(ASSETS_IMG_DIR, filename)
     if os.path.exists(p):
         return p
     # Check other possible resource locations
-    p = os.path.join(BASE_DIR, "images", "local", "zentao-cases", filename)
+    p = os.path.join(BASE_DIR, "assets", "images", "local", filename)
     if os.path.exists(p):
         return p
     return None
@@ -82,8 +78,8 @@ def find_local_image(src_path, md_file_path):
             story_date = m.group(1)
             img_name = m.group(2)
             media_dir = os.path.join(
-                ZENTAO_DIR,
-                f"customItem-platform/信永中和/Requirement/Story-{story_date}/media",
+                CASES_DIR,
+                f"requirements/xyzh/Story-{story_date}/media",
             )
             full_path = os.path.join(media_dir, img_name)
             if os.path.exists(full_path):
@@ -279,7 +275,7 @@ def main():
 
     # Find all MD files with image references
     all_md_files = []
-    for root, dirs, files in os.walk(ZENTAO_DIR):
+    for root, dirs, files in os.walk(CASES_DIR):
         # Skip hidden dirs
         dirs[:] = [d for d in dirs if not d.startswith(".")]
         for fname in sorted(files):

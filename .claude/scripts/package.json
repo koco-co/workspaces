@@ -4,7 +4,16 @@
   "type": "module",
   "description": "QA test case automation scripts",
   "scripts": {
-    "json-to-xmind": "node json-to-xmind.mjs"
+    "xmind": "node json-to-xmind.mjs",
+    "archive": "node json-to-archive-md.mjs",
+    "convert": "node convert-history-cases.mjs",
+    "convert:data-assets": "node convert-data-assets-v2.mjs",
+    "convert:detect": "node convert-history-cases.mjs --detect",
+    "scan-images": "python3 scan_images.py",
+    "trash-cleanup": "bash trash-cleanup.sh",
+    "test": "node test-load-config.mjs && node test-json-to-xmind.mjs",
+    "test:config": "node test-load-config.mjs",
+    "test:xmind": "node test-json-to-xmind.mjs"
   },
   "dependencies": {
     "jszip": "^3.10.1",

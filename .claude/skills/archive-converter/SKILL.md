@@ -13,10 +13,10 @@ description: 历史用例归档转化 Skill。将非 Markdown 格式的历史测
 
 ## 一、支持的输入格式
 
-| 格式 | 来源路径 | 说明 |
-|------|---------|------|
-| CSV | `customItem-platform/信永中和/v0.x.x/*.csv` | 含完整步骤+预期 |
-| XMind | `zentao-cases/XMind/**/*.xmind` | 标题树结构 |
+| 格式  | 来源路径                          | 说明            |
+| ----- | --------------------------------- | --------------- |
+| CSV   | `cases/history/xyzh/v0.x.x/*.csv` | 含完整步骤+预期 |
+| XMind | `cases/xmind/**/*.xmind`          | 标题树结构      |
 
 ---
 
@@ -24,11 +24,11 @@ description: 历史用例归档转化 Skill。将非 Markdown 格式的历史测
 
 转化后的 Markdown 文件统一存放在 `archive-cases/` 目录下，根据来源自动判断输出路径：
 
-| 来源 | 输出目录 |
-|------|---------|
-| DTStack 模块 XMind | `zentao-cases/dtstack-platform/<module>/archive-cases/` |
-| 信永中和 CSV | `zentao-cases/customItem-platform/信永中和/archive-cases/<version>/` |
-| 信永中和 XMind | `zentao-cases/customItem-platform/信永中和/archive-cases/` |
+| 来源               | 输出目录                               |
+| ------------------ | -------------------------------------- |
+| DTStack 模块 XMind | `cases/archive/<module>/`              |
+| 信永中和 CSV       | `cases/archive/custom/xyzh/<version>/` |
+| 信永中和 XMind     | `cases/archive/custom/xyzh/`           |
 
 ---
 
@@ -74,7 +74,7 @@ cd .claude/scripts && node convert-history-cases.mjs
 转化指定文件或模块的历史用例：
 
 ```
-将 zentao-cases/XMind/离线开发/xxx.xmind 转为MD
+将 cases/xmind/batch-works/xxx.xmind 转为MD
 转化离线开发的历史用例
 ```
 
@@ -128,13 +128,13 @@ cd .claude/scripts && node convert-history-cases.mjs --module 离线开发 --for
 
 ## 六、模块名称映射
 
-| 模块名 | XMind 源目录 | archive-cases 目标 |
-|--------|-------------|-------------------|
-| 离线开发 | `XMind/离线开发/` | `dtstack-platform/离线开发/archive-cases/` |
-| 数据资产 | `XMind/数据资产/` | `dtstack-platform/数据资产/archive-cases/` |
-| 统一查询 | `XMind/统一查询/` | `dtstack-platform/统一查询/archive-cases/` |
-| 变量中心 | `XMind/变量中心/` | `dtstack-platform/变量中心/archive-cases/` |
-| 信永中和 | `XMind/定制化/信永中和/` + CSV | `customItem-platform/信永中和/archive-cases/` |
+| 模块名   | XMind 源目录                     | archive 目标                     |
+| -------- | -------------------------------- | -------------------------------- |
+| 离线开发 | `cases/xmind/batch-works/`       | `cases/archive/batch-works/`     |
+| 数据资产 | `cases/xmind/data-assets/`       | `cases/archive/data-assets/`     |
+| 统一查询 | `cases/xmind/data-query/`        | `cases/archive/data-query/`      |
+| 变量中心 | `cases/xmind/variable-center/`   | `cases/archive/variable-center/` |
+| 信永中和 | `cases/xmind/custom/xyzh/` + CSV | `cases/archive/custom/xyzh/`     |
 
 > **注意**：模块名匹配时忽略大小写和前后空格，支持部分匹配（如「离线」可匹配「离线开发」）。
 

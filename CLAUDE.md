@@ -1,563 +1,162 @@
-# WorkSpaces QA 测试用例工作空间
+# QA Test Case Workspace
 
-## 项目概述
+本工作空间用于 QA 测试用例的自动化编写与管理，覆盖 DTStack 平台和信永中和（xyzh）定制项目。
 
-本工作空间用于 QA 测试用例的自动化编写与管理，覆盖 DTStack 平台和信永中和定制项目。
+> 不知道从哪开始？输入 `/start` 查看功能菜单。
+
+---
 
 ## 快速开始
 
-### 普通模式（完整流程，含 brainstorming 和 Checklist 确认）
-
-```
+```bash
+# 生成测试用例（完整流程）
 生成用例 Story-20260322 PRD-26
-根据需求文档: Story-20260322 中的 PRD-26 生成测试用例
-为 Story-20260322 写测试用例
+为 <Story目录> 写测试用例
+
+# 快速模式（跳过交互）
+为 <Story目录> 快速生成测试用例
+<Story目录> --quick
+
+# 续传 / 模块重跑
+继续 <Story> 的用例生成
+重新生成 <Story> 的「列表页」模块用例
+
+# 单独使用各 Skill
+帮我增强这个 PRD：<PRD文件路径>
+帮我分析这个报错                  # 粘贴日志即可
+转化所有历史用例
 ```
-
-### 快速模式（--quick，跳过交互，自动执行全流程）
-
-适合重跑、已熟悉的需求、或不需要交互确认的场景：
-
-```
-为 Story-20260322 快速生成测试用例
-Story-20260322 --quick
-```
-
-### 续传模式（自动检测）
-
-如果上次流程被中断，重新发起相同指令，系统会自动检测进度并从断点继续：
-
-```
-继续 Story-20260322 的用例生成
-```
-
-### 模块级重跑
-
-生成完毕后，可以单独重跑某个模块的用例：
-
-```
-重新生成 Story-20260322 的「列表页」模块用例
-为 Story-20260322 追加边界用例
-```
-
-系统将自动执行：PRD 增强（含增量 diff）→ 健康度预检 → Brainstorming + 解耦 → Checklist 预览 → 并行生成 → 评审 → 输出 XMind → 归档 MD 同步 → 用户验证。
 
 ---
 
 ## 目录结构
 
+> 路径配置集中管理于 `.claude/config.json`，所有 Skill 和脚本从该文件读取路径。
+
 ```
 WorkSpaces/
-├── CLAUDE.md                              # 本文件
-├── zentao-cases/                          # 测试用例输出目录
-│   ├── XMind/                             # XMind 文件存放
-│   │   ├── 离线开发/                      # 离线开发测试用例
-│   │   ├── 数据资产/                      # 数据资产测试用例
-│   │   ├── 统一查询/                      # 统一查询测试用例
-│   │   ├── 变量中心/                      # 变量中心测试用例
-│   │   └── 定制化/信永中和/               # 信永中和项目
-│   ├── customItem-platform/信永中和/       # 信永中和需求文档与历史用例
-│   │   ├── Requirement/Story-YYYYMMDD/    # PRD 文档 + 临时文件（按 Story 隔离）
-│   │   │   ├── PRD-XX-xxx.md             # 原始 PRD
-│   │   │   ├── PRD-XX-xxx-enhanced.md    # 增强版 PRD（含图片描述）
-│   │   │   ├── temp/                     # 临时 JSON（生成完成后删除）
-│   │   │   └── .qa-state.json            # 断点续传状态文件（完成后删除）
-│   │   └── v0.x.x/                       # 历史 CSV 用例（部分模块，已迁移至 XMind）
-│   └── dtstack-platform/                  # DTStack 平台历史用例（Markdown 格式）
-│       ├── 离线开发/archive-cases/        # 按版本归档
-│       ├── 数据资产/archive-cases/
-│       ├── 统一查询/archive-cases/
-│       ├── 变量中心/archive-cases/
-│       └── 公共组件/archive-cases/
-├── gitlab-projects/                       # 源码仓库（只读，用于代码分析和按钮/文案验证）
-│   ├── CustomItem/                        # 定制项目源码
-│   ├── dt-insight-engine/                 # 引擎层源码
-│   ├── dt-insight-front/                  # 前端源码
-│   ├── dt-insight-plat/                   # 后端源码
-│   ├── dt-insight-qa/                     # QA 工具与文档
-│   └── dt-insight-web/                    # Web 层源码
-├── Code分析报告/                           # 代码分析报告输出目录
-│   ├── bugs/{yyyy-MM-dd}/                 # Bug 分析 HTML 报告（按日期归档）
-│   └── conflicts/{yyyy-MM-dd}/            # 合并冲突 HTML 报告（按日期归档）
+├── cases/                         # 测试用例（核心输出）
+│   ├── xmind/                     # XMind 文件（按模块）
+│   │   ├── batch-works/           # 离线开发
+│   │   ├── data-assets/           # 数据资产
+│   │   ├── data-query/            # 统一查询
+│   │   ├── variable-center/       # 变量中心
+│   │   ├── public-service/        # 公共组件
+│   │   └── custom/xyzh/           # 信永中和
+│   ├── archive/                   # 归档用例 MD（同模块划分）
+│   ├── requirements/              # PRD 需求文档
+│   │   ├── xyzh/Story-YYYYMMDD/  # 信永中和
+│   │   └── data-assets/           # 数据资产
+│   └── history/                   # 历史 CSV
+├── repos/                         # 源码仓库（只读）
+│   ├── CustomItem/                # 定制项目
+│   ├── dt-insight-*/              # DTStack 各层
+│   └── dt-insight-qa/             # QA 工具
+├── reports/                       # 代码分析报告
+│   ├── bugs/{yyyy-MM-dd}/
+│   └── conflicts/{yyyy-MM-dd}/
+├── assets/images/                 # 图片资源
 └── .claude/
-    ├── skills/                            # 项目级 skills
-    │   ├── archive-converter/             # 历史用例归档转化（CSV/XMind → MD）
-    │   ├── code-analysis-report/          # 代码分析报告（Bug/冲突分析 → HTML）
-    │   │   └── references/               # HTML 模板和判断规则
-    │   ├── prd-enhancer/                  # PRD 文档增强（含增量 diff + 健康度预检）
-    │   ├── test-case-generator/           # 用例生成编排（主入口，10步流程）
-    │   └── xmind-converter/               # JSON → XMind 转换（含 --append / --replace 模式）
-    └── scripts/
-        ├── package.json                   # Node.js 依赖
-        ├── json-to-xmind.mjs             # XMind 转换脚本（支持 --append / --replace）
-        ├── json-to-archive-md.mjs         # 归档 MD 转换脚本（JSON/XMind → MD）
-        └── convert-history-cases.mjs      # 历史用例转化脚本（CSV/XMind → MD）
+    ├── config.json                # 集中路径配置
+    ├── agents/                    # 子代理（case-writer / case-reviewer / case-code-analyzer）
+    ├── rules/                     # 详细规范（按需加载）
+    ├── skills/                    # 项目 Skills
+    │   ├── test-case-generator/   # 用例生成（主入口，10 步）
+    │   ├── prd-enhancer/          # PRD 增强
+    │   ├── xmind-converter/       # JSON → XMind
+    │   ├── archive-converter/     # 历史用例转化
+    │   ├── code-analysis-report/  # 代码报错分析
+    │   └── start/                 # /start 快捷菜单
+    └── scripts/                   # Node.js 工具脚本
 ```
+
+### 模块名称映射
+
+| 中文     | 英文代号        | 类型    |
+| -------- | --------------- | ------- |
+| 离线开发 | batch-works     | DTStack |
+| 数据资产 | data-assets     | DTStack |
+| 统一查询 | data-query      | DTStack |
+| 变量中心 | variable-center | DTStack |
+| 公共组件 | public-service  | DTStack |
+| 信永中和 | custom/xyzh     | 定制    |
 
 ---
 
-## 代码仓库路径映射
+## 源码仓库
 
-> gitlab-projects/ 下的所有仓库 **git 仓库位于二级子目录**（非一级目录本身）。
+> **`repos/` 下所有仓库为只读。** 详细规则见 `.claude/rules/repo-safety.md`。
 
-### DTStack 平台
+- git 仓库位于**二级子目录**（如 `repos/dt-insight-plat/DAGScheduleX/`）
+- 仅允许：fetch、pull、checkout、log、diff、blame、grep
+- 禁止：push、commit、修改文件、reset --hard、rebase
 
-| 分组 | 仓库名称 | 本地路径 | GitLab 路径 |
-|------|---------|---------|------------|
-| 前端 | dt-insight-studio | `gitlab-projects/dt-insight-front/dt-insight-studio/` | dt-insight-front/dt-insight-studio |
-| Web 层 | dt-center-assets | `gitlab-projects/dt-insight-web/dt-center-assets/` | dt-insight-web/dt-center-assets |
-| Web 层 | dt-center-metadata | `gitlab-projects/dt-insight-web/dt-center-metadata/` | dt-insight-web/dt-center-metadata |
-| 后端 | dt-public-service | `gitlab-projects/dt-insight-plat/dt-public-service/` | dt-insight-plat/dt-public-service |
-| 后端 | datasourcex | `gitlab-projects/dt-insight-plat/datasourcex/` | dt-insight-plat/datasourcex |
-| 后端 | DAGScheduleX | `gitlab-projects/dt-insight-plat/DAGScheduleX/` | dt-insight-plat/DAGScheduleX |
-| 后端 | SQLParser | `gitlab-projects/dt-insight-plat/SQLParser/` | dt-insight-plat/SQLParser |
-| 后端 | dt-center-ide | `gitlab-projects/dt-insight-plat/dt-center-ide/` | dt-insight-web/dt-center-ide |
-| 引擎 | engine-plugins | `gitlab-projects/dt-insight-engine/engine-plugins/` | dt-insight-engine/engine-plugins |
-| 引擎 | flink | `gitlab-projects/dt-insight-engine/flink/` | dt-insight-engine/flink |
+### 报错堆栈 → 仓库定位
 
-### 定制项目（CustomItem）
-
-| 仓库名称 | 本地路径 | GitLab 路径 |
-|---------|---------|------------|
-| dt-insight-studio | `gitlab-projects/CustomItem/dt-insight-studio/` | customltem/dt-insight-studio |
-| dt-center-assets | `gitlab-projects/CustomItem/dt-center-assets/` | customltem/dt-center-assets |
-| dt-center-metadata | `gitlab-projects/CustomItem/dt-center-metadata/` | customltem/dt-center-metadata |
-| dt-public-service | `gitlab-projects/CustomItem/dt-public-service/` | customltem/dt-public-service |
-| DatasourceX | `gitlab-projects/CustomItem/DatasourceX/` | customltem/DatasourceX |
-| dagschedulex | `gitlab-projects/CustomItem/dagschedulex/` | customltem/dagschedulex |
-| SQLParser | `gitlab-projects/CustomItem/SQLParser/` | customltem/SQLParser |
-| dt-center-ide | `gitlab-projects/CustomItem/dt-center-ide/` | customltem/dt-center-ide |
-
-### QA 工具
-
-| 仓库名称 | 本地路径 | GitLab 路径 |
-|---------|---------|------------|
-| dtstack-httprunner | `gitlab-projects/dt-insight-qa/dtstack-httprunner/` | dt-insight-qa/dtstack-httprunner |
-| qa-helpdocs | `gitlab-projects/dt-insight-qa/qa-helpdocs/` | dt-insight-qa/qa-helpdocs |
-| smokeTest | `gitlab-projects/dt-insight-qa/smokeTest/` | dt-insight-qa/smokeTest |
-| Sisyphus-X | `gitlab-projects/dt-insight-qa/Sisyphus-X/` | （无 remote） |
-
-> **信永中和**：无源码仓库，仅 PRD 文档。
-
-### 报错堆栈 → 仓库快速定位
-
-| Java 包名 / 关键词 | 目标仓库 |
-|-------------------|---------|
-| `com.dtstack.center.assets` | dt-center-assets |
+| Java 包名                     | 仓库               |
+| ----------------------------- | ------------------ |
+| `com.dtstack.center.assets`   | dt-center-assets   |
 | `com.dtstack.center.metadata` | dt-center-metadata |
-| `com.dtstack.dagschedulex` | DAGScheduleX |
-| `com.dtstack.datasource` | datasourcex |
-| `com.dtstack.ide` | dt-center-ide |
-| `com.dtstack.public.service` | dt-public-service |
-| `com.dtstack.sql.parser` | SQLParser |
-| `com.dtstack.engine` | engine-plugins |
+| `com.dtstack.dagschedulex`    | DAGScheduleX       |
+| `com.dtstack.datasource`      | datasourcex        |
+| `com.dtstack.ide`             | dt-center-ide      |
+| `com.dtstack.public.service`  | dt-public-service  |
+| `com.dtstack.sql.parser`      | SQLParser          |
+| `com.dtstack.engine`          | engine-plugins     |
+
+> 完整仓库路径映射见 `.claude/config.json` 的 `repos` 字段。
 
 ---
 
-## 源码仓库安全规则
+## 工作流概要（10 步）
 
-> **gitlab-projects/ 下的所有仓库为只读引用，严禁修改。**
+| #   | 步骤           | 说明                                            |
+| --- | -------------- | ----------------------------------------------- |
+| 1   | 解析指令       | 提取 Story/PRD 路径、检测断点续传               |
+| 2   | PRD 增强       | prd-enhancer：增量 diff + 图片读取 + 健康度预检 |
+| 3   | Brainstorming  | 讨论测试范围、高风险场景（`--quick` 跳过）      |
+| 4   | Checklist 预览 | 展示测试点清单（`--quick` 跳过）                |
+| 5   | 用户确认       | 确认 PRD 摘要 + 拆分方案（`--quick` 跳过）      |
+| 6   | 并行 Writer    | case-writer 子代理并行生成用例（结合源码分析）  |
+| 7   | Reviewer       | case-reviewer 子代理 3 轮修正 + 源码验证覆盖率  |
+| 8   | XMind 输出     | xmind-converter 生成 .xmind（支持 --append）    |
+| 9   | 归档同步       | 生成 archive MD + 验证提示                      |
+| 10  | 清理           | 用户确认通过，清理临时文件                      |
 
-### 绝对禁止的操作
+### 增量 & 断点续传
 
-- ❌ `git push` — 禁止向任何远程仓库推送
-- ❌ `git commit` — 禁止在源码仓库中创建提交
-- ❌ 修改、创建、删除源码仓库中的任何文件
-- ❌ `git reset --hard`、`git rebase`、`git merge` 等破坏性操作
+- PRD 修改后重跑相同指令，仅受影响模块重新生成
+- 流程中断后重新发起同指令，自动从断点继续（`.qa-state.json`）
+- 强制全量重跑：删除 `-enhanced.md` 和 `.qa-state.json`
 
-### 允许的操作（只读）
+### 质量阈值
 
-- ✅ `git fetch origin` — 拉取远程更新
-- ✅ `git pull origin <branch>` — 拉取并切换到指定分支
-- ✅ `git checkout <branch>` — 切换分支
-- ✅ `git log`、`git show`、`git diff`、`git blame` — 查看历史和代码
-- ✅ `grep`、`find`、`cat`、`view` — 搜索和读取文件
-
-### 分析前自动拉取流程
-
-每次用户请求代码分析（Bug 报告 / 冲突分析）时，必须：
-
-1. 根据报错信息定位目标仓库（参考上方「报错堆栈 → 仓库快速定位」表）
-2. 询问用户提供分支名（若未提供）
-3. 执行 `git -C <仓库路径> fetch origin && git -C <仓库路径> checkout <分支> && git -C <仓库路径> pull origin <分支>`
-4. 确认分支和最新 commit 后，才开始分析
-
----
-
-## 完整工作流（10 步）
-
-| 步骤 | 名称 | 说明 |
-|------|------|------|
-| Step 1 | 解析用户指令 | 提取 Story/PRD 路径、验证源码仓库、检测断点续传 |
-| Step 2 | PRD 增强 | 调用 prd-enhancer：增量 diff + 图片读取 + 健康度预检 |
-| Step 3 | Brainstorming | 与用户讨论测试范围、高风险场景、历史 Bug（`--quick` 跳过） |
-| Step 4 | Checklist 预览 | 展示每个模块的测试点清单，用户可增删调整（`--quick` 跳过） |
-| Step 5 | 用户确认 | 一次性确认 PRD 摘要 + 拆分方案 + 测试点（`--quick` 跳过） |
-| Step 6 | 并行 Writer | 为每个解耦模块启动独立 Writer Subagent，并行生成用例 |
-| Step 7 | Reviewer 评审 | 合并所有 Writer 输出，3 轮修正 + 查漏补缺 + 质量阈值检查 |
-| Step 8 | 输出 XMind | 调用 xmind-converter 生成 .xmind 文件（支持 --append 追加） |
-| Step 9 | 归档 MD 同步 | 生成 archive-cases MD + 向用户发出验证提示 |
-| Step 10 | 用户验证同步 | 用户确认通过或修改后同步，清理临时文件 |
+| 问题率  | 行为               |
+| ------- | ------------------ |
+| < 15%   | 自动修正           |
+| 15%–40% | 修正 + 质量警告    |
+| > 40%   | 阻断，等待用户决策 |
 
 ---
 
-## Skills 独立使用说明
-
-### prd-enhancer（单独增强某个 PRD）
-
-```
-帮我增强这个 PRD：zentao-cases/customItem-platform/信永中和/Requirement/Story-20260322/PRD-26-数据质量-质量问题台账.md
-```
-
-### xmind-converter（单独转换 JSON 为 XMind）
-
-```
-将 zentao-cases/customItem-platform/信永中和/Requirement/Story-20260322/temp/cases.json 转换为 XMind 文件
-```
-
-### archive-converter（转化历史用例为 MD 归档格式）
-
-```
-转化所有历史用例
-转化离线开发的历史用例
-将 zentao-cases/XMind/离线开发/xxx.xmind 转为MD
-检查哪些历史用例还没转化
-```
-
-### test-case-generator（主入口，完整流程）
-
-```
-根据需求文档: Story-20260322 中的 PRD-26 生成测试用例
-为 Story-20260322 快速生成测试用例
-```
-
-### code-analysis-report（代码分析报告，独立工具）
-
-```
-帮我分析这个报错                      # 粘贴报错日志 + curl 信息
-生成 bug 报告                         # 分析后输出 HTML 报告
-分析一下这个冲突                      # Jenkins 合并冲突分析
-看看这个异常                          # 快速定位异常原因
-```
-
-> 此 Skill 与用例生成工作流完全解耦，独立触发。报告输出到 `Code分析报告/` 目录。
-
----
-
-## XMind 输出规范
-
-- **文件命名**：同一 Story 下所有 PRD 用例推荐输出到同一文件：
-  - 单 PRD：`YYYYMM-<功能名>.xmind`（如 `202603-数据质量-质量问题台账.xmind`）
-  - 整个 Story：`YYYYMM-Story-YYYYMMDD.xmind`（如 `202603-Story-20260322.xmind`）
-- **输出路径**：`zentao-cases/XMind/<项目>/`（如 `zentao-cases/XMind/定制化/信永中和/`）
-- **层级**：Root → L1（版本+需求名）→ L2（模块）→ [L3（子分组）] → 用例标题 → 步骤 → 预期
-- **追加模式**：同一 XMind 文件中，不同 PRD 的用例以各自的 L1 节点区分
-
----
-
-## 测试用例编写规范
-
-以下规范适用于所有自动生成的测试用例（Writer Subagent 和 Reviewer Subagent 必须遵守）。
-
-### XMind 层级结构
-
-```
-Root (项目名)
-  └── L1: 【版本】需求名称
-       └── L2: 菜单/模块名称          ← 如「质量问题台账」
-            └── L3: 页面名称           ← 如「列表页」「新增页」「详情页」
-                 └── [L4: 功能子组]    ← 如「搜索」「字段校验」（可选）
-                      └── 用例标题
-                           └── 步骤
-                                └── 预期结果
-```
-
-- L2 必须对应系统中的菜单或独立功能模块名称
-- L3 按页面维度划分（列表页、新增页、编辑页、详情页等）
-- L4 为可选层级，当页面内功能较多时按功能分组（搜索、导出、字段校验等）
-
-### 用例标题规范
-
-- 必须以「验证」二字开头，如：`验证质量问题台账列表页默认加载`
-- 标题应概括测试目的，不包含具体操作步骤
-
-### 步骤格式规范
-
-- **禁止**步骤编号前缀：不允许出现「步骤1:」「步骤2:」「Step1:」等字样
-- 第一个步骤**必须**以「进入【xxx】页面」开头，如：`进入【质量问题台账-列表页】页面`
-- 步骤描述必须为可执行的具体操作，包含明确的操作对象和操作行为
-
-### 用例设计原则
-
-| 类型 | 条件组合规则 | 示例 |
-|------|-------------|------|
-| 正常用例 | 可包含多个正向条件组合 | 验证填写完整表单后成功提交（问题名称 + 问题分类 + 责任人 + 整改期限） |
-| 异常用例 | **仅允许一个逆向条件** | 验证问题名称为空时无法提交 |
-| 边界用例 | 针对边界值的单一验证 | 验证问题名称输入 100 个字符时正常保存 |
-
-### 测试数据规范
-
-- **必须使用真实业务数据**，给出具体的输入值和选择项
-- **禁止模糊词**：不允许出现以下词汇：
-
-  | 禁止词 | 正确写法 |
-  |--------|---------|
-  | 尝试提交表单 | 点击【提交】按钮 |
-  | 输入像"测试数据"这样的内容 | 在「问题名称」输入框输入"2026年3月产线温度异常" |
-  | 选择如"已完成"等状态 | 在「处理状态」下拉框选择"已完成" |
-  | 输入比如手机号 | 在「联系电话」输入框输入"13800138000" |
-  | 填写相关信息 | 在「问题名称」输入"原料批次不合格"，在「问题分类」选择"质量缺陷" |
-
-### 预期结果规范
-
-- 必须精确描述系统行为，包含可观测的具体表现
-- **禁止空洞表述**：
-
-  | 禁止写法 | 正确写法 |
-  |---------|---------|
-  | 操作成功 | 页面提示"新增成功"，列表页新增一条记录，问题名称显示为"原料批次不合格" |
-  | 显示正确 | 列表第一行显示：行动编号"QA-2026-001"，问题分类"质量缺陷"，状态"待处理" |
-  | 提交失败 | 「问题名称」输入框下方显示红色提示"请输入问题名称"，【提交】按钮保持不可点击状态 |
-
----
-
-## 历史用例维护
-
-历史用例预先转化为 Markdown 格式，存放在各模块的 `archive-cases/` 目录，供工作流直接读取（无需实时解析 XMind 二进制文件）。不再使用单独的 `history-cases/` 目录。
-
-### 归档 MD 模版规范
-
-所有归档用例 Markdown 统一使用以下层级和格式：
-
-```markdown
-# 需求名称
-> 来源：path/to/source
-> 用例数：N
-
----
-
-## 模块/菜单名称
-
-### 页面名称
-
-#### 功能点/子组名称
-
-##### 用例标题 「P1」
-
-> 前置条件
-```
-前置内容，没有则填：无
-```
-
-| 编号 | 步骤 | 预期 |
-| --- | --- | --- |
-| 1 | 操作步骤描述 | 预期结果描述 |
-| 2 | 操作步骤描述 | 预期结果描述 |
-
-##### 下一条用例标题 「P2」
-...
-```
-
-**层级映射**：
-
-| MD 层级 | 含义 | CSV 来源 | XMind 来源 | JSON 来源 |
-|---------|------|---------|-----------|----------|
-| `#` | 需求/文件名 | 文件名+版本 | 根节点标题 | meta.requirement_name |
-| `##` | 模块/菜单 | 所属模块列 | depth 1 | modules[].name |
-| `###` | 页面 | （无，跳过） | depth 2 | pages[].name |
-| `####` | 功能点/子组 | （无，跳过） | depth 3 | sub_groups[].name |
-| `#####` | 用例标题 | 用例标题列 | depth 4 / 叶节点 | test_cases[].title |
-
-> CSV 数据仅有模块和用例两层，中间层级自然跳过。XMind 树型结构的深度自动映射到对应层级。
-
-### 转化来源
-
-| 来源 | 目标目录 | 格式 |
-|------|---------|------|
-| `customItem-platform/信永中和/v0.x.x/*.csv` | `customItem-platform/信永中和/archive-cases/` | 完整用例（含步骤+预期） |
-| `XMind/定制化/信永中和/*.xmind` | `customItem-platform/信永中和/archive-cases/` | 标题树结构 |
-| `XMind/离线开发/*.xmind` | `dtstack-platform/离线开发/archive-cases/` | 标题树结构 |
-| `XMind/数据资产/*.xmind` | `dtstack-platform/数据资产/archive-cases/` | 标题树结构 |
-| `XMind/统一查询/*.xmind` | `dtstack-platform/统一查询/archive-cases/` | 标题树结构 |
-| `XMind/变量中心/*.xmind` | `dtstack-platform/变量中心/archive-cases/` | 标题树结构 |
-
-### 更新历史用例
-
-每次新增或修改 XMind / CSV 用例文件后，运行转化脚本更新历史缓存：
-
-```bash
-cd .claude/scripts && node convert-history-cases.mjs
-# 强制重新生成所有文件：
-node convert-history-cases.mjs --force
-```
-
-> **何时需要更新**：新的 XMind 文件生成后（下次生成用例时即可作为历史参考）、CSV 文件有修改时。
-
-### 使用 archive-converter Skill
-
-除了直接运行脚本，也可以通过 archive-converter Skill 触发转化：
-
-```
-转化所有历史用例                    # 全量模式
-转化离线开发的历史用例              # 指定模块
-检查哪些历史用例还没转化            # 检测模式
-强制重新转化所有历史用例            # 强制覆盖
-```
-
-> test-case-generator Step 1.4 会自动检测未转化文件。如果发现新增的 CSV/XMind 文件尚未转化，会提示是否先执行归档转化。
-
----
-
-## 增量更新说明
-
-PRD 修改后，不需要从头开始：
-
-1. 重新运行相同指令（普通模式或快速模式）
-2. prd-enhancer 自动比对 PRD 原文件与 `-enhanced.md` 的修改时间（`enhanced-at` 时间戳），仅在 PRD 有更新时重新处理
-3. test-case-generator 只重新生成受影响模块的 Writer
-4. Reviewer 对所有用例（新旧）重新评审
-
-如需强制全量重跑，删除对应的 `-enhanced.md` 文件和 `.qa-state.json` 后重新运行。
-
----
-
-## 断点续传说明
-
-流程每步完成后会在 Story 目录写入进度文件：
-
-```
-zentao-cases/<项目路径>/Requirement/Story-20260322/.qa-state.json
-```
-
-如果会话中断（网络问题、context 超限等），重新开始对话并发起相同指令，系统会自动检测并从断点继续。流程全部完成后，状态文件会自动删除。
-
-### 状态文件关键字段
-
-| 字段 | 说明 |
-|------|------|
-| `last_completed_step` | 最后完成的步骤编号（1-10），恢复时从下一步开始 |
-| `mode` | `normal`（完整流程）/ `quick`（跳过交互步骤） |
-| `writers.<name>.status` | 每个 Writer 的状态：`pending` / `in_progress` / `completed` / `failed` |
-| `reviewer_status` | `pending` / `completed` / `escalated`（需人工介入） |
-| `checklist_confirmed` | Checklist 是否已确认 |
-
----
-
-## 临时文件管理
-
-- 临时 JSON 路径：`zentao-cases/<项目路径>/Requirement/Story-YYYYMMDD/temp/`
-- 每个 Story 有独立的 temp 目录，多 Story 并发不冲突
-- 生成 XMind 后自动删除 temp/ 目录和 .qa-state.json
-
----
-
-## 质量控制
-
-Reviewer 采用 3 级质量阈值自动决策：
-
-| 问题率 | 行为 |
-|--------|------|
-| < 15% | 自动修正，无需通知用户 |
-| 15% - 40% | 自动修正 + 质量警告，建议用户核查 |
-| > 40% | 立即停止，输出阻断报告，等待用户选择：修复 PRD 重跑 / 手动修正 / 强制继续 |
-
-问题率 = 含 F01-F09 任意问题的用例数 / 总用例数（一条用例多个问题只计 1 次）。
-
----
-
-## 已完成后的操作
-
-测试用例生成完毕后，支持以下后续操作：
-
-- **模块级重跑**：`重新生成 Story-xxx 的「列表页」模块用例` — 仅重跑指定 Writer，其他模块保持不变
-- **追加边界用例**：`为 Story-xxx 追加边界用例` — 在现有用例基础上补充 P2 边界场景
-- **追加到现有 XMind**：使用 `--append` 模式，将新 PRD 的用例追加到同一 .xmind 文件
-- **强制全量重跑**：删除 `-enhanced.md` 和 `.qa-state.json` 后重新运行
-
----
-
-## 图片引用规范
-
-本仓库所有 Markdown 文件中的图片引用必须遵循以下规范：
-
-### 存放位置
-
-所有图片统一存放在仓库根目录 `images/` 下，不在子目录中分散存储。
-
-### 引用格式
-
-使用**标准 Markdown 格式**，禁止使用 Obsidian 专有格式：
-
-```markdown
-# ✅ 正确：标准 Markdown 格式
-![语义化中文描述](../../../../../images/语义化文件名.png)
-
-# ❌ 禁止：Obsidian 格式
-![[Pasted image 20260325151102.png]]
-```
-
-### 相对路径计算
-
-根据 md 文件所在深度，计算到根目录 `images/` 的相对路径：
-
-| 文件位置示例                                                         | 相对路径前缀           |
-| -------------------------------------------------------------------- | ---------------------- |
-| `zentao-cases/customItem-platform/信永中和/Requirement/Story-xxx/*.md` | `../../../../../images/` |
-| `zentao-cases/dtstack-platform/数据资产/archive-reqs/Story/*.md`     | `../../../../../images/` |
-| 根目录 `*.md`                                                        | `images/`              |
-
-### 文件命名规则
-
-- 使用中文语义化名称，反映图片实际内容（如 `质量问题台账列表页.png`）
-- 禁止使用时间戳（`Pasted image 2026xxxx.png`）、UUID、MD5 哈希等无意义名称
-- 同功能多页面用 `-` 分隔：`质量问题台账-新增表单页.png`
-- 如同名文件已存在，追加 `-2`、`-3` 等后缀
-
-### prd-enhancer 自动处理
-
-执行 prd-enhancer 时，会自动完成以下图片规范化：
-1. 识别 Obsidian `![[]]` 格式并转换为标准 Markdown `![]()` 格式
-2. 将散落在各处的图片移入 `images/` 根目录
-3. 重命名无意义文件名为语义化名称
-4. 计算并填入正确的相对路径
-
----
-
-## 图片预处理规则
-
-**在任何需要读取图片的步骤之前，必须先压缩超大图片。**
-
-> 原因：图片超过 2000px 时 AI 多模态能力可能跳过分析，导致关键 UI 信息丢失。
-
-每次执行 prd-enhancer 或直接读取 PRD 图片前，使用以下命令对目标图片所在目录批量压缩：
-
-```bash
-for f in <图片目录>/*.png <图片目录>/*.jpg; do
-  [ -f "$f" ] || continue
-  w=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
-  h=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
-  if [ "$w" -gt 2000 ] || [ "$h" -gt 2000 ]; then
-    echo "压缩: $f (${w}x${h})"
-    sips -Z 2000 "$f"
-  fi
-done
-```
-
-- `sips -Z 2000`：等比缩放，最长边 ≤ 2000px，已达标图片不处理，**原位覆盖（不可撤销）**
-- ⚠️ **注意**：压缩会直接覆盖原图，执行前请确认图片已被 git 跟踪或已备份
-- 适用于 macOS（内置 `sips` 命令，无需安装依赖）
-- 如图片存放在 `images/` 全局目录，也应在流程开始前对该目录执行一次
+## 详细规范索引
+
+| 文件                                 | 内容                                     | 触发路径           |
+| ------------------------------------ | ---------------------------------------- | ------------------ |
+| `.claude/rules/test-case-writing.md` | 用例编写规范（标题、步骤、预期、禁止词） | `cases/**`         |
+| `.claude/rules/xmind-output.md`      | XMind 输出格式、命名、层级               | `cases/xmind/**`   |
+| `.claude/rules/archive-format.md`    | 归档 MD 模板、层级映射                   | `cases/archive/**` |
+| `.claude/rules/directory-naming.md`  | 目录命名约定、模块映射                   | 全局               |
+| `.claude/rules/image-conventions.md` | 图片引用、路径、压缩规则                 | `assets/**`        |
+| `.claude/rules/repo-safety.md`       | 源码仓库只读规则                         | `repos/**`         |
 
 ---
 
 ## 工具依赖
 
 ```bash
-# 安装脚本依赖（首次使用）
 cd .claude/scripts && npm install
 ```
 
-依赖项：
-
-- `xmind-generator@^1.0.1` — XMind 文件生成
-- `jszip@^3.10.1` — ZIP 读写（--append 模式必需）
+- `xmind-generator@^1.0.1` — XMind 生成
+- `jszip@^3.10.1` — ZIP 读写（--append 模式）
