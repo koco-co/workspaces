@@ -6,11 +6,17 @@
  *   node json-to-xmind.mjs <input.json> <output.xmind>
  *   node json-to-xmind.mjs <input1.json> <input2.json> <output.xmind>
  *   node json-to-xmind.mjs --append <input.json> <existing.xmind>
+ *   node json-to-xmind.mjs --replace <input.json> <existing.xmind>
  *
  * --append 模式:
  *   当目标 .xmind 文件已存在时，将新的 L1 节点追加进去而非覆盖。
  *   同名 rootTopic（project_name 相同）：追加新 L1 到已有 root。
  *   不同 rootTopic：作为新 sheet 添加。
+ *
+ * --replace 模式:
+ *   找到与 requirement_name 同名的 L1 节点并替换其 children。
+ *   用于模块级重跑：只更新指定需求的 L1，其他 L1 节点保持不变。
+ *   如果未找到同名 L1，则追加新 L1（等同于 --append 行为）。
  *
  * XMind 层级结构:
  * Root (project_name)
@@ -216,16 +222,78 @@ async function appendToExisting(data, outputPath) {
   writeFileSync(resolve(outputPath), buffer)
 }
 
+async function replaceInExisting(data, outputPath) {
+  const { default: JSZip } = await import('jszip')
+
+  const l1Title = data.meta.version
+    ? `【${data.meta.version}】${data.meta.requirement_name}`
+    : data.meta.requirement_name
+
+  // 1. 生成新 workbook 到临时文件，提取新 L1 节点 JSON
+  const tempPath = resolve(outputPath) + '.tmp_replace'
+  writeLocalFile(buildXmind(data), tempPath)
+
+  const tempZip = await JSZip.loadAsync(readFileSync(tempPath))
+  const newContentStr = await tempZip.file('content.json').async('string')
+  const newSheets = JSON.parse(newContentStr)
+  const newL1Node = newSheets[0]?.rootTopic?.children?.attached?.[0]
+  unlinkSync(tempPath)
+
+  if (!newL1Node) {
+    throw new Error('无法从新 JSON 中提取 L1 节点')
+  }
+
+  // 2. 读取现有 .xmind
+  const existingZip = await JSZip.loadAsync(readFileSync(resolve(outputPath)))
+  const existingContentStr = await existingZip.file('content.json').async('string')
+  const existingSheets = JSON.parse(existingContentStr)
+
+  // 3. 查找同名 rootTopic（按 project_name 匹配）
+  const targetSheet = existingSheets.find(
+    (s) => s.rootTopic?.title === data.meta.project_name
+  )
+
+  if (targetSheet) {
+    const children = targetSheet.rootTopic.children?.attached ?? []
+    const existingIdx = children.findIndex((n) => n.title === l1Title)
+    if (existingIdx >= 0) {
+      // 找到同名 L1，替换其 children
+      children[existingIdx] = newL1Node
+      console.log(`已替换 L1 节点 "${l1Title}" 的内容`)
+    } else {
+      // 未找到同名 L1，追加
+      if (!targetSheet.rootTopic.children) {
+        targetSheet.rootTopic.children = { attached: [] }
+      }
+      if (!targetSheet.rootTopic.children.attached) {
+        targetSheet.rootTopic.children.attached = []
+      }
+      targetSheet.rootTopic.children.attached.push(newL1Node)
+      console.log(`未找到同名 L1 "${l1Title}"，已追加新节点`)
+    }
+  } else {
+    existingSheets.push(newSheets[0])
+    console.log(`已添加新 sheet "${data.meta.project_name}" 到现有文件`)
+  }
+
+  // 4. 写回
+  existingZip.file('content.json', JSON.stringify(existingSheets))
+  const buffer = await existingZip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+  writeFileSync(resolve(outputPath), buffer)
+}
+
 // --- Main ---
 const args = process.argv.slice(2)
 const appendMode = args.includes('--append')
-const filteredArgs = args.filter((a) => a !== '--append')
+const replaceMode = args.includes('--replace')
+const filteredArgs = args.filter((a) => a !== '--append' && a !== '--replace')
 
 if (filteredArgs.length < 2) {
   console.error('Usage:')
   console.error('  node json-to-xmind.mjs <input.json> <output.xmind>')
   console.error('  node json-to-xmind.mjs <input1.json> <input2.json> <output.xmind>')
   console.error('  node json-to-xmind.mjs --append <input.json> <existing.xmind>')
+  console.error('  node json-to-xmind.mjs --replace <input.json> <existing.xmind>')
   process.exit(1)
 }
 
@@ -236,7 +304,14 @@ try {
   const data = mergeJsonFiles(inputPaths)
   const validation = validateJson(data)
 
-  if (appendMode && existsSync(resolve(outputPath))) {
+  if (replaceMode && existsSync(resolve(outputPath))) {
+    replaceInExisting(data, outputPath)
+      .then(() => console.log(`XMind 文件已更新（替换模式）: ${resolve(outputPath)}`))
+      .catch((err) => {
+        console.error('替换失败:', err.message)
+        process.exit(1)
+      })
+  } else if (appendMode && existsSync(resolve(outputPath))) {
     appendToExisting(data, outputPath)
       .then(() => console.log(`XMind 文件已更新（追加模式）: ${resolve(outputPath)}`))
       .catch((err) => {

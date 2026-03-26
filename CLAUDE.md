@@ -55,8 +55,7 @@ WorkSpaces/
 │   │   ├── 数据资产/                      # 数据资产测试用例
 │   │   ├── 统一查询/                      # 统一查询测试用例
 │   │   ├── 变量中心/                      # 变量中心测试用例
-│   │   ├── 定制化/信永中和/               # 信永中和项目
-│   │   └── dtstack-platform/              # DTStack 平台测试用例
+│   │   └── 定制化/信永中和/               # 信永中和项目
 │   ├── customItem-platform/信永中和/       # 信永中和需求文档与历史用例
 │   │   ├── Requirement/Story-YYYYMMDD/    # PRD 文档 + 临时文件（按 Story 隔离）
 │   │   │   ├── PRD-XX-xxx.md             # 原始 PRD
@@ -70,22 +69,27 @@ WorkSpaces/
 │       ├── 统一查询/archive-cases/
 │       ├── 变量中心/archive-cases/
 │       └── 公共组件/archive-cases/
-├── gitlab-projects/                       # 源码仓库（用于验证按钮/文案）
+├── gitlab-projects/                       # 源码仓库（只读，用于代码分析和按钮/文案验证）
 │   ├── CustomItem/                        # 定制项目源码
 │   ├── dt-insight-engine/                 # 引擎层源码
 │   ├── dt-insight-front/                  # 前端源码
 │   ├── dt-insight-plat/                   # 后端源码
 │   ├── dt-insight-qa/                     # QA 工具与文档
 │   └── dt-insight-web/                    # Web 层源码
+├── Code分析报告/                           # 代码分析报告输出目录
+│   ├── bugs/{yyyy-MM-dd}/                 # Bug 分析 HTML 报告（按日期归档）
+│   └── conflicts/{yyyy-MM-dd}/            # 合并冲突 HTML 报告（按日期归档）
 └── .claude/
     ├── skills/                            # 项目级 skills
     │   ├── archive-converter/             # 历史用例归档转化（CSV/XMind → MD）
+    │   ├── code-analysis-report/          # 代码分析报告（Bug/冲突分析 → HTML）
+    │   │   └── references/               # HTML 模板和判断规则
     │   ├── prd-enhancer/                  # PRD 文档增强（含增量 diff + 健康度预检）
     │   ├── test-case-generator/           # 用例生成编排（主入口，10步流程）
-    │   └── xmind-converter/               # JSON → XMind 转换（含 --append 模式）
+    │   └── xmind-converter/               # JSON → XMind 转换（含 --append / --replace 模式）
     └── scripts/
         ├── package.json                   # Node.js 依赖
-        ├── json-to-xmind.mjs             # XMind 转换脚本（支持 --append）
+        ├── json-to-xmind.mjs             # XMind 转换脚本（支持 --append / --replace）
         ├── json-to-archive-md.mjs         # 归档 MD 转换脚本（JSON/XMind → MD）
         └── convert-history-cases.mjs      # 历史用例转化脚本（CSV/XMind → MD）
 ```
@@ -94,15 +98,89 @@ WorkSpaces/
 
 ## 代码仓库路径映射
 
-| 项目         | 类型     | 路径                                                  |
-| ------------ | -------- | ----------------------------------------------------- |
-| DTStack 平台 | 前端     | `gitlab-projects/dt-insight-front/dt-insight-studio/` |
-| DTStack 平台 | Web 层   | `gitlab-projects/dt-insight-web/`                     |
-| DTStack 平台 | 后端     | `gitlab-projects/dt-insight-plat/`                    |
-| DTStack 平台 | 引擎层   | `gitlab-projects/dt-insight-engine/`                  |
-| QA 工具      | 文档/工具 | `gitlab-projects/dt-insight-qa/`                      |
-| 定制项目     | 源码     | `gitlab-projects/CustomItem/`                         |
-| 信永中和     | —        | 无源码，仅 PRD                                        |
+> gitlab-projects/ 下的所有仓库 **git 仓库位于二级子目录**（非一级目录本身）。
+
+### DTStack 平台
+
+| 分组 | 仓库名称 | 本地路径 | GitLab 路径 |
+|------|---------|---------|------------|
+| 前端 | dt-insight-studio | `gitlab-projects/dt-insight-front/dt-insight-studio/` | dt-insight-front/dt-insight-studio |
+| Web 层 | dt-center-assets | `gitlab-projects/dt-insight-web/dt-center-assets/` | dt-insight-web/dt-center-assets |
+| Web 层 | dt-center-metadata | `gitlab-projects/dt-insight-web/dt-center-metadata/` | dt-insight-web/dt-center-metadata |
+| 后端 | dt-public-service | `gitlab-projects/dt-insight-plat/dt-public-service/` | dt-insight-plat/dt-public-service |
+| 后端 | datasourcex | `gitlab-projects/dt-insight-plat/datasourcex/` | dt-insight-plat/datasourcex |
+| 后端 | DAGScheduleX | `gitlab-projects/dt-insight-plat/DAGScheduleX/` | dt-insight-plat/DAGScheduleX |
+| 后端 | SQLParser | `gitlab-projects/dt-insight-plat/SQLParser/` | dt-insight-plat/SQLParser |
+| 后端 | dt-center-ide | `gitlab-projects/dt-insight-plat/dt-center-ide/` | dt-insight-web/dt-center-ide |
+| 引擎 | engine-plugins | `gitlab-projects/dt-insight-engine/engine-plugins/` | dt-insight-engine/engine-plugins |
+| 引擎 | flink | `gitlab-projects/dt-insight-engine/flink/` | dt-insight-engine/flink |
+
+### 定制项目（CustomItem）
+
+| 仓库名称 | 本地路径 | GitLab 路径 |
+|---------|---------|------------|
+| dt-insight-studio | `gitlab-projects/CustomItem/dt-insight-studio/` | customltem/dt-insight-studio |
+| dt-center-assets | `gitlab-projects/CustomItem/dt-center-assets/` | customltem/dt-center-assets |
+| dt-center-metadata | `gitlab-projects/CustomItem/dt-center-metadata/` | customltem/dt-center-metadata |
+| dt-public-service | `gitlab-projects/CustomItem/dt-public-service/` | customltem/dt-public-service |
+| DatasourceX | `gitlab-projects/CustomItem/DatasourceX/` | customltem/DatasourceX |
+| dagschedulex | `gitlab-projects/CustomItem/dagschedulex/` | customltem/dagschedulex |
+| SQLParser | `gitlab-projects/CustomItem/SQLParser/` | customltem/SQLParser |
+| dt-center-ide | `gitlab-projects/CustomItem/dt-center-ide/` | customltem/dt-center-ide |
+
+### QA 工具
+
+| 仓库名称 | 本地路径 | GitLab 路径 |
+|---------|---------|------------|
+| dtstack-httprunner | `gitlab-projects/dt-insight-qa/dtstack-httprunner/` | dt-insight-qa/dtstack-httprunner |
+| qa-helpdocs | `gitlab-projects/dt-insight-qa/qa-helpdocs/` | dt-insight-qa/qa-helpdocs |
+| smokeTest | `gitlab-projects/dt-insight-qa/smokeTest/` | dt-insight-qa/smokeTest |
+| Sisyphus-X | `gitlab-projects/dt-insight-qa/Sisyphus-X/` | （无 remote） |
+
+> **信永中和**：无源码仓库，仅 PRD 文档。
+
+### 报错堆栈 → 仓库快速定位
+
+| Java 包名 / 关键词 | 目标仓库 |
+|-------------------|---------|
+| `com.dtstack.center.assets` | dt-center-assets |
+| `com.dtstack.center.metadata` | dt-center-metadata |
+| `com.dtstack.dagschedulex` | DAGScheduleX |
+| `com.dtstack.datasource` | datasourcex |
+| `com.dtstack.ide` | dt-center-ide |
+| `com.dtstack.public.service` | dt-public-service |
+| `com.dtstack.sql.parser` | SQLParser |
+| `com.dtstack.engine` | engine-plugins |
+
+---
+
+## 源码仓库安全规则
+
+> **gitlab-projects/ 下的所有仓库为只读引用，严禁修改。**
+
+### 绝对禁止的操作
+
+- ❌ `git push` — 禁止向任何远程仓库推送
+- ❌ `git commit` — 禁止在源码仓库中创建提交
+- ❌ 修改、创建、删除源码仓库中的任何文件
+- ❌ `git reset --hard`、`git rebase`、`git merge` 等破坏性操作
+
+### 允许的操作（只读）
+
+- ✅ `git fetch origin` — 拉取远程更新
+- ✅ `git pull origin <branch>` — 拉取并切换到指定分支
+- ✅ `git checkout <branch>` — 切换分支
+- ✅ `git log`、`git show`、`git diff`、`git blame` — 查看历史和代码
+- ✅ `grep`、`find`、`cat`、`view` — 搜索和读取文件
+
+### 分析前自动拉取流程
+
+每次用户请求代码分析（Bug 报告 / 冲突分析）时，必须：
+
+1. 根据报错信息定位目标仓库（参考上方「报错堆栈 → 仓库快速定位」表）
+2. 询问用户提供分支名（若未提供）
+3. 执行 `git -C <仓库路径> fetch origin && git -C <仓库路径> checkout <分支> && git -C <仓库路径> pull origin <分支>`
+4. 确认分支和最新 commit 后，才开始分析
 
 ---
 
@@ -153,6 +231,17 @@ WorkSpaces/
 为 Story-20260322 快速生成测试用例
 ```
 
+### code-analysis-report（代码分析报告，独立工具）
+
+```
+帮我分析这个报错                      # 粘贴报错日志 + curl 信息
+生成 bug 报告                         # 分析后输出 HTML 报告
+分析一下这个冲突                      # Jenkins 合并冲突分析
+看看这个异常                          # 快速定位异常原因
+```
+
+> 此 Skill 与用例生成工作流完全解耦，独立触发。报告输出到 `Code分析报告/` 目录。
+
 ---
 
 ## XMind 输出规范
@@ -160,7 +249,7 @@ WorkSpaces/
 - **文件命名**：同一 Story 下所有 PRD 用例推荐输出到同一文件：
   - 单 PRD：`YYYYMM-<功能名>.xmind`（如 `202603-数据质量-质量问题台账.xmind`）
   - 整个 Story：`YYYYMM-Story-YYYYMMDD.xmind`（如 `202603-Story-20260322.xmind`）
-- **输出路径**：`zentao-cases/XMind/<项目>/`（如 `zentao-cases/XMind/CustomItem/信永中和/`）
+- **输出路径**：`zentao-cases/XMind/<项目>/`（如 `zentao-cases/XMind/定制化/信永中和/`）
 - **层级**：Root → L1（版本+需求名）→ L2（模块）→ [L3（子分组）] → 用例标题 → 步骤 → 预期
 - **追加模式**：同一 XMind 文件中，不同 PRD 的用例以各自的 L1 节点区分
 
@@ -286,7 +375,7 @@ Root (项目名)
 | 来源 | 目标目录 | 格式 |
 |------|---------|------|
 | `customItem-platform/信永中和/v0.x.x/*.csv` | `customItem-platform/信永中和/archive-cases/` | 完整用例（含步骤+预期） |
-| `XMind/CustomItem/信永中和/*.xmind` | `customItem-platform/信永中和/archive-cases/` | 标题树结构 |
+| `XMind/定制化/信永中和/*.xmind` | `customItem-platform/信永中和/archive-cases/` | 标题树结构 |
 | `XMind/离线开发/*.xmind` | `dtstack-platform/离线开发/archive-cases/` | 标题树结构 |
 | `XMind/数据资产/*.xmind` | `dtstack-platform/数据资产/archive-cases/` | 标题树结构 |
 | `XMind/统一查询/*.xmind` | `dtstack-platform/统一查询/archive-cases/` | 标题树结构 |
@@ -346,7 +435,7 @@ zentao-cases/<项目路径>/Requirement/Story-20260322/.qa-state.json
 
 | 字段 | 说明 |
 |------|------|
-| `last_completed_step` | 最后完成的步骤编号（1-8），恢复时从下一步开始 |
+| `last_completed_step` | 最后完成的步骤编号（1-10），恢复时从下一步开始 |
 | `mode` | `normal`（完整流程）/ `quick`（跳过交互步骤） |
 | `writers.<name>.status` | 每个 Writer 的状态：`pending` / `in_progress` / `completed` / `failed` |
 | `reviewer_status` | `pending` / `completed` / `escalated`（需人工介入） |
@@ -454,7 +543,8 @@ for f in <图片目录>/*.png <图片目录>/*.jpg; do
 done
 ```
 
-- `sips -Z 2000`：等比缩放，最长边 ≤ 2000px，已达标图片不处理，原位覆盖
+- `sips -Z 2000`：等比缩放，最长边 ≤ 2000px，已达标图片不处理，**原位覆盖（不可撤销）**
+- ⚠️ **注意**：压缩会直接覆盖原图，执行前请确认图片已被 git 跟踪或已备份
 - 适用于 macOS（内置 `sips` 命令，无需安装依赖）
 - 如图片存放在 `images/` 全局目录，也应在流程开始前对该目录执行一次
 

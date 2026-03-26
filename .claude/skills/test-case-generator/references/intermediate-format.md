@@ -202,6 +202,8 @@ zentao-cases/<项目路径>/Requirement/<Story>/.qa-state.json
   "reviewer_status": "pending",
   "final_json": null,
   "output_xmind": null,
+  "archive_md_path": null,
+  "awaiting_verification": false,
   "mode": "normal",
   "created_at": "2026-03-25T10:00:00Z",
   "updated_at": "2026-03-25T10:30:00Z"
@@ -212,13 +214,16 @@ zentao-cases/<项目路径>/Requirement/<Story>/.qa-state.json
 
 | 字段 | 说明 |
 |------|------|
-| `last_completed_step` | 最后完成的步骤编号（1-8） |
+| `last_completed_step` | 最后完成的步骤编号（1-10） |
 | `mode` | `normal` / `quick`（快速模式跳过 brainstorming 和确认） |
 | `writers.<name>.status` | `pending` / `in_progress` / `completed` / `failed` |
 | `reviewer_status` | `pending` / `completed` / `escalated`（需人工介入） |
+| `awaiting_verification` | Step 9 设置为 `true`，等待用户在 XMind 中验证；Step 10 完成后删除状态文件 |
+| `archive_md_path` | Step 9 生成的归档 MD 文件路径 |
 
 **恢复时的行为：**
 - 已完成步骤直接跳过，不重新执行
 - `pending` 状态的 Writer 重新启动
 - `in_progress` 状态的 Writer 也重新启动（上次可能被中断）
 - Reviewer 状态为 `escalated` 时，直接提示用户处理
+- `awaiting_verification: true` 时：向用户重新展示验证提示（XMind 路径 + 归档 MD 路径），等待用户回复「确认通过」或「已修改，请同步」
