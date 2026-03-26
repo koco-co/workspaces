@@ -154,6 +154,18 @@ function formatSteps(text) {
   return s
 }
 
+/** Parse numbered text lines into an array, stripping leading numbers */
+function parseNumberedLines(text) {
+  if (!text || text === '无') return []
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  return lines.map(line => line.replace(/^\d+[.、)\]]\s*/, ''))
+}
+
+/** Escape pipe characters for Markdown tables */
+function escPipe(s) {
+  return s.replace(/\|/g, '\\|').replace(/\n/g, ' ')
+}
+
 /** 移除 HTML 标签，将 <br> 转为换行 */
 function stripHtml(text) {
   if (!text) return text
@@ -199,23 +211,35 @@ function convertCSV(csvPath, version) {
   md += `> 用例数：${totalCases}\n\n---\n\n`
 
   for (const [mod, caseRows] of groups) {
-    // 只有多个模块时才加模块子标题
-    if (groups.size > 1) {
-      md += `### ${mod}\n\n`
-    }
-    for (const row of caseRows) {
-      const title    = (row[idxTitle]    || '').trim()
-      const pre      = (row[idxPre]      || '').trim()
-      const steps    = stripHtml((row[idxSteps]    || '').trim())
-      const expected = stripHtml((row[idxExpected] || '').trim())
-      const priority = formatPriority(row[idxPriority] || '')
+    md += `## ${mod}\n\n`
 
-      md += `## ${title}\n`
-      md += `**优先级**: ${priority}\n`
-      md += `**前置条件**: ${pre || '无'}\n\n`
-      md += `**步骤**:\n${formatSteps(steps)}\n\n`
-      md += `**预期**:\n${formatSteps(expected)}\n\n`
-      md += `---\n\n`
+    for (const row of caseRows) {
+      const title       = (row[idxTitle]    || '').trim()
+      const pre         = stripHtml((row[idxPre]      || '').trim())
+      const stepsRaw    = stripHtml((row[idxSteps]    || '').trim())
+      const expectedRaw = stripHtml((row[idxExpected] || '').trim())
+      const priority    = formatPriority(row[idxPriority] || '')
+
+      md += `##### ${title} 「${priority}」\n\n`
+      md += `> 前置条件\n`
+      md += '```\n'
+      md += `${pre || '无'}\n`
+      md += '```\n\n'
+
+      const stepLines   = parseNumberedLines(stepsRaw)
+      const expectLines = parseNumberedLines(expectedRaw)
+      const maxLen      = Math.max(stepLines.length, expectLines.length)
+
+      if (maxLen > 0) {
+        md += '| 编号 | 步骤 | 预期 |\n'
+        md += '| --- | --- | --- |\n'
+        for (let i = 0; i < maxLen; i++) {
+          const s = escPipe(stepLines[i] || '')
+          const e = escPipe(expectLines[i] || '')
+          md += `| ${i + 1} | ${s} | ${e} |\n`
+        }
+        md += '\n'
+      }
     }
   }
 
@@ -234,7 +258,6 @@ function treeToMd(node, depth) {
   const title = (node.title || '').trim()
 
   if (depth === 0) {
-    // 根节点：只递归子节点，不输出自身
     return children.map(c => treeToMd(c, depth + 1)).join('')
   }
 
@@ -242,12 +265,16 @@ function treeToMd(node, depth) {
     return `- ${title}\n`
   }
 
-  // 非叶节点：根据深度选择标题级别
-  // depth 1 → ##   (因为 # 已被文件标题占用)
-  const hashes = '#'.repeat(Math.min(depth + 1, 6))
-  let out = `${hashes} ${title}\n`
+  if (depth >= 5) {
+    let out = `- ${title}\n`
+    out += children.map(c => treeToMd(c, depth + 1)).map(line => `  ${line}`).join('')
+    return out
+  }
+
+  // depth 1→##, 2→###, 3→####, 4→#####
+  const hashes = '#'.repeat(depth + 1)
+  let out = `${hashes} ${title}\n\n`
   out += children.map(c => treeToMd(c, depth + 1)).join('')
-  out += '\n'
   return out
 }
 
@@ -358,18 +385,34 @@ function xmindOutputDir(xmindPath) {
 
 // ─── 模块 / 路径辅助 ─────────────────────────────────────────────────────────
 
-const CSV_DIRS = [
-  { dir: join(ROOT, 'zentao-cases/customItem-platform/信永中和/v0.2.0'), version: 'v0.2.0' },
-  { dir: join(ROOT, 'zentao-cases/customItem-platform/信永中和/v0.2.1'), version: 'v0.2.1' },
+// 信永中和 CSV 目录（原始 CSV 在 v0.x.x/ 下，输出到 archive-cases/）
+const CUSTOM_CSV_DIRS = [
+  { dir: join(ROOT, 'zentao-cases/customItem-platform/信永中和/v0.2.0'), version: 'v0.2.0', module: '信永中和' },
+  { dir: join(ROOT, 'zentao-cases/customItem-platform/信永中和/v0.2.1'), version: 'v0.2.1', module: '信永中和' },
 ]
 
-/** 根据 CSV 文件路径推断输出目录和版本 */
-function csvOutputInfo(csvPath) {
-  const parentDir = dirname(csvPath)
-  const version = basename(parentDir)
-  const projectDir = dirname(parentDir)
-  const outDir = join(projectDir, 'archive-cases', version)
-  return { outDir, version }
+// dtstack-platform 模块列表（CSV 已在 archive-cases/<version>/ 下）
+const DTSTACK_MODULES = ['离线开发', '数据资产', '公共组件']
+
+/** 扫描 dtstack-platform 各模块 archive-cases 下的 CSV 文件 */
+function getDtstackCSVFiles(module) {
+  const results = []
+  const modules = module ? [module] : DTSTACK_MODULES
+  for (const mod of modules) {
+    if (!DTSTACK_MODULES.includes(mod)) continue
+    const archiveDir = join(ROOT, 'zentao-cases/dtstack-platform', mod, 'archive-cases')
+    if (!existsSync(archiveDir)) continue
+    // 遍历子目录（版本号目录）
+    for (const verDir of readdirSync(archiveDir)) {
+      const verPath = join(archiveDir, verDir)
+      if (!statSync(verPath).isDirectory()) continue
+      const csvFiles = findFiles(verPath, '.csv')
+      for (const csvPath of csvFiles) {
+        results.push({ csvPath, version: verDir, module: mod })
+      }
+    }
+  }
+  return results
 }
 
 /** 根据 --module 返回需要扫描的 XMind 目录列表 */
@@ -389,28 +432,50 @@ function getXMindDirs(module) {
 // ─── 主流程 ──────────────────────────────────────────────────────────────────
 
 async function processCSVFiles(module) {
-  if (module && module !== '信永中和') return
+  // 1. 信永中和 CSV（v0.x.x/ → archive-cases/v0.x.x/）
+  if (!module || module === '信永中和') {
+    for (const { dir, version } of CUSTOM_CSV_DIRS) {
+      const csvFiles = findFiles(dir, '.csv')
+      for (const csvPath of csvFiles) {
+        const name = basename(csvPath, '.csv')
+        const outDir = join(ROOT, 'zentao-cases/customItem-platform/信永中和/archive-cases', version)
+        const outFile = join(outDir, `${name}.md`)
 
-  for (const { dir, version } of CSV_DIRS) {
-    const csvFiles = findFiles(dir, '.csv')
-    for (const csvPath of csvFiles) {
-      const name = basename(csvPath, '.csv')
-      const outDir = join(ROOT, 'zentao-cases/customItem-platform/信永中和/archive-cases', version)
-      const outFile = join(outDir, `${name}.md`)
+        if (existsSync(outFile) && !FORCE) {
+          stats.skipped.push(outFile.replace(ROOT + '/', ''))
+          continue
+        }
 
-      if (existsSync(outFile) && !FORCE) {
-        stats.skipped.push(outFile.replace(ROOT + '/', ''))
-        continue
+        try {
+          ensureDir(outDir)
+          const md = convertCSV(csvPath, version)
+          writeFileSync(outFile, md, 'utf-8')
+          stats.success.push(outFile.replace(ROOT + '/', ''))
+        } catch (e) {
+          stats.failed.push({ file: csvPath.replace(ROOT + '/', ''), error: e.message })
+        }
       }
+    }
+  }
 
-      try {
-        ensureDir(outDir)
-        const md = convertCSV(csvPath, version)
-        writeFileSync(outFile, md, 'utf-8')
-        stats.success.push(outFile.replace(ROOT + '/', ''))
-      } catch (e) {
-        stats.failed.push({ file: csvPath.replace(ROOT + '/', ''), error: e.message })
-      }
+  // 2. dtstack-platform CSV（archive-cases/<version>/*.csv → 同目录 .md）
+  const dtstackCSVs = getDtstackCSVFiles(module)
+  for (const { csvPath, version } of dtstackCSVs) {
+    const name = basename(csvPath, '.csv')
+    const outDir = dirname(csvPath)
+    const outFile = join(outDir, `${name}.md`)
+
+    if (existsSync(outFile) && !FORCE) {
+      stats.skipped.push(outFile.replace(ROOT + '/', ''))
+      continue
+    }
+
+    try {
+      const md = convertCSV(csvPath, version)
+      writeFileSync(outFile, md, 'utf-8')
+      stats.success.push(outFile.replace(ROOT + '/', ''))
+    } catch (e) {
+      stats.failed.push({ file: csvPath.replace(ROOT + '/', ''), error: e.message })
     }
   }
 }
@@ -446,9 +511,9 @@ async function detectUnconverted(module) {
   const unconverted = []
   let alreadyConverted = 0
 
-  // CSV 源（仅 信永中和）
+  // CSV 源（信永中和）
   if (!module || module === '信永中和') {
-    for (const { dir, version } of CSV_DIRS) {
+    for (const { dir, version } of CUSTOM_CSV_DIRS) {
       const csvFiles = findFiles(dir, '.csv')
       for (const csvPath of csvFiles) {
         const name = basename(csvPath, '.csv')
@@ -464,6 +529,22 @@ async function detectUnconverted(module) {
           })
         }
       }
+    }
+  }
+
+  // CSV 源（dtstack-platform）
+  const dtstackCSVs = getDtstackCSVFiles(module)
+  for (const { csvPath } of dtstackCSVs) {
+    const name = basename(csvPath, '.csv')
+    const outFile = join(dirname(csvPath), `${name}.md`)
+    if (existsSync(outFile)) {
+      alreadyConverted++
+    } else {
+      unconverted.push({
+        source: csvPath.replace(ROOT + '/', ''),
+        target: outFile.replace(ROOT + '/', ''),
+        type: 'csv',
+      })
     }
   }
 
@@ -491,7 +572,11 @@ async function detectUnconverted(module) {
 // ─── --path 模式 ─────────────────────────────────────────────────────────────
 
 async function processSingleCSV(csvPath) {
-  const { outDir, version } = csvOutputInfo(csvPath)
+  const parentDir = dirname(csvPath)
+  const version = basename(parentDir)
+  // Determine output: if already in archive-cases, output in same dir; else use archive-cases subdir
+  const isInArchive = csvPath.includes('/archive-cases/')
+  const outDir = isInArchive ? parentDir : join(dirname(parentDir), 'archive-cases', version)
   const name = basename(csvPath, '.csv')
   const outFile = join(outDir, `${name}.md`)
 

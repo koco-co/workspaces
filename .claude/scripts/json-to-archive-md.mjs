@@ -42,12 +42,16 @@ function jsonToMd(data, sourcePath) {
   lines.push('')
 
   for (const mod of modules ?? []) {
-    // 新 4 级格式: module → page → sub_group → test_case
+    // 4-level format: module → page → sub_group → test_case
     if (mod.pages) {
+      lines.push(`## ${mod.name}`)
+      lines.push('')
       for (const page of mod.pages) {
+        lines.push(`### ${page.name}`)
+        lines.push('')
         if (page.sub_groups && page.sub_groups.length > 0) {
           for (const sg of page.sub_groups) {
-            lines.push(`## ${mod.name} > ${page.name} > ${sg.name}`)
+            lines.push(`#### ${sg.name}`)
             lines.push('')
             for (const tc of sg.test_cases ?? []) {
               lines.push(...formatCase(tc))
@@ -55,24 +59,25 @@ function jsonToMd(data, sourcePath) {
           }
         }
         if (page.test_cases && page.test_cases.length > 0) {
-          lines.push(`## ${mod.name} > ${page.name}`)
-          lines.push('')
           for (const tc of page.test_cases) {
             lines.push(...formatCase(tc))
           }
         }
       }
     }
-    // 旧 3 级格式: module → sub_group → test_case
+    // 3-level format: module → sub_group → test_case
     if (mod.sub_groups && !mod.pages) {
+      lines.push(`## ${mod.name}`)
+      lines.push('')
       for (const sg of mod.sub_groups) {
-        lines.push(`## ${mod.name} > ${sg.name}`)
+        lines.push(`### ${sg.name}`)
         lines.push('')
         for (const tc of sg.test_cases ?? []) {
           lines.push(...formatCase(tc))
         }
       }
     }
+    // 2-level format: module → test_case
     if (mod.test_cases && !mod.pages) {
       lines.push(`## ${mod.name}`)
       lines.push('')
@@ -85,28 +90,32 @@ function jsonToMd(data, sourcePath) {
   return lines.join('\n')
 }
 
+function escPipe(s) {
+  return (s || '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
+}
+
 function formatCase(tc) {
   const lines = []
-  lines.push(`### ${tc.title || '(标题缺失)'}`)
-  lines.push(`**优先级**: ${tc.priority || 'P2'}`)
-  lines.push(`**前置条件**: ${tc.precondition || '无'}`)
+  const priority = tc.priority || 'P2'
+  lines.push(`##### ${tc.title || '(标题缺失)'} 「${priority}」`)
+  lines.push('')
+  lines.push('> 前置条件')
+  lines.push('```')
+  lines.push(tc.precondition || '无')
+  lines.push('```')
   lines.push('')
 
   const steps = tc.steps ?? []
   if (steps.length > 0) {
-    lines.push('**步骤**:')
+    lines.push('| 编号 | 步骤 | 预期 |')
+    lines.push('| --- | --- | --- |')
     steps.forEach((s, i) => {
-      lines.push(`${i + 1}. ${s.step || s.action || '(步骤缺失)'}`)
-    })
-    lines.push('')
-    lines.push('**预期**:')
-    steps.forEach((s, i) => {
-      lines.push(`${i + 1}. ${s.expected || s.result || '(预期缺失)'}`)
+      const step = escPipe(s.step || s.action || s.操作步骤 || '(步骤缺失)')
+      const expected = escPipe(s.expected || s.result || s.预期结果 || '(预期缺失)')
+      lines.push(`| ${i + 1} | ${step} | ${expected} |`)
     })
   }
 
-  lines.push('')
-  lines.push('---')
   lines.push('')
   return lines
 }
@@ -178,9 +187,30 @@ async function xmindToMd(xmindPath) {
       lines.push('---')
       lines.push('')
 
+      // Track current context to output proper headings
+      let lastMod = '', lastPage = ''
       for (const block of caseBlocks) {
-        lines.push(`## ${block.section}`)
-        lines.push('')
+        const parts = block.section.split(' > ')
+        const modName = parts[0] || ''
+        const pageName = parts[1] || ''
+        const sgName = parts[2] || ''
+
+        if (modName !== lastMod) {
+          lines.push(`## ${modName}`)
+          lines.push('')
+          lastMod = modName
+          lastPage = ''
+        }
+        if (pageName && pageName !== lastPage) {
+          lines.push(`### ${pageName}`)
+          lines.push('')
+          lastPage = pageName
+        }
+        if (sgName) {
+          lines.push(`#### ${sgName}`)
+          lines.push('')
+        }
+
         for (const tc of block.cases) {
           lines.push(...formatCaseFromXmind(tc))
         }
@@ -233,19 +263,25 @@ function extractCase(node) {
 
 function formatCaseFromXmind(tc) {
   const lines = []
-  lines.push(`### ${tc.title || '(标题缺失)'}`)
-  lines.push(`**优先级**: ${tc.priority}`)
-  lines.push(`**前置条件**: ${tc.precondition || '无'}`)
+  const priority = tc.priority || 'P2'
+  lines.push(`##### ${tc.title || '(标题缺失)'} 「${priority}」`)
   lines.push('')
+  lines.push('> 前置条件')
+  lines.push('```')
+  lines.push(tc.precondition || '无')
+  lines.push('```')
+  lines.push('')
+
   if (tc.steps.length > 0) {
-    lines.push('**步骤**:')
-    tc.steps.forEach((s, i) => lines.push(`${i + 1}. ${s.step || '(步骤缺失)'}`))
-    lines.push('')
-    lines.push('**预期**:')
-    tc.steps.forEach((s, i) => lines.push(`${i + 1}. ${s.expected || '(预期缺失)'}`))
+    lines.push('| 编号 | 步骤 | 预期 |')
+    lines.push('| --- | --- | --- |')
+    tc.steps.forEach((s, i) => {
+      const step = escPipe(s.step || '(步骤缺失)')
+      const expected = escPipe(s.expected || '(预期缺失)')
+      lines.push(`| ${i + 1} | ${step} | ${expected} |`)
+    })
   }
-  lines.push('')
-  lines.push('---')
+
   lines.push('')
   return lines
 }
