@@ -288,6 +288,8 @@ function formatCaseFromXmind(tc) {
 
 // ─── 路径与工具函数 ─────────────────────────────────────────
 
+const DTSTACK_MODULES = ['离线开发', '数据资产', '统一查询', '变量中心', '公共组件']
+
 function determineOutputDir(projectName, versionOrTitle, requirementName) {
   const base = resolve(dirname(new URL(import.meta.url).pathname), '../../zentao-cases')
   let version = (versionOrTitle || '').replace(/版本$/, '').trim()
@@ -296,6 +298,14 @@ function determineOutputDir(projectName, versionOrTitle, requirementName) {
   if (projectName === '信永中和') {
     return resolve(base, `customItem-platform/信永中和/archive-cases/${version}`)
   }
+
+  // DTStack 平台模块：按模块名路由到 dtstack-platform/<module>/archive-cases/
+  const dtModule = DTSTACK_MODULES.find((m) => projectName?.includes(m) || requirementName?.includes(m))
+  if (dtModule) {
+    return resolve(base, `dtstack-platform/${dtModule}/archive-cases`)
+  }
+
+  // 其他项目兜底
   return resolve(base, `archive-cases/${version}`)
 }
 

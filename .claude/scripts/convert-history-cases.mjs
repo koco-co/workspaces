@@ -392,7 +392,7 @@ const CUSTOM_CSV_DIRS = [
 ]
 
 // dtstack-platform 模块列表（CSV 已在 archive-cases/<version>/ 下）
-const DTSTACK_MODULES = ['离线开发', '数据资产', '公共组件']
+const DTSTACK_MODULES = ['离线开发', '数据资产', '统一查询', '变量中心', '公共组件']
 
 /** 扫描 dtstack-platform 各模块 archive-cases 下的 CSV 文件 */
 function getDtstackCSVFiles(module) {

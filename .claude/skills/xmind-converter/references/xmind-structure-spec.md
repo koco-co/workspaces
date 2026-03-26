@@ -67,6 +67,8 @@ zentao-cases/XMind/<项目名>/
 ```
 
 示例：
-- 信永中和：`zentao-cases/XMind/CustomItem/信永中和/`
-- DTStack 数据资产：`zentao-cases/XMind/DataAssets/`
-- DTStack 离线开发：`zentao-cases/XMind/BatchWorks/`
+- 信永中和：`zentao-cases/XMind/定制化/信永中和/`
+- DTStack 数据资产：`zentao-cases/XMind/数据资产/`
+- DTStack 离线开发：`zentao-cases/XMind/离线开发/`
+- DTStack 统一查询：`zentao-cases/XMind/统一查询/`
+- DTStack 变量中心：`zentao-cases/XMind/变量中心/`

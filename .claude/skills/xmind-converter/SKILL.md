@@ -53,8 +53,11 @@ YYYYMM-<功能名>.xmind
 
 | project_name | 输出目录 |
 |---|---|
-| 信永中和 | `zentao-cases/XMind/CustomItem/信永中和/` |
-| DTStack | `zentao-cases/XMind/dtstack-platform/` |
+| 信永中和 | `zentao-cases/XMind/定制化/信永中和/` |
+| DTStack 离线开发 | `zentao-cases/XMind/离线开发/` |
+| DTStack 数据资产 | `zentao-cases/XMind/数据资产/` |
+| DTStack 统一查询 | `zentao-cases/XMind/统一查询/` |
+| DTStack 变量中心 | `zentao-cases/XMind/变量中心/` |
 | 其他 | `zentao-cases/XMind/` |
 
 ---
@@ -67,7 +70,8 @@ YYYYMM-<功能名>.xmind
 |------|---------|
 | 目标文件不存在 | 新建模式（直接生成） |
 | 目标文件已存在，新旧 requirement_name 不同 | 追加模式（`--append`）：将新需求作为新 L1 节点追加 |
-| 目标文件已存在，requirement_name 相同 | 询问用户：覆盖 or 跳过 |
+| 目标文件已存在，requirement_name 相同，普通生成 | 询问用户：覆盖 or 跳过 |
+| 目标文件已存在，模块级重跑场景 | 替换模式（`--replace`）：找到同名 L1 节点替换，避免重复 |
 
 **同一 Story 多个 PRD 的推荐做法：** 全部追加到同一个 XMind 文件，文件名用 Story 编号命名：
 ```
@@ -86,13 +90,21 @@ node .claude/scripts/json-to-xmind.mjs <input.json> <output.xmind>
 # 多文件合并转换
 node .claude/scripts/json-to-xmind.mjs <input1.json> <input2.json> <output.xmind>
 
-# 追加模式（向现有 .xmind 追加新需求）
+# 追加模式（向现有 .xmind 追加新需求，用于同一 Story 多 PRD 场景）
 node .claude/scripts/json-to-xmind.mjs --append <input.json> <existing.xmind>
+
+# 替换模式（找到同名 L1 节点并替换，用于模块级重跑）
+node .claude/scripts/json-to-xmind.mjs --replace <input.json> <existing.xmind>
 ```
 
 **追加模式行为：**
 - 目标文件的 rootTopic title 与 `meta.project_name` 相同 → 将新 L1 节点追加到该 root 的 children
 - 不匹配 → 作为新 sheet 添加
+
+**替换模式行为：**
+- 在现有文件中查找与 `【version】requirement_name` 同名的 L1 节点 → 替换其 children
+- 未找到同名 L1 → 追加新 L1（降级为 --append 行为）
+- 用于模块级重跑，避免同名 L1 节点重复
 
 **注意：** 所有路径必须是绝对路径或相对于工作目录（WorkSpaces/）的路径。
 

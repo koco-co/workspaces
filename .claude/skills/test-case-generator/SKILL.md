@@ -90,7 +90,7 @@ Step 10: 用户验证后同步（条件执行）
 | PRD 文件列表 | 扫描 Story 目录 | `PRD-26-xxx.md`, `PRD-27-xxx.md` |
 | 项目名称 | 目录路径推断 | `信永中和` / `DTStack` |
 | 源码仓库路径 | CLAUDE.md 路径映射表 | 信永中和无源码 |
-| 输出 XMind 路径 | CLAUDE.md 输出规范 | `zentao-cases/XMind/CustomItem/信永中和/` |
+| 输出 XMind 路径 | CLAUDE.md 输出规范 | `zentao-cases/XMind/定制化/信永中和/` |
 | 历史用例 | 自动查找 | - DTStack 平台模块：`zentao-cases/dtstack-platform/<module>/archive-cases/` 目录下的 .md 文件<br>- 信永中和：`zentao-cases/customItem-platform/信永中和/archive-cases/` 目录下的 .md 文件 |
 | 运行模式 | 用户指令关键词 | `--quick` / 普通 |
 
@@ -113,7 +113,9 @@ zentao-cases/<项目路径>/Requirement/Story-20260322/.qa-state.json
 
 读取状态文件，向用户展示上次进度（中断步骤、已完成/未完成项），询问是否继续。
 
-- 选「是」→ 从 `last_completed_step + 1` 继续
+- 选「是」→ 按以下逻辑恢复：
+  - `awaiting_verification: true`：重新展示 Step 9 的验证提示（XMind 路径来自 `output_xmind`，归档 MD 来自 `archive_md_path`），等待用户回复，执行 Step 10
+  - 否则 → 从 `last_completed_step + 1` 继续
 - 选「否」→ 删除 .qa-state.json，重新开始
 - 不存在 → 创建初始状态文件，开始新流程。
 
@@ -293,7 +295,7 @@ mkdir -p zentao-cases/<项目路径>/Requirement/Story-20260322/temp/
 - 所有 Writer 输出的临时 JSON 文件路径
 - 增强后 PRD 文件路径
 - 源码仓库路径（如有）
-- 历史 XMind 文件路径（用于去重检查）
+- 历史归档 MD 路径（archive-cases/ 目录，用于去重检查）
 - 最终 JSON 输出路径：`temp/final-reviewed.json`
 
 **Reviewer 的质量阈值逻辑（在提示词中已说明）：**
@@ -384,7 +386,7 @@ node .claude/scripts/json-to-archive-md.mjs <temp/final-reviewed.json> [output-d
 2. **读取增强后 PRD**：复用已有的 `-enhanced.md`（不重新增强）
 3. **仅启动指定 Writer**：只重跑目标模块，输出到 `temp/<模块>.json`
 4. **重新执行 Reviewer**：合并所有模块的 JSON（新旧混合），重新评审
-5. **更新 XMind**：使用 `--append` 模式更新现有 .xmind 文件
+5. **更新 XMind**：使用 `--replace` 模式更新现有 .xmind 文件（找到同名 L1 节点替换 children，避免产生重复节点）
 
 注意：模块级重跑不删除 `.qa-state.json`，以便后续继续操作。
 

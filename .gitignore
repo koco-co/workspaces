@@ -17,3 +17,6 @@ node_modules/
 *.orig
 
 gitlab-projects/
+
+# Code analysis reports (HTML output, keep directory structure only)
+Code分析报告/**/*.html
