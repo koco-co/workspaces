@@ -67,7 +67,7 @@ Step 9: 向用户展示增强摘要
 
 接受以下输入：
 
-- 文件绝对路径（如 `/Users/poco/Documents/DTStack/WorkSpaces/zentao-cases/...`）
+- 文件绝对路径（如 `/Users/poco/Documents/DTStack/WorkSpaces/cases/...`）
 - 相对路径（相对于 WorkSpaces 根目录）
 - Story 目录 + PRD 编号（如 `Story-20260322/PRD-26`）
 
@@ -93,7 +93,7 @@ Step 9: 向用户展示增强摘要
 
 **标准 Markdown 格式（目标格式）：**
 ```
-![alt描述](../相对路径/images/图片名.png)
+![alt描述](../相对路径/assets/assets/assets/assets/images/图片名.png)
 ```
 
 两种格式都要识别和提取。统计图片总数，列出所有图片引用，向用户报告：
@@ -108,14 +108,14 @@ Step 9: 向用户展示增强摘要
 
 图片文件搜索顺序：
 
-1. **标准 Markdown 引用的路径直接解析**（如 `![alt](../../../../../images/xxx.png)` 按相对路径解析）
-2. **仓库根目录 `images/`**（所有图片的标准存放位置）
+1. **标准 Markdown 引用的路径直接解析**（如 `![alt](../../../../../assets/assets/assets/assets/images/xxx.png)` 按相对路径解析）
+2. **仓库根目录 `assets/images/`**（所有图片的标准存放位置）
 3. PRD 文件同级的 `resources/` 目录
 4. PRD 文件同级的 `media/` 目录
 5. PRD 文件同级目录（直接同级）
 6. Obsidian vault 的全局 attachments 目录（如 `_resources/`）
 
-> **注意**：如果图片不在根目录 `images/` 中，Step 7 会自动将其移入。
+> **注意**：如果图片不在根目录 `assets/images/` 中，Step 7 会自动将其移入。
 
 ---
 
@@ -205,33 +205,33 @@ done
 
 ### 7.2 图片存放位置
 
-所有图片统一存放到仓库根目录 `images/`：
-- 如果图片已在 `images/` 目录中，直接重命名
-- 如果图片在其他位置（resources/、media/、同级目录），移动到 `images/` 并重命名
+所有图片统一存放到仓库根目录 `assets/images/`：
+- 如果图片已在 `assets/images/` 目录中，直接重命名
+- 如果图片在其他位置（resources/、media/、同级目录），移动到 `assets/images/` 并重命名
 
 ### 7.3 引用格式标准化（关键）
 
 **无论原始 PRD 使用何种图片格式，enhanced PRD 中必须统一输出标准 Markdown 格式：**
 
 ```markdown
-![语义化中文描述](相对路径/images/语义化文件名.png)
+![语义化中文描述](相对路径/assets/assets/assets/assets/images/语义化文件名.png)
 ```
 
-**相对路径计算方法**：从 enhanced PRD 文件所在目录到仓库根目录 `images/` 的相对路径。
+**相对路径计算方法**：从 enhanced PRD 文件所在目录到仓库根目录 `assets/images/` 的相对路径。
 
-示例（PRD 在 `zentao-cases/customItem-platform/信永中和/Requirement/Story-20260322/` 下）：
+示例（PRD 在 `cases/requirements/xyzh/Story-20260322/` 下）：
 
 ```markdown
 # Obsidian 原始格式（输入）
 ![[Pasted image 20260322143521.png]]
 
 # 标准 Markdown 格式（输出）
-![质量问题台账列表页](../../../../../images/质量问题台账-列表页面.png)
+![质量问题台账列表页](../../../../../assets/assets/assets/assets/images/质量问题台账-列表页面.png)
 ```
 
 ### 7.4 操作步骤
 
-1. 使用 Bash 重命名/移动图片文件到 `images/` 目录
+1. 使用 Bash 重命名/移动图片文件到 `assets/images/` 目录
 2. 如同名文件已存在，在新名后加 `-2`、`-3` 等后缀
 3. 在 enhanced PRD 中使用标准 Markdown 格式引用（自动计算相对路径）
 
@@ -273,7 +273,7 @@ done
 **增强内容（不删除原内容，只新增/转换）：**
 
 1. **图片格式标准化**：所有 `![[]]` Obsidian 格式转换为 `![]()` 标准 Markdown 格式
-2. **图片路径标准化**：统一为从文件到根目录 `images/` 的正确相对路径
+2. **图片路径标准化**：统一为从文件到根目录 `assets/images/` 的正确相对路径
 3. **图片文件名语义化**：时间戳/UUID/MD5 等无意义名称替换为中文语义化名称
 4. 在每张图片引用的下方插入 AI 结构化描述块
 5. 如原文缺失关键章节（字段定义表、交互规则），参考 `references/prd-template.md` 补充章节标题和空框架

@@ -53,12 +53,12 @@ YYYYMM-<功能名>.xmind
 
 | project_name | 输出目录 |
 |---|---|
-| 信永中和 | `zentao-cases/XMind/定制化/信永中和/` |
-| DTStack 离线开发 | `zentao-cases/XMind/离线开发/` |
-| DTStack 数据资产 | `zentao-cases/XMind/数据资产/` |
-| DTStack 统一查询 | `zentao-cases/XMind/统一查询/` |
-| DTStack 变量中心 | `zentao-cases/XMind/变量中心/` |
-| 其他 | `zentao-cases/XMind/` |
+| 信永中和 | `cases/xmind/custom/xyzh/` |
+| DTStack 离线开发 | `cases/xmind/batch-works/` |
+| DTStack 数据资产 | `cases/xmind/data-assets/` |
+| DTStack 统一查询 | `cases/xmind/data-query/` |
+| DTStack 变量中心 | `cases/xmind/variable-center/` |
+| 其他 | `cases/xmind/` |
 
 ---
 
@@ -129,16 +129,26 @@ unzip -p <output.xmind> content.json | python3 -m json.tool | head -30
 
 ---
 
-## 七、延迟清理说明
+## 七、清理策略
+
+### 作为 test-case-generator 子流程
 
 > ⚠️ 当作为 test-case-generator 流程的一部分执行时，**不在此步清理临时文件**。
 > 临时文件（temp/ 和 .qa-state.json）的清理延迟到 Step 10（用户验证通过后）执行。
 
-当独立使用 xmind-converter 时（非工作流调用），仍可手动清理：
+### 独立使用时
+
+当独立使用 xmind-converter 时（非工作流调用），转换完成后自动提示用户是否清理：
+
+1. 检查输入 JSON 是否位于 `temp/` 目录下
+2. 如果是，输出提示：`临时文件已转换完成，是否删除 temp/ 目录？[是/否]`
+3. 如不在 `temp/` 目录下，不提示清理
+
+手动清理命令：
 
 ```bash
-rm -rf zentao-cases/<项目路径>/Requirement/<Story>/temp/
-rm -f zentao-cases/<项目路径>/Requirement/<Story>/.qa-state.json
+rm -rf cases/requirements/<project>/<Story>/temp/
+rm -f cases/requirements/<project>/<Story>/.qa-state.json
 ```
 
 ---

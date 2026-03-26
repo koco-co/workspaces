@@ -130,12 +130,12 @@ Writer Subagent 输出的 JSON 文件必须严格符合本 Schema。
 Writer Subagent 输出的临时 JSON 文件命名（按 Story 隔离）：
 
 ```
-zentao-cases/<项目路径>/Requirement/<Story>/temp/<模块简称>.json
+cases/requirements/<project>/<Story>/temp/<模块简称>.json
 ```
 
 示例：
-- `zentao-cases/customItem-platform/信永中和/Requirement/Story-20260322/temp/list.json`
-- `zentao-cases/customItem-platform/信永中和/Requirement/Story-20260322/temp/create.json`
+- `cases/requirements/xyzh/Story-20260322/temp/list.json`
+- `cases/requirements/xyzh/Story-20260322/temp/create.json`
 
 ---
 
@@ -179,7 +179,7 @@ Checklist 字段说明：
 每步完成后写入 Story 目录，用于中断恢复：
 
 ```
-zentao-cases/<项目路径>/Requirement/<Story>/.qa-state.json
+cases/requirements/<project>/<Story>/.qa-state.json
 ```
 
 ```json

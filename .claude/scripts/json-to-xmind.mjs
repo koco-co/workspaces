@@ -89,6 +89,29 @@ function validateJson(data) {
   return { totalCases, emptyStepCases, emptyExpectedCases, noStepsCases }
 }
 
+/** Validate JSON structure has required fields */
+function validateStructure(data) {
+  const errors = []
+  if (!data || typeof data !== 'object') {
+    errors.push('JSON 数据不是有效对象')
+    return errors
+  }
+  if (!data.meta || typeof data.meta !== 'object') {
+    errors.push('缺少 meta 字段')
+  } else {
+    if (!data.meta.project_name) errors.push('meta.project_name 缺失')
+    if (!data.meta.requirement_name) errors.push('meta.requirement_name 缺失')
+  }
+  if (!Array.isArray(data.modules) || data.modules.length === 0) {
+    errors.push('modules 字段缺失或为空数组')
+  } else {
+    data.modules.forEach((mod, i) => {
+      if (!mod.name) errors.push(`modules[${i}].name 缺失`)
+    })
+  }
+  return errors
+}
+
 function buildCaseTopic(testCase) {
   const marker = PRIORITY_MAP[testCase.priority] ?? Marker.Priority.p3
   const steps = (testCase.steps ?? []).map((s, idx) => {
@@ -180,15 +203,13 @@ function mergeJsonFiles(inputPaths) {
 async function appendToExisting(data, outputPath) {
   const { default: JSZip } = await import('jszip')
 
-  // 1. 生成新 workbook 到临时文件，提取 L1 节点 JSON
-  const tempPath = resolve(outputPath) + '.tmp_append'
-  writeLocalFile(buildXmind(data), tempPath)
-
-  const tempZip = await JSZip.loadAsync(readFileSync(tempPath))
+  // 1. 生成新 workbook 的 buffer，直接解析提取 L1 节点 JSON（避免 writeLocalFile 的异步 bug）
+  const newWb = buildXmind(data)
+  const newBuffer = await newWb.archive()
+  const tempZip = await JSZip.loadAsync(Buffer.from(newBuffer))
   const newContentStr = await tempZip.file('content.json').async('string')
   const newSheets = JSON.parse(newContentStr)
   const newL1Nodes = newSheets[0]?.rootTopic?.children?.attached ?? []
-  unlinkSync(tempPath)
 
   // 2. 读取现有 .xmind
   const existingZip = await JSZip.loadAsync(readFileSync(resolve(outputPath)))
@@ -229,15 +250,13 @@ async function replaceInExisting(data, outputPath) {
     ? `【${data.meta.version}】${data.meta.requirement_name}`
     : data.meta.requirement_name
 
-  // 1. 生成新 workbook 到临时文件，提取新 L1 节点 JSON
-  const tempPath = resolve(outputPath) + '.tmp_replace'
-  writeLocalFile(buildXmind(data), tempPath)
-
-  const tempZip = await JSZip.loadAsync(readFileSync(tempPath))
+  // 1. 生成新 workbook 的 buffer，直接解析提取新 L1 节点 JSON（避免 writeLocalFile 的异步 bug）
+  const newWb = buildXmind(data)
+  const newBuffer = await newWb.archive()
+  const tempZip = await JSZip.loadAsync(Buffer.from(newBuffer))
   const newContentStr = await tempZip.file('content.json').async('string')
   const newSheets = JSON.parse(newContentStr)
   const newL1Node = newSheets[0]?.rootTopic?.children?.attached?.[0]
-  unlinkSync(tempPath)
 
   if (!newL1Node) {
     throw new Error('无法从新 JSON 中提取 L1 节点')
@@ -302,24 +321,26 @@ const inputPaths = filteredArgs.slice(0, filteredArgs.length - 1)
 
 try {
   const data = mergeJsonFiles(inputPaths)
+
+  const structErrors = validateStructure(data)
+  if (structErrors.length > 0) {
+    console.error('❌ JSON 结构校验失败：')
+    structErrors.forEach(e => console.error(`  - ${e}`))
+    process.exit(1)
+  }
+
   const validation = validateJson(data)
 
   if (replaceMode && existsSync(resolve(outputPath))) {
-    replaceInExisting(data, outputPath)
-      .then(() => console.log(`XMind 文件已更新（替换模式）: ${resolve(outputPath)}`))
-      .catch((err) => {
-        console.error('替换失败:', err.message)
-        process.exit(1)
-      })
+    await replaceInExisting(data, outputPath)
+    console.log(`XMind 文件已更新（替换模式）: ${resolve(outputPath)}`)
   } else if (appendMode && existsSync(resolve(outputPath))) {
-    appendToExisting(data, outputPath)
-      .then(() => console.log(`XMind 文件已更新（追加模式）: ${resolve(outputPath)}`))
-      .catch((err) => {
-        console.error('追加失败:', err.message)
-        process.exit(1)
-      })
+    await appendToExisting(data, outputPath)
+    console.log(`XMind 文件已更新（追加模式）: ${resolve(outputPath)}`)
   } else {
-    writeLocalFile(buildXmind(data), resolve(outputPath))
+    const wb = buildXmind(data)
+    const buf = await wb.archive()
+    writeFileSync(resolve(outputPath), Buffer.from(buf))
     console.log(`XMind 文件已生成: ${resolve(outputPath)}`)
   }
 } catch (err) {

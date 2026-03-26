@@ -27,17 +27,29 @@
 ## 历史用例参考（如有）
 
 > 历史用例已预先转化为 Markdown 格式，存放在各模块的 `archive-cases/` 目录：
-> - DTStack 平台：`zentao-cases/dtstack-platform/<module>/archive-cases/`
-> - 信永中和：`zentao-cases/customItem-platform/信永中和/archive-cases/`
+> - DTStack 平台：`cases/archive/<module>/`
+> - 信永中和：`cases/archive/custom/xyzh/`
 > 直接读取对应目录下的 .md 文件即可。
 
 以下功能点已在历史用例中覆盖，你的输出中不得重复编写：
 [列出已覆盖的功能点，或写「无历史用例参考」]
 
-## 源码验证（如有）
+## 源码仓库（如有）
 
-以下是从源码中提取的实际按钮名称和字段名称，步骤中必须使用这些名称：
-[列出 Grep 结果，或写「无源码参考」]
+源码路径：[源码仓库绝对路径，或写「无源码参考」]
+
+**源码分析要求**（有源码时必须执行）：
+
+1. **接口与字段名验证**：Grep 搜索 Controller 中的接口路径和方法名，确认 PRD 中的按钮/操作对应实际接口
+2. **DTO/VO 字段名提取**：找到请求/响应 DTO 类，提取字段名及其注解（`@NotNull`、`@Length`、`@Pattern` 等），确保步骤中使用的字段名与实际一致
+3. **校验规则提取**：从 DTO 校验注解和 Service 层校验逻辑中提取异常边界条件（如最大长度、必填规则、枚举范围），用于设计异常和边界用例
+4. **业务逻辑分支**：阅读 Service 层核心方法，识别 if/else 分支和异常抛出点，确保每个重要分支都有对应用例覆盖
+5. **联动关系识别**：检查 Service 层的跨模块调用（如新增后触发审批流程、状态变更后触发通知），在预期结果中描述联动效果
+
+编排器预提取的关键信息：
+[列出 Grep 搜索结果：按钮名称、字段名称、接口路径等]
+
+**源码只读规则**：repos/ 下仅允许 grep、find、cat、git log/diff/blame 操作，严禁修改任何文件。
 
 ## 核心编写规则（必须严格遵守）
 
@@ -51,7 +63,7 @@
     "version": "[版本]",
     "requirement_name": "[需求名]",
     "requirement_id": "[PRD编号]",
-    "prd_path": "zentao-cases/.../PRD-xx-enhanced.md",
+    "prd_path": "cases/.../PRD-xx-enhanced.md",
     "generated_at": "[ISO8601时间戳]",
     "agent_id": "writer-[模块简称]"
   },
@@ -160,7 +172,7 @@
 
 ## 输出要求
 
-将 JSON 写入文件：[临时文件路径，如 zentao-cases/customItem-platform/信永中和/temp/list.json]
+将 JSON 写入文件：[临时文件路径，如 cases/requirements/xyzh/temp/list.json]
 
 然后输出简短摘要：
 - 共编写 X 条用例（P0: N / P1: N / P2: N）

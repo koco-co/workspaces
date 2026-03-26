@@ -4,12 +4,12 @@ import os
 import re
 import json
 
-BASE_DIR = "/Users/poco/Documents/DTStack/WorkSpaces"
-ZENTAO_DIR = os.path.join(BASE_DIR, "zentao-cases")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CASES_DIR = os.path.join(BASE_DIR, "cases")
 
 results = []
 
-for root, dirs, files in os.walk(ZENTAO_DIR):
+for root, dirs, files in os.walk(CASES_DIR):
     # Skip non-MD processing for non-relevant dirs
     for fname in sorted(files):
         if not fname.endswith(".md"):

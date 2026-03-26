@@ -10,6 +10,9 @@ node_modules/
 **/temp/
 *.tmp
 
+# Trash (soft-delete staging area)
+.trash/
+
 # QA workflow state files (auto-deleted on completion, but ignore if left over)
 **/.qa-state.json
 
@@ -19,4 +22,4 @@ node_modules/
 gitlab-projects/
 
 # Code analysis reports (HTML output, keep directory structure only)
-Code分析报告/**/*.html
+reports/**/*.html
