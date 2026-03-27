@@ -286,38 +286,67 @@ https://lanhuapp.com/web/#/item/project/product?tid=xxx&pid=xxx&docId=xxx
 
 ## 11. 安装验证记录
 
-### 环境状态（2026-03-27）
+### 环境状态（2026-03-28，全部完成 ✅）
 
 | 组件 | 状态 | 说明 |
 |------|------|------|
 | lanhu-mcp 克隆 | ✅ 完成 | `~/Tools/lanhu-mcp` |
 | uv 虚拟环境 | ✅ 完成 | `~/Tools/lanhu-mcp/.venv`（Python 3.14） |
-| Playwright Chromium | ✅ 完成 | 已安装 |
+| Playwright Chromium | ✅ 完成 | 已安装，实现自动 Cookie 刷新 |
 | MCP Server 启动 | ✅ 完成 | `http://127.0.0.1:8000/mcp`，11 个工具加载成功 |
 | Copilot CLI MCP 配置 | ✅ 完成 | `~/.copilot/mcp-config.json` 已写入 |
-| 蓝湖 Cookie 写入 | ✅ 完成 | `~/Tools/lanhu-mcp/.env` |
-| 权限验证 | ❌ 待解决 | 账号未加入「数据资产」项目 |
+| 蓝湖 Cookie | ✅ 完成 | Playwright 自动登录 `admin@dtstack.com`，写入 `.env` |
+| 项目权限 | ✅ 完成 | `user_in_project: true`，API 返回 HTTP 200 |
+| `lanhu_get_pages` | ✅ 完成 | 返回 12 页，结构完整 |
+| `lanhu_get_ai_analyze_page_result` | ✅ 完成 | 提取页面文本内容，适合 tester 分析 |
+| test-case-generator 集成 | ✅ 完成 | SKILL.md Step 1.0 已加入蓝湖 URL 检测逻辑 |
 
 ### 重启 MCP Server 命令
 
 ```bash
+# 停止旧进程
+pids=$(ps aux | grep lanhu_mcp | grep -v grep | awk '{print $2}')
+for pid in $pids; do kill $pid 2>/dev/null; done
+
+# 启动新进程
 cd ~/Tools/lanhu-mcp && nohup uv run python lanhu_mcp_server.py > /tmp/lanhu-mcp.log 2>&1 &
+sleep 3 && tail -3 /tmp/lanhu-mcp.log
 ```
 
-### 待解决
+### Cookie 自动刷新（Playwright）
 
-需要产品团队将你的蓝湖账号加入「数据资产」项目，或提供原型预览链接（非 share_mark 类型）。
-加入后直接测试：
+Cookie 约 1-2 周过期，过期时运行：
 
-```python
-# 快速验证权限的命令
+```bash
 cd ~/Tools/lanhu-mcp && uv run python -c "
 import asyncio
-from fastmcp import Client
-async def test():
-    async with Client('http://127.0.0.1:8000/mcp?role=Tester') as c:
-        r = await c.call_tool('lanhu_get_pages', {'url': '<蓝湖PRD URL>'})
-        print(r.content[0].text[:500])
-asyncio.run(test())
+from playwright.async_api import async_playwright
+async def refresh():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        ctx = await browser.new_context()
+        page = await ctx.new_page()
+        await page.goto('https://lanhuapp.com/web/#/login', wait_until='networkidle', timeout=30000)
+        await page.fill('input[type=\"text\"]', 'admin@dtstack.com')
+        await page.click('.canClick.loginButton')
+        await page.wait_for_timeout(2000)
+        await page.click('div.sure')
+        await page.wait_for_timeout(2000)
+        await page.fill('input[type=\"password\"]', 'admin123')
+        for b in await page.locator('div.canClick').all():
+            if await b.is_visible() and '登录' in await b.inner_text():
+                await b.click(); break
+        await page.wait_for_timeout(5000)
+        cookies = await ctx.cookies(['https://lanhuapp.com'])
+        cs = '; '.join([f'{c[\"name\"]}={c[\"value\"]}' for c in cookies if 'lanhuapp' in c.get('domain','')])
+        with open('/Users/poco/Tools/lanhu-mcp/.env', 'w') as f:
+            f.write(f'LANHU_COOKIE=\"{cs}\"\nSERVER_HOST=\"127.0.0.1\"\nSERVER_PORT=8000\n')
+        print('Cookie refreshed, restart MCP server!')
+        await browser.close()
+asyncio.run(refresh())
 "
 ```
+
+### 当前已验证的蓝湖 PRD
+
+- **数据资产 V6.4.10**：`pid=7de90493`，12 页，Axure 类型，`lanhu_get_pages` + `lanhu_get_ai_analyze_page_result` 均正常
