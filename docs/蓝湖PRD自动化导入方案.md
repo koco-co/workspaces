@@ -281,3 +281,43 @@ https://lanhuapp.com/web/#/item/project/product?tid=xxx&pid=xxx&docId=xxx
 
 *文档创建时间：2026-03-26*  
 *参考项目：https://github.com/dsphper/lanhu-mcp*
+
+---
+
+## 11. 安装验证记录
+
+### 环境状态（2026-03-27）
+
+| 组件 | 状态 | 说明 |
+|------|------|------|
+| lanhu-mcp 克隆 | ✅ 完成 | `~/Tools/lanhu-mcp` |
+| uv 虚拟环境 | ✅ 完成 | `~/Tools/lanhu-mcp/.venv`（Python 3.14） |
+| Playwright Chromium | ✅ 完成 | 已安装 |
+| MCP Server 启动 | ✅ 完成 | `http://127.0.0.1:8000/mcp`，11 个工具加载成功 |
+| Copilot CLI MCP 配置 | ✅ 完成 | `~/.copilot/mcp-config.json` 已写入 |
+| 蓝湖 Cookie 写入 | ✅ 完成 | `~/Tools/lanhu-mcp/.env` |
+| 权限验证 | ❌ 待解决 | 账号未加入「数据资产」项目 |
+
+### 重启 MCP Server 命令
+
+```bash
+cd ~/Tools/lanhu-mcp && nohup uv run python lanhu_mcp_server.py > /tmp/lanhu-mcp.log 2>&1 &
+```
+
+### 待解决
+
+需要产品团队将你的蓝湖账号加入「数据资产」项目，或提供原型预览链接（非 share_mark 类型）。
+加入后直接测试：
+
+```python
+# 快速验证权限的命令
+cd ~/Tools/lanhu-mcp && uv run python -c "
+import asyncio
+from fastmcp import Client
+async def test():
+    async with Client('http://127.0.0.1:8000/mcp?role=Tester') as c:
+        r = await c.call_tool('lanhu_get_pages', {'url': '<蓝湖PRD URL>'})
+        print(r.content[0].text[:500])
+asyncio.run(test())
+"
+```
