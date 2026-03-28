@@ -47,6 +47,7 @@ rm -f cases/requirements/<requirements-root>/Story-YYYYMMDD/PRD-XX-<功能名>-e
 
 ```text
 qa-flow/
+├── repo-branch-mapping.yaml        # QA 维护的 DTStack repo/branch 映射
 ├── CLAUDE.md                      # 权威工作流手册（本文件）
 ├── README.md                      # 入口导览
 ├── cases/
@@ -69,12 +70,13 @@ qa-flow/
 │   │   └── xyzh/
 │   └── history/
 │       └── xyzh/
-├── repos/                         # 源码仓库（只读）
+├── .repos/                        # 隐藏源码仓库（只读）
 ├── reports/
 │   ├── bugs/
 │   └── conflicts/
 ├── assets/
 │   └── images/
+├── tools/                         # 内置第三方工具（如 lanhu-mcp）
 └── .claude/
     ├── config.json                # 模块 / 仓库 / 报告路径 source of truth
     ├── harness/                   # Harness Phase 1 控制平面
@@ -105,6 +107,28 @@ qa-flow/
 
 `用户输入 → Skill 路由 → Harness workflow manifest → delegate 执行 → latest-* 快捷链接验收`
 
+当前 DTStack 流程在蓝湖导入后新增两个强制执行层：
+
+- `source-sync`：读取 `repo-branch-mapping.yaml`，根据 `开发版本` 将 `.repos/` 中 backend/frontend 仓库切到目标分支。
+- `prd-formalizer`：结合蓝湖原文与源码上下文生成正式需求文档，再交给 `prd-enhancer` 做增强与健康度预检。
+
+---
+
+## DTStack 与 XYZH 分流规则（必须记住）
+
+### DTStack
+
+- **PRD 只是线索，不是权威。** 如产品文档质量不足，必须以 `.repos/` 中目标分支源码为准理解真实逻辑、按钮名、菜单名、字段名与影响面。
+- 在 PRD 形式化、Writer、Reviewer 前，必须先完成 `source-sync`；不得直接拿默认分支或未确认分支写用例。
+- `repo-branch-mapping.yaml` 是 DTStack 的 branch/source contract source of truth。
+- Archive 默认按版本目录落盘，例如 `cases/archive/data-assets/v6.4.10/`；单需求文件名优先使用需求/页面标题。
+- XMind 输出遵循 DTStack 样例风格：`<项目><版本>迭代用例` root、L1 携带需求编号/labels，并默认折叠。
+
+### XYZH / 定制
+
+- 继续沿用现有定制规范，不强制引入 DTStack 的源码分支同步与版本目录归档。
+- `xyzh` 仍是模块 key，`custom/xyzh` 仅是文件系统路径别名。
+
 ---
 
 ## 模块与路径命名约定
@@ -122,6 +146,7 @@ qa-flow/
 - `custom/xyzh` 是 **文件系统路径别名**。它只用于 `cases/xmind/` 与 `cases/archive/` 下的目录层级，不是配置 key。
 - `cases/history/xyzh/` 仍使用 `xyzh`，不会写成 `cases/history/custom/xyzh/`。
 - `cases/archive/` 是固定归档根目录。旧文档中的 `archive-cases/` 一律视为 `cases/archive/`，不要新建平行目录；若某些 Skill / Prompt 仍写旧名，也仅是文案遗留，不代表真实目录。
+- DTStack 需求使用根目录 `repo-branch-mapping.yaml` 维护 repo profile 与开发版本 → 分支映射。
 - 例：命令参数写 `--module xyzh`；产物路径写 `cases/xmind/custom/xyzh/202603-Story-20260322.xmind`。
 
 ---
@@ -134,6 +159,7 @@ Story 和 PRD 输入遵循以下目录 contract：
 - PRD 原文：`PRD-XX-<功能名>.md`
 - PRD 增强版：`PRD-XX-<功能名>-enhanced.md`
 - 断点状态：Story 目录内 `.qa-state.json`
+- DTStack 形式化 PRD 可按需求页面拆分，文件名建议直接使用页面/需求标题，供后续生成 PRD 级 XMind 与 Archive。
 
 输出按 **PRD 级** 与 **Story 级** 两类管理：
 
@@ -177,6 +203,15 @@ Story 和 PRD 输入遵循以下目录 contract：
 | 15%–40% | 自动修正 + 质量警告 |
 | > 40% | 阻断，等待用户决策 |
 
+### DTStack 加强链路
+
+当模块类型为 DTStack 时，在进入 `prd-enhancer` 前强制执行：
+
+1. 读取蓝湖原文 / PRD 原文中的 `开发版本`
+2. 调用 `sync-source-repos.mjs`，根据 `repo-branch-mapping.yaml` 切换 `.repos/` 目标分支
+3. 调用 `prd-formalizer` 结合源码生成正式需求文档
+4. 再进入 PRD 增强、Writer、Reviewer
+
 ---
 
 ## 测试用例编写规范
@@ -197,6 +232,12 @@ Story 和 PRD 输入遵循以下目录 contract：
 - 第一个步骤必须以 `进入【xxx】页面` 开头。
 - 步骤必须写明操作对象、操作行为和实际输入值；禁止 `尝试提交`、`填写相关信息`、`选择某状态` 这类模糊表达。
 - 预期结果必须是可观察的系统行为；禁止 `操作成功`、`显示正确`、`提交失败` 这类空泛结论。
+
+### DTStack 额外规则
+
+- 前置条件必须尽量包含真实执行上下文：数据源类型、数据库/schema、数据表、关键字段，必要时补充建表/准备数据说明。
+- 步骤必须优先使用结构化块，例如 `点击【新建规则集】` + 表单字段清单，不得把多个输入动作压缩成模糊短句。
+- 按钮名称、菜单名称、字段名称必须优先以源码与原型图交集为准；出现冲突时，应明确标注“PRD 未说明，基于源码推断”。
 
 ### 设计原则
 
@@ -225,6 +266,7 @@ Story 和 PRD 输入遵循以下目录 contract：
 - **Story 级输出**：`YYYYMM-Story-YYYYMMDD.xmind`
 - Archive Markdown 与对应 XMind 默认共享 basename，仅将扩展名改为 `.md`
 - 新输出遵循以上命名；历史遗留文件名继续保留，不做强制迁移
+- DTStack Archive 如识别到语义版本（如 `v6.4.10`），默认进入对应版本目录。
 
 ### 输出路径
 
@@ -244,6 +286,7 @@ Story 和 PRD 输入遵循以下目录 contract：
 - XMind 输出成功后会刷新仓库根目录 `latest-output.xmind` 符号链接，并始终指向最近一次实际生成或更新的 XMind 文件。
 - 增强版 PRD 输出后，应刷新仓库根目录 `latest-prd-enhanced.md` 符号链接，指向最近一次增强成功的 `*-enhanced.md`。
 - Bug / 冲突 HTML 报告输出后，应分别刷新 `latest-bug-report.html` 与 `latest-conflict-report.html`。
+- DTStack `data-assets` 输出优先参考 `cases/xmind/data-assets/202603-数据资产v6.4.9.xmind` 的 root/L1/labels/folded 风格。
 
 ---
 
@@ -261,8 +304,10 @@ Story 和 PRD 输入遵循以下目录 contract：
   - `xyzh` CSV → `cases/archive/custom/xyzh/<version>/`（若 CSV 来自版本目录）；无版本信息时可直接落在 `cases/archive/custom/xyzh/`
 - 旧文档、Skill 文案或 Prompt 中的 `archive-cases/` 是历史叫法，统一映射到 `cases/archive/`，不要新建同级目录。
 - 当前脚本实际落盘也以 `cases/archive/` 为准；`archive-cases/` 只作为兼容阅读旧文案时的解释。
+- DTStack `data-assets` 新归档优先落到版本目录，如 `cases/archive/data-assets/v6.4.10/`。
 - 从 XMind / final JSON 生成的 Archive Markdown，默认与源文件共享 basename。
 - 当输入来源可识别原始 PRD 文件名时，Archive Markdown 应优先保留 `PRD-XX-<功能名>.md` 命名，降低需求追踪成本。
+- 当输入是 DTStack 形式化需求页时，Archive Markdown 应优先使用具体需求标题命名，而不是整份蓝湖文档标题。
 - Story 聚合 Markdown 只在明确需要汇总时使用；默认优先维持“一份 PRD → 一份 MD”。
 - 归档文件供 Brainstorming、Writer、Reviewer 去重和引用，**不要手动移动到其他模块目录**。
 
@@ -279,41 +324,41 @@ cd .claude/scripts && node convert-history-cases.mjs --force
 
 ## 源码仓库详细清单
 
-> 仓库路径以 `.claude/config.json` 的 `repos` 字段为准；`repos/` 下仓库只读。
+> 仓库路径以 `.claude/config.json` 的 `repos` 字段为准；`.repos/` 下仓库只读。
 
 ### 标准 DTStack 仓库
 
 | 仓库 key | 路径 |
 | -------- | ---- |
-| dt-center-assets | `repos/dt-insight-web/dt-center-assets/` |
-| dt-center-metadata | `repos/dt-insight-web/dt-center-metadata/` |
-| DAGScheduleX | `repos/dt-insight-plat/DAGScheduleX/` |
-| datasourcex | `repos/dt-insight-plat/datasourcex/` |
-| dt-center-ide | `repos/dt-insight-plat/dt-center-ide/` |
-| dt-public-service | `repos/dt-insight-plat/dt-public-service/` |
-| SQLParser | `repos/dt-insight-plat/SQLParser/` |
-| engine-plugins | `repos/dt-insight-engine/engine-plugins/` |
-| flink | `repos/dt-insight-engine/flink/` |
-| dt-insight-studio-front | `repos/dt-insight-front/dt-insight-studio/` |
+| dt-center-assets | `.repos/dt-insight-web/dt-center-assets/` |
+| dt-center-metadata | `.repos/dt-insight-web/dt-center-metadata/` |
+| DAGScheduleX | `.repos/dt-insight-plat/DAGScheduleX/` |
+| datasourcex | `.repos/dt-insight-plat/datasourcex/` |
+| dt-center-ide | `.repos/dt-insight-plat/dt-center-ide/` |
+| dt-public-service | `.repos/dt-insight-plat/dt-public-service/` |
+| SQLParser | `.repos/dt-insight-plat/SQLParser/` |
+| engine-plugins | `.repos/dt-insight-engine/engine-plugins/` |
+| flink | `.repos/dt-insight-engine/flink/` |
+| dt-insight-studio-front | `.repos/dt-insight-front/dt-insight-studio/` |
 
 ### 定制 / CustomItem 仓库
 
 | 仓库 key | 路径 |
 | -------- | ---- |
-| dt-insight-studio-custom | `repos/CustomItem/dt-insight-studio/` |
-| dt-center-assets-custom | `repos/CustomItem/dt-center-assets/` |
-| dt-center-metadata-custom | `repos/CustomItem/dt-center-metadata/` |
-| dt-public-service-custom | `repos/CustomItem/dt-public-service/` |
-| DatasourceX-custom | `repos/CustomItem/DatasourceX/` |
-| dagschedulex-custom | `repos/CustomItem/dagschedulex/` |
-| SQLParser-custom | `repos/CustomItem/SQLParser/` |
-| dt-center-ide-custom | `repos/CustomItem/dt-center-ide/` |
+| dt-insight-studio-custom | `.repos/CustomItem/dt-insight-studio/` |
+| dt-center-assets-custom | `.repos/CustomItem/dt-center-assets/` |
+| dt-center-metadata-custom | `.repos/CustomItem/dt-center-metadata/` |
+| dt-public-service-custom | `.repos/CustomItem/dt-public-service/` |
+| DatasourceX-custom | `.repos/CustomItem/DatasourceX/` |
+| dagschedulex-custom | `.repos/CustomItem/dagschedulex/` |
+| SQLParser-custom | `.repos/CustomItem/SQLParser/` |
+| dt-center-ide-custom | `.repos/CustomItem/dt-center-ide/` |
 
 ### QA 工具仓库
 
 | 仓库 key | 路径 |
 | -------- | ---- |
-| dt-insight-qa | `repos/dt-insight-qa/` |
+| dt-insight-qa | `.repos/dt-insight-qa/` |
 
 ### 报错堆栈 → 默认仓库 key
 
@@ -328,7 +373,7 @@ cd .claude/scripts && node convert-history-cases.mjs --force
 | `com.dtstack.sql.parser` | `SQLParser` |
 | `com.dtstack.engine` | `engine-plugins` |
 
-> 前端报错通常优先查看 `dt-insight-studio-front`；定制前后端需求优先查看 `repos/CustomItem/` 下对应仓库。
+> 前端报错通常优先查看 `dt-insight-studio-front`；定制前后端需求优先查看 `.repos/CustomItem/` 下对应仓库。
 
 ---
 
@@ -336,7 +381,7 @@ cd .claude/scripts && node convert-history-cases.mjs --force
 
 > 细则见 `.claude/rules/repo-safety.md`。
 
-- `repos/` 下所有仓库为只读引用，git 仓库位于二级子目录。
+- `.repos/` 下所有仓库为只读引用，git 仓库位于二级子目录。
 - 允许：`git fetch`、`git pull`、`git checkout`、`git log/show/diff/blame`、`grep/find/cat/view`。
 - 禁止：`git push`、`git commit`、修改仓库文件、`git reset --hard`、`git rebase`、`git merge` 等破坏性操作。
 - Bug / 冲突分析前必须先：
@@ -344,7 +389,8 @@ cd .claude/scripts && node convert-history-cases.mjs --force
   2. 确认目标分支
   3. 执行 `git fetch && git checkout && git pull`
   4. 记录最新 commit，再开始分析
-- `repos/CustomItem/` 下的定制仓库执行同样的只读规则。
+- DTStack 用例生成同样必须先完成分支确认；默认通过 `repo-branch-mapping.yaml` + `sync-source-repos.mjs` 自动解析并切换。
+- `.repos/CustomItem/` 下的定制仓库执行同样的只读规则。
 
 ---
 
@@ -357,7 +403,7 @@ cd .claude/scripts && node convert-history-cases.mjs --force
 | `.claude/rules/archive-format.md` | Archive Markdown 模板、层级映射、历史来源落盘规则 | `cases/archive/**` |
 | `.claude/rules/directory-naming.md` | 模块 key、路径别名、Story/PRD/产物命名规则 | 全局 |
 | `.claude/rules/image-conventions.md` | 图片引用、路径、压缩规则 | `assets/**` |
-| `.claude/rules/repo-safety.md` | 源码仓库只读规则 | `repos/**` |
+| `.claude/rules/repo-safety.md` | 源码仓库只读规则 | `.repos/**` |
 | `.claude/config.json` | 模块、仓库、报告目录的 source of truth | 全局 |
 
 ---

@@ -58,16 +58,16 @@ maxTurns: 100
 
 | 报错特征 / Java 包名           | 仓库路径                                    |
 | ------------------------------ | ------------------------------------------- |
-| `com.dtstack.center.assets`    | `repos/dt-insight-web/dt-center-assets/`    |
-| `com.dtstack.center.metadata`  | `repos/dt-insight-web/dt-center-metadata/`  |
-| `com.dtstack.dagschedulex`     | `repos/dt-insight-plat/DAGScheduleX/`       |
-| `com.dtstack.datasource`       | `repos/dt-insight-plat/datasourcex/`        |
-| `com.dtstack.ide`              | `repos/dt-insight-plat/dt-center-ide/`      |
-| `com.dtstack.public.service`   | `repos/dt-insight-plat/dt-public-service/`  |
-| `com.dtstack.sql.parser`       | `repos/dt-insight-plat/SQLParser/`          |
-| `com.dtstack.engine`           | `repos/dt-insight-engine/engine-plugins/`   |
-| 前端报错 / `dt-insight-studio` | `repos/dt-insight-front/dt-insight-studio/` |
-| 定制项目（信永中和等）         | `repos/CustomItem/<对应仓库>/`              |
+| `com.dtstack.center.assets`    | `.repos/dt-insight-web/dt-center-assets/`    |
+| `com.dtstack.center.metadata`  | `.repos/dt-insight-web/dt-center-metadata/`  |
+| `com.dtstack.dagschedulex`     | `.repos/dt-insight-plat/DAGScheduleX/`       |
+| `com.dtstack.datasource`       | `.repos/dt-insight-plat/datasourcex/`        |
+| `com.dtstack.ide`              | `.repos/dt-insight-plat/dt-center-ide/`      |
+| `com.dtstack.public.service`   | `.repos/dt-insight-plat/dt-public-service/`  |
+| `com.dtstack.sql.parser`       | `.repos/dt-insight-plat/SQLParser/`          |
+| `com.dtstack.engine`           | `.repos/dt-insight-engine/engine-plugins/`   |
+| 前端报错 / `dt-insight-studio` | `.repos/dt-insight-front/dt-insight-studio/` |
+| 定制项目（信永中和等）         | `.repos/CustomItem/<对应仓库>/`              |
 
 ### 分析深度要求
 
@@ -79,7 +79,7 @@ maxTurns: 100
 
 ### 源码只读规则
 
-repos/ 下仅允许以下操作：
+.repos/ 下仅允许以下操作：
 
 - `git fetch origin` / `git pull origin <branch>` / `git checkout <branch>`
 - `git log` / `git show` / `git diff` / `git blame`

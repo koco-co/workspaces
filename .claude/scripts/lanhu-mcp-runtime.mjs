@@ -1,6 +1,6 @@
 /**
  * lanhu-mcp-runtime.mjs
- * 统一管理 qa-flow 内置 vendor/lanhu-mcp 的路径、探活与启动
+ * 统一管理 qa-flow 内置 tools/lanhu-mcp 的路径、探活与启动
  *
  * 用法:
  *   node lanhu-mcp-runtime.mjs paths
@@ -19,7 +19,7 @@ export function getLanhuRuntimeConfig() {
   }
 
   return {
-    vendorPath: resolveWorkspacePath(config.vendorPath),
+    runtimePath: resolveWorkspacePath(config.runtimePath),
     envFile: resolveWorkspacePath(config.envFile),
     setupScript: resolveWorkspacePath(config.setupScript),
     quickstartScript: resolveWorkspacePath(config.quickstartScript),
@@ -39,8 +39,8 @@ export function getLanhuMcpUrl() {
 }
 
 export function getLanhuPythonCommand() {
-  const { vendorPath } = getLanhuRuntimeConfig();
-  const venvPython = resolve(vendorPath, ".venv", "bin", "python");
+  const { runtimePath } = getLanhuRuntimeConfig();
+  const venvPython = resolve(runtimePath, ".venv", "bin", "python");
   return existsSync(venvPython) ? venvPython : "python3";
 }
 
@@ -77,8 +77,8 @@ export async function startLanhuMcp() {
     };
   }
 
-  if (!existsSync(config.vendorPath)) {
-    throw new Error(`未找到 vendor 目录：${config.vendorPath}`);
+  if (!existsSync(config.runtimePath)) {
+    throw new Error(`未找到 lanhu-mcp 目录：${config.runtimePath}`);
   }
   if (!existsSync(config.entryScript)) {
     throw new Error(`未找到启动入口：${config.entryScript}`);
@@ -90,7 +90,7 @@ export async function startLanhuMcp() {
   mkdirSync(dirname(config.logFile), { recursive: true });
   const logFd = openSync(config.logFile, "a");
   const child = spawn(getLanhuPythonCommand(), [config.entryScript], {
-    cwd: config.vendorPath,
+    cwd: config.runtimePath,
     detached: true,
     stdio: ["ignore", logFd, logFd],
   });

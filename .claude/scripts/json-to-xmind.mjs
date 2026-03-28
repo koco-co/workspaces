@@ -34,16 +34,45 @@ import { resolve, dirname, relative, basename } from 'path'
 import { fileURLToPath } from 'url'
 import { Topic, RootTopic, Marker, Workbook, writeLocalFile } from 'xmind-generator'
 import { assertNewOutputPathMatchesContract } from './output-naming-contracts.mjs'
+import { getDtstackModules } from './load-config.mjs'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, '..', '..')
 const RESERVED_OUTPUT_NAME = 'latest-output.xmind'
 const LATEST_OUTPUT_PATH = resolve(REPO_ROOT, 'latest-output.xmind')
+const { zh: DTSTACK_ZH_MODULES, en: DTSTACK_EN_MODULES } = getDtstackModules()
 
 const PRIORITY_MAP = {
   P0: Marker.Priority.p1,
   P1: Marker.Priority.p2,
   P2: Marker.Priority.p3,
+}
+
+function isDtstackMeta(meta = {}) {
+  if (meta.source_standard === 'dtstack') {
+    return true
+  }
+  if (meta.module_key && DTSTACK_EN_MODULES.includes(meta.module_key)) {
+    return true
+  }
+  return DTSTACK_ZH_MODULES.some((name) => `${meta.project_name || ''}`.includes(name))
+}
+
+function buildRootTitle(meta = {}) {
+  if (isDtstackMeta(meta) && meta.project_name && meta.version) {
+    return `${meta.project_name}${meta.version}迭代用例`
+  }
+  return meta.project_name
+}
+
+function buildL1Title(meta = {}) {
+  if (isDtstackMeta(meta)) {
+    const ticketSuffix = meta.requirement_ticket ? `(#${meta.requirement_ticket})` : ''
+    return `${meta.requirement_name}${ticketSuffix}`
+  }
+  return meta.version
+    ? `【${meta.version}】${meta.requirement_name}`
+    : meta.requirement_name
 }
 
 function validateJson(data) {
@@ -178,19 +207,62 @@ function buildModuleTopic(mod) {
 }
 
 function buildXmind(data) {
-  const { meta, modules } = data
+  const { meta, modules, requirements } = data
 
-  const l1Title = meta.version
-    ? `【${meta.version}】${meta.requirement_name}`
-    : meta.requirement_name
+  // Multi-requirement: each gets its own L1 node under a shared root
+  if (requirements && requirements.length > 1) {
+    const l1Topics = requirements.map((req) => {
+      const moduleTopics = (req.modules ?? []).map(buildModuleTopic)
+      const l1Topic = Topic(buildL1Title(req.meta)).children(moduleTopics)
+      if (isDtstackMeta(req.meta) && req.meta.requirement_id) {
+        l1Topic.labels([`(#${req.meta.requirement_id})`])
+      }
+      return l1Topic
+    })
+    return Workbook(RootTopic(buildRootTitle(meta)).children(l1Topics))
+  }
 
   const moduleTopics = (modules ?? []).map(buildModuleTopic)
+  const l1Topic = Topic(buildL1Title(meta)).children(moduleTopics)
+
+  if (isDtstackMeta(meta) && meta.requirement_id) {
+    l1Topic.labels([`(#${meta.requirement_id})`])
+  }
 
   return Workbook(
-    RootTopic(meta.project_name).children([
-      Topic(l1Title).children(moduleTopics),
+    RootTopic(buildRootTitle(meta)).children([
+      l1Topic,
     ])
   )
+}
+
+async function buildWorkbookBuffer(data) {
+  const wb = buildXmind(data)
+  const rawBuffer = Buffer.from(await wb.archive())
+
+  if (!isDtstackMeta(data.meta)) {
+    return rawBuffer
+  }
+
+  const { default: JSZip } = await import('jszip')
+  const zip = await JSZip.loadAsync(rawBuffer)
+  const contentStr = await zip.file('content.json').async('string')
+  const sheets = JSON.parse(contentStr)
+  const root = sheets[0]?.rootTopic
+  const l1Nodes = root?.children?.attached ?? []
+
+  // Apply folded + labels to all L1 nodes (supports multi-requirement output)
+  const reqs = data.requirements ?? [{ meta: data.meta }]
+  l1Nodes.forEach((l1, idx) => {
+    const reqMeta = reqs[idx]?.meta ?? data.meta
+    l1.branch = 'folded'
+    if (reqMeta?.requirement_id) {
+      l1.labels = Array.from(new Set([...(l1.labels ?? []), `(#${reqMeta.requirement_id})`]))
+    }
+  })
+
+  zip.file('content.json', JSON.stringify(sheets))
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
 }
 
 function mergeJsonFiles(inputPaths) {
@@ -201,9 +273,11 @@ function mergeJsonFiles(inputPaths) {
 
   if (all.length === 1) return all[0]
 
+  // Multiple inputs: preserve per-requirement meta for multi-L1 output
   return {
     meta: all[0].meta,
     modules: all.flatMap((d) => d.modules ?? []),
+    requirements: all.map((d) => ({ meta: d.meta, modules: d.modules ?? [] })),
   }
 }
 
@@ -237,8 +311,7 @@ async function appendToExisting(data, outputPath) {
   const { default: JSZip } = await import('jszip')
 
   // 1. 生成新 workbook 的 buffer，直接解析提取 L1 节点 JSON（避免 writeLocalFile 的异步 bug）
-  const newWb = buildXmind(data)
-  const newBuffer = await newWb.archive()
+  const newBuffer = await buildWorkbookBuffer(data)
   const tempZip = await JSZip.loadAsync(Buffer.from(newBuffer))
   const newContentStr = await tempZip.file('content.json').async('string')
   const newSheets = JSON.parse(newContentStr)
@@ -251,7 +324,7 @@ async function appendToExisting(data, outputPath) {
 
   // 3. 查找同名 rootTopic（按 project_name 匹配）
   const targetSheet = existingSheets.find(
-    (s) => s.rootTopic?.title === data.meta.project_name
+    (s) => s.rootTopic?.title === buildRootTitle(data.meta)
   )
 
   if (targetSheet) {
@@ -279,13 +352,10 @@ async function appendToExisting(data, outputPath) {
 async function replaceInExisting(data, outputPath) {
   const { default: JSZip } = await import('jszip')
 
-  const l1Title = data.meta.version
-    ? `【${data.meta.version}】${data.meta.requirement_name}`
-    : data.meta.requirement_name
+  const l1Title = buildL1Title(data.meta)
 
   // 1. 生成新 workbook 的 buffer，直接解析提取新 L1 节点 JSON（避免 writeLocalFile 的异步 bug）
-  const newWb = buildXmind(data)
-  const newBuffer = await newWb.archive()
+  const newBuffer = await buildWorkbookBuffer(data)
   const tempZip = await JSZip.loadAsync(Buffer.from(newBuffer))
   const newContentStr = await tempZip.file('content.json').async('string')
   const newSheets = JSON.parse(newContentStr)
@@ -302,7 +372,7 @@ async function replaceInExisting(data, outputPath) {
 
   // 3. 查找同名 rootTopic（按 project_name 匹配）
   const targetSheet = existingSheets.find(
-    (s) => s.rootTopic?.title === data.meta.project_name
+    (s) => s.rootTopic?.title === buildRootTitle(data.meta)
   )
 
   if (targetSheet) {
@@ -374,8 +444,7 @@ try {
     refreshLatestOutput(outputPath)
     console.log(`XMind 文件已更新（追加模式）: ${resolve(outputPath)}`)
   } else {
-    const wb = buildXmind(data)
-    const buf = await wb.archive()
+    const buf = await buildWorkbookBuffer(data)
     writeFileSync(resolve(outputPath), Buffer.from(buf))
     refreshLatestOutput(outputPath)
     console.log(`XMind 文件已生成: ${resolve(outputPath)}`)

@@ -9,6 +9,8 @@ description: PRD 文档增强 Skill。读取 PRD 中的 Obsidian 图片引用，
 
 **执行前必须阅读本文件和 `references/prd-template.md`。**
 
+> DTStack 特殊说明：当输入来自蓝湖原始文本或低质量 PRD 时，**不得**直接把原始文本当增强结果下发给 Writer。应先经过 `prd-formalizer` 生成正式需求文档，再由本 Skill 做图片增强、结构标准化与健康度预检。
+
 ## 使用口径速查
 
 - 本 Skill 是**单个 PRD 的增强流程**，不使用测试用例流程里的“快速模式 / 续传 / 模块级重跑”口令。
@@ -23,6 +25,7 @@ description: PRD 文档增强 Skill。读取 PRD 中的 Obsidian 图片引用，
 
 ```
 Step 0: 增量检测（是否已有 -enhanced.md）
+Step 0.5: DTStack 正式需求文档检查（是否已完成 prd-formalizer）
 Step 1: 定位 PRD 文件
 Step 2: 扫描所有图片引用
 Step 3: 定位图片文件
@@ -68,6 +71,18 @@ Step 9: 向用户展示增强摘要
 4. 通知用户：「检测到 PRD 有更新，仅重新处理变更章节：[章节列表]」
 
 **如果 enhanced.md 不存在：** 执行全量增强（Step 1 起）。
+
+---
+
+## 二点五、Step 0.5: DTStack 正式需求文档检查
+
+如果当前输入属于 DTStack 且内容明显来自蓝湖原始提取：
+
+1. 先检查是否已有正式需求文档（由 `prd-formalizer` 生成）
+2. 若没有，则先回退到 formalizer 流程：
+   - 结合 `source_context` 中的 repo/branch 阅读源码
+   - 以“需求背景 / 变更范围 / 页面详细设计 / 源码补充事实 / 影响分析 / 测试关注点”模板重组内容
+3. 本 Skill 只对**正式需求文档**执行后续增强，不直接向下游输出原始蓝湖文本 dump
 
 ---
 
@@ -362,3 +377,4 @@ PRD 健康度：
 ## 参考文件
 
 - `references/prd-template.md` — 标准化 PRD 模板规范和图片描述格式
+- `.claude/agents/prd-formalizer.md` — DTStack 正式需求文档生成要求

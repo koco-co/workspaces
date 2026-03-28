@@ -41,6 +41,16 @@ Root → L1（版本/需求） → L2（模块/菜单） → L3（页面） → 
 - 同一 XMind 文件中，不同 PRD 的用例通过各自的 L1 节点区分。
 - 需要跨 PRD 聚合时，优先使用 Story 级文件名，而不是继续扩展旧式自定义文件名。
 
+## DTStack 样例驱动规则
+
+DTStack（尤其 `data-assets`）输出优先对齐 `cases/xmind/data-assets/202603-数据资产v6.4.9.xmind`：
+
+- Root：`<项目><版本>迭代用例`
+- L1 title：`<需求标题>(#<requirement_ticket>)`
+- L1 labels：`(#<requirement_id>)`
+- L1 默认 `folded`
+- 其余层级继续沿用 `模块/菜单 → 页面 → [子组] → 用例 → 步骤 → 预期`
+
 ## XMind 快捷访问
 
 生成、追加或替换成功后，脚本会在仓库根目录创建或刷新符号链接：

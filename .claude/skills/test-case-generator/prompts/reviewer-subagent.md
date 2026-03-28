@@ -28,6 +28,9 @@
 
 源码路径：[源码仓库绝对路径，或写「无源码参考」]
 
+source_context（如有）：
+[repo profile / release version / backend 分支 / frontend 分支]
+
 **源码验证要求**（有源码时必须执行）：
 
 1. **名称一致性验证**：Grep 搜索 Controller/DTO 中的接口路径和字段名，验证用例步骤中的按钮名称和字段名称与实际代码一致
@@ -35,7 +38,13 @@
 3. **业务分支覆盖检查**：阅读 Service 层核心方法的 if/else 分支和异常抛出点，检查每个重要分支是否有对应用例
 4. **联动关系验证**：检查 Service 层的跨模块调用，确认用例预期结果中已描述联动效果
 
-**源码只读规则**：repos/ 下仅允许 grep、find、cat、git log/diff/blame 操作，严禁修改任何文件。
+**源码只读规则**：.repos/ 下仅允许 grep、find、cat、git log/diff/blame 操作，严禁修改任何文件。
+
+**DTStack 额外要求**（当 source_context 不为空时必须执行）：
+
+- 先确认 Reviewer 校验使用的仓库分支与 source_context 一致
+- 前置条件若缺少数据源类型、schema/table、关键字段或准备数据说明，应补齐
+- 复杂表单步骤若仍为模糊长句，必须改写为结构化块
 
 ## 评审任务（按优先级执行）
 

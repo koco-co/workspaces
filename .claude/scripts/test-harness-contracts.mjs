@@ -192,6 +192,14 @@ assert(
   "prdEnhancer delegate 入口正确",
 );
 assert(
+  delegates.sourceRepoSync?.entry === ".claude/scripts/sync-source-repos.mjs",
+  "sourceRepoSync delegate 入口正确",
+);
+assert(
+  delegates.prdFormalizer?.entry === ".claude/agents/prd-formalizer.md",
+  "prdFormalizer delegate 入口正确",
+);
+assert(
   delegates.caseWriter?.entry === ".claude/agents/case-writer.md",
   "caseWriter delegate 入口正确",
 );
@@ -224,6 +232,26 @@ assert(
 assert(
   testCaseWorkflow.steps.some((step) => step.id === "prd-enhancer"),
   "test-case-generation 包含 prd-enhancer step",
+);
+assert(
+  testCaseWorkflow.steps.some((step) => step.id === "source-sync" && step.delegate === "sourceRepoSync"),
+  "test-case-generation 包含 source-sync step",
+);
+assert(
+  testCaseWorkflow.steps.some((step) => step.id === "prd-formalize" && step.delegate === "prdFormalizer"),
+  "test-case-generation 包含 prd-formalize step",
+);
+assert(
+  testCaseWorkflow.steps
+    .find((step) => step.id === "source-sync")
+    ?.dependsOn?.includes("lanhu-ingest"),
+  "source-sync 依赖 lanhu-ingest",
+);
+assert(
+  testCaseWorkflow.steps
+    .find((step) => step.id === "prd-formalize")
+    ?.dependsOn?.includes("source-sync"),
+  "prd-formalize 依赖 source-sync",
 );
 assert(
   testCaseWorkflow.steps.some((step) => step.id === "writer" && step.resumePoint === true),

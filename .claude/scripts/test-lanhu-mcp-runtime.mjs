@@ -26,10 +26,13 @@ function assert(condition, msg) {
 
 console.log("\n=== Test: getLanhuRuntimeConfig ===");
 const config = getLanhuRuntimeConfig();
-assert(config.vendorPath.endsWith("vendor/lanhu-mcp"), "vendorPath 指向 vendor/lanhu-mcp");
-assert(existsSync(config.vendorPath), "vendorPath 在仓库中存在");
-assert(config.envFile.endsWith("vendor/lanhu-mcp/.env"), "envFile 指向 vendor/lanhu-mcp/.env");
-assert(config.entryScript.endsWith("vendor/lanhu-mcp/lanhu_mcp_server.py"), "entryScript 指向 lanhu_mcp_server.py");
+assert(config.runtimePath.endsWith("tools/lanhu-mcp"), "runtimePath 指向 tools/lanhu-mcp");
+assert(existsSync(config.runtimePath), "runtimePath 在仓库中存在");
+assert(config.envFile.endsWith("tools/lanhu-mcp/.env"), "envFile 指向 tools/lanhu-mcp/.env");
+assert(config.entryScript.endsWith("tools/lanhu-mcp/lanhu_mcp_server.py"), "entryScript 指向 lanhu_mcp_server.py");
+assert(existsSync(config.entryScript), "tools/lanhu-mcp 下存在 lanhu_mcp_server.py");
+assert(existsSync(config.setupScript), "tools/lanhu-mcp 下存在 setup-env.sh");
+assert(existsSync(config.quickstartScript), "tools/lanhu-mcp 下存在 quickstart.sh");
 assert(config.logFile.endsWith(".claude/tmp/lanhu-mcp.log"), "logFile 指向 .claude/tmp/lanhu-mcp.log");
 assert(config.serverUrl === "http://127.0.0.1:8000", "serverUrl 与 config.json 一致");
 assert(config.cookieRefreshScript.endsWith(".claude/scripts/refresh-lanhu-cookie.py"), "cookieRefreshScript 指向 refresh-lanhu-cookie.py");
@@ -42,7 +45,7 @@ console.log("\n=== Test: getLanhuPythonCommand ===");
 const pythonCommand = getLanhuPythonCommand();
 assert(
   pythonCommand === "python3" || pythonCommand.endsWith("/.venv/bin/python"),
-  "Python 命令优先使用 vendor/.venv/bin/python，否则回退到 python3",
+  "Python 命令优先使用 tools/.venv/bin/python，否则回退到 python3",
 );
 
 console.log(`\n══════════════════════════════════════`);
