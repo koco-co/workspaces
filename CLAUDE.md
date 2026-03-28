@@ -84,7 +84,8 @@ qa-flow/
     │   ├── workflows/             # workflow manifests
     │   ├── delegates.json         # delegate 注册表
     │   ├── hooks.json             # precheck / condition / recovery / convergence hooks
-    │   └── contracts.json         # state / shortcut / quality contracts
+    │   ├── contracts.json         # state / shortcut / quality contracts
+    │   └── state-schema.md        # .qa-state.json 字段文档
     ├── rules/                     # 规则文档
     ├── skills/                    # 项目 Skills
     ├── agents/                    # 子代理定义
