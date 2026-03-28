@@ -70,6 +70,10 @@ export function resolveWorkspacePath(relativePath) {
   return resolve(getWorkspaceRoot(), relativePath);
 }
 
+export function getRepoBranchMappingPath() {
+  return resolveWorkspacePath("repo-branch-mapping.yaml");
+}
+
 export function getIntegrationConfig(name) {
   return loadConfig().integrations?.[name] ?? null;
 }
@@ -155,4 +159,81 @@ export function resolveHarnessHook(type, name) {
 export function getShortcutPath(name) {
   const shortcut = loadConfig().shortcuts?.[name];
   return shortcut ? resolveWorkspacePath(shortcut) : null;
+}
+
+/**
+ * 从 workflow + delegates 联合查找步骤的 delegate 配置
+ * @param {string} workflowName - workflow key (e.g., "testCaseGeneration")
+ * @param {string} stepId - step id (e.g., "prd-enhancer")
+ * @returns {{ id: string, kind: string, entry: string, purpose: string } | null}
+ */
+export function resolveStepDelegate(workflowName, stepId) {
+  const workflow = loadHarnessWorkflow(workflowName);
+  const delegates = loadHarnessDelegates();
+  if (!workflow || !delegates) return null;
+
+  const step = (workflow.steps ?? []).find((s) => s.id === stepId);
+  if (!step) return null;
+
+  const delegateId = step.delegate;
+  const delegate = delegates[delegateId];
+  if (!delegate) return null;
+
+  return { id: delegateId, ...delegate };
+}
+
+/**
+ * 返回拓扑排序后的步骤列表（按 dependsOn 依赖顺序）
+ * @param {string} workflowName
+ * @returns {Array<{id: string, delegate: string, dependsOn: string[], [key: string]: any}>}
+ */
+export function getWorkflowStepOrder(workflowName) {
+  const workflow = loadHarnessWorkflow(workflowName);
+  if (!workflow) return [];
+
+  const steps = workflow.steps ?? [];
+  const stepMap = new Map(steps.map((s) => [s.id, s]));
+  const visited = new Set();
+  const ordered = [];
+
+  function visit(stepId) {
+    if (visited.has(stepId)) return;
+    visited.add(stepId);
+    const step = stepMap.get(stepId);
+    if (!step) return;
+    for (const dep of step.dependsOn ?? []) {
+      visit(dep);
+    }
+    ordered.push(step);
+  }
+
+  for (const step of steps) {
+    visit(step.id);
+  }
+
+  return ordered;
+}
+
+/**
+ * 评估步骤在给定条件集下是否应跳过
+ * @param {string} workflowName
+ * @param {string} stepId
+ * @param {string[]} activeConditions - 当前激活的条件 key 列表 (e.g., ["quick-mode"])
+ * @returns {{ skip: boolean, reason: string | null }}
+ */
+export function evaluateStepConditions(workflowName, stepId, activeConditions) {
+  const workflow = loadHarnessWorkflow(workflowName);
+  if (!workflow) return { skip: false, reason: null };
+
+  const step = (workflow.steps ?? []).find((s) => s.id === stepId);
+  if (!step) return { skip: false, reason: null };
+
+  const skippableWhen = step.skippableWhen ?? [];
+  for (const condition of skippableWhen) {
+    if (activeConditions.includes(condition)) {
+      return { skip: true, reason: condition };
+    }
+  }
+
+  return { skip: false, reason: null };
 }

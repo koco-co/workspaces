@@ -16,6 +16,7 @@ import {
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import JSZip from "jszip";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 let passed = 0;
@@ -46,12 +47,12 @@ function runScript(args) {
   }
 }
 
-function runTest(name, fn) {
+async function runTest(name, fn) {
   if (testFilter && !name.includes(testFilter)) return;
   testsRun++;
   console.log(`\n=== Test: ${name} ===`);
   cleanup();
-  fn();
+  await fn();
 }
 
 // ─── Test Data ──────────────────────────────────────────────
@@ -96,9 +97,71 @@ const validJson = {
 const invalidJsonNoMeta = { modules: [{ name: "test" }] };
 const invalidJsonNoModules = { meta: { project_name: "test", requirement_name: "test" } };
 const invalidJsonEmptyModules = { meta: { project_name: "test", requirement_name: "test" }, modules: [] };
+const dtstackJson = {
+  meta: {
+    project_name: "数据资产",
+    requirement_name: "【内置规则丰富】质量校验不通过时支持发送邮件",
+    requirement_ticket: "10307",
+    requirement_id: "15602",
+    version: "v6.4.10",
+    source_standard: "dtstack",
+    module_key: "data-assets",
+    generated_at: new Date().toISOString(),
+    agent_id: "test-dtstack",
+  },
+  modules: [
+    {
+      name: "数据质量",
+      pages: [
+        {
+          name: "调度属性配置",
+          test_cases: [
+            {
+              title: "验证「调度属性配置」页面-告警方式选择「邮箱」时显示「是否发送明细数据」选项",
+              priority: "P1",
+              precondition: "已存在单表校验规则",
+              steps: [
+                { step: "进入【数据资产】-【数据质量】-【规则任务配置】页面", expected: "页面正常加载" },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+const dtstackJsonSecond = {
+  meta: {
+    ...dtstackJson.meta,
+    requirement_name: "【内置规则丰富】一致性，多表数据一致性比对",
+    requirement_ticket: "15525",
+    requirement_id: "15525",
+  },
+  modules: [
+    {
+      name: "数据质量",
+      pages: [
+        {
+          name: "规则集配置",
+          test_cases: [
+            {
+              title: "验证多表数据一致性比对支持联合主键",
+              priority: "P0",
+              precondition: "已存在三张结构兼容的数据表",
+              steps: [
+                { step: "进入【数据质量-规则集配置】页面", expected: "页面正常加载" },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
 const repoRoot = resolve(__dirname, "..", "..");
 const tmpInput = resolve(__dirname, "_test_input.json");
+const tmpInputSecond = resolve(__dirname, "_test_input_second.json");
 const tmpOutput = resolve(__dirname, "202603-测试需求.xmind");
 const tmpOutputAlt = resolve(__dirname, "202603-Story-20260322.xmind");
 const invalidNamedOutput = resolve(__dirname, "test-output.xmind");
@@ -132,6 +195,7 @@ function pathExists(path) {
 
 function cleanup() {
   if (existsSync(tmpInput)) unlinkSync(tmpInput);
+  if (existsSync(tmpInputSecond)) unlinkSync(tmpInputSecond);
   if (existsSync(tmpOutput)) unlinkSync(tmpOutput);
   if (existsSync(tmpOutputAlt)) unlinkSync(tmpOutputAlt);
   if (existsSync(invalidNamedOutput)) unlinkSync(invalidNamedOutput);
@@ -185,9 +249,15 @@ function assertLatestOutputPointsTo(expectedOutputPath, label) {
   assert(linkedPath === expectedOutputPath, `${label}: latest-output.xmind 指向实际输出文件`);
 }
 
+async function readXmindContent(outputPath) {
+  const zip = await JSZip.loadAsync(readFileSync(outputPath));
+  const contentStr = await zip.file("content.json").async("string");
+  return JSON.parse(contentStr);
+}
+
 // ─── Tests ──────────────────────────────────────────────────
 
-runTest("显式输出 latest-output.xmind 应被拒绝", () => {
+await runTest("显式输出 latest-output.xmind 应被拒绝", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
   const result = runScript(`${tmpInput} latest-output.xmind`);
   assert(result.code !== 0, "退出码非 0");
@@ -200,7 +270,7 @@ runTest("显式输出 latest-output.xmind 应被拒绝", () => {
   assert(!pathExists(latestOutputLink), "未刷新仓库根目录 latest-output.xmind 符号链接");
 });
 
-runTest("有效 JSON 生成 XMind", () => {
+await runTest("有效 JSON 生成 XMind", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
   const r1 = runScript(`${tmpInput} ${tmpOutput}`);
   assert(r1.code === 0, "退出码为 0");
@@ -208,7 +278,7 @@ runTest("有效 JSON 生成 XMind", () => {
   assert(r1.stdout.includes("XMind 文件已生成"), "输出包含成功消息");
 });
 
-runTest("新建 XMind 输出文件名必须符合命名 contract", () => {
+await runTest("新建 XMind 输出文件名必须符合命名 contract", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
   const result = runScript(`${tmpInput} ${invalidNamedOutput}`);
   assert(result.code !== 0, "退出码非 0");
@@ -219,7 +289,7 @@ runTest("新建 XMind 输出文件名必须符合命名 contract", () => {
   assert(!pathExists(invalidNamedOutput), "未生成不合规命名的 XMind 文件");
 });
 
-runTest("latest-output.xmind 随成功输出刷新", () => {
+await runTest("latest-output.xmind 随成功输出刷新", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
 
   const latestCreate = runScript(`${tmpInput} ${tmpOutput}`);
@@ -239,7 +309,71 @@ runTest("latest-output.xmind 随成功输出刷新", () => {
   assertLatestOutputPointsTo(tmpOutputAlt, "replace 模式");
 });
 
-runTest("append 模式允许更新历史遗留文件名", () => {
+await runTest("DTStack 输出遵循样例风格的根节点与 L1 元数据", async () => {
+  writeFileSync(tmpInput, JSON.stringify(dtstackJson), "utf8");
+  const dtOutput = resolve(__dirname, "202603-数据资产v6.4.10.xmind");
+  if (existsSync(dtOutput)) unlinkSync(dtOutput);
+
+  const result = runScript(`${tmpInput} ${dtOutput}`);
+  assert(result.code === 0, "DTStack XMind 生成成功");
+  assert(existsSync(dtOutput), "DTStack XMind 文件已生成");
+  if (!existsSync(dtOutput)) {
+    return;
+  }
+
+  const content = await readXmindContent(dtOutput);
+  const root = content[0]?.rootTopic;
+  const l1 = root?.children?.attached?.[0];
+  const firstCase = l1?.children?.attached?.[0]?.children?.attached?.[0]?.children?.attached?.[0];
+
+  assert(root?.title === "数据资产v6.4.10迭代用例", "DTStack root title 使用 <项目><版本>迭代用例");
+  assert(
+    l1?.title === "【内置规则丰富】质量校验不通过时支持发送邮件(#10307)",
+    "DTStack L1 title 附带 requirement ticket",
+  );
+  assert(
+    Array.isArray(l1?.labels) && l1.labels.includes("(#15602)"),
+    "DTStack L1 labels 包含 requirement_id",
+  );
+  assert(l1?.branch === "folded", "DTStack L1 默认折叠");
+  assert(
+    Array.isArray(firstCase?.markers) && firstCase.markers.some((marker) => marker.markerId === "priority-2"),
+    "DTStack 用例节点保留优先级 marker",
+  );
+
+  unlinkSync(dtOutput);
+});
+
+await runTest("多输入 DTStack JSON 会在同一 root 下生成多个 L1 节点", async () => {
+  writeFileSync(tmpInput, JSON.stringify(dtstackJson), "utf8");
+  writeFileSync(tmpInputSecond, JSON.stringify(dtstackJsonSecond), "utf8");
+  const dtOutput = resolve(__dirname, "202603-数据资产v6.4.10.xmind");
+  if (existsSync(dtOutput)) unlinkSync(dtOutput);
+
+  const result = runScript(`${tmpInput} ${tmpInputSecond} ${dtOutput}`);
+  assert(result.code === 0, "多输入 DTStack XMind 生成成功");
+  assert(existsSync(dtOutput), "多输入 DTStack XMind 文件已生成");
+  if (!existsSync(dtOutput)) {
+    return;
+  }
+
+  const content = await readXmindContent(dtOutput);
+  const root = content[0]?.rootTopic;
+  const l1Nodes = root?.children?.attached ?? [];
+  const l1Titles = l1Nodes.map((node) => node.title);
+
+  assert(root?.title === "数据资产v6.4.10迭代用例", "多输入 DTStack root title 保持不变");
+  assert(l1Nodes.length === 2, "多输入 DTStack 输出包含 2 个 L1 节点");
+  assert(
+    l1Titles.includes("【内置规则丰富】质量校验不通过时支持发送邮件(#10307)") &&
+      l1Titles.includes("【内置规则丰富】一致性，多表数据一致性比对(#15525)"),
+    "多输入 DTStack 输出保留每个 requirement 的独立 L1 title",
+  );
+
+  unlinkSync(dtOutput);
+});
+
+await runTest("append 模式允许更新历史遗留文件名", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
   const createResult = runScript(`${tmpInput} ${tmpOutput}`);
   assert(createResult.code === 0, "先生成规范命名 XMind");
@@ -251,21 +385,21 @@ runTest("append 模式允许更新历史遗留文件名", () => {
   assertLatestOutputPointsTo(legacyAppendOutput, "append 历史遗留文件名");
 });
 
-runTest("缺少 meta 的 JSON 应失败", () => {
+await runTest("缺少 meta 的 JSON 应失败", () => {
   writeFileSync(tmpInput, JSON.stringify(invalidJsonNoMeta), "utf8");
   const r2 = runScript(`${tmpInput} ${tmpOutput}`);
   assert(r2.code !== 0, "退出码非 0");
   assert(r2.stderr.includes("meta") || r2.stdout.includes("meta"), "错误消息提及 meta");
 });
 
-runTest("modules 为空应失败", () => {
+await runTest("modules 为空应失败", () => {
   writeFileSync(tmpInput, JSON.stringify(invalidJsonEmptyModules), "utf8");
   const r3 = runScript(`${tmpInput} ${tmpOutput}`);
   assert(r3.code !== 0, "退出码非 0");
   assert(r3.stderr.includes("modules") || r3.stdout.includes("modules"), "错误消息提及 modules");
 });
 
-runTest("参数不足应报错", () => {
+await runTest("参数不足应报错", () => {
   const r4 = runScript("");
   assert(r4.code !== 0, "退出码非 0");
   assert(r4.stderr.includes("Usage"), "输出使用说明");

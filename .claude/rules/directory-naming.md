@@ -17,6 +17,7 @@
 - `custom/xyzh` 是文件系统路径别名，只用于 `cases/xmind/` 与 `cases/archive/` 的目录层级。
 - `cases/history/xyzh/` 保持使用 `xyzh`，不会写成 `cases/history/custom/xyzh/`。
 - `cases/archive/` 是固定归档根目录；历史文档或旧 Prompt 中的 `archive-cases/` 统一映射到这里，不代表需要额外创建目录。
+- `repo-branch-mapping.yaml` 固定放在仓库根目录，用于维护 DTStack repo profile 与开发版本 → 分支映射。
 
 ## 顶层目录结构
 
@@ -29,10 +30,11 @@ qa-flow/
 │   ├── archive/        # 归档 MD 根目录
 │   ├── requirements/   # PRD / Story 文档
 │   └── history/        # 历史 CSV 等原始资料
-├── repos/              # 源码仓库只读
+├── .repos/             # 隐藏源码仓库只读
 ├── reports/            # 代码分析报告
 ├── assets/
 │   └── images/         # 全局图片
+├── tools/              # 内置第三方工具（如 lanhu-mcp）
 └── .claude/
     ├── config.json     # 集中路径配置
     ├── rules/          # 按需加载规范
@@ -50,6 +52,8 @@ qa-flow/
 - PRD 级输出：`YYYYMM-<功能名>.xmind` 与同 basename 的 `.md`
 - Story 级输出：`YYYYMM-Story-YYYYMMDD.xmind` 与同 basename 的 `.md`
 - 当 Archive 来源能识别原始 PRD 文件名时，Archive Markdown 应优先沿用 `PRD-XX-<功能名>.md`，保证需求与归档一一对应
+- DTStack 如识别到语义版本，Archive 优先落到 `cases/archive/<module>/vX.Y.Z/`
+- DTStack 形式化需求页的 Archive Markdown 可直接使用需求标题命名
 - Story 聚合 Markdown 只在明确需要“一个 Story 汇总文件”时使用，避免长期沉积为迭代级超大文件
 - 历史遗留文件名可继续保留，例如 `信永中和测试用例.xmind`、`20260322-信永中和测试用例.xmind`
 - 报告文件：`<标题>.html`，按日期目录归档到 `reports/bugs/` 或 `reports/conflicts/`

@@ -38,6 +38,9 @@
 
 源码路径：[源码仓库绝对路径，或写「无源码参考」]
 
+source_context（如有）：
+[repo profile / release version / backend 分支 / frontend 分支]
+
 **源码分析要求**（有源码时必须执行）：
 
 1. **接口与字段名验证**：Grep 搜索 Controller 中的接口路径和方法名，确认 PRD 中的按钮/操作对应实际接口
@@ -49,7 +52,13 @@
 编排器预提取的关键信息：
 [列出 Grep 搜索结果：按钮名称、字段名称、接口路径等]
 
-**源码只读规则**：repos/ 下仅允许 grep、find、cat、git log/diff/blame 操作，严禁修改任何文件。
+**DTStack 额外要求**（当 source_context 不为空时必须执行）：
+
+- 先确认 `.repos/` 中对应仓库已切到 source_context 指定分支
+- 前置条件尽量补充数据源类型、schema/table、关键字段与准备数据说明
+- 复杂表单步骤优先使用多行结构化块，不得写成模糊长句
+
+**源码只读规则**：.repos/ 下仅允许 grep、find、cat、git log/diff/blame 操作，严禁修改任何文件。
 
 ## 核心编写规则（必须严格遵守）
 

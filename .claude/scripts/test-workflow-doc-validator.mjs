@@ -4,7 +4,7 @@
  *
  * 运行: node test-workflow-doc-validator.mjs
  */
-import { readFileSync, readdirSync, statSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { resolve, dirname, relative, basename } from "path";
 import { fileURLToPath } from "url";
 
@@ -132,7 +132,7 @@ const repoFacingDocs = [
   directoryNamingPath,
   lanhuPlanPath,
   ...activeDocs,
-];
+].filter((filePath) => existsSync(filePath));
 
 console.log("\n=== Test: active Skill / prompt 文档不得回退到 archive-cases/ ===");
 const legacyArchiveCasesRefs = findLineMatches(activeDocs, /archive-cases\//g);

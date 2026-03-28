@@ -69,3 +69,10 @@
 - **Story 聚合文件** 仅在用户明确要求统一汇总时使用，命名遵循 `YYYYMM-Story-YYYYMMDD.md`。
 - **新增/重跑策略**：模块级重跑或单 PRD 追加时，应优先写回对应的 PRD 级 Markdown，而不是继续扩大既有迭代总文件。
 - **可读性阈值**：如单个归档文件已明显超出人工审阅范围，应进一步拆回 PRD 级文件，避免产生难以定位和 diff 的超长 Markdown。
+
+## DTStack 特殊规则
+
+- 如模块为 DTStack 且可识别语义版本（如 `v6.4.10`），归档目录优先为 `cases/archive/<module>/v6.4.10/`。
+- 如输入来自 DTStack 形式化需求页，文件名优先使用需求标题（`meta.archive_file_name` / `meta.requirement_title`），例如：
+  - `【内置规则丰富】合理性，多表，字段大小对比以及字段计算逻辑对比.md`
+- DTStack 不再默认把整份蓝湖文档聚合成一份归档；优先“一页需求 / 一份 MD”。

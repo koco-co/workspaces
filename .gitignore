@@ -9,6 +9,7 @@ node_modules/
 # Temp files
 **/temp/
 *.tmp
+.claude/tmp/
 
 # Trash (soft-delete staging area)
 .trash/
@@ -19,7 +20,11 @@ node_modules/
 # Git
 *.orig
 
-gitlab-projects/
+.repos/
+tools/lanhu-mcp/.env
+tools/lanhu-mcp/.venv
+tools/lanhu-mcp/data/
+tools/lanhu-mcp/logs/
 
 # Code analysis reports (HTML output, keep directory structure only)
 reports/**/*.html

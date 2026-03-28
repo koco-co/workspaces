@@ -4,7 +4,13 @@
  *
  * 运行: node test-load-config.mjs
  */
-import { loadConfig, getModuleMap, getDtstackModules, getWorkspaceRoot } from "./load-config.mjs";
+import {
+  loadConfig,
+  getModuleMap,
+  getDtstackModules,
+  getWorkspaceRoot,
+  getRepoBranchMappingPath,
+} from "./load-config.mjs";
 import { existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -29,8 +35,10 @@ assert(config.modules !== undefined, "包含 modules 字段");
 assert(config.repos !== undefined, "包含 repos 字段");
 assert(config.modules.xyzh?.zh === "信永中和", "xyzh 模块中文名正确");
 assert(config.project?.name === "qa-flow", "project.name 标记为 qa-flow");
-assert(config.integrations?.lanhuMcp?.vendorPath === "vendor/lanhu-mcp/", "lanhuMcp vendorPath 配置正确");
-assert(config.integrations?.lanhuMcp?.envFile === "vendor/lanhu-mcp/.env", "lanhuMcp envFile 配置正确");
+assert(config.repos?.["dt-center-assets"] === ".repos/dt-insight-web/dt-center-assets/", "repos 路径已切换到 .repos");
+assert(config.integrations?.lanhuMcp?.runtimePath === "tools/lanhu-mcp/", "lanhuMcp runtimePath 配置正确");
+assert(config.integrations?.lanhuMcp?.envFile === "tools/lanhu-mcp/.env", "lanhuMcp envFile 配置正确");
+assert(config.dataAssetsVersionMap?.["202603-数据资产v6.4.10.xmind"] === "v6.4.10", "dataAssetsVersionMap 包含 v6.4.10");
 assert(config.shortcuts?.latestEnhancedPrd === "latest-prd-enhanced.md", "latestEnhancedPrd 快捷链接名正确");
 assert(config.shortcuts?.latestBugReport === "latest-bug-report.html", "latestBugReport 快捷链接名正确");
 assert(config.shortcuts?.latestConflictReport === "latest-conflict-report.html", "latestConflictReport 快捷链接名正确");
@@ -59,6 +67,11 @@ assert(existsSync(root), "工作空间根目录存在");
 assert(existsSync(resolve(root, "CLAUDE.md")), "工作空间根目录包含 CLAUDE.md");
 assert(existsSync(resolve(root, ".claude/config.json")), "工作空间根目录包含 .claude/config.json");
 assert(resolve(root, ".claude/scripts") === scriptDir, "工作空间根目录与 .claude/scripts 相对位置正确");
+
+console.log("\n=== Test: getRepoBranchMappingPath ===");
+const mappingPath = getRepoBranchMappingPath();
+assert(mappingPath === resolve(root, "repo-branch-mapping.yaml"), "repo-branch-mapping.yaml 路径固定在仓库根目录");
+assert(existsSync(mappingPath), "repo-branch-mapping.yaml 文件存在");
 
 console.log(`\n══════════════════════════════════════`);
 console.log(`总计: ${passed + failed} 测试, ✅ ${passed} 通过, ❌ ${failed} 失败`);

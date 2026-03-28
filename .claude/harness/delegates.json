@@ -21,6 +21,16 @@
       "entry": ".claude/skills/prd-enhancer/SKILL.md",
       "purpose": "增强 PRD 并刷新 latest-prd-enhanced.md"
     },
+    "sourceRepoSync": {
+      "kind": "script",
+      "entry": ".claude/scripts/sync-source-repos.mjs",
+      "purpose": "解析开发版本并切换 DTStack 相关源码仓库到目标分支"
+    },
+    "prdFormalizer": {
+      "kind": "agent",
+      "entry": ".claude/agents/prd-formalizer.md",
+      "purpose": "结合 Lanhu 原文与源码上下文生成正式需求文档"
+    },
     "caseWriter": {
       "kind": "agent",
       "entry": ".claude/agents/case-writer.md",

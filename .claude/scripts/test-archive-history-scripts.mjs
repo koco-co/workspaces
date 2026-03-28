@@ -259,6 +259,90 @@ async function main() {
     assert(dtMd.includes("### 列表页"), "DTStack 归档 Markdown 保留页面层级");
   }
 
+  console.log("\n=== Test: json-to-archive-md.mjs 为 DTStack 语义版本自动创建版本目录 ===");
+  const dtVersionedRequirementName = `__qa-routing-data-assets-semver-${runId}`;
+  const dtVersionedInputPath = resolve(tempRoot, `${dtVersionedRequirementName}.json`);
+  const dtVersionedOutputDir = resolve(repoRoot, "cases/archive/data-assets", "v6.4.10");
+  const dtVersionedOutputPath = resolve(dtVersionedOutputDir, `${dtVersionedRequirementName}.md`);
+  writeFileSync(
+    dtVersionedInputPath,
+    JSON.stringify(
+      createJsonFixture({
+        projectName: "数据资产",
+        requirementName: dtVersionedRequirementName,
+        version: "v6.4.10",
+      }),
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  generatedDirPaths.add(dtVersionedOutputDir);
+  const dtVersionedResult = runNodeScript(archiveScriptPath, [dtVersionedInputPath]);
+  assert(dtVersionedResult.code === 0, "DTStack 语义版本路由执行成功", [
+    dtVersionedResult.stderr.trim(),
+    dtVersionedResult.stdout.trim(),
+  ].filter(Boolean));
+  assert(existsSync(dtVersionedOutputPath), "DTStack 语义版本路由写入 cases/archive/data-assets/v6.4.10/", [
+    dtVersionedOutputPath,
+  ]);
+
+  console.log("\n=== Test: json-to-archive-md.mjs DTStack 优先使用需求标题命名 ===");
+  const titledInputPath = resolve(tempRoot, `final-reviewed-titled-${runId}.json`);
+  const titledRequirementName = "数据资产V6.4.10";
+  const titledArchiveFileName = `【内置规则丰富】合理性，多表，字段大小对比以及字段计算逻辑对比-${runId}`;
+  const titledOutputPath = resolve(
+    repoRoot,
+    "cases/archive/data-assets/v6.4.10",
+    `${titledArchiveFileName}.md`,
+  );
+  const titledFixture = createJsonFixture({
+    projectName: "数据资产",
+    requirementName: titledRequirementName,
+    version: "v6.4.10",
+    story: "Story-20260328",
+    prdPath: `cases/requirements/data-assets/Story-20260328/PRD-15530-${titledArchiveFileName}.md`,
+  });
+  writeFileSync(
+    titledInputPath,
+    JSON.stringify(
+      {
+        ...titledFixture,
+        meta: {
+          ...titledFixture.meta,
+          archive_file_name: titledArchiveFileName,
+          requirement_title: titledArchiveFileName,
+          module_key: "data-assets",
+          source_standard: "dtstack",
+        },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  const titledResult = runNodeScript(archiveScriptPath, [titledInputPath]);
+  assert(titledResult.code === 0, "DTStack 需求标题命名执行成功", [
+    titledResult.stderr.trim(),
+    titledResult.stdout.trim(),
+  ].filter(Boolean));
+  assert(existsSync(titledOutputPath), "DTStack 归档文件名优先使用 archive_file_name / requirement_title", [
+    titledOutputPath,
+  ]);
+  if (existsSync(titledOutputPath)) {
+    generatedFilePaths.add(titledOutputPath);
+    const legacyPrefixedOutputPath = resolve(
+      repoRoot,
+      "cases/archive/data-assets/v6.4.10",
+      `PRD-15530-${titledArchiveFileName}.md`,
+    );
+    assert(
+      !existsSync(legacyPrefixedOutputPath),
+      "即使 PRD 路径含 PRD 前缀，DTStack 仍优先输出纯需求标题文件名",
+      [legacyPrefixedOutputPath],
+    );
+  }
+
   console.log("\n=== Test: json-to-archive-md.mjs 输出文件名优先保留 PRD 前缀 ===");
   const prefixedRequirementName = `__qa-prd-prefix-${runId}`;
   const prefixedInputBaseName = `PRD-26-${prefixedRequirementName}.json`;
