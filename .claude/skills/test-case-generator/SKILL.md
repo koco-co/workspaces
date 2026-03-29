@@ -3,14 +3,14 @@ name: test-case-generator
 description: QA 测试用例生成主编排 Skill。一键触发完整自动化流程：PRD 增强 → 健康度预检 → Brainstorming + 解耦分析 → Checklist 预览 → 并行生成用例 → 评审 → 输出 XMind。当用户说「生成测试用例」「生成用例」「写用例」「写测试用例」「根据需求文档生成用例」「为 Story-xxx 生成用例」「test case」「重新生成 xxx 模块」「追加用例」时触发。支持 --quick 快速模式、模块级重跑和断点续传。**也支持直接输入蓝湖 URL**：当用户提供 lanhuapp.com 链接时，自动通过 lanhu-mcp 提取 PRD 内容后进入完整流程；相关触发词：「从蓝湖导入」「蓝湖 URL」「lanhuapp.com」。
 ---
 
-# 测试用例生成编排 Skill（Harness Protocol）
+# 测试用例生成编排 Skill
 
-本 Skill 遵循 `.claude/harness/workflows/test-case-generation.json` 工作流，
-workflow JSON 是唯一执行依据；每个步骤的详细行为在 `prompts/step-<id>.md` 中。
+本 Skill 遵循 CLAUDE.md「工作流总览（10 步）」章节，按步骤自主执行。
+每个步骤的详细行为在 `prompts/step-<id>.md` 中。
 
 > DTStack 特殊规则：测试用例生成前必须先读取 `config/repo-branch-mapping.yaml`，完成源码分支同步，并将 Lanhu/raw PRD 先整理为**正式需求文档**；不要直接拿原始蓝湖文本写用例。
 
-> ⚠️ **用例编写硬性规则**见项目 CLAUDE.md「测试用例编写规范」章节（标题"验证"开头、禁止步骤编号、首步进入页面、正常/异常用例原则、禁止模糊词、预期结果规范）。Writer/Reviewer 必须遵循，本文件仅定义编排流程。
+> ⚠️ **用例编写硬性规则**见 `rules/test-case-writing.md`（标题"验证"开头、禁止步骤编号、首步进入页面、正常/异常用例原则、禁止模糊词、预期结果规范）。Writer/Reviewer 必须遵循，本文件仅定义编排流程。
 
 ---
 
@@ -25,86 +25,51 @@ workflow JSON 是唯一执行依据；每个步骤的详细行为在 `prompts/st
 
 ---
 
-## Harness 执行协议
+## 工作流步骤
 
-### 一、确定状态文件路径
+| # | 步骤 ID | prompt 文件 | 快速模式 | 说明 |
+|---|---------|-------------|----------|------|
+| 1 | parse-input | `step-parse-input.md` | 执行 | 指令解析、蓝湖 URL 检测、断点续传检测、状态初始化、源码验证、历史检查 |
+| 2 | source-sync | `step-source-sync.md` | 执行 | DTStack 分支同步（非 DTStack 模块跳过） |
+| 3 | prd-formalize | `step-prd-formalize.md` | 执行 | DTStack PRD 形式化（结合源码，非 DTStack 跳过） |
+| 4 | prd-enhancer | `step-prd-enhancer.md` | 执行 | PRD 增强 + 图片描述 + 健康度预检 |
+| 5 | brainstorm | `step-brainstorm.md` | **跳过** | Brainstorming + 解耦分析 |
+| 6 | checklist | `step-checklist.md` | **跳过** | Checklist 预览 + 用户一次确认 |
+| 7 | writer | `writer-subagent.md` | 执行 | 并行 Writer Subagents（多 agent 同时生成） |
+| 8 | reviewer | `reviewer-subagent.md` | 执行 | Reviewer Subagent（含质量阈值 15%/40%） |
+| 9 | xmind | `step-xmind.md` | 执行 | XMind 输出（支持 --append 追加模式） |
+| 10 | archive | `step-archive.md` | 执行 | 归档 MD 同步 + 用户验证提示 |
+| 11 | notify | `step-notify.md` | 执行 | 用户验证后清理 |
 
-```bash
-STATE_PATH="cases/requirements/<module>/Story-YYYYMMDD/.qa-state.json"
-MODE="full"      # 或 "quick"（--quick 时）
-INPUT_TYPE="story-path"  # 或 "lanhu-url" / "prd-path"
-```
+---
 
-### 二、初始化或加载状态
+## 执行协议
 
-```bash
-node .claude/scripts/harness-state-machine.mjs \
-  --init testCaseGeneration --state-path $STATE_PATH
-```
-
-### 三、执行循环
-
-重复以下循环，直到 `isComplete: true`：
-
-```bash
-# 获取下一步骤
-node .claude/scripts/harness-step-resolver.mjs \
-  --workflow testCaseGeneration \
-  --state $STATE_PATH \
-  --action next \
-  --mode $MODE \
-  --input-type $INPUT_TYPE
-```
-
-**解析输出：**
-- `nextStep.id` → 加载 `prompts/step-<id>.md` 获取该步骤的详细行为指导
-- `nextStep.delegate` → 确认执行方式（script / skill / agent）
-- `skippedSteps` → 记录跳过的步骤（如 brainstorm、checklist 在 quick-mode 下）
-- `isComplete: true` → 流程结束
-
-**执行步骤后推进状态：**
-```bash
-node .claude/scripts/harness-state-machine.mjs \
-  --advance <step-id> --state-path $STATE_PATH
-```
-
-**步骤失败时：**
-```bash
-node .claude/scripts/harness-state-machine.mjs \
-  --fail <step-id> --reason "<msg>" --state-path $STATE_PATH
-```
-
-### 四、per-step 行为指导文件
-
-| 步骤 ID | 文件 | 说明 |
-|---------|------|------|
-| parse-input | `prompts/step-parse-input.md` | 蓝湖 URL 检测、指令解析、续传检测、状态初始化、源码验证、历史检查 |
-| lanhu-ingest | `prompts/step-parse-input.md` §1.0 | 蓝湖导入子流程（在 parse-input 中处理） |
-| source-sync | `prompts/step-source-sync.md` | DTStack 分支同步 |
-| prd-formalize | `prompts/step-prd-formalize.md` | DTStack 正式需求文档整理（结合源码） |
-| prd-enhancer | `prompts/step-prd-enhancer.md` | PRD 增强 + 健康度预检 |
-| brainstorm | `prompts/step-brainstorm.md` | Brainstorming + 解耦分析（quick-mode 跳过） |
-| checklist | `prompts/step-checklist.md` | Checklist 预览 + 用户一次确认（quick-mode 跳过） |
-| writer | `prompts/writer-subagent.md` | 并行 Writer Subagents |
-| reviewer | `prompts/reviewer-subagent.md` | Reviewer Subagent（含质量阈值 15%/40%） |
-| xmind | `prompts/step-xmind.md` | XMind 输出（支持 --append 追加模式） |
-| archive | `prompts/step-archive.md` | 归档 MD 同步 + 用户验证提示 |
-| notify | `prompts/step-notify.md` | 用户验证后同步与清理 |
+1. 读取 `<story-dir>/.qa-state.json`，确定当前进度；若不存在则创建初始状态
+2. 初始状态：`{ "last_completed_step": 0, "writers": {}, "reviewer_status": "pending", "awaiting_verification": false, "created_at": "<ISO8601>" }`
+3. 从 `last_completed_step` 的下一步开始，按工作流步骤表顺序执行
+4. **快速模式**：跳过步骤 5（brainstorm）和步骤 6（checklist）
+5. 每步完成后，将 `.qa-state.json` 的 `last_completed_step` 更新为该步骤 ID
+6. **Writer 步骤**：并行启动 `case-writer` agents，在 `writers` 字典中跟踪各 agent 状态，等所有 Writer 均为 `completed` 或 `skipped` 后才进入 Reviewer
+7. **Reviewer 步骤**：问题率 >40% 时将 `reviewer_status` 设为 `"escalated"` 并阻断，等待用户决策
+8. 全部步骤完成后删除 `.qa-state.json`
 
 ---
 
 ## .qa-state.json 关键状态速查
 
+- `last_completed_step`：已完成的最后一步编号（数字 0 = 未开始，或步骤 ID 字符串）
 - `writers[*].status`：`pending` / `in_progress` / `completed` / `failed` / `skipped`
 - `reviewer_status`：`pending` / `completed` / `escalated`
+- `awaiting_verification`：`true` 时说明 archive 已完成，等待用户验收后执行 notify
 
 | 场景 | 状态行为 |
 |------|----------|
 | 新流程初始化 | `last_completed_step: 0`、`awaiting_verification: false`、`reviewer_status: "pending"` |
 | 等待验证续传 | `awaiting_verification: true` → 重新展示验证提示，不重跑 archive |
-| Writer 收敛 | 所有 Writer `completed/skipped` 后，state-machine 才允许 advance writer |
-| Reviewer 阻断 | `reviewer_status: "escalated"` → 等待用户决策，last_completed_step 保持在 writer |
-| 终态清理 | notify 完成后删除 `.qa-state.json`，不保留稳定可恢复状态 |
+| Writer 收敛 | 所有 Writer `completed/skipped` 后才推进至 reviewer |
+| Reviewer 阻断 | `reviewer_status: "escalated"` → 等待用户决策 |
+| 终态清理 | notify 完成后删除 `.qa-state.json` |
 
 ---
 
@@ -125,11 +90,8 @@ node .claude/scripts/harness-state-machine.mjs \
 - `references/intermediate-format.md` — 中间 JSON 格式 + .qa-state.json Schema
 - `prompts/writer-subagent.md` — Writer Subagent 提示词模板
 - `prompts/reviewer-subagent.md` — Reviewer Subagent 提示词模板（含质量阈值）
-- `.claude/harness/workflows/test-case-generation.json` — Workflow manifest（执行权威）
-- `.claude/harness/delegates.json` — Delegate 注册表
-- `.claude/harness/hooks.json` — Hook 注册表（conditions、prechecks、recovery）
-- `.claude/scripts/json-to-archive-md.mjs` — 归档 MD 转换脚本
-- `.claude/scripts/convert-history-cases.mjs` — 历史用例转化脚本
+- `.claude/skills/archive-converter/scripts/json-to-archive-md.mjs` — 归档 MD 转换脚本
+- `.claude/skills/archive-converter/scripts/convert-history-cases.mjs` — 历史用例转化脚本
 
 ## 关联 Skills
 

@@ -7,7 +7,7 @@ description: 历史用例归档转化 Skill。将非 Markdown 格式的历史测
 
 本 Skill 将非 Markdown 格式的历史测试用例（CSV、XMind）转化为标准化 Markdown 格式，存放到 `cases/archive/` 目录，供 AI 工作流（test-case-generator 等）引用和参考。
 
-**执行前必须阅读本文件和 CLAUDE.md「历史用例维护」章节。**
+**执行前必须阅读本文件和 `rules/archive-format.md`。**
 
 ---
 
@@ -66,7 +66,7 @@ Step 3: 输出结果
 运行命令：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs
 ```
 
 ### 4.2 指定模式
@@ -82,10 +82,10 @@ cd .claude/scripts && node convert-history-cases.mjs
 
 ```bash
 # 指定文件
-cd .claude/scripts && node convert-history-cases.mjs --path <file>
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --path <file>
 
 # 指定模块
-cd .claude/scripts && node convert-history-cases.mjs --module <name>
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --module <name>
 ```
 
 ### 4.3 检测模式
@@ -99,7 +99,7 @@ cd .claude/scripts && node convert-history-cases.mjs --module <name>
 运行命令：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs --detect
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --detect
 ```
 
 ---
@@ -115,13 +115,13 @@ cd .claude/scripts && node convert-history-cases.mjs --detect
 运行命令：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs --force
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --force
 ```
 
 也可与指定模式组合使用：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs --module 离线开发 --force
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --module 离线开发 --force
 ```
 
 ---
@@ -147,7 +147,7 @@ cd .claude/scripts && node convert-history-cases.mjs --module 离线开发 --for
 自动调用时等价于：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs --module <当前模块名>
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --module <当前模块名>
 ```
 
 ---
@@ -178,5 +178,5 @@ cd .claude/scripts && node convert-history-cases.mjs --module <当前模块名>
 
 ## 参考文件
 
-- `.claude/scripts/convert-history-cases.mjs` — 转化脚本
-- `CLAUDE.md`「历史用例维护」章节 — 维护规则
+- `.claude/skills/archive-converter/scripts/convert-history-cases.mjs` — 转化脚本
+- `rules/archive-format.md` — 归档格式规范

@@ -185,7 +185,7 @@ mkdir -p "$REPORT_DIR"
 **写入后必须刷新根目录快捷链接：**
 
 ```bash
-cd .claude/scripts && node refresh-latest-link.mjs "<项目根>/reports/bugs/$TODAY/<文件名>.html" latest-bug-report.html
+node .claude/shared/scripts/refresh-latest-link.mjs "<项目根>/reports/bugs/$TODAY/<文件名>.html" latest-bug-report.html
 ```
 
 `latest-bug-report.html` 是 Bug 分析流程的主验收入口；不要误用 `latest-output.xmind` 或 `latest-prd-enhanced.md`。
@@ -219,7 +219,7 @@ cd .claude/scripts && node refresh-latest-link.mjs "<项目根>/reports/bugs/$TO
 **写入后必须刷新根目录快捷链接：**
 
 ```bash
-cd .claude/scripts && node refresh-latest-link.mjs "<项目根>/reports/conflicts/${yyyy-MM-dd}/<文件名>.html" latest-conflict-report.html
+node .claude/shared/scripts/refresh-latest-link.mjs "<项目根>/reports/conflicts/${yyyy-MM-dd}/<文件名>.html" latest-conflict-report.html
 ```
 
 `latest-conflict-report.html` 是合并冲突分析流程的主验收入口。

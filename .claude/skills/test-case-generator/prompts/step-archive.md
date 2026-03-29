@@ -1,4 +1,3 @@
-<!-- step-id: archive | delegate: archiveConverter -->
 # Step archive：归档 MD 同步 + 用户验证提示
 
 ## 9.1 生成归档 MD
@@ -6,7 +5,7 @@
 调用 `json-to-archive-md.mjs` 将 Reviewer 输出的 final JSON 转换为 `cases/archive` 下的 Markdown 归档文件：
 
 ```bash
-node .claude/scripts/json-to-archive-md.mjs \
+node .claude/skills/archive-converter/scripts/json-to-archive-md.mjs \
   <cases/requirements/<requirements-root>/Story-20260322/temp/final-reviewed.json> \
   [output-dir]
 ```
@@ -33,13 +32,9 @@ DTStack 如识别到语义版本（如 `v6.4.10`），默认会落到 `cases/arc
 
 ## 步骤完成后
 
-```bash
-node .claude/scripts/harness-state-machine.mjs \
-  --advance archive \
-  --state-path <story-dir>/.qa-state.json
-```
-
-state-machine 的 `--advance archive` 会自动设置 `awaiting_verification: true`。
-同时写入 `archive_md_path: "<path>"`（在 advance 前写入）。
+更新 `.qa-state.json`：
+- 将 `archive_md_path` 设为实际归档 MD 文件路径
+- 将 `awaiting_verification` 设为 `true`
+- 将 `last_completed_step` 设为 `"archive"`
 
 断点续传时，如果读取到 `awaiting_verification: true`，只重新展示 9.2 的验证提示，不重新执行 9.1。
