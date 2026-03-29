@@ -229,6 +229,7 @@ cases/requirements/<project>/<Story>/.qa-state.json
     "PRD-26-数据质量-质量问题台账-enhanced.md"
   ],
   "checklist_confirmed": true,
+  "formalize_warnings": ["字段信息不足", "源码补充章节为空"],
   "writers": {
     "list": { "status": "completed", "file": "temp/list.json", "case_count": 12 },
     "create": { "status": "completed", "file": "temp/create.json", "case_count": 15 },
@@ -265,6 +266,8 @@ cases/requirements/<project>/<Story>/.qa-state.json
 | `output_xmind` | Step 9 生成并写入的 XMind 文件路径；Step 10 只读取该值用于验证提示，必须保持原值不变 |
 | `awaiting_verification` | Step 10 设置为 `true`，表示流程停在用户验证阶段；恢复时只重放验证提示，不重跑 Step 10；Step 11 消费该状态后删除状态文件 |
 | `archive_md_path` | Step 10 生成的归档 MD 文件路径 |
+| `formalize_warnings` | prd-formalize 质量闸口产生的警告列表。非阻断警告记录于此，在后续 prd-enhancer 健康度报告中一并展示 |
+| `retry_count` | Writer 自动重试次数（由编排器在 Writer 失败后递增）。达到上限（默认 2 次）后写 `failed` 并停止重试 |
 | `execution_log` | 步骤执行记录数组（可选）。每步完成或失败时追加一条记录，包含 step/status/at/duration_ms/summary。仅用于事后排查，不影响续传逻辑 |
 
 **恢复时的行为：**

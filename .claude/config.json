@@ -8,7 +8,8 @@
       "zh": "离线开发",
       "type": "dtstack",
       "xmind": "cases/xmind/batch-works/",
-      "archive": "cases/archive/batch-works/"
+      "archive": "cases/archive/batch-works/",
+      "requirements": "cases/requirements/batch-works/"
     },
     "data-assets": {
       "zh": "数据资产",
@@ -21,19 +22,22 @@
       "zh": "统一查询",
       "type": "dtstack",
       "xmind": "cases/xmind/data-query/",
-      "archive": "cases/archive/data-query/"
+      "archive": "cases/archive/data-query/",
+      "requirements": "cases/requirements/data-query/"
     },
     "variable-center": {
       "zh": "变量中心",
       "type": "dtstack",
       "xmind": "cases/xmind/variable-center/",
-      "archive": "cases/archive/variable-center/"
+      "archive": "cases/archive/variable-center/",
+      "requirements": "cases/requirements/variable-center/"
     },
     "public-service": {
       "zh": "公共组件",
       "type": "dtstack",
       "xmind": "cases/xmind/public-service/",
-      "archive": "cases/archive/public-service/"
+      "archive": "cases/archive/public-service/",
+      "requirements": "cases/requirements/public-service/"
     },
     "xyzh": {
       "zh": "信永中和",
