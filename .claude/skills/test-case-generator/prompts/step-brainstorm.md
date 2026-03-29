@@ -1,4 +1,9 @@
+<!-- step-id: brainstorm | delegate: testCaseOrchestrator -->
 # Step brainstorm：Brainstorming + 解耦分析
+
+> 前置条件: `last_completed_step` == `"prd-enhancer"`
+> 快速模式: **跳过**
+> DTStack 专属: 否
 
 > **快速模式时跳过此步骤，不执行本文件内容。**
 
@@ -35,6 +40,19 @@
 4. 确定 Writer Subagent 数量和各自负责范围
 5. 估算每个 Writer 的用例数量
 
+## 错误处理
+
+- **历史用例检索无结果**：跳过历史去重，向用户说明本模块无历史参考
+
+---
+
 ## 步骤完成后
 
-更新 `.qa-state.json`：将 `last_completed_step` 设为 `"brainstorm"`。
+更新 `.qa-state.json`：
+- `last_completed_step` → `"brainstorm"`
+- 记录拆分方案（各 Writer 预计覆盖范围和用例数）
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "brainstorm", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "完成需求解耦分析，确定 N 个 Writer 方案，估算 M 条用例"}
+```

@@ -1,4 +1,9 @@
+<!-- step-id: prd-formalize | delegate: testCaseOrchestrator -->
 # Step prd-formalize：DTStack 正式需求文档整理
+
+> 前置条件: `last_completed_step` == `"source-sync"`
+> 快速模式: 执行
+> DTStack 专属: 是
 
 > 本步骤仅在模块类型为 DTStack 时执行。将蓝湖原始文本 / raw PRD 结合源码上下文整理为正式需求文档。
 
@@ -34,6 +39,18 @@
 - 出现冲突时，明确标注"PRD 未说明，基于源码推断"
 - 确保正式文档可独立阅读，不依赖蓝湖原文
 
+## 错误处理
+
+- **prd-formalizer 输出为空或缺少关键章节**：提示用户检查 PRD 质量，建议先修改 PRD 后重试
+
+---
+
 ## 步骤完成后
 
-更新 `.qa-state.json`：将 `last_completed_step` 设为 `"prd-formalize"`。
+更新 `.qa-state.json`：
+- `last_completed_step` → `"prd-formalize"`
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "prd-formalize", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "完成 PRD 形式化整理，输出至 <file_path>"}
+```

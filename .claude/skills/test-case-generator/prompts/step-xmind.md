@@ -1,4 +1,9 @@
+<!-- step-id: xmind | delegate: testCaseOrchestrator -->
 # Step xmind：XMind 输出
+
+> 前置条件: `last_completed_step` == `"reviewer"`
+> 快速模式: 执行
+> DTStack 专属: 否
 
 ## 执行方式
 
@@ -19,10 +24,21 @@ XMind 生成成功后，刷新根目录符号链接：
 ln -sf <实际XMind路径> ./latest-output.xmind
 ```
 
+## 错误处理
+
+- **json-to-xmind.mjs 脚本执行失败**：展示错误日志，建议用户检查 JSON 格式
+
+---
+
 ## 步骤完成后
 
 验证 .xmind 文件存在后，更新 `.qa-state.json`：
-- 将 `output_xmind` 设为实际 XMind 文件路径
-- 将 `last_completed_step` 设为 `"xmind"`
+- `output_xmind` → 实际 XMind 文件路径
+- `last_completed_step` → `"xmind"`
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "xmind", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "生成 XMind 文件，路径: <xmind-path>，包含 M 条用例"}
+```
 
 > 注意：Step xmind 完成后不删除临时文件，延迟到 Step notify（用户确认后）清理。
