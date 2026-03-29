@@ -80,12 +80,6 @@ qa-flow/
 ├── tools/                         # 内置第三方工具（如 lanhu-mcp）
 └── .claude/
     ├── config.json                # 模块 / 仓库 / 报告路径 source of truth
-    ├── harness/                   # Harness Phase 1 控制平面
-    │   ├── workflows/             # workflow manifests
-    │   ├── delegates.json         # delegate 注册表
-    │   ├── hooks.json             # precheck / condition / recovery / convergence hooks
-    │   ├── contracts.json         # state / shortcut / quality contracts
-    │   └── state-schema.md        # .qa-state.json 字段文档
     ├── rules/                     # 规则文档
     ├── skills/                    # 项目 Skills
     ├── agents/                    # 子代理定义
@@ -94,22 +88,11 @@ qa-flow/
 
 ---
 
-## Harness Phase 1 控制平面
+## 编排模式
 
-当前 `qa-flow` 的 Harness 化采用“**入口层保留、控制平面抽离、执行层复用**”策略：
+Skills 自主编排，参照本文件「工作流总览」章节按步骤执行。断点状态由 Story 目录下的 `.qa-state.json` 管理（直接读写 JSON）。质量阈值、命名规范、输出路径等治理规则见 `.claude/rules/` 对应文件。
 
-- `Skill` 是入口层：只负责识别用户输入与路由。
-- `.claude/harness/workflows/*.json` 是控制平面：定义 workflow 的入口、步骤顺序、依赖、resume 点、输出产物和失败策略。
-- `.claude/harness/delegates.json` 是 delegate 注册表：将 step 绑定到具体 script / Skill / agent。
-- `.claude/harness/hooks.json` 是 hook 注册表：统一 precheck、条件判断、恢复动作和并行收敛钩子。
-- `.claude/harness/contracts.json` 是治理 contract：统一 `.qa-state.json`、根目录 `latest-*` 快捷链接、命名 contract、质量门禁和恢复策略。
-- `.claude/config.json` 继续保留全局路径、模块映射、仓库映射与集成入口，不再承载完整流程编排。
-
-当前分层边界是：
-
-`用户输入 → Skill 路由 → Harness workflow manifest → delegate 执行 → latest-* 快捷链接验收`
-
-当前 DTStack 流程在蓝湖导入后新增两个强制执行层：
+当前 DTStack 流程在蓝湖导入后需执行两个强制步骤：
 
 - `source-sync`：读取 `config/repo-branch-mapping.yaml`，根据 `开发版本` 将 `.repos/` 中 backend/frontend 仓库切到目标分支。
 - `prd-formalizer`：结合蓝湖原文与源码上下文生成正式需求文档，再交给 `prd-enhancer` 做增强与健康度预检。
@@ -313,13 +296,62 @@ Story 和 PRD 输入遵循以下目录 contract：
 - Story 聚合 Markdown 只在明确需要汇总时使用；默认优先维持“一份 PRD → 一份 MD”。
 - 归档文件供 Brainstorming、Writer、Reviewer 去重和引用，**不要手动移动到其他模块目录**。
 
-常用命令：
+### Archive MD Front-Matter
+
+所有归档 MD 文件使用 YAML front-matter 存储结构化元数据（name/description/tags/module/version/source/case_count/created_at/origin）。`tags` 字段包含领域关键词，是历史用例检索的核心。
+
+**Brainstorm 检索用法**：
+```bash
+# 按关键词快速定位相关历史用例
+grep -rl "数据质量\|质量规则" cases/archive/ --include="*.md"
+grep -rl "岚图\|信永中和" cases/archive/custom/xyzh/ --include="*.md"
+```
+
+**常用命令**：
 
 ```bash
-cd .claude/scripts && node convert-history-cases.mjs --detect
-cd .claude/scripts && node convert-history-cases.mjs --module xyzh
-cd .claude/scripts && node convert-history-cases.mjs --path cases/xmind/custom/xyzh/<file>.xmind
-cd .claude/scripts && node convert-history-cases.mjs --force
+# 转化历史用例
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --detect
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --module xyzh
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --path cases/xmind/custom/xyzh/<file>.xmind
+node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --force
+
+# 为现有归档文件补充 front-matter
+node .claude/skills/archive-converter/scripts/backfill-archive-frontmatter.mjs --dry-run   # 预览
+node .claude/skills/archive-converter/scripts/backfill-archive-frontmatter.mjs              # 执行
+```
+
+### PRD 文档 Front-Matter
+
+所有需求文档（`cases/requirements/` 下的 `.md` 文件）同样使用 YAML front-matter 记录元数据，便于来源追溯和需求管理。
+
+**关键字段：**
+
+| 字段 | 说明 |
+|------|------|
+| `name` | 需求标题 |
+| `description` | 一句话描述（≤60字） |
+| `source` | **用户发送的原始蓝湖 URL**（或「内部需求文档」） |
+| `module` | 模块 key（data-assets、xyzh 等） |
+| `version` | 语义版本（如 v6.4.10） |
+| `prd_id` | PRD 编号（如 15530、21） |
+| `doc_id` | 蓝湖 docId（仅 DTStack Lanhu 导入有） |
+| `dev_version` | 开发版本/分支（如 6.3岚图定制化分支） |
+| `story` | 所属 Story（如 Story-20260329） |
+| `status` | `raw` / `formalized` / `enhanced` |
+| `enhanced_at` | 增强时间戳（仅 enhanced 文件有） |
+
+**常用命令：**
+
+```bash
+# 为现有需求文档补充 front-matter
+node .claude/skills/prd-enhancer/scripts/backfill-prd-frontmatter.mjs --dry-run   # 预览
+node .claude/skills/prd-enhancer/scripts/backfill-prd-frontmatter.mjs              # 执行
+node .claude/skills/prd-enhancer/scripts/backfill-prd-frontmatter.mjs --force      # 强制覆盖
+
+# 查找特定需求（按蓝湖 docId 或版本）
+grep -rl "fc0fee93" cases/requirements/ --include="*.md"
+grep -rl "v6.4.10" cases/requirements/ --include="*.md"
 ```
 
 ---
@@ -413,7 +445,7 @@ cd .claude/scripts && node convert-history-cases.mjs --force
 ## 工具依赖
 
 ```bash
-cd .claude/scripts && npm install
+cd .claude/skills/xmind-converter/scripts && npm install
 ```
 
 - `xmind-generator@^1.0.1` — XMind 生成

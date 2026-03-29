@@ -7,7 +7,7 @@ description: PRD 文档增强 Skill。读取 PRD 中的 Obsidian 图片引用，
 
 本 Skill 解决 PRD 文档中图片无法被 AI 自动读取的问题，通过多模态能力逐张解析图片，生成结构化文本描述，使后续用例编写 Skill 能获取完整的 UI 信息。
 
-**执行前必须阅读本文件和 `references/prd-template.md`。**
+**执行前必须阅读本文件、`rules/image-conventions.md` 和 `references/prd-template.md`。**
 
 > DTStack 特殊说明：当输入来自蓝湖原始文本或低质量 PRD 时，**不得**直接把原始文本当增强结果下发给 Writer。应先经过 `prd-formalizer` 生成正式需求文档，再由本 Skill 做图片增强、结构标准化与健康度预检。
 
@@ -276,22 +276,55 @@ done
 增强成功后，必须刷新仓库根目录快捷链接，便于用户直接验收：
 
 ```bash
-cd .claude/scripts && node refresh-latest-link.mjs "<enhanced-path>" latest-prd-enhanced.md
+node .claude/shared/scripts/refresh-latest-link.mjs "<enhanced-path>" latest-prd-enhanced.md
 ```
 
 `latest-prd-enhanced.md` 是 **PRD 增强流程的主验收入口**；如果后续继续进入测试用例生成流程，最终验收对象仍以 `latest-output.xmind` 为准。
 
-**文件头部必须包含增强元数据（第一行）：**
+**文件格式：先写 YAML front-matter，再写 HTML comment 元数据，再写正文：**
+
+**Step 8.1 — 读取原始 PRD front-matter（继承字段）**
+
+在写入 enhanced 文件之前，先读取同目录的原始 PRD（或 formalized PRD）的 YAML front-matter。若原始 PRD 已有 front-matter，继承全部字段并更新 `status`；若没有，则从原始 PRD 的 blockquote header 提取关键字段：
+
+| 提取目标 | 来源 |
+|----------|------|
+| `name` | H1 标题 |
+| `source` | `> 来源：` 行（保留完整内容） |
+| `version` | 文件名或 `> 来源：` 中的版本关键词 |
+| `module` | 文件路径（`extractModuleKey` 逻辑） |
+| `doc_id` | `> 文档ID：` 行 |
+| `dev_version` | `> 开发版本：` 行 |
+| `created_at` | `> 导入日期：` 行 或文件创建日期 |
+
+**Step 8.2 — 写入 enhanced 文件，格式如下：**
 
 ```markdown
+---
+name: "<需求标题>"
+description: "<一句话描述，≤60字>"
+source: "<来源 URL 或描述>"
+module: <module-key>
+version: <vX.Y.Z>
+prd_id: "<PRD 编号>"
+doc_id: "<蓝湖 docId，无则省略>"
+dev_version: "<开发版本，无则省略>"
+story: Story-<YYYYMMDD>
+created_at: "<YYYY-MM-DD>"
+enhanced_at: "<ISO8601 时间戳>"
+images_processed: "<成功数/总数>"
+health_warnings: <数字>
+status: enhanced
+---
 <!-- enhanced-at: 2026-03-25T10:00:00Z | images: 41/41 | health: 2 warnings -->
+
+# 正文内容...
 ```
 
-格式说明：
-
-- `enhanced-at`：本次增强完成时间（ISO8601）
-- `images`：成功读取/总数
-- `health`：健康度问题数量（0 = 无问题）
+说明：
+- `enhanced_at` / `images_processed` / `health_warnings` 是 enhanced 阶段新增字段
+- `<!-- enhanced-at: ... -->` HTML comment 作为向后兼容标记保留（旧脚本读取该 comment）
+- `status: enhanced` 表示该文件已经过完整增强流程
 
 **大纲层级规范（增强版 PRD 必须遵循）：**
 
@@ -376,5 +409,6 @@ PRD 健康度：
 
 ## 参考文件
 
+- `rules/image-conventions.md` — 图片引用规范（存放位置、命名、压缩）
 - `references/prd-template.md` — 标准化 PRD 模板规范和图片描述格式
-- `.claude/agents/prd-formalizer.md` — DTStack 正式需求文档生成要求
+- `prompts/prd-formalizer.md` — DTStack 正式需求文档生成要求
