@@ -1,6 +1,10 @@
 <!-- step-id: notify | delegate: testCaseOrchestrator -->
 # Step notify：用户验证后同步（条件执行）
 
+> 前置条件: `last_completed_step` == `"archive"`
+> 快速模式: 执行
+> DTStack 专属: 否
+
 收到用户回复后，根据回复内容执行不同操作：
 
 ---

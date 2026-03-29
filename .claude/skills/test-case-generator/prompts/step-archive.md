@@ -1,4 +1,9 @@
+<!-- step-id: archive | delegate: testCaseOrchestrator -->
 # Step archive：归档 MD 同步 + 用户验证提示
+
+> 前置条件: `last_completed_step` == `"xmind"`
+> 快速模式: 执行
+> DTStack 专属: 否
 
 ## 9.1 生成归档 MD
 
@@ -38,3 +43,21 @@ DTStack 如识别到语义版本（如 `v6.4.10`），默认会落到 `cases/arc
 - 将 `last_completed_step` 设为 `"archive"`
 
 断点续传时，如果读取到 `awaiting_verification: true`，只重新展示 9.2 的验证提示，不重新执行 9.1。
+
+## 错误处理
+
+- **json-to-archive-md.mjs 失败**：展示错误，但不阻断（XMind 已生成可用）
+
+---
+
+## 步骤完成后
+
+更新 `.qa-state.json`：
+- `archive_md_path` → 实际归档 MD 文件路径
+- `awaiting_verification` → `true`
+- `last_completed_step` → `"archive"`
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "archive", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "生成归档 MD，路径: <archive-md-path>，等待用户验证"}
+```

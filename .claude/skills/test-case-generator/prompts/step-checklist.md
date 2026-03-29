@@ -1,8 +1,13 @@
+<!-- step-id: checklist | delegate: testCaseOrchestrator -->
 # Step checklist：Checklist 预览 + 用户一次确认
+
+> 前置条件: `last_completed_step` == `"brainstorm"`
+> 快速模式: **跳过**
+> DTStack 专属: 否
 
 > **快速模式时跳过此步骤，不执行本文件内容。**
 
-## Step 4: Checklist 预览
+## Checklist 预览
 
 为每个解耦模块，启动轻量级 Checklist 生成（只需测试点列表，无需完整 steps/expected）。
 
@@ -29,7 +34,7 @@
 
 ---
 
-## Step 5: 用户一次确认
+## 用户一次确认
 
 在一条消息中展示完整确认内容，包含：
 
@@ -41,6 +46,19 @@
 
 ---
 
+## 错误处理
+
+- **用户超过 2 轮修改仍未确认时**：提示用户是否切换为快速模式跳过 checklist
+
+---
+
 ## 步骤完成后
 
-更新 `.qa-state.json`：将 `checklist_confirmed` 设为 `true`，将 `last_completed_step` 设为 `"checklist"`。
+更新 `.qa-state.json`：
+- `last_completed_step` → `"checklist"`
+- `checklist_confirmed` → `true`
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "checklist", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "用户确认了 Checklist，准备启动 Writer"}
+```

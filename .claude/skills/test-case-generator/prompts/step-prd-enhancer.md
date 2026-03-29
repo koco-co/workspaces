@@ -1,4 +1,9 @@
+<!-- step-id: prd-enhancer | delegate: testCaseOrchestrator -->
 # Step prd-enhancer：PRD 增强 + 健康度预检
+
+> 前置条件: `last_completed_step` == `"prd-formalize"` 或 `"source-sync"`（取决于是否为 DTStack）
+> 快速模式: 执行
+> DTStack 专属: 否
 
 ## 执行方式
 
@@ -26,6 +31,19 @@
 ln -sf <实际enhanced.md路径> ./latest-prd-enhanced.md
 ```
 
+## 错误处理
+
+- **图片读取失败率 > 50%**：暂停并提示用户，建议修改 PRD 中的图片引用后重试
+
+---
+
 ## 步骤完成后
 
-更新 `.qa-state.json`：将 `last_completed_step` 设为 `"prd-enhancer"`。
+更新 `.qa-state.json`：
+- `last_completed_step` → `"prd-enhancer"`
+- 记录增强完成的文件列表
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "prd-enhancer", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "完成 PRD 增强，生成 N 个 -enhanced.md 文件，健康度报告已输出"}
+```

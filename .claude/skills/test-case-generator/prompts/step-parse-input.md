@@ -1,4 +1,9 @@
+<!-- step-id: parse-input | delegate: testCaseOrchestrator -->
 # Step parse-input：解析用户指令 + 断点续传检测
+
+> 前置条件: `last_completed_step` == `0`
+> 快速模式: 执行
+> DTStack 专属: 否
 
 ## 1.0 蓝湖 URL 检测（前置，优先级最高）
 
@@ -173,6 +178,21 @@ node .claude/skills/archive-converter/scripts/convert-history-cases.mjs --detect
 
 ---
 
+## 错误处理
+
+- **蓝湖 URL 检测失败**：提示用户检查 URL 格式和网络连接
+- **路径不存在**：向用户列出可用的 Story 目录供选择
+- **PRD 文件不存在**：提示用户先添加 PRD 文档
+- **状态文件损坏**：询问用户是否重新开始流程
+
+---
+
 ## 步骤完成后
 
-更新 `.qa-state.json`：将 `last_completed_step` 设为 `"parse-input"`。
+更新 `.qa-state.json`：
+- `last_completed_step` → `"parse-input"`
+
+同时向 `execution_log` 数组追加：
+```json
+{"step": "parse-input", "status": "completed", "at": "<ISO8601>", "duration_ms": null, "summary": "解析用户指令，发现 N 个 PRD 文件，已初始化状态文件"}
+```
