@@ -231,6 +231,27 @@ cases/requirements/<project>/<working-dir>/.qa-state.json
   "project_name": "信永中和",
   "prd_files": ["PRD-26-xxx.md", "PRD-27-xxx.md"],
   "last_completed_step": "prd-enhancer",
+  "elicitation": {
+    "status": "completed",
+    "testability_score_before": 62,
+    "testability_score_after": 88,
+    "questions_asked": 5,
+    "questions_answered": 5,
+    "auto_inferred_count": 3,
+    "dimension_scores": {
+      "goal": 100,
+      "target_user": 80,
+      "usage_scenario": 60,
+      "page_inventory": 100,
+      "field_definition": 75,
+      "io_criteria": 50,
+      "business_rules": 60,
+      "time_limits": 0,
+      "tech_constraints": 0,
+      "risks_boundaries": 40
+    },
+    "target_branch_override": null
+  },
   "prd_enhanced_at": "2026-03-25T10:00:00Z",
   "enhanced_files": [
     "数据质量-质量问题台账.md"
@@ -267,6 +288,7 @@ cases/requirements/<project>/<working-dir>/.qa-state.json
 | 字段 | 说明 |
 |------|------|
 | `last_completed_step` | 已稳定完成的最后步骤，字符串 step ID（初始值为数字 0 表示未开始）。取值范围见 SKILL.md 步骤顺序定义表 |
+| `elicitation` | 需求澄清阶段的状态与结果对象（Step req-elicit 写入，下游步骤只读）。`status` 枚举：`completed` / `skipped`；`target_branch_override` 非空时 source-sync 优先采用该值作为目标分支；`dimension_scores` 记录 10 个可测试性维度得分（0-100）；`testability_score_after` 为加权总评分（权重见 elicitation-dimensions.md） |
 | `mode` | `normal` / `quick`（快速模式跳过 brainstorming 和确认） |
 | `writers.<name>.status` | `pending` / `in_progress` / `completed` / `failed` / `skipped`（`skipped` 表示用户明确跳过该模块，Reviewer 不合并其内容） |
 | `reviewer_status` | `pending` / `completed` / `escalated`（`pending` 覆盖未开始和 Reviewer 执行中；`escalated` 表示 Step 7 被阻断，需人工介入） |

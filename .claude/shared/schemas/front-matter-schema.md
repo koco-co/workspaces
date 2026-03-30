@@ -44,7 +44,7 @@ tags:
   - 关键词1
 create_at: "YYYY-MM-DD"
 update_at: "YYYY-MM-DD"
-status: raw                            # raw / formalized / enhanced
+status: raw                            # raw / elicited / formalized / enhanced
 health_warnings: []                    # 增强后填入，如 ["W001: 缺少字段定义表"]
 repos:
   - ".repos/DTStack/dt-center-assets"
