@@ -1,7 +1,7 @@
 <!-- step-id: source-sync | delegate: testCaseOrchestrator -->
 # Step source-sync：DTStack 源码分支同步
 
-> 前置条件: `last_completed_step` == `"parse-input"`
+> 前置条件: `last_completed_step` == `"req-elicit"`
 > 快速模式: 执行
 > DTStack 专属: 是
 
@@ -9,9 +9,10 @@
 
 ## 执行流程
 
-1. 从蓝湖原文 / PRD 原文中提取 `开发版本`
-2. 读取仓库根目录 `config/repo-branch-mapping.yaml`
-3. 调用 `sync-source-repos.mjs`，根据 `config/repo-branch-mapping.yaml` 解析 repo profile 与 backend/frontend 目标分支：
+1. **优先读取 `elicitation.target_branch_override`**：若 `.qa-state.json` 中 `elicitation.target_branch_override` 非空，直接使用该值作为目标分支（用户在需求澄清时已确认），跳过第 1 步的 PRD 文本解析
+2. 从蓝湖原文 / PRD 原文（或 `## 需求澄清结果` 章节）中提取 `开发版本`（若 step 1 未命中）
+3. 读取仓库根目录 `config/repo-branch-mapping.yaml`
+4. 调用 `sync-source-repos.mjs`，根据 `config/repo-branch-mapping.yaml` 解析 repo profile 与 backend/frontend 目标分支：
    ```bash
    node .claude/skills/using-qa-flow/scripts/sync-source-repos.mjs \
      --version "<开发版本>" \

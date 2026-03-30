@@ -17,6 +17,7 @@
 调用 `prd-formalizer` agent（`.claude/skills/prd-enhancer/prompts/prd-formalizer.md`）：
 
 1. 读取蓝湖原文 / raw PRD 文件（来自 Step parse-input 或 lanhu-ingest）
+   - **优先读取 `## 需求澄清结果` 章节**（若存在）：将其中的字段定义、验收标准、使用场景等信息作为补充输入，与 PRD 原文合并分析
 2. 读取 `.qa-state.json.source_context` 中的分支信息
 3. 在 `.repos/` 目标分支源码中查找：
    - 对应的 Controller / Service / DAO 类

@@ -70,7 +70,7 @@ qa-flow/
 ### DTStack
 
 - **PRD 只是线索，不是权威**。必须以 `.repos/` 目标分支源码为准。
-- 蓝湖导入后强制执行：`source-sync` → `prd-formalizer` → `prd-enhancer` → Writer → Reviewer。
+- 蓝湖导入后强制执行：`req-elicit` → `source-sync` → `prd-formalizer` → `prd-enhancer` → Writer → Reviewer。
 - Archive 按版本目录落盘：`cases/archive/<module>/v{version}/`。
 
 ### XYZH / 定制

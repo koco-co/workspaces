@@ -74,11 +74,19 @@ const nonSemverRelativePath = "cases/archive/data-assets/主流程/flow-archive.
 const archiveBody = [
   "# Legacy archive(#12345)",
   "",
-  "##### 验证旧格式用例",
+  "## 数据资产",
+  "",
+  "### 质量问题台账",
+  "",
+  "#### 列表页",
+  "",
+  "##### 验证旧格式用例 「P1」",
+  "",
+  "1、已登录系统",
   "",
   "| 编号 | 步骤 | 预期 |",
   "| --- | --- | --- |",
-  "| 1 | 点击按钮 | 成功 |",
+  "| 1 | 点击查询按钮 | 成功 |",
   "",
 ].join("\n");
 
@@ -215,6 +223,8 @@ assert(dryRunResult.stdout.includes("case_count"), "dry-run 报告包含 case_co
 assert(dryRunResult.stdout.includes("hybrid table"), "dry-run 报告包含 hybrid table 分类");
 assert(dryRunResult.stdout.includes("优先级前缀"), "dry-run 报告包含优先级前缀问题");
 assert(dryRunResult.stdout.includes("用例步骤"), "dry-run 报告包含用例步骤问题");
+assert(dryRunResult.stdout.includes("前置条件"), "dry-run 报告包含前置条件问题");
+assert(dryRunResult.stdout.includes("进入【"), "dry-run 报告包含首步格式问题");
 assert(dryRunResult.stdout.includes(bulletArchiveRelativePath), "dry-run 报告包含 bullet/XMind archive 文件路径");
 assert(dryRunResult.stdout.includes("bullet/XMind tree"), "dry-run 报告包含 bullet/XMind tree 分类");
 assert(dryRunResult.stdout.includes(requirementRelativePath), "dry-run 报告包含 requirement 文件路径");
@@ -254,8 +264,28 @@ assert(!/(^|\n)module:/.test(fixedArchive), "archive 已移除 legacy module 字
 assert(!/(^|\n)version:/.test(fixedArchive), "archive 已移除 legacy version 字段");
 assert(!/(^|\n)created_at:/.test(fixedArchive), "archive 已移除 legacy created_at 字段");
 assert(
-  fixedArchive.endsWith(archiveBody),
-  "archive 修复仅修改 frontmatter，不改 body",
+  !fixedArchive.includes("\n# Legacy archive(#12345)\n"),
+  "archive body 顶层 H1 已移除",
+  [fixedArchive],
+);
+assert(
+  fixedArchive.includes("##### 【P1】验证旧格式用例"),
+  "archive body 已补 canonical 标题优先级前缀",
+  [fixedArchive],
+);
+assert(
+  fixedArchive.includes("> 前置条件\n```\n1、已登录系统\n```"),
+  "archive body 已补前置条件区块",
+  [fixedArchive],
+);
+assert(
+  fixedArchive.includes("> 用例步骤\n\n| 编号 | 步骤 | 预期 |"),
+  "archive body 已补用例步骤标记",
+  [fixedArchive],
+);
+assert(
+  fixedArchive.includes("| 1 | 进入【质量问题台账-列表页】页面，点击查询按钮 | 成功 |"),
+  "archive body 已补首步进入页面格式",
   [fixedArchive],
 );
 
@@ -278,6 +308,23 @@ assert(
 );
 assert(readFixture(bulletArchiveRelativePath).endsWith(bulletArchiveBody), "fix 模式不改写 bullet/XMind body");
 assert(readFixture(nonSemverRelativePath).endsWith(canonicalArchiveBody), "fix 模式不改写 canonical body");
+
+console.log("\n=== Test: post-fix dry-run reduces table-style body warnings ===");
+const postFixDryRunResult = runAudit(["--dry-run"]);
+assert(postFixDryRunResult.status === 0, "post-fix dry-run 执行成功", [
+  postFixDryRunResult.stderr.trim(),
+  postFixDryRunResult.stdout.trim(),
+].filter(Boolean));
+assert(
+  !postFixDryRunResult.stdout.includes(archiveRelativePath),
+  "修复后 table-style archive 样例不再出现在 dry-run body 警告中",
+  [postFixDryRunResult.stdout],
+);
+assert(
+  postFixDryRunResult.stdout.includes(bulletArchiveRelativePath),
+  "bullet/XMind-style archive 仍保留给后续专门任务处理",
+  [postFixDryRunResult.stdout],
+);
 
 console.log(`\n══════════════════════════════════════`);
 console.log(`总计: ${passed + failed} 测试, ✅ ${passed} 通过, ❌ ${failed} 失败`);

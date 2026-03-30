@@ -29,6 +29,7 @@ import {
   normalizeDateString,
   parseFrontMatter,
 } from "./front-matter-utils.mjs";
+import { normalizeTableStyleArchiveBody } from "./normalize-md-content.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(__dirname, "../../..");
@@ -677,9 +678,15 @@ function processFile(filePath) {
   const hadFrontMatter = frontMatter !== null;
   const rawMeta = frontMatter || {};
   const rawBody = hadFrontMatter ? body : originalContent;
+  const bodyNormalization = docType === "archive"
+    ? normalizeTableStyleArchiveBody(rawBody)
+    : null;
+  const effectiveBody = docType === "archive" && FIX
+    ? bodyNormalization.body
+    : rawBody;
 
   const canonicalFields = docType === "archive"
-    ? buildArchiveCanonicalFields(rawMeta, filePath, rawBody)
+    ? buildArchiveCanonicalFields(rawMeta, filePath, effectiveBody)
     : buildRequirementCanonicalFields(rawMeta, filePath);
 
   const mergedFields = mergeOrderedFields(
@@ -689,12 +696,20 @@ function processFile(filePath) {
     docType === "archive" ? LEGACY_ARCHIVE_KEYS : LEGACY_REQUIREMENT_KEYS,
   );
 
-  const rebuiltContent = buildFrontMatter(mergedFields) + rawBody;
+  const rebuiltContent = buildFrontMatter(mergedFields) + effectiveBody;
   const issues = docType === "archive"
-    ? auditArchiveFrontmatter(rawMeta, canonicalFields, filePath, rawBody, hadFrontMatter)
+    ? auditArchiveFrontmatter(rawMeta, canonicalFields, filePath, effectiveBody, hadFrontMatter)
     : auditRequirementFrontmatter(rawMeta, canonicalFields, filePath, hadFrontMatter);
 
-  const fixCounts = collectFixCounts(docType, rawMeta, canonicalFields, mergedFields, filePath, rawBody);
+  const fixCounts = collectFixCounts(
+    docType,
+    rawMeta,
+    canonicalFields,
+    mergedFields,
+    filePath,
+    rawBody,
+    bodyNormalization,
+  );
   const changed = rebuiltContent !== originalContent;
 
   if (FIX && changed) {
@@ -711,12 +726,20 @@ function processFile(filePath) {
   };
 }
 
-function collectFixCounts(docType, rawMeta, canonicalFields, mergedFields, filePath, body) {
+function collectFixCounts(
+  docType,
+  rawMeta,
+  canonicalFields,
+  mergedFields,
+  filePath,
+  body,
+  bodyNormalization = null,
+) {
   const counts = {};
   const mtimeDate = normalizeDateString(getMtimeDate(filePath));
 
-  function add(key) {
-    counts[key] = (counts[key] || 0) + 1;
+  function add(key, value = 1) {
+    counts[key] = (counts[key] || 0) + value;
   }
 
   if (docType === "archive") {
@@ -737,6 +760,11 @@ function collectFixCounts(docType, rawMeta, canonicalFields, mergedFields, fileP
     if (!hasOwn(rawMeta, "status")) add("status");
     if (!hasOwn(rawMeta, "health_warnings")) add("health_warnings");
     if (!hasOwn(rawMeta, "create_at") && mergedFields.create_at === mtimeDate) add("create_at_from_mtime");
+    if (bodyNormalization?.stats?.removedTopLevelH1) add("body_h1", bodyNormalization.stats.removedTopLevelH1);
+    if (bodyNormalization?.stats?.addedPriorityPrefix) add("body_title_priority", bodyNormalization.stats.addedPriorityPrefix);
+    if (bodyNormalization?.stats?.insertedStepMarker) add("body_step_marker", bodyNormalization.stats.insertedStepMarker);
+    if (bodyNormalization?.stats?.insertedPreconditionMarker) add("body_precondition_marker", bodyNormalization.stats.insertedPreconditionMarker);
+    if (bodyNormalization?.stats?.normalizedFirstStep) add("body_first_step", bodyNormalization.stats.normalizedFirstStep);
   } else {
     if (hasOwn(rawMeta, "name") || hasOwn(rawMeta, "suite_name")) add("legacy_name_to_prd_name");
     if (hasOwn(rawMeta, "module")) add("legacy_module_to_product");
