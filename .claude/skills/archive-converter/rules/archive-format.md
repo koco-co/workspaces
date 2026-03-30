@@ -1,3 +1,5 @@
+> **注意**：本文件是 `.claude/rules/archive-format.md` 的 skill 内镜像，以全局版本为准。如有冲突，请以 `.claude/rules/archive-format.md` 为准。
+
 # 归档 MD 格式规范
 
 > 所有 Archive Markdown 统一写入 `cases/archive/` 根目录；历史文档、旧 Skill 文案或 Prompt 中的 `archive-cases/` 仅是旧称呼，不代表真实目录。

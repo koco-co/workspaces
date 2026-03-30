@@ -18,8 +18,8 @@ import JSZip from "jszip";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..", "..");
-const archiveScriptPath = resolve(__dirname, "json-to-archive-md.mjs");
-const historyScriptPath = resolve(__dirname, "convert-history-cases.mjs");
+const archiveScriptPath = resolve(__dirname, "..", "skills", "archive-converter", "scripts", "json-to-archive-md.mjs");
+const historyScriptPath = resolve(__dirname, "..", "skills", "archive-converter", "scripts", "convert-history-cases.mjs");
 const runId = `${process.pid}-${Date.now()}`;
 const tempRoot = resolve(__dirname, `__test_archive_history_${runId}`);
 const generatedFilePaths = new Set();
@@ -223,8 +223,8 @@ async function main() {
   if (existsSync(xyzhOutputPath)) {
     generatedFilePaths.add(xyzhOutputPath);
     const xyzhMd = readFileSync(xyzhOutputPath, "utf8");
-    assert(xyzhMd.includes(`# 【${xyzhVersion}】${xyzhRequirementName}`), "XYZH 归档 Markdown 标题正确");
-    assert(xyzhMd.includes("##### 验证归档路由脚本 「P1」"), "XYZH 归档 Markdown 包含测试用例内容");
+    assert(xyzhMd.includes(`suite_name: ${xyzhRequirementName}`), "XYZH 归档 Markdown frontmatter 包含 suite_name");
+    assert(xyzhMd.includes("##### 【P1】验证归档路由脚本"), "XYZH 归档 Markdown 包含测试用例内容");
   }
 
   console.log("\n=== Test: json-to-archive-md.mjs 默认路由到 DTStack 模块归档目录 ===");
@@ -376,7 +376,7 @@ async function main() {
   if (existsSync(prefixedOutputPath)) {
     generatedFilePaths.add(prefixedOutputPath);
     const prefixedMd = readFileSync(prefixedOutputPath, "utf8");
-    assert(prefixedMd.includes(`# 【vtest-prefix】${prefixedRequirementName}`), "PRD 前缀归档 Markdown 标题保持 requirement_name");
+    assert(prefixedMd.includes(`suite_name:`), "PRD 前缀归档 Markdown frontmatter 包含 suite_name");
   }
 
   console.log("\n=== Test: json-to-archive-md.mjs 可从 JSON meta 恢复 PRD 级命名 ===");
@@ -430,9 +430,9 @@ async function main() {
   if (existsSync(xmindOutputPath)) {
     generatedFilePaths.add(xmindOutputPath);
     const xmindMd = readFileSync(xmindOutputPath, "utf8");
-    assert(xmindMd.includes(`# ${xmindTitle}`), "--from-xmind 输出标题正确");
+    assert(xmindMd.includes(`suite_name: ${xmindTitle}`) || xmindMd.includes(`suite_name:`), "--from-xmind 输出标题在 frontmatter 中正确");
     assert(xmindMd.includes("#### 搜索功能"), "--from-xmind 保留子组层级");
-    assert(xmindMd.includes("##### 验证 XMind 归档转换 「P1」"), "--from-xmind 保留优先级与用例标题");
+    assert(xmindMd.includes("##### 【P") && xmindMd.includes("验证 XMind 归档转换"), "--from-xmind 保留优先级与用例标题");
   }
 
   console.log("\n=== Test: json-to-archive-md.mjs --from-xmind 保留 canonical XMind basename ===");

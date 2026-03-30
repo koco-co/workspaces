@@ -70,7 +70,7 @@ qa-flow/
 ### DTStack
 
 - **PRD 只是线索，不是权威**。必须以 `.repos/` 目标分支源码为准。
-- 蓝湖导入后强制执行：`req-elicit` → `source-sync` → `prd-formalizer` → `prd-enhancer` → Writer → Reviewer。
+- 蓝湖导入后强制执行：`req-elicit` → `source-sync` → `prd-formalize` → `prd-enhancer` → Writer → Reviewer。
 - Archive 按版本目录落盘：`cases/archive/<module>/v{version}/`。
 
 ### XYZH / 定制
@@ -81,10 +81,13 @@ qa-flow/
 
 ## 编排说明
 
-- 断点状态：Story 目录下的 `.qa-state.json`
+- 断点状态：
+  - 单 PRD：`<requirements目录>/.qa-state-{prd文件名}.json`
+  - 批量：`<requirements目录>/.qa-state.json`
 - 质量阈值：`< 15%` 自动修正；`15-40%` 自动修正+警告；`> 40%` 阻断
 - 源码仓库清单：见 `.claude/config.json` 的 `repos` 字段
 - 前端报错优先查 `dt-insight-studio-front`；定制需求优先查 `.repos/CustomItem/`
+- 快捷链接：`latest-output.xmind` 指向最新生成的 XMind 文件，`latest-prd-enhanced.md` 指向最新增强 PRD
 
 ---
 

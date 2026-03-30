@@ -13,7 +13,7 @@ import {
   readlinkSync,
   renameSync,
 } from "fs";
-import { resolve, dirname } from "path";
+import { resolve, dirname, basename } from "path";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
 import JSZip from "jszip";
@@ -34,9 +34,11 @@ function assert(condition, msg) {
   }
 }
 
+const jsonToXmindScriptPath = resolve(__dirname, "..", "skills", "xmind-converter", "scripts", "json-to-xmind.mjs");
+
 function runScript(args) {
   try {
-    const result = execSync(`node ${resolve(__dirname, "json-to-xmind.mjs")} ${args}`, {
+    const result = execSync(`node ${jsonToXmindScriptPath} ${args}`, {
       cwd: __dirname,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],

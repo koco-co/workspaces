@@ -27,7 +27,7 @@ import {
 } from "fs";
 import { join, basename, dirname, resolve, extname, relative } from "path";
 import { fileURLToPath } from "url";
-import JSZip from "../../skills/xmind-converter/scripts/node_modules/jszip/lib/index.js";
+import JSZip from "jszip";
 import { parseFrontMatter } from "./front-matter-utils.mjs";
 import { loadConfig, getWorkspaceRoot } from "./load-config.mjs";
 

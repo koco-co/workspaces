@@ -1,5 +1,8 @@
 # qa-flow 工作流全面改进方案
 
+> ⚠️ 历史规划存档，截止 2026-03 的当前状态审计记录在 `docs/qa-flow-workflow-audit-and-optimization.md`。
+> 本文件仅供参考，不代表当前系统状态。
+
 > 基于对 CLAUDE.md + 6 个 Skills + 全部 step prompts + 全部 scripts + config 的完整审计。
 > 本文件是改进工作的**唯一执行清单**。执行者应按 Task 编号逐项实施。
 

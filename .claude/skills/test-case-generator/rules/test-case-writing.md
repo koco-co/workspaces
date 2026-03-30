@@ -1,3 +1,5 @@
+> **注意**：本文件是 `.claude/rules/test-case-writing.md` 的 skill 内镜像，以全局版本为准。如有冲突，请以 `.claude/rules/test-case-writing.md` 为准。
+
 # 测试用例编写规范
 
 > 适用范围：所有自动生成的测试用例（Writer Subagent 和 Reviewer Subagent 必须遵守）

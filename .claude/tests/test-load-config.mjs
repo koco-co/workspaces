@@ -66,7 +66,8 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 assert(existsSync(root), "工作空间根目录存在");
 assert(existsSync(resolve(root, "CLAUDE.md")), "工作空间根目录包含 CLAUDE.md");
 assert(existsSync(resolve(root, ".claude/config.json")), "工作空间根目录包含 .claude/config.json");
-assert(resolve(root, ".claude/scripts") === scriptDir, "工作空间根目录与 .claude/scripts 相对位置正确");
+assert(existsSync(resolve(root, ".claude/shared/scripts")), ".claude/shared/scripts 目录存在");
+assert(existsSync(resolve(root, ".claude/tests")), ".claude/tests 目录存在");
 
 console.log("\n=== Test: getRepoBranchMappingPath ===");
 const mappingPath = getRepoBranchMappingPath();

@@ -17,10 +17,9 @@ const claudeMdPath = resolve(repoRoot, "CLAUDE.md");
 const prdEnhancerSkillPath = resolve(skillsRoot, "prd-enhancer", "SKILL.md");
 const prdTemplatePath = resolve(skillsRoot, "prd-enhancer", "references", "prd-template.md");
 const xmindRulePath = resolve(claudeRoot, "rules", "xmind-output.md");
-const jsonToXmindPath = resolve(__dirname, "json-to-xmind.mjs");
+const jsonToXmindPath = resolve(skillsRoot, "xmind-converter", "scripts", "json-to-xmind.mjs");
 const readmePath = resolve(repoRoot, "README.md");
 const directoryNamingPath = resolve(claudeRoot, "rules", "directory-naming.md");
-const lanhuPlanPath = resolve(repoRoot, "docs", "蓝湖PRD自动化导入方案.md");
 
 let passed = 0;
 let failed = 0;
@@ -124,13 +123,14 @@ const promptDocs = walkFiles(
     filePath.endsWith(".md") &&
     relative(skillsRoot, filePath).split(/[\\/]/).includes("prompts"),
 );
-const agentDocs = walkFiles(agentsRoot, (filePath) => filePath.endsWith(".md"));
+const agentDocs = existsSync(agentsRoot)
+  ? walkFiles(agentsRoot, (filePath) => filePath.endsWith(".md"))
+  : [];
 const activeDocs = [...skillDocs, ...promptDocs, ...agentDocs];
 const repoFacingDocs = [
   claudeMdPath,
   readmePath,
   directoryNamingPath,
-  lanhuPlanPath,
   ...activeDocs,
 ].filter((filePath) => existsSync(filePath));
 

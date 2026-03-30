@@ -227,7 +227,6 @@ qa-flow/
     │   ├── xmind-converter/
     │   ├── archive-converter/
     │   └── code-analysis-report/
-    ├── agents/                    # 子代理定义
     └── scripts/                   # Node.js 工具脚本
         ├── load-config.mjs
         ├── json-to-xmind.mjs
