@@ -15,7 +15,6 @@ health_warnings: []
 case_count: 14
 origin: csv
 ---
-# 【产品交付】parquet_orc新增字段历史分区处理 v6.4.4
 > 来源：zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.4/【产品交付】parquet_orc新增字段历史分区处理.csv
 > 用例数：14
 
@@ -23,7 +22,7 @@ origin: csv
 
 ## parquet-orc新增字段历史分区处理
 
-##### 验证orc分区表新增字段且包含默认值，只同步历史分区正常同步至starrocks表内 「P2」
+##### 【P2】验证orc分区表新增字段且包含默认值，只同步历史分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -68,9 +67,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc新增一个字段new_col |
 | 3 | ALTER TABLE ods_orders_orc ADD COLUMNS (new_col STRING DEFAULT 'abc'); | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -81,7 +82,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表删除一个字段且在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证orc分区表删除一个字段且在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -126,9 +127,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc字段order_status被删除 |
 | 3 | ALTER TABLE ods_orders_orc DROP COLUMN order_status; | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -139,7 +142,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表修改字段名称且在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证orc分区表修改字段名称且在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -184,9 +187,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc字段名称被修改 |
 | 3 | ALTER TABLE ods_orders_orc CHANGE create_time new_create_time TIMESTAMP; | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -197,7 +202,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表新增字段后，在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证orc分区表新增字段后，在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -242,9 +247,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_orc | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -258,7 +265,7 @@ PROPERTIES (
 | 12 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 13 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表新增字段且插入数据后，只同步新分区正常同步至starrocks表内 「P2」
+##### 【P2】验证orc分区表新增字段且插入数据后，只同步新分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -303,9 +310,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_orc | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -319,7 +328,7 @@ PROPERTIES (
 | 12 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-21 |  |
 | 13 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表新增字段后，不插入数据只同步历史文件正常 「P2」
+##### 【P2】验证orc分区表新增字段后，不插入数据只同步历史文件正常
 
 > 前置条件
 ```
@@ -364,9 +373,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_orc | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
 | 4 | ADD COLUMNS ( | 只有分区2025-11-20数据被同步，字段remark同步数据NULL写入目标表 |
@@ -376,7 +387,7 @@ PROPERTIES (
 | 8 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 9 | 点击保存、临时运行 |  |
 
-##### 验证orc分区表新增字段且插入数据后，历史分区正常同步至starrocks表内 「P1」
+##### 【P1】验证orc分区表新增字段且插入数据后，历史分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -421,9 +432,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_orc_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_orc新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_orc | 任务运行成功，表ods_orders_orc新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -436,7 +449,7 @@ PROPERTIES (
 | 11 | 点击保存、临时运行 |  |
 | 12 | 进入数据同步任务，点击临时运行 |  |
 
-##### 验证parquet分区表新增字段且包含默认值，只同步历史分区正常同步至starrocks表内 「P3」
+##### 【P2】验证parquet分区表新增字段且包含默认值，只同步历史分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -481,9 +494,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par新增一个字段new_col |
 | 3 | ALTER TABLE ods_orders_par ADD COLUMNS (new_col STRING DEFAULT 'abc'); | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -494,7 +509,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表删除一个字段且在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证parquet分区表删除一个字段且在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -539,9 +554,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par字段order_status被删除 |
 | 3 | ALTER TABLE ods_orders_par DROP COLUMN order_status; | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -552,7 +569,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表修改字段名称且在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证parquet分区表修改字段名称且在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -597,9 +614,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par字段名称被修改 |
 | 3 | ALTER TABLE ods_orders_par CHANGE create_time new_create_time TIMESTAMP; | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | 点击保存，临时运行 | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -610,7 +629,7 @@ PROPERTIES (
 | 9 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 10 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表新增字段后，在历史分区文件插入数据后，同步历史文件正常 「P2」
+##### 【P2】验证parquet分区表新增字段后，在历史分区文件插入数据后，同步历史文件正常
 
 > 前置条件
 ```
@@ -655,9 +674,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_par | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -671,7 +692,7 @@ PROPERTIES (
 | 12 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 13 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表新增字段且插入数据后，只同步新分区正常同步至starrocks表内 「P2」
+##### 【P2】验证parquet分区表新增字段且插入数据后，只同步新分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -716,9 +737,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_par | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
@@ -732,7 +755,7 @@ PROPERTIES (
 | 12 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-21 |  |
 | 13 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表新增字段后，不插入数据只同步历史文件正常 「P2」
+##### 【P2】验证parquet分区表新增字段后，不插入数据只同步历史文件正常
 
 > 前置条件
 ```
@@ -777,9 +800,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_par | 数据同步任务运行成功，数据被同步至目标表ods_orders， |
 | 4 | ADD COLUMNS ( | 只有分区2025-11-20数据被同步，字段remark同步数据NULL写入目标表 |
@@ -789,7 +814,7 @@ PROPERTIES (
 | 8 | 修改数据同步任务test_hive_sr_1-数据来源，分区输入dt=2025-11-20 |  |
 | 9 | 点击保存、临时运行 |  |
 
-##### 验证parquet分区表新增字段且插入数据后，历史分区正常同步至starrocks表内 「P1」
+##### 【P1】验证parquet分区表新增字段且插入数据后，历史分区正常同步至starrocks表内
 
 > 前置条件
 ```
@@ -834,9 +859,11 @@ PROPERTIES (
 3.存在数据同步任务test_hive_sr_1（hive3.x-starrocks），数据来源和选择目标分别为上述表
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建hivesql任务test_par_1 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 输入sql语句： | 任务运行成功，表ods_orders_par新增一个字段remark |
 | 3 | ALTER TABLE ods_orders_par | 任务运行成功，表ods_orders_par新增一条分区数据 |
 | 4 | ADD COLUMNS ( | 数据同步任务运行成功，数据被同步至目标表ods_orders， |

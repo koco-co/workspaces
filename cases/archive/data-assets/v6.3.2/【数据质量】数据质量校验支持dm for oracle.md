@@ -1,8 +1,9 @@
 ---
 suite_name: 【数据质量】数据质量校验支持dm for oracle v6.3.2
 description: 【数据质量】数据质量校验支持dm for oracle v6.3.2
+prd_id: 15693
 prd_version: v6.3.2
-prd_path: ""
+prd_path: cases/requirements/data-assets/v6.4.10/.trash/PRD-15693-raw.md
 product: data-assets
 tags:
   - 数据资产
@@ -17,7 +18,6 @@ health_warnings: []
 case_count: 1
 origin: csv
 ---
-# 【数据质量】数据质量校验支持dm for oracle v6.3.2
 > 来源：zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.2/【数据质量】数据质量校验支持dm for oracle.csv
 > 用例数：1
 
@@ -25,12 +25,14 @@ origin: csv
 
 ## 数据资产-数据质量
 
-##### 验证概览-告警汇总-数据统计 「P3」
+##### 【P2】验证概览-告警汇总-数据统计
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |

@@ -3,7 +3,7 @@ suite_name: "【元数据】支持dm for oracle数据源采集(#9347)"
 description: 【元数据】支持dm for oracle数据源采集
 prd_id: 9347
 prd_version: v6.4.3
-prd_path: ""
+prd_path: cases/requirements/data-assets/v6.4.10/.trash/PRD-15693-raw.md
 product: data-assets
 tags:
   - 数据资产
@@ -53,6 +53,10 @@ origin: xmind
 
 ##### 【P1】验证「数据地图」中展示DMDB for Oracle类型数据源及其数据表数量
 
+> 前置条件
+```
+```
+
 > 用例步骤
 
 | 编号 | 步骤 | 预期 |
@@ -61,6 +65,10 @@ origin: xmind
 | 2 | 检查DM Oracle数据源 | 新增DMDB for Oracle数据源类型，DMDB for Oracle类型中存在数据表则计算并展示数据表数量 |
 
 ##### 【P1】验证「数据地图」中DMDB for Oracle数据源显示专属图标
+
+> 前置条件
+```
+```
 
 > 用例步骤
 
@@ -73,6 +81,10 @@ origin: xmind
 
 ##### 【P2】验证「数据地图」中DMDB for Oracle类型数据源无血缘关系Tab页面
 
+> 前置条件
+```
+```
+
 > 用例步骤
 
 | 编号 | 步骤 | 预期 |
@@ -82,6 +94,10 @@ origin: xmind
 | 3 | 选择一条DM Oracle血缘表, 查看表详情中的血缘关系 | 针对DMDB for Oracle类型，不支持查看血缘关系 |
 
 ##### 【P2】验证「元模型管理」中存在DMDB for Oracle类型数据源图标且位置在Oracle右侧
+
+> 前置条件
+```
+```
 
 > 用例步骤
 

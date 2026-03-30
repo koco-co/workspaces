@@ -1,12 +1,12 @@
 ---
-prd_name: "【通用配置】json格式配置"
-description: "在数据质量通用配置菜单下新增JSON格式配置页面，按数据源类型管理JSON字段key的格式校验规则，支持最多5层树形层级"
+prd_name: 【通用配置】json格式配置
+description: 在数据质量通用配置菜单下新增JSON格式配置页面，按数据源类型管理JSON字段key的格式校验规则，支持最多5层树形层级
 prd_id: 15696
 prd_version: v6.4.10
-prd_source: "cases/requirements/data-assets/v6.4.10/【通用配置】json格式配置.md"
+prd_source: cases/requirements/data-assets/v6.4.10/【通用配置】json格式配置.md
 prd_url: "https://lanhuapp.com/web/#/item/project/product?tid=24a1c6b2-a52e-454c-8d51-8aff866598b1&pid=7de90493-e80f-4592-a263-38fb2d2e98c0&versionId=7991bb05-6f97-4b29-8ad6-de18b5869a4d&docId=fc0fee93-74f5-4eff-a769-99e68506b296&docType=axure&pageId=e08ead471bc2471489e6fc7443d060c6"
 product: data-assets
-dev_version: "6.3岚图定制化分支"
+dev_version: 6.3岚图定制化分支
 tags:
   - 通用配置
   - json格式
@@ -14,14 +14,13 @@ tags:
   - 树形列表
   - 岚图定制化
   - 导入导出
-create_at: "2026-03-30"
-update_at: "2026-03-30"
+create_at: 2026-03-30
+update_at: 2026-03-30
 status: enhanced
 health_warnings: []
 repos:
-  - ".repos/CustomItem/dt-center-assets"
-  - ".repos/CustomItem/dt-insight-studio"
-case_path: ""
+  - .repos/CustomItem/dt-center-assets
+  - .repos/CustomItem/dt-insight-studio
 ---
 <!-- enhanced-at: 2026-03-30T07:20:00Z | images: 0/0 | health: 3 warnings -->
 

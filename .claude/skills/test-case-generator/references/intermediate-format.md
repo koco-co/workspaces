@@ -215,15 +215,18 @@ Checklist 字段说明：
 
 ## .qa-state.json 断点续传状态文件
 
-每步完成后写入工作目录，用于中断恢复：
+每步完成后写入工作目录，用于中断恢复。**文件名按本次生成范围区分：**
 
-```
-cases/requirements/<project>/<working-dir>/.qa-state.json
-```
+| 生成范围 | 状态文件名 | 示例 |
+|---------|-----------|------|
+| **单 PRD**（指定了一个具体 PRD 文件） | `.qa-state-{prd-slug}.json` | `cases/requirements/data-assets/v6.4.10/.qa-state-【通用配置】json格式配置.json` |
+| **批量**（未指定，生成目录下全部 PRD） | `.qa-state.json` | `cases/requirements/data-assets/v6.4.10/.qa-state.json` |
 
-示例：
-- `cases/requirements/data-assets/v6.4.10/.qa-state.json`（DTStack）
-- `cases/requirements/custom/xyzh/.qa-state.json`（XYZH）
+示例（同版本目录下多 PRD 并行进行，互不干扰）：
+- `cases/requirements/data-assets/v6.4.10/.qa-state-【通用配置】json格式配置.json`（json格式配置，等待验收中）
+- `cases/requirements/data-assets/v6.4.10/.qa-state-【数据地图】表详情展示.json`（表详情展示，生成中）
+
+**prd-slug**：取目标 PRD 文件的 basename 去掉 `.md` 后缀。
 
 ```json
 {
@@ -311,7 +314,7 @@ cases/requirements/<project>/<working-dir>/.qa-state.json
 
 | 场景 | 前置条件 | 必要状态变化 | 校验要点 |
 |------|----------|--------------|----------|
-| Step 1：新流程初始化 | 不存在 `.qa-state.json`，或用户明确选择重置 | 创建状态文件，并写入 `last_completed_step: 0`、`checklist_confirmed: false`、`reviewer_status: "pending"`、`awaiting_verification: false` | 初始状态不得直接从 `"parse-input"` 开始 |
+| Step 1：新流程初始化 | 当前 PRD 对应的状态文件不存在，或用户明确选择重置 | 创建状态文件，并写入 `last_completed_step: 0`、`checklist_confirmed: false`、`reviewer_status: "pending"`、`awaiting_verification: false` | 初始状态不得直接从 `"parse-input"` 开始 |
 | Step 1：等待验证续传 | 已有状态文件，且 `awaiting_verification: true` | 保持 `last_completed_step: "archive"`、`output_xmind`、`archive_md_path` 原值 | 只能重放验证提示，不得重跑 Step 10 |
 | Step 7：Writer 启动 | 模块已拆分并准备启动 Writer | 首次启动时，对应 `writers.<name>.status` 从 `pending` 写为 `in_progress`；如用户/编排器显式选择重试 `failed` Writer，也先写回 `in_progress` | `in_progress` 为启动前/启动时写入的乐观运行态；若启动失败或执行失败，必须回写为 `failed`；中断的 `in_progress` 可在普通续传时按原输入恢复执行 |
 | Step 7：Writer 终态 | 单个 Writer 结束 | 成功写 `completed`；失败写 `failed`；用户显式跳过写 `skipped` | Reviewer 仅合并 `completed` 的 Writer 输出 |
@@ -319,4 +322,4 @@ cases/requirements/<project>/<working-dir>/.qa-state.json
 | Step 8：Reviewer 成功 | Step 7 已完成 | 写 `reviewer_status: "completed"`、`last_completed_step: "reviewer"`，并产出 `final_json` | `final_json` 应为非空路径 |
 | Step 8：Reviewer 阻断 | 问题率 > 40% | 写 `reviewer_status: "escalated"`，`last_completed_step` 保持 `"writer"` | 流程暂停在 Step 8，等待用户决策 |
 | Step 10：等待用户验证 | Step 9 已成功，归档 MD 已生成 | 保持 Step 9 写入的 `output_xmind` 原值不变，并写 `last_completed_step: "archive"`、`archive_md_path`、`awaiting_verification: true` | `output_xmind` 与 `archive_md_path` 都应可用，且 Step 10 不得重写 `output_xmind` |
-| Step 11：终态清理 | 用户回复「确认通过」或「已修改，请同步」 | 完成同步 / 清理后删除 `temp/` 与 `.qa-state.json` | 写入 `last_completed_step: "notify"` 为可选；如有写入，仅允许在删除 `.qa-state.json` 前瞬时出现，且不得作为稳定可恢复状态保留 |
+| Step 11：终态清理 | 用户回复「确认通过」或「已修改，请同步」 | 完成同步 / 清理后删除 `temp/` 与当前 PRD 的状态文件（`.qa-state-{prd-slug}.json` 或 `.qa-state.json`） | 写入 `last_completed_step: "notify"` 为可选；如有写入，仅允许在删除状态文件前瞬时出现，且不得作为稳定可恢复状态保留 |

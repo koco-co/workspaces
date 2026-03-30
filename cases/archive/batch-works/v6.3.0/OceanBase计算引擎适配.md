@@ -14,7 +14,6 @@ health_warnings: []
 case_count: 162
 origin: csv
 ---
-# OceanBase计算引擎适配 v6.3.0
 > 来源：zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.0/OceanBase计算引擎适配.csv
 > 用例数：162
 
@@ -22,157 +21,179 @@ origin: csv
 
 ## 离线开发-数据开发-OceanBase计算引擎
 
-##### 验证oceanbase for mysql及for oracle名称显示正常 「P3」
+##### 【P2】验证oceanbase for mysql及for oracle名称显示正常
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 全离线检查相关计算引擎名称显示 | 显示正常，功能行为符合预期，无报错或异常 |
 
-##### 验证函数管理创建带存储过程的sql语句时，函数正常使用 「P2」
+##### 【P2】验证函数管理创建带存储过程的sql语句时，函数正常使用
 
 > 前置条件
 ```
 存在包含存储过程sql语句的资源
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击新建自定义函数-资源包选择存在存储过程语句的资源包 | 自定义函数创建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 3 | 创建一个ob sql任务，输入sql语句调用所创建的自定义函数后点击运行 | 1.任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 4 | 检查相关状态和结果 | 运行结果符合预期，实现了存储过程sql |
 
-##### 验证创建项目时不对接或创建计算引擎成功 「P3」
+##### 【P2】验证创建项目时不对接或创建计算引擎成功
 
 > 前置条件
 ```
 ob引擎已在控制台配置
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入项目列表-点击创建项目 | 进入创建项目页面 |
+| 1 | 进入【项目列表-点击创建项目】页面 | 进入创建项目页面 |
 | 2 | 填写必填项，计算引擎列ob计算引擎勾选不对接且不创建计算引擎选项后点击确定 | 1.勾选成功，页面无报错 |
 | 3 | 进入所创建的项目新增ob sql任务，输入sql进行运行 | 项目创建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 4 | 检查相关状态和结果 | 选择schema后运行sql成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务临时查询正常运行 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务临时查询正常运行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存（sql语句至少包含创建、插入数据、查询、清除数据、增加列、删除等） | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | 进行临时运行 | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务手动任务正常运行 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务手动任务正常运行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL手动任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存（sql语句至少包含创建、插入数据、查询、清除数据、增加列、删除等） | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | 进行临时运行 | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle代码模版正常新增及使用 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle代码模版正常新增及使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL代码模版：test_moban_ob001 | 模版新建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 3 | 输入sql后点击保存（sql语句至少包含创建、插入数据、查询、清除数据、增加列、删除等） | 模版保存成功，系统给出保存成功提示，配置/数据已持久化，页面更新为最新状态 |
 | 4 | 新建一个OceanBase for MySQL/OceanBase for Oracle SQL任务：test_ob001（新建任务时选择使用模版，选择模版test_moban_ob001） | 1.任务新建成功2.新建任务sql编辑界面显示模版代码 |
 | 5 | test_ob001进行临时运行 | 1.任务运行成功2.所执行的语句产生对应的结果3.数据无乱码错位等异常 |
 
-##### 验证项目管理 按个人绑定数据库账号——验证OceanBase for MySQL/OceanBase for Oracle数据源按个人绑定数据库账号正常应用 「P2」
+##### 【P2】验证项目管理 按个人绑定数据库账号——验证OceanBase for MySQL/OceanBase for Oracle数据源按个人绑定数据库账号正常应用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 控制台选择集群点击绑定租户 | 上部引擎列展示OceanBase for MySQL/OceanBase for Oracle计算引擎 |
 | 3 | 选择OceanBase for MySQL/OceanBase for Oracle引擎后点击绑定账号 | 弹出绑定账号弹框 |
 | 4 | 依次输入产品账号、数据库账号、数据库密码后点击确定（该账号密码只有查询权限） | 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 5 | 使用所绑定账号登录后选择一个OceanBase for MySQL/OceanBase for Oracle sql任务进行临时运行（该任务在绑定账号之前可正常运行，该任务包含建表语句及查询语句） | 1.查询语句执行成功、建表语句执行失败2.所执行的语句产生对应的结果3.数据无乱码错位等异常4.后台使用所绑定的数据库账号进行执行sql语句 |
 
-##### 验证项目管理 按项目绑定数据库账号——验证OceanBase for MySQL/OceanBase for Oracle数据源按项目绑定数据库账号正常应用 「P2」
+##### 【P2】验证项目管理 按项目绑定数据库账号——验证OceanBase for MySQL/OceanBase for Oracle数据源按项目绑定数据库账号正常应用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建一个项目：test_project_ob001（项目勾选必要数据源OceanBase for MySQL/OceanBase for Oracle2.x） | 项目新建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 3 | 再次新建一个项目：test_project_ob002（项目勾选必要数据源OceanBase for MySQL/OceanBase for Oracle2.x） | 项目新建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 4 | 进入项目test_project_ob001点击项目管理-选择OceanBase for MySQL/OceanBase for Oracle数据源点击配置 | 弹出配置数据库账户密码弹窗 |
 | 5 | 输入只有查询权限的账号密码（控制台对应数据源填写的账号密码有所有权限）后点击确定 | OceanBase for MySQL/OceanBase for Oracle数据源配置成功 |
 | 6 | 创建一个OceanBase for MySQL/OceanBase for Oracle任务并输入建表语句与查询语句后点击运行 | 1.任务新建成功2.建表语句运行失败3.查询语句运行成功且展示结果正确 |
 
-##### 验证数据同步 【OceanBase for MySQL/OceanBase for Oracle-hive】数据同步任务-周期运行-脏数据能正常保存，任务能正常运行 「P1」
+##### 【P1】验证数据同步 【OceanBase for MySQL/OceanBase for Oracle-hive】数据同步任务-周期运行-脏数据能正常保存，任务能正常运行
 
 > 前置条件
 ```
 1.默认集群与租户、 2.数据源中心已引入 OceanBase for MySQL/OceanBase for Oracle、hive数据源 3.离线已引入 OceanBase for MySQL/OceanBase for Oracle、hive数据源OceanBase for MySQL/OceanBase for Oracle表：create table putong_OceanBase for MySQL/OceanBase for Oracle(id int,name string);insert into putong_OceanBase for MySQL/OceanBase for Oracle values(1,'das'),(2,'dads'),(3,'dasw');hive表：create table putong_hive(id int);
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发，创建数据同步任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发】页面，创建数据同步任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 2 | 来源选择OceanBase for MySQL/OceanBase for Oracle，目标选择hive， | 系统提示提交成功，记录状态更新，列表中可见该条记录 |
 | 3 | 将name映射到id，点击下一步 | 任务运行完成，脏数据保存成功，在脏数据管理能查询到数据 |
 | 4 | 修改 通道控制页面，脏数据保存到默认表，保存、提交到运维中心 |  |
 | 5 | 周期运行任务 |  |
 
-##### 验证数据同步任务，编辑字段‘age’为string类型，点击刷新按钮，按数据库的age字段类型生效 「P2」
+##### 【P2】验证数据同步任务，编辑字段‘age’为string类型，点击刷新按钮，按数据库的age字段类型生效
 
 > 前置条件
 ```
 OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name string,age int)
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发，新建数据同步任务，选择来源表与目标表，进入第三步 | 显示‘刷新’按钮 |
+| 1 | 进入【数据开发】页面，新建数据同步任务，选择来源表与目标表，进入第三步 | 显示‘刷新’按钮 |
 | 2 | 编辑字段age为string，保存后，点击刷新按钮 | 目标表字段中age字段变成int类型，连线消失 |
 
-##### 验证数据同步写OceanBase for MySQL/OceanBase for Oracle导入导出包功能 「P1」
+##### 【P1】验证数据同步写OceanBase for MySQL/OceanBase for Oracle导入导出包功能
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目中存在新建成功的写sybase向导模式的数据同步任务 3.当前项目已经成功绑定发布目标项目，且OceanBase for MySQL/OceanBase for Oracle成功配置了映射配置（发布目标）
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择写 {OceanBase for MySQL/OceanBase for Oracle}的数据同步任务上方的“发布” | 进入任务发布页面 |
 | 3 | 勾选该数据同步任务打包 | 弹出创建发布包弹窗 |
 | 4 | 输入正确的发布描述，点击确定 | 创建包完成，进入发布至目标项目页面 |
@@ -180,16 +201,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 进入发布项目-发布，发布至本项目，导入发布包，选择步骤四导出的包 | 弹出发布包检查弹窗 |
 | 7 | 勾选已知晓风险，继续导入 | 环境配置无误的话，导入发布包成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证数据同步OceanBase for MySQL/OceanBase for Oracle发布至目标项目功能 「P1」
+##### 【P1】验证数据同步OceanBase for MySQL/OceanBase for Oracle发布至目标项目功能
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目中存在新建成功的写sybase向导模式的数据同步任务 3.当前项目已经成功绑定发布目标项目，且OceanBase for MySQL/OceanBase for Oracle成功配置了映射配置（发布目标）
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择写{OceanBase for MySQL/OceanBase for Oracle}的数据同步任务上方的“发布” | 进入任务发布页面 |
 | 3 | 勾选该数据同步任务打包 | 弹出创建发布包弹窗 |
 | 4 | 输入正确的发布描述，点击确定 | 创建包完成，进入发布至目标项目页面 |
@@ -199,16 +222,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 8 | 临时运行该任务 | 配置无误的情况下运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 9 | 查看该数据同步任务中目标表中的数据 | 成功从源表中同步过来 |
 
-##### 验证向导模式转脚本，所有参数均正确 「P1」
+##### 【P1】验证向导模式转脚本，所有参数均正确
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持{OceanBase for MySQL/OceanBase for Oracle}数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择一张有数据的分区表ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -222,42 +247,48 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 | 将克隆的任务转脚本 | 系统提示转换成功，数据已按规则转换，转换结果正确显示 |
 | 13 | 脚本参数校验 | 与选择的数据源填写参数一致，所有填写的参数均正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证脚本模式，目标类型不支持OceanBase for MySQL/OceanBase for Oracle数据源 「P2」
+##### 【P2】验证脚本模式，目标类型不支持OceanBase for MySQL/OceanBase for Oracle数据源
 
 > 前置条件
 ```
 当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建脚本模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建脚本模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击导入模版 | 当前页面弹窗导入模版弹窗 |
 | 3 | 点击目标类型下拉框 | 目标源数据下拉框中不支持OceanBase for MySQL/OceanBase for Oracle数据源 |
 
-##### 验证脚本模式，来源类型支持OceanBase for MySQL/OceanBase for Oracle数据源 「P2」
+##### 【P2】验证脚本模式，来源类型支持OceanBase for MySQL/OceanBase for Oracle数据源
 
 > 前置条件
 ```
 当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建脚本模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建脚本模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击导入模版 | 当前页面弹窗导入模版弹窗 |
 | 3 | 点击来源类型下拉框 | 来源数据下拉框中支持OceanBase for MySQL/OceanBase for Oracle数据源 |
 
-##### 验证数据同步 周期运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功 「P1」
+##### 【P1】验证数据同步 周期运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持{OceanBase for MySQL/OceanBase for Oracle}数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -271,16 +302,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 | 待到该任务生成周期实例后，进入运维中心-周期实例，查看该周期实例运行结果 | 配置无误的话周期运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 13 | 查看hive中ods_order_header1表数据 | 成功从{OceanBase for MySQL/OceanBase for Oracle}中表同步过来 |
 
-##### 验证数据同步 补数据运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功 「P1」
+##### 【P1】验证数据同步 补数据运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择OceanBase for MySQL/OceanBase for Oracle数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -295,16 +328,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 13 | 勾选该任务，其他选项默认初始化设置，点击确定 | 1.补数据包生成成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 14 | 查看hive中ods_order_header1表数据 | 成功从OceanBase for MySQL/OceanBase for Oracle中表同步过来 |
 
-##### 验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，原表为分区表，同步任务同步成功 「P2」
+##### 【P2】验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，原表为分区表，同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据，其中有空值
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持{OceanBase for MySQL/OceanBase for Oracle}数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择一张有数据的分区表ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -316,16 +351,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 10 | 下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 11 | 查看hive中ods_order_header1表数据 | 成功从{OceanBase for MySQL/OceanBase for Oracle}中表同步过来 |
 
-##### 验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，源表中字段值含有null，同步任务同步成功 「P1」
+##### 【P1】验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，源表中字段值含有null，同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据，其中有空值
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持{OceanBase for MySQL/OceanBase for Oracle}数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -337,16 +374,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 10 | 下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 11 | 查看hive中ods_order_header1表数据 | 成功从{OceanBase for MySQL/OceanBase for Oracle}中表同步过来 |
 
-##### 验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，源表与目标表中字段个数不一致，同步任务同步成功 「P2」
+##### 【P2】验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，写hive数据，源表与目标表中字段个数不一致，同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据；
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择OceanBase for MySQL/OceanBase for Oracle数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -358,16 +397,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 10 | 下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 11 | 查看hive中ods_order_header1表数据 | 成功从源表中同步过来，其中目标表多的pay_decili字段值为null |
 
-##### 验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle中有一张大数据表，写hive数据同步任务同步成功 「P2」
+##### 【P2】验证数据同步 临时运行--验证向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle中有一张大数据表，写hive数据同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入上万条数据
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持{OceanBase for MySQL/OceanBase for Oracle}数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -379,16 +420,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 10 | 下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 11 | 查看hive中ods_order_header1表数据 | 成功从OceanBase for MySQL/OceanBase for Oracle中表同步过来 |
 
-##### 验证数据同步 临时运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功 「P1」
+##### 【P1】验证数据同步 临时运行--检查向导模式读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive数据同步任务同步成功
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表'; 向ods_order_header1中插入10条数据
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，选择选择OceanBase for MySQL/OceanBase for Oracle数据源，选择ods_order_header1，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -399,16 +442,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 9 | 下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 10 | 查看hive中ods_order_header1表数据 | 成功从OceanBase for MySQL/OceanBase for Oracle中表数据同步过来 |
 
-##### 验证数据同步 检查向导模式-OceanBase for MySQL/OceanBase for Oracle作为目标数据源支持断点续传 「P1」
+##### 【P1】验证数据同步 检查向导模式-OceanBase for MySQL/OceanBase for Oracle作为目标数据源支持断点续传
 
 > 前置条件
 ```
 当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -416,32 +461,36 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 选择其中一个表，点击下一步 | 进入字段映射页面，不支持拷贝源表字段 |
 | 7 | 选择同名映射，点击下一步，进入通道控制页面，勾选断点续传功能 | 任务运行失败后会从失败的点进行继续同步 |
 
-##### 验证数据同步 检查向导模式-OceanBase for MySQL/OceanBase for Oracle作为来源数据源不支持拷贝源表字段 「P1」
+##### 【P1】验证数据同步 检查向导模式-OceanBase for MySQL/OceanBase for Oracle作为来源数据源不支持拷贝源表字段
 
 > 前置条件
 ```
 当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源选择OceanBase for MySQL/OceanBase for Oracle数据源 |
 | 3 | 选择OceanBase for MySQL/OceanBase for Oracle，点击数据库下拉框 | 可选范围为数据库连接用户下的所有数据库 |
 | 4 | 选择来源数据源，点击下一步 | 进入选择目标页面，OceanBase for MySQL/OceanBase for Oracle不支持作为目标表，选择其他任意数据源 |
 | 5 | 在表名搜索框中输入下拉框表名中含有的任意一个字符 | 满足筛选条件的表被筛选出来 |
 | 6 | 选择其中一个表，点击下一步 | 进入字段映射页面，不支持拷贝源表字段 |
 
-##### 验证向导模式中读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive一键建表功能正常（所有OceanBase for MySQL/OceanBase for Oracle支持的字段类型） 「P1」
+##### 【P1】验证向导模式中读OceanBase for MySQL/OceanBase for Oracle，OceanBase for MySQL/OceanBase for Oracle表中有多类型字段，写hive一键建表功能正常（所有OceanBase for MySQL/OceanBase for Oracle支持的字段类型）
 
 > 前置条件
 ```
 1.当前项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.sybase中存在含有多个字段的表，如建表语句为 create table if not exists ods_order_header1 ( order_header_id string comment '订单头id' ,order_date bigint comment '订单日期' ,shop_id string comment '店铺id' ,customer_id string comment '客户id' ,order_status bigint comment '订单状态' ,pay_date DATE comment '支付日期' ,pay_boolen BOOLEAN comment '是否支付' ,pay_decli DECIMAL comment '支付11' )comment '销售订单明细表';
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 配置正确的数据来源，如选择{OceanBase for MySQL/OceanBase for Oracle}数据源，选择表ods_order_header1,点击下一步 | 进入选择目标页面 |
 | 3 | 点击数据同步目标下拉框 | 来源类型下拉框中选择hive类型 |
 | 4 | 点击数据库下拉框 | 可选范围为数据库连接用户下的所有数据库 |
@@ -449,16 +498,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 点击确定 | 一键建表成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 7 | 配置正确的映射，点击下一步，下一步，点击确定，进行临时运行 | 配置以及环境无误的话，任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证数据同步 可选范围为选中数据库下所有表，下拉菜单最多展示前200个选项 「P2」
+##### 【P2】验证数据同步 可选范围为选中数据库下所有表，下拉菜单最多展示前200个选项
 
 > 前置条件
 ```
 离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库，下拉菜单最多展示前200个选项 |
 | 3 | 选择来源数据源，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
@@ -466,152 +517,174 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 在表名搜索框中输入下拉框表名中含有的任意一个字符 | 满足筛选条件的表被筛选出来 |
 | 7 | 未显示出的表通过搜索也可以搜到 |  |
 
-##### 验证数据同步 检查向导模式是否可以展示OceanBase for MySQL/OceanBase for Oracle下所选数据库下的所有表 「P2」
+##### 【P2】验证数据同步 检查向导模式是否可以展示OceanBase for MySQL/OceanBase for Oracle下所选数据库下的所有表
 
 > 前置条件
 ```
 1.离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库，下拉菜单最多展示前200个选项 |
 | 3 | 选择目标数据源，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
 | 5 | 选择其中一个数据库，点击表名下拉框 | 可选范围为选中数据库下所有表，下拉菜单最多展示前200个选项 |
 
-##### 验证数据同步 检查向导模式是否可以展示OceanBase for MySQL/OceanBase for Oracle下所有数据库 「P2」
+##### 【P2】验证数据同步 检查向导模式是否可以展示OceanBase for MySQL/OceanBase for Oracle下所有数据库
 
 > 前置条件
 ```
 1.离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 系统提示新建成功，列表顶部出现新建的记录，记录内容与填写一致 |
 | 2 | 点击数据来源--数据源下拉列表 | 来源数据源支持OceanBase for MySQL/OceanBase for Oracle数据源，下拉选择数据表，可选范围为数据库连接用户下的所有数据库 |
 | 3 | 选择来源数据源，点击下一步 | 进入选择目标页面 |
 | 4 | 点击数据同步目标下拉框 | 来源类型不支持OceanBase for MySQL/OceanBase for Oracle类型，选择其他任意数据库 |
 
-##### 验证在生产项目中OceanBase for MySQL/OceanBase for Oracle数据源不支持配置映射功能 「P2」
+##### 【P2】验证在生产项目中OceanBase for MySQL/OceanBase for Oracle数据源不支持配置映射功能
 
 > 前置条件
 ```
 1.离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目作为生产项目
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入生产项目，点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入，无映射配置选项 |
+| 1 | 进入【生产项目】页面，点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入，无映射配置选项 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle数据源在测试项目中映射配置功能正常 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for Oracle数据源在测试项目中映射配置功能正常
 
 > 前置条件
 ```
 1.离线测试项目与生产项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目（测试项目）已经成功绑定发布目标项目
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入和映射配置 |
 | 3 | 点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作--映射配置 | 当前页面弹出OceanBase for MySQL/OceanBase for Oracle数据源映射配置弹窗，在本项目文本框下显示的为用户名 |
 | 4 | 点击发布目标 | 下拉弹窗中显示出生产项目中成功引入的OceanBase for MySQL/OceanBase for Oracle数据源 |
 | 5 | 选择其中一个，点击确定 | 映射配置弹窗关闭，OceanBase for MySQL/OceanBase for Oracle数据源映射配置关系设置成功，OceanBase for MySQL/OceanBase for Oracle映射关系变更为“已配置” |
 
-##### 验证筛选OceanBase for MySQL/OceanBase for Oracle数据源功能正常 「P3」
+##### 【P2】验证筛选OceanBase for MySQL/OceanBase for Oracle数据源功能正常
 
 > 前置条件
 ```
 离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击数据源页面筛选按钮 | 显示数据源类型列表，新增OceanBase for MySQL/OceanBase for Oracle数据源类型，顺序与数据源中心一致 |
 | 3 | 选中OceanBase for MySQL/OceanBase for Oracle，点击确定 | OceanBase for MySQL/OceanBase for Oracle类型的数据源被成功筛选出来，相关信息正确回显 |
 | 4 | 在搜索框中输入OceanBase for MySQL/OceanBase for Oracle名称 | 满足条件的OceanBase for MySQL/OceanBase for Oracle数据源被筛选出来 |
 
-##### 验证未在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消成功 「P2」
+##### 【P2】验证未在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消成功
 
 > 前置条件
 ```
 1.成功进入测试项目 2.数据源中心存在授权给离线计算的OceanBase for MySQL/OceanBase for Oracle，且该数据源未在离线任务中使用
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击未被使用的OceanBase for MySQL/OceanBase for Oracle数据源后的操作，点击取消引入 | 弹出二次确认弹窗 |
 | 3 | 点击确定 | 取消引入成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消失败 「P2」
+##### 【P2】验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消失败
 
 > 前置条件
 ```
 验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle取消引入--取消失败
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击已经被任务使用的OceanBase for MySQL/OceanBase for Oracle数据源后的操作，点击取消引入 | 弹出二次确认弹窗 |
 | 3 | 点击确定 | 取消引入失败，页面弹出对应的提示信息 |
 
-##### 验证数据源中心修改OceanBase for MySQL/OceanBase for Oracle配置同步至离线功能 「P3」
+##### 【P2】验证数据源中心修改OceanBase for MySQL/OceanBase for Oracle配置同步至离线功能
 
 > 前置条件
 ```
 离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源中心，编辑已经引入到离线项目中的OceanBase for MySQL/OceanBase for Oracle数据源，如修改描述，查看离线中对应的OceanBase for MySQL/OceanBase for Oracle数据源信息 | 离线中的OceanBase for MySQL/OceanBase for Oracle数据源信息同步修改 |
+| 1 | 进入【数据源中心】页面，编辑已经引入到离线项目中的OceanBase for MySQL/OceanBase for Oracle数据源，如修改描述，查看离线中对应的OceanBase for MySQL/OceanBase for Oracle数据源信息 | 离线中的OceanBase for MySQL/OceanBase for Oracle数据源信息同步修改 |
 
-##### 验证支持引入OceanBase for MySQL/OceanBase for Oracle数据源功能正常 「P2」
+##### 【P2】验证支持引入OceanBase for MySQL/OceanBase for Oracle数据源功能正常
 
 > 前置条件
 ```
 1.成功进入测试项目 2.数据源中心存在授权给离线计算的OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击数据源--引入数据源 | 当前页面弹窗引入数据源列表 |
 | 3 | 选择OceanBase for MySQL/OceanBase for Oracle类型的数据源 | OceanBase for MySQL/OceanBase for Oracle的相关信息在离线项目页面中正确回显，相关字段详见prd |
 | 4 | 选中OceanBase for MySQL/OceanBase for Oracle数据源，点击确定 | 引入OceanBase for MySQL/OceanBase for Oracle数据源成功，当前弹窗关闭 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL类型建的表不进入数据地图功能 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for Oracle SQL类型建的表不进入数据地图功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎	2.当前项目已经成功绑定生产项目3.当前项目OceanBase for MySQL/OceanBase for Oracle数据源已经成功配置映射
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 临时运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 3 | obop table if exists putong_table | 数据地图模块不显示OceanBase for MySQL/OceanBase for Oracle类型的表 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); |  |
 | 5 | 点击临时运行 |  |
 | 6 | 进入数据地图查看 |  |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务类型发布至目标项目功能 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for Oracle SQL任务类型发布至目标项目功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎	2.当前项目已经成功绑定生产项目3.当前项目OceanBase for MySQL/OceanBase for Oracle数据源已经成功配置映射
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 当前页面成功跳转至发布页面 |
 | 3 | obop table if exists putong_table | 右侧新增待打包的发布包 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | 弹出创建发布包弹窗 |
@@ -622,16 +695,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 9 | 点击该发布包后的发布，点击确定 |  |
 | 10 | 进入生产项目查看 |  |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务类型导入导出功能 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务类型导入导出功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 当前页面成功跳转至发布页面 |
 | 3 | obop table if exists putong_table | 右侧新增待打包的发布包 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | 弹出创建发布包弹窗 |
@@ -642,16 +717,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 9 | 点击该发布包后的导出 |  |
 | 10 | 点击发布至本项目-导入，选中上一步骤导出的发布包 |  |
 
-##### 验证周期实例中按照OceanBase for MySQL/OceanBase for Oracle SQL类型筛选数据功能 「P1」
+##### 【P1】验证周期实例中按照OceanBase for MySQL/OceanBase for Oracle SQL类型筛选数据功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 提交至运维中心成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | obop table if exists putong_table | 可选数据新增OceanBase for MySQL/OceanBase for Oracle SQL类型 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | OceanBase for MySQL/OceanBase for Oracle SQL类型的周期实例被成功筛选出来 |
@@ -659,32 +736,36 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 将该任务生成周期实例，进入周期实例页面，点击任务类型后的筛选图标 |  |
 | 7 | 选中OceanBase for MySQL/OceanBase for Oracle SQL类型，点击确定 |  |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务周期运行功能 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务周期运行功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 提交至运维中心成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | obop table if exists putong_table | 配置无误周期运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); |  |
 | 5 | 点击保存，提交 |  |
 | 6 | 将该任务生成周期实例，待该周期实例运行完成查看该实例运行结果 |  |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务手动任务运行功能 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务手动任务运行功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 提交至运维中心成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | obop table if exists putong_table | 生成补数据实例成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | 配置无误手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
@@ -692,16 +773,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 点击该任务后的手动任务，运行，点击确定 |  |
 | 7 | 进入手动任务实例模块，查看该任务实例运行结果 |  |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle SQL任务补数据运行功能 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle SQL任务补数据运行功能
 
 > 前置条件
 ```
 1.当前项目已经成功对接OceanBase for MySQL/OceanBase for Oracle引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在数据开发模块新增OceanBase for MySQL/OceanBase for Oracle SQL类型的任务，输入以下sql： | 提交至运维中心成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | obop table if exists putong_table | 生成补数据实例成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | 配置无误补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
@@ -709,32 +792,36 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 点击该任务后的补数据-按任务补数据，勾选当前任务，点击确定 |  |
 | 7 | 进入补数据实例模块，查看该任务实例运行结果 |  |
 
-##### 验证表管理 显示当前用户有权限的表 权限应用-2 「P3」
+##### 【P2】验证表管理 显示当前用户有权限的表 权限应用-2
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建角色 | create role role_1; |
 | 3 | 赋予角色权限 | grant usage on schema aaa to role_1;grant select on all tables in schema aaa to role_1; |
 | 4 | 将角色赋予用户 | grant role_1 to userputong; |
 | 5 | 数栈绑定账号 | 绑定putong至userputong，操作成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 6 | 在表查询查看对应权限 | 对aaa下的aaa001有权限，且权限为select, update, delete, insert，其他无权限的表不展示 |
 
-##### 验证表管理 显示当前用户有权限的表 权限应用-1 「P3」
+##### 【P2】验证表管理 显示当前用户有权限的表 权限应用-1
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建用户 | create user userputong with login password '123456'; |
 | 3 | 将权限赋予用户 | grant select, update, delete, insert on aaa.aaa001 to userputong; |
 | 4 | 数栈绑定账号 | 绑定putong至userputong，操作成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
@@ -742,16 +829,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 撤消用户权限 | revoke select, update, delete, insert on schema1.table1 to userputong; |
 | 7 | 在表查询查看对应权限 | 数据刷新，对aaa下的aaa001无权限，无权限的表不展示 |
 
-##### 验证表管理 显示当前用户有权限的表 table展示 「P1」
+##### 【P1】验证表管理 显示当前用户有权限的表 table展示
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建/编辑项目，引擎选择OceanBase for MySQL/OceanBase for Oracle | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 数据开发 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 4 | 表查询 | 系统提示操作成功，页面/数据状态更新为最新 |
@@ -761,45 +850,51 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 8 | 关闭【仅展示有权限的表】开关 | 页面刷新，展示所有已同步的table |
 | 9 | hover具体的表 | 展示信息栏新增【权限类型】字段，枚举当前用户对该表的权限类型。 |
 
-##### 验证表管理 显示当前用户有权限的表 schema展示 「P1」
+##### 【P1】验证表管理 显示当前用户有权限的表 schema展示
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建/编辑项目，引擎选择OceanBase for MySQL/OceanBase for Oracle | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 数据开发 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 4 | 表查询 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 5 | 选择OceanBase for MySQL/OceanBase for Oracle数据源 | 显示OceanBase for MySQL/OceanBase for Oracle下的有权限查看的schema |
 
-##### 验证表管理 创建表可查询 「P3」
+##### 【P2】验证表管理 创建表可查询
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新增OceanBase for MySQL/OceanBase for Oracle任务 | 系统提示新增成功，列表顶部出现一条新建记录，内容与填写一致 |
+| 1 | 进入【数据开发界面】页面，点击新增OceanBase for MySQL/OceanBase for Oracle任务 | 系统提示新增成功，列表顶部出现一条新建记录，内容与填写一致 |
 | 2 | 输入sql：create table putong(id int);点击保存 | 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 | 点击运行 | 任务状态更新为【运行成功】，运行日志无错误信息，输出结果符合预期 |
 | 4 | 进入表查询界面，选择OceanBase for MySQL/OceanBase for Oracle数据源，找到当前scheama | 查询到表putong |
 
-##### 验证表管理 显示OceanBase for MySQL/OceanBase for Oracle数据源 「P1」
+##### 【P1】验证表管理 显示OceanBase for MySQL/OceanBase for Oracle数据源
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发-表查询 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 显示OceanBase for MySQL/OceanBase for Oracle数据源 | 页面内容与预期一致，所有元素正常显示，数据准确 |
 | 4 | 点击OceanBase for MySQL/OceanBase for Oracle数据源 | 显示数据源下所有schema，数据正确，内容与预期完全一致，无异常或错误 |
@@ -807,16 +902,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 点击表名 | 显示表的详细字段信息，数据正确，内容与预期完全一致，无异常或错误 |
 | 7 | 数据预览 | 预览对应表的所有数据，数据正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle发布至本地项目功能 「P3」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle发布至本地项目功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择写函数上方的“发布” | 进入任务发布页面 |
 | 3 | 勾选该函数打包 | 弹出创建发布包弹窗 |
 | 4 | 输入正确的发布描述，点击确定 | 创建包完成，进入发布至目标项目页面 |
@@ -824,128 +921,146 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 6 | 进入发布项目-发布，发布至本项目，导入发布包，选择步骤四导出的包 | 弹出发布包检查弹窗 |
 | 7 | 勾选已知晓风险，继续导入 | 环境配置无误的话，导入发布包成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle发布至目标项目功能 「P3」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle发布至目标项目功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择函数任务上方的“发布” | 进入任务发布页面 |
 | 3 | 勾选该函数任务打包 | 弹出创建发布包弹窗 |
 | 4 | 输入正确的发布描述，点击确定 | 创建包完成，进入发布至目标项目页面 |
 | 5 | 选择步骤三打的发布包，点击发布 | 映射配置配置与环境信息配置无误的话，发布成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证创建发布包时，对象名称新增函数类型后缀 「P2」
+##### 【P2】验证创建发布包时，对象名称新增函数类型后缀
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建发布包：点击打包进入打包详情页：对象名称；函数列表函数的名称 | 对象名称后添加函数类型如：test（OceanBase for MySQL/OceanBase for OracleSQL） |
 | 3 | 发布至目标项目：点击查看进入详情页：对象名称 | 对象名称后添加函数类型如：test（OceanBase for MySQL/OceanBase for OracleSQL） |
 | 4 | 发布至本项目：点击查看进入详情页：对象名称 | 对象名称后添加函数类型如：test（OceanBase for MySQL/OceanBase for OracleSQL） |
 
-##### 验证删除OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能 「P3」
+##### 【P2】验证删除OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹file_test上，右键删除按钮 | 弹出二次确认删除弹窗，内容：确定要删除此文件夹吗，删除的文件夹无法恢复 |
 | 3 | 点击取消按钮 | 弹窗关闭，文件夹仍存在 |
 | 4 | 点击确定按钮 | 文件夹删除成功，对应目录下该文件夹已不展示,数据库rdos_ |
 
-##### 验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹到当前目录的子目录功能 「P3」
+##### 【P2】验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹到当前目录的子目录功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹file_testB上，右键编辑按钮 | 弹出编辑弹窗 |
 | 3 | 编辑目录位置为子目录file_testB_01下，点击确定按钮 | 弹出提示：该目录不允许移动至当前目录和子目录 |
 
-##### 验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹到当前目录功能 「P3」
+##### 【P2】验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹到当前目录功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹file_testA_01上，右键编辑按钮 | 弹出编辑弹窗 |
 | 3 | 编辑目录位置为当前目录file_testA_01下，点击确定按钮 | 弹出提示：该目录不允许移动至当前目录和子目录 |
 
-##### 验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能 「P3」
+##### 【P2】验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹上，右键编辑按钮 | 弹出编辑弹窗 |
 | 3 | 编辑新的目录名称B，点击取消按钮 | 弹窗关闭，文件夹内容不变 |
 | 4 | 编辑新的目录名称B，选择目录位置，点击确认 | 新建文件夹成功，在相应目录位置展示该文件夹 |
 
-##### 验证新建重名OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能 「P3」
+##### 【P2】验证新建重名OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹上，右键新建文件夹 | 弹出新建文件夹弹窗 |
 | 3 | 填写已存在的目录名称A，选择目录位置，点击确认 | 弹出提示：文件夹已存在 |
 | 4 | 自定义函数文件夹B上，右键编辑按钮 | 弹出编辑弹窗 |
 | 5 | 编辑目录名称为A，选择目录位置，点击确认 | 弹出提示：文件夹已存在 |
 
-##### 验证新建OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能 「P1」
+##### 【P1】验证新建OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件夹上，右键新建文件夹 | 弹出新建文件夹弹窗 |
 | 3 | 点击取消按钮 | 弹窗关闭，文件夹没有被创建 |
 | 4 | 填写目录名称A，选择目录位置，点击确认 | 新建文件夹成功，在相应目录位置展示该文件夹 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle自定义函数在已被使用，删除自定义函数成功 「P3」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle自定义函数在已被使用，删除自定义函数成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建》创建任务 | 任务名称为OceanBase for MySQL/OceanBase for Oracle_test，任务类型选择OceanBase for MySQL/OceanBase for OracleSQL |
 | 3 | 其他信息默认，点击确认按钮 | 创建ABD_test的sql任务 |
 | 4 | 在开发任务中使用test1函数 | 进行下一步 |
@@ -955,59 +1070,67 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 8 | 查看自定义函数目录 | 该自定义函数被删除不显示 |
 | 9 | 查看数据库rdos_batch_function | 该自定义函数软删除，is_deleted=1 |
 
-##### 验证删除OceanBase for MySQL/OceanBase for Oracle自定义函数功能 「P3」
+##### 【P2】验证删除OceanBase for MySQL/OceanBase for Oracle自定义函数功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 已存在的自定义函数test1，右键菜单，点击删除按钮 | 弹出二次删除确认弹窗，内容：确认要删除此函数吗，删除的函数无法找回 |
 | 3 | 点击取消按钮 | 关闭弹窗，该自定义函数仍然存在 |
 | 4 | 点击确认按钮 | 删除成功，该自定义函数在函数列表中删除 |
 | 5 | 查看自定义函数目录 | 该自定义函数被删除不显示 |
 | 6 | 查看数据库rdos_batch_function | 该自定义函数软删除，is_deleted=1 |
 
-##### 验证移动OceanBase for MySQL/OceanBase for Oracle自定义函数功能 「P3」
+##### 【P2】验证移动OceanBase for MySQL/OceanBase for Oracle自定义函数功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 已存在的自定义函数test1，右键菜单，点击移动按钮 | 弹出编辑弹窗 |
 | 3 | 选择存储位置file_test1，点击确认 | 函数移动至目录下 |
 
-##### 验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数功能 「P3」
+##### 【P2】验证编辑OceanBase for MySQL/OceanBase for Oracle自定义函数功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 已存在的自定义函数test1，右键菜单，点击编辑按钮 | 弹出编辑弹窗 |
 | 3 | 函数类型，函数名称不可编辑，编辑弹窗中的用途，sql，参数说明，存储位置，点击确认按钮 | 弹窗关闭 |
 | 4 | 查看编辑后的自定义函数 | 函数数据更改为编辑后的数据 |
 
-##### 验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数的删除 「P3」
+##### 【P2】验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数的删除
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件上右键-新建自定义函数 | 弹出新建函数弹窗 |
 | 3 | 弹出自定义函数弹窗 | 函数类型默认显示OceanBase for MySQL/OceanBase for OracleSQL，不可修改 |
 | 4 | 函数名称填写：test1 | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1023,16 +1146,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 14 |  | OceanBase for MySQL/OceanBase for Oracle自定义函数文件夹中函数删除，数据库中rdos_batch_function软删除，is_deleted=1 |
 | 15 |  | 函数删除成功，系统给出删除成功提示，该记录从列表中消失 |
 
-##### 验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数test2在delete语句中的使用 「P3」
+##### 【P2】验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数test2在delete语句中的使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发->函数管理左侧菜单右上角：右键-新建自定义函数 | 函数类型选择OceanBase for MySQL/OceanBase for Oracle |
 | 3 | 弹出自定义函数弹窗 | 函数类型需手动选择，默认选中OceanBase for MySQL/OceanBase for Oracle sql |
 | 4 | 函数名称填写：test2 | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1046,16 +1171,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 |  | 正确回显函数数据 |
 | 13 |  | 姓名为ab的用户信息数据被删除 |
 
-##### 验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数test2在update语句中的使用 「P3」
+##### 【P2】验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数test2在update语句中的使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发->函数管理左侧菜单右上角：右键-新建自定义函数 | 函数类型选择OceanBase for MySQL/OceanBase for Oracle |
 | 3 | 弹出自定义函数弹窗 | 函数类型需手动选择，默认选中OceanBase for MySQL/OceanBase for Oracle sql |
 | 4 | 函数名称填写：test2 | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1069,16 +1196,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 |  | 正确回显函数数据 |
 | 13 |  | ab的年龄在原有基础上加1 |
 
-##### 验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数getCity在select语句中的使用 「P1」
+##### 【P1】验证数据开发页面OceanBase for MySQL/OceanBase for Oracle SQL任务OceanBase for MySQL/OceanBase for Oracle自定义函数getCity在select语句中的使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发->函数管理左侧菜单右上角：右键-新建自定义函数 | 函数类型选择OceanBase for MySQL/OceanBase for Oracle |
 | 3 | 弹出自定义函数弹窗 | 函数类型需手动选择，默认选中OceanBase for MySQL/OceanBase for Oracle sql |
 | 4 | 函数名称填写：getCity | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1093,32 +1222,36 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 13 |  | 正确回显函数数据 |
 | 14 |  | 可以正确返回全部数据 |
 
-##### 验证自定义函数文件夹-新增OceanBase for MySQL/OceanBase for Oracle自定义函数失败 「P3」
+##### 【P2】验证自定义函数文件夹-新增OceanBase for MySQL/OceanBase for Oracle自定义函数失败
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件上右键-新建自定义函数 | 弹出新建函数弹窗 |
 | 3 | 弹出自定义函数弹窗 | 函数类型默认显示OceanBase for MySQL/OceanBase for OracleSQL，不可修改 |
 | 4 | 函数名称填写：test1 | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
 | 5 | sql中填写自定义函数 | 填写错误格式的自定义函数 |
 | 6 | 其他信息正确填写，点击确定 | 弹出报错信息：新增失败，execute sql报错 |
 
-##### 验证自定义函数文件夹-新增OceanBase for MySQL/OceanBase for Oracle自定义函数 「P1」
+##### 【P1】验证自定义函数文件夹-新增OceanBase for MySQL/OceanBase for Oracle自定义函数
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 自定义函数文件上右键-新建自定义函数 | 弹出新建函数弹窗 |
 | 3 | 弹出自定义函数弹窗 | 函数类型需手动选择，默认选中OceanBase for MySQL/OceanBase for Oracle sql |
 | 4 | 函数名称填写：test1 | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1133,16 +1266,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 13 |  | 插入新增自定义函数 |
 | 14 |  | 可以正确返回全部数据 |
 
-##### 验证菜单上方按钮右键-新增OceanBase for MySQL/OceanBase for Oracle自定义函数 「P3」
+##### 【P2】验证菜单上方按钮右键-新增OceanBase for MySQL/OceanBase for Oracle自定义函数
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发->函数管理左侧菜单右上角：右键-新建自定义函数 | 函数类型选择OceanBase for MySQL/OceanBase for Oracle |
 | 3 | 弹出自定义函数弹窗 | 函数类型需手动选择，默认选中OceanBase for MySQL/OceanBase for Oracle sql |
 | 4 | 函数名称填写：getCity | 函数名称自动填充到sql语句中的“schemaName.“，“create or replace function “schemaName.“” |
@@ -1156,94 +1291,106 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 |  | 正确回显函数数据 |
 | 13 |  | 插入新增自定义函数 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle系统函数的使用 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for Oracle系统函数的使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建》创建任务 | 任务名称为OceanBase for MySQL/OceanBase for Oracle_test，任务类型选择OceanBase for MySQL/OceanBase for OracleSQL |
 | 3 | 其他信息默认，点击确认按钮 | 创建ABD_test的sql任务 |
 | 4 | 输入系统函数名称（每个类型挑选两种进行验证）高亮且有快捷写入 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 5 | 输入相关sql，sql内包含对应系统函数的调用（每种系统函数类型选择两个进行调用），点击运行 | 1.运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 6 | 检查相关状态和结果 | 结果符合预期 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle系统函数展示正确 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for Oracle系统函数展示正确
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 系统函数与OceanBase for MySQL/OceanBase for Oracle的系统函数相同 | 对比OceanBase for MySQL/OceanBase for Oracle的系统函数 |
 | 3 | 单击每个函数 | 弹出查看函数详情弹窗 |
 
-##### 验证函数管理新增OceanBase for MySQL/OceanBase for Oracle成功 「P1」
+##### 【P1】验证函数管理新增OceanBase for MySQL/OceanBase for Oracle成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 项目管理》开发设置：添加计算引擎，选择OceanBase for MySQL/OceanBase for Oracle，其他选项默认 | 点击确认，添加成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | 数据开发》函数管理左侧菜单：新增OceanBase for MySQL/OceanBase for Oracle | 包含系统函数，自定义函数 |
 | 4 | 验证数据库rdos_dict表 | 增加OceanBase for MySQL/OceanBase for Oracle For PG系统函数 |
 
-##### 验证wps和office的版本 「P3」
+##### 【P2】验证wps和office的版本
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | wps的.xlsx和.xls,office的xlsx和.xls文件都导入测试 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 
-##### 验证导入模式为追加，导入数据正确 「P3」
+##### 【P2】验证导入模式为追加，导入数据正确
 
 > 前置条件
 ```
 准备文件格式为.xlsx的文件test，有单个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写，导入模式选择覆盖 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test表中追加写入此次导入的数据 |
 
-##### 验证导入模式为覆盖，导入数据正确 「P1」
+##### 【P1】验证导入模式为覆盖，导入数据正确
 
 > 前置条件
 ```
 准备文件格式为.xlsx的文件test，有单个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 选择一张表test（表里已存在数据） |
 | 5 | 其它数据默认填写，导入模式选择覆盖 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test表中只有此次导入的数据 |
 
-##### 验证按名称匹配，导入数据正确 「P3」
+##### 【P2】验证按名称匹配，导入数据正确
 
 > 前置条件
 ```
@@ -1252,9 +1399,11 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 新建表create table test（sex，name）
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
@@ -1263,7 +1412,7 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 7 | 查询表test中的数据 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 8 |  | test文件中的sex，name分别对应test表中的name，sex字段 |
 
-##### 验证按位置匹配，导入数据正确 「P1」
+##### 【P1】验证按位置匹配，导入数据正确
 
 > 前置条件
 ```
@@ -1271,165 +1420,187 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 新建表create table test（sex，name）
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写，选择按位置匹配 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test文件中的sex，name分别对应test表中的sex，name字段 |
 
-##### 验证导入数据页面功能正确 「P3」
+##### 【P2】验证导入数据页面功能正确
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 分割符默认选中逗号，自定义按钮可选 | 1.分割符下拉列表可选择，数据列表随选择同步更新 |
 | 3 | 原始字符集：下拉列表，默认utf-8 | 填写数据大于列表数据条数，列表不展示数据 |
 | 4 | 导入起始行：默认1，所支持的数字大于等于1的正整数 | 显示的数据即为导入的数据 |
 | 5 | 首行为标题勾选项，默认勾选 | 默认勾选：第一行数据为标题 |
 | 6 |  | 去掉勾选，使用默认标题 |
 
-##### 验证log文档，文件为多个sheet，导入数据成功 「P3」
+##### 【P2】验证log文档，文件为多个sheet，导入数据成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中第一个sheet中的数据被写入 |
 
-##### 验证csv文档，文件为多个sheet，导入数据成功 「P1」
+##### 【P1】验证csv文档，文件为多个sheet，导入数据成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中第一个sheet中的数据被写入 |
 
-##### 验证txt文档，文件为多个sheet，导入数据成功 「P1」
+##### 【P1】验证txt文档，文件为多个sheet，导入数据成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中第一个sheet中的数据被写入 |
 
-##### 验证03版本的.xls文档，文件为多个sheet，导入数据成功 「P3」
+##### 【P2】验证03版本的.xls文档，文件为多个sheet，导入数据成功
 
 > 前置条件
 ```
 准备文件格式为.xls的文件test，有多个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中第一个sheet中的数据被写入 |
 
-##### 验证03版本的.xls文档，文件为单个sheet，导入数据成功 「P3」
+##### 【P2】验证03版本的.xls文档，文件为单个sheet，导入数据成功
 
 > 前置条件
 ```
 准备文件格式为.xls的文件test，有单个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中的数据文件正常导入 |
 
-##### 验证07版本的.xlsx文档，文件为多个sheet页，导入数据成功 「P3」
+##### 【P2】验证07版本的.xlsx文档，文件为多个sheet页，导入数据成功
 
 > 前置条件
 ```
 准备文件格式为.xlsx的文件test，有多个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test中第一个sheet中的数据被写入 |
 
-##### 验证07版本的.xlsx文档，文件为单个sheet页，导入数据成功 「P3」
+##### 【P2】验证07版本的.xlsx文档，文件为单个sheet页，导入数据成功
 
 > 前置条件
 ```
 准备文件格式为.xlsx的文件test，有单个sheet页面有数据，标题:id ,name
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 上传test_file文件 | 系统提示上传成功，文件已显示在上传列表/附件区域，文件名与大小正确 |
 | 3 | 其它值为默认填写 | 点击下一步 |
 | 4 | 选择表类型为OceanBase for MySQL/OceanBase for Oracle | 新建一张包含文件中字段的表test_table |
 | 5 | 其它数据默认填写 | 系统提示导入成功，数据已同步至对应列表，记录数与导入文件中数据量一致 |
 | 6 | 查询表test中的数据 | test_file中的数据文件正常导入 |
 
-##### 验证导入数据交互 「P3」
+##### 【P2】验证导入数据交互
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发页面导入-导入本地文件 | 注释调整为“支持.txt、.csv、.log、.xls和.xlsx格式文件，若.xlsx和.xls的文件有多个sheet页，只导入第一个sheet页内容” |
 
-##### 验证数据开发--> 支持运行历史 「P1」
+##### 【P1】验证数据开发--> 支持运行历史
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建OceanBase for MySQL/OceanBase for Oracle任务 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 运行任务 | 任务运行成功，状态显示为【运行成功/成功】，无报错信息 |
 | 4 | 去运行历史查看数据 | 有最新一条的运行记录，所有数据均正确，内容与预期完全一致，无异常或错误 |
@@ -1438,58 +1609,66 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 7 | 下载日志 | 下载日志成功，数据正确，内容与预期完全一致，无异常或错误 |
 | 8 | 跳转到 | 点击跳转到对应任务 |
 
-##### 验证数据开发--> 支持语法提示，语法校验 输入关键字后的排序 「P2」
+##### 【P2】验证数据开发--> 支持语法提示，语法校验 输入关键字后的排序
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle sql任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 3 | 输入select，开始联想 | 提示正确关键字，字段名，库名，表名，函数名 |
 
-##### 验证数据开发--> 支持语法提示，语法校验 输入开始前 「P2」
+##### 【P2】验证数据开发--> 支持语法提示，语法校验 输入开始前
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle sql任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 3 | 焦点停留在sql页面，开始联想 | 提示正确关键字，字段名，库名，表名，函数名 |
 
-##### 验证生命周期正常运行 「P2」
+##### 【P2】验证生命周期正常运行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE test (c1 INT PRIMARY KEY, c2 VARCHAR(3)) lifecycle 1; | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
 | 5 | 临时运行语句 | 1.表不存在 |
 | 6 | 第二天再次查询该表 |  |
 
-##### 验证sql基础操作正常执行 「P2」
+##### 【P2】验证sql基础操作正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE test (c1 INT PRIMARY KEY, c2 VARCHAR(3)); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1542,16 +1721,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 51 | SELECT * FROM t_insert; |  |
 | 52 | 临时运行语句 |  |
 
-##### 验证存储过程sql正常执行 「P2」
+##### 【P2】验证存储过程sql正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE loghistory | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1573,16 +1754,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 20 | COMMIT; |  |
 | 21 | 临时运行语句 |  |
 
-##### 验证复合查询sql正常执行 「P2」
+##### 【P2】验证复合查询sql正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE table_a(PK INT, name VARCHAR(25)); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1617,16 +1800,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 33 | SELECT PK, NAME FROM table_b; |  |
 | 34 | 临时运行语句 |  |
 
-##### 验证子查询sql正常执行 「P2」
+##### 【P2】验证子查询sql正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE table_a(PK INT, name VARCHAR(25)); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1653,16 +1838,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 25 | WHERE T1.PK IN (SELECT T2.NAME FROM TABLE_B T2 WHERE T2.NAME = T1.NAME); |  |
 | 26 | 临时运行语句 |  |
 
-##### 验证分区操作正常执行 「P2」
+##### 【P2】验证分区操作正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE tbl1(c1 INT PRIMARY KEY, c2 DATE); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1688,16 +1875,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 24 | ALTER TABLE tbl2 obOP PARTITION p2; |  |
 | 25 | 临时运行语句 |  |
 
-##### 验证外键操作正常执行 「P2」
+##### 【P2】验证外键操作正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE primary_table (id NUMBER PRIMARY KEY, names VARCHAR(100) NOT NULL, foreign_col NUMBER); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1711,16 +1900,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 12 | ALTER TABLE primary_table obOP CONSTRAINT cons_fk1; |  |
 | 13 | 临时运行语句 |  |
 
-##### 验证索引操作正常执行 「P2」
+##### 【P2】验证索引操作正常执行
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE test_tbl1 (col1 NUMBER, col2 VARCHAR2(50)); | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1731,16 +1922,18 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 9 | obOP TABLE test_tbl1; |  |
 | 10 | 临时运行语句 |  |
 
-##### 验证数据开发--> 执行计划——验证OceanBase for MySQL/OceanBase for Oracle SQL任务执行计划正常使用 「P2」
+##### 【P2】验证数据开发--> 执行计划——验证OceanBase for MySQL/OceanBase for Oracle SQL任务执行计划正常使用
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新建OceanBase for MySQL/OceanBase for Oracle SQL任务 | 系统提示任务新建成功，任务列表中出现新建的任务记录，状态为【待提交/草稿】 |
 | 3 | 输入sql后点击保存： | 系统提示任务保存成功，任务已保存至任务列表，可继续编辑或提交 |
 | 4 | CREATE TABLE p1table(c1 INT ,c2 INT) PARTITION BY HASH(c1) PARTITIONS 2; | 1.任务运行成功2.所执行的sql语句产生对应的结果3.数据无乱码错位等异常 |
@@ -1758,30 +1951,34 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 16 | 临时运行语句 |  |
 | 17 | 勾选dml语句后点击执行计划 |  |
 
-##### 验证工作流下，子节点中包含OceanBase for MySQL/OceanBase for Oracle任务，工作流正常运行，数据正确 「P3」
+##### 【P2】验证工作流下，子节点中包含OceanBase for MySQL/OceanBase for Oracle任务，工作流正常运行，数据正确
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，创建工作流任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
+| 1 | 进入【数据开发界面】页面，创建工作流任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 2 | 将OceanBase for MySQL/OceanBase for Oracle任务拖到工作流中，进入OceanBase for MySQL/OceanBase for Oracle任务，输入sqlcreate table putong(id int);select * from putong where 1=1点击保存 | 子任务保存成功，系统给出保存成功提示，配置/数据已持久化，页面更新为最新状态 |
 | 3 | 到工作流任务界面，点击保存 | 工作流任务保存成功，系统给出保存成功提示，配置/数据已持久化，页面更新为最新状态 |
 | 4 | 运行工作流任务 | 任务运行成功，状态显示为【运行成功/成功】，无报错信息 |
 
-##### 验证数据开发--> 支持引用上下游参数 「P3」
+##### 【P2】验证数据开发--> 支持引用上下游参数
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建OceanBase for MySQL/OceanBase for OracleSQL任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 3 | 运行SQL语句后 | 新建添加任务输出参数test1，值为11；test2，值为13 |
 | 4 | 创建任务2 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
@@ -1790,98 +1987,112 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 7 | 其他步骤配置完毕 | 保存任务 |
 | 8 | 运行同步任务 | 任务运行成功，参数被正确引用 |
 
-##### 验证数据开发--> 支持引用运行参数 「P3」
+##### 【P2】验证数据开发--> 支持引用运行参数
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建任务 | 系统提示创建成功，列表中出现新创建的记录，记录内容与填写一致 |
 | 3 | 新建运行参数test1，值为11；test2，值为15 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 4 | 其他步骤配置完毕 | 保存任务 |
 | 5 | 运行任务 | 任务运行成功，参数被正确引用 |
 
-##### 验证数据开发--> 支持手动依赖 切换至‘手动依赖’，自动解析的上游任务增加‘删除按钮’，并可以删除 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 切换至‘手动依赖’，自动解析的上游任务增加‘删除按钮’，并可以删除
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 再将‘依赖生成方式’切换至‘手动依赖’ | 列表展示‘putong_OceanBase for MySQL/OceanBase for OracleSQL’、‘putong_OceanBase for MySQL/OceanBase for OracleSQL’、‘putong_OceanBase for MySQL/OceanBase for OracleSQL’，但是新增‘删除按钮’ |
 | 4 | 将‘putong_OceanBase for MySQL/OceanBase for OracleSQL’删除 | 弹出二次确认框，点击确认后，提示删除成功，系统给出删除成功提示，该记录从列表中消失 |
 
-##### 验证数据开发--> 支持手动依赖 提交‘手动依赖’的任务，可以正常补数据 「P1」
+##### 【P1】验证数据开发--> 支持手动依赖 提交‘手动依赖’的任务，可以正常补数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 将‘依赖生成方式’切换至‘手动依赖’，添加‘putong_testSQL’ | 列表中新增一条‘putong_testSQL’上游任务 |
 | 4 | 保存后，点击提交任务，切换至运维中心-任务管理，点击‘补数据’ | 上游任务均执行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证数据开发--> 支持手动依赖 任务间依赖的‘依赖生成方式’下拉显示‘手动依赖’ 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 任务间依赖的‘依赖生成方式’下拉显示‘手动依赖’
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖 |
 
-##### 验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，任务间依赖字段属性显示顺序 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，任务间依赖字段属性显示顺序
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 选择‘手动依赖’ | 依赖任务列表中的字段顺序修改为：任务、项目、租户、产品、操作 |
 
-##### 验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，‘添加依赖’-‘手动添加’功能 「P1」
+##### 【P1】验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，‘添加依赖’-‘手动添加’功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 选择‘手动依赖’，点击‘添加依赖’ | 跳转到‘添加依赖界面’ |
 | 4 | 勾选手动添加租户：必填项，默认为当前租户产品：必填项，下拉可选择离线开发、算法开发、智能标签，默认为离线项目：必填项，下拉可选择当前租户下的所有项目，支持默认搜索任务：必填项，下拉显示选中项目已经提交的任务，支持模糊搜索产品选择离线开发、项目选择‘putong’，任务选择‘putong_testSQL’，点击确认 | 任务依赖列表中新增一条‘putong_testSQL’的数据 |
 
-##### 验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，‘添加依赖’-‘依赖推荐’功能 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 依赖方式切换为‘手动依赖’，‘添加依赖’-‘依赖推荐’功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 选择‘手动依赖’，点击‘添加依赖’ | 跳转到‘添加依赖界面’ |
 | 4 | 勾选依赖推荐 | 列表展示为： |
@@ -1891,87 +2102,99 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 8 |  | putong_OceanBase for MySQL/OceanBase for OracleSQL  OceanBase for MySQL/OceanBase for OracleSQL  putong   DTstack租户  离线开发  putong  chema.impala_table |
 | 9 |  | 任务依赖列表中新增两条数据 |
 
-##### 验证数据开发--> 支持手动依赖 调度配置增加依赖方式说明 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 调度配置增加依赖方式说明
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 选择‘手动依赖’，点击‘添加依赖’，将‘putong_testSQL’添加到依赖列表中，提交任务后，点击‘版本对比’ | ‘上游任务’属性后面新增 ‘(手动依赖)’ |
 | 4 | 选择‘自动依赖’，点击保存，提交任务后，点击‘版本对比’ | ‘上游任务’属性后面新增 ‘(自动依赖)’ |
 
-##### 验证数据开发--> 支持手动依赖 添加方式选择‘依赖推荐’，已添加到上游依赖的任务不重复添加 「P3」
+##### 【P2】验证数据开发--> 支持手动依赖 添加方式选择‘依赖推荐’，已添加到上游依赖的任务不重复添加
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发界面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
+| 1 | 进入【数据开发界面】页面，点击新建‘OceanBase for MySQL/OceanBase for OracleSQL任务’ | 页面跳转至OceanBase for MySQL/OceanBase for OracleSQL界面 |
 | 2 | 鼠标移至右侧，点击‘调度依赖’属性，点击‘依赖生成方式’ | 下拉框弹出‘手动依赖’与‘自动依赖’ |
 | 3 | 选择‘手动依赖’，点击‘添加依赖’ | 跳转到‘添加依赖界面’ |
 | 4 | 勾选‘依赖推荐’，勾选任务‘putong_OceanBase for MySQL/OceanBase for OracleSQL’、putong_OceanBase for MySQL/OceanBase for OracleSQL，点击保存 | 任务依赖列表中新增两条数据 |
 | 5 | 再次点击‘添加依赖’，勾选任务‘putong_OceanBase for MySQL/OceanBase for OracleSQL’、putong_OceanBase for MySQL/OceanBase for OracleSQL，点击保存 | 提示‘不可重复添加’ |
 
-##### 验证勾选两个任务后的版本对比的交互功能 「P3」
+##### 【P2】验证勾选两个任务后的版本对比的交互功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择一个OceanBase for MySQL/OceanBase for Oracle任务 | 勾选两个版本，点击版本回滚按钮 |
 | 3 | 左侧展示提交时间最近的版本 | 目录栏展示：版本号，提交时间，修改人，备注tab栏展示：代码，调度配置，任务参数，环境参数 |
 | 4 | 右侧展示后提交的版本 | 目录栏展示：版本号，提交时间，修改人，备注tab栏展示：代码，调度配置，任务参数，环境参数 |
 | 5 | 目录栏数据，tab栏数据校验 | 展示正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证左边是当前版本，回滚至此版本的按钮置灰 「P3」
+##### 【P2】验证左边是当前版本，回滚至此版本的按钮置灰
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择一个OceanBase for MySQL/OceanBase for Oracle任务 | 勾选当前版本，和一个历史版本 |
 | 3 | 点击回滚按钮 | 左侧版本的回滚至此版本按钮置灰右侧的高亮显示 |
 
-##### 验证右侧版本回滚至此版本，任务内容正确切换 「P1」
+##### 【P1】验证右侧版本回滚至此版本，任务内容正确切换
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 选择一个OceanBase for MySQL/OceanBase for Oracle任务 | 勾选两个版本，点击版本回滚按钮 |
 | 3 | 点击右侧的回滚至此版本，弹出弹窗 | 弹窗标题：确认将任务${任务名}回滚到${版本号}版本，弹窗内容：任务回滚可帮助您恢复历史版本的任务数据 |
 | 4 | 点击确认 | 任务内容更改为右侧版本的内容 |
 
-##### 验证使用自定义调度日期运行，提交正常 「P2」
+##### 【P2】验证使用自定义调度日期运行，提交正常
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发页面 | 系统提示操作成功，页面/数据状态更新为最新 |
+| 1 | 进入【数据开发】页面 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 2 | 输入以下sql: | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | obop table if exists putong_table | 系统提示操作成功，页面/数据状态更新为最新 |
 | 4 | create table if not exists putong_table(id int,name varchar(255)); | 前端会按照分号进行划分，分别调4次临时运行的接口，临时运行成功； |
@@ -1982,135 +2205,155 @@ OceanBase for MySQL/OceanBase for Oracle表：create table putong(id int,name st
 | 9 | 运行 |  |
 | 10 | 保存并提交 |  |
 
-##### 验证批量提交OceanBase for MySQL/OceanBase for OracleSQL任务功能 「P2」
+##### 【P2】验证批量提交OceanBase for MySQL/OceanBase for OracleSQL任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.有新增成功的OceanBase for MySQL/OceanBase for OracleSQL且未提交只运维中心的任务
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
+| 1 | 进入【数据开发】页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
 | 2 | 点击批量操作页面中的任务类型下拉框 | 下拉框中新增OceanBase for MySQL/OceanBase for Oracle SQL任务类型 |
 | 3 | 选中OceanBase for MySQL/OceanBase for Oracle SQL任务，点击查询 | OceanBase for MySQL/OceanBase for Oracle SQL类型的任务被筛选出来 |
 | 4 | 选中被筛选出来的OceanBase for MySQL/OceanBase for Oracle SQL任务，点击提交 | 批量提交至运维中心成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证批量操作中按照OceanBase for MySQL/OceanBase for OracleSQL任务类型筛选数据功能 「P1」
+##### 【P1】验证批量操作中按照OceanBase for MySQL/OceanBase for OracleSQL任务类型筛选数据功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.有新增成功的OceanBase for MySQL/OceanBase for OracleSQL且未提交只运维中心的任务
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
+| 1 | 进入【数据开发】页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
 | 2 | 点击批量操作页面中的任务类型下拉框 | 下拉框中新增OceanBase for MySQL/OceanBase for Oracle SQL任务类型 |
 | 3 | 选中OceanBase for MySQL/OceanBase for Oracle SQL任务，点击查询 | OceanBase for MySQL/OceanBase for Oracle SQL类型的任务被筛选出来 |
 
-##### 验证批量操作中任务类型下拉框新增OceanBase for MySQL/OceanBase for OracleSQL任务类型 「P2」
+##### 【P2】验证批量操作中任务类型下拉框新增OceanBase for MySQL/OceanBase for OracleSQL任务类型
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.有新增成功的OceanBase for MySQL/OceanBase for OracleSQL且未提交只运维中心的任务
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
+| 1 | 进入【数据开发】页面，点击左下角批量操作图标 | 当前页面弹出批量操作弹窗 |
 | 2 | 点击批量操作页面中的任务类型下拉框 | 下拉框中新增OceanBase for MySQL/OceanBase for Oracle SQL任务类型 |
 
-##### 验证OceanBase for MySQL/OceanBase for OracleSQL中使用系统参数与自定义参数功能 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for OracleSQL中使用系统参数与自定义参数功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 登陆admin用户，新增OceanBase for MySQL/OceanBase for OracleSQL任务，名称为A，内容输入为create table test_0511(id int);insert into ${table} values(1); | 输入成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 3 | 点击右侧任务参数，添加自定义类型的运行参数，参数名称为table，值为test_0511，点击保存，临时运行 | 临时运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 4 | 临时运行以下sql:select * from test_0511 | 表中数据为1 |
 
-##### 验证修改OceanBase for MySQL/OceanBase for OracleSQL任务责任人功能 「P2」
+##### 【P2】验证修改OceanBase for MySQL/OceanBase for OracleSQL任务责任人功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.当前项目下存在用户A，角色为数据开发
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 登陆admin用户，新增OceanBase for MySQL/OceanBase for OracleSQL任务，名称为A，内容输入为create table test_0511(id int);保存 | 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 | 点击该任务右侧基础属性，点击责任人后的修改，将责任人修改为用户A | 任务责任人修改成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证OceanBase for MySQL/OceanBase for OracleSQL任务添加上下游依赖任务功能 「P2」
+##### 【P2】验证OceanBase for MySQL/OceanBase for OracleSQL任务添加上下游依赖任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 新增OceanBase for MySQL/OceanBase for OracleSQL任务，名称为A，内容输入为create table test_0511(id int);保存，提交 | 系统提示提交成功，记录状态更新，列表中可见该条记录 |
 | 3 | 新增OceanBase for MySQL/OceanBase for OracleSQL任务，名称为B，内容输入为insert into test_0511 values(1)，点击右侧调度属性-添加依赖，添加步骤一的A任务为上游 | 添加上游任务成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 4 | 提交至运维中心，将上下游任务一起进行补数据运行 | 配置无误补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证删除OceanBase for MySQL/OceanBase for OracleSQL任务功能 「P2」
+##### 【P2】验证删除OceanBase for MySQL/OceanBase for OracleSQL任务功能
 
 > 前置条件
 ```
 c
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 右键该新建成功的OceanBase for MySQL/OceanBase for OracleSQL，选择删除 | 弹出二次确认弹窗 |
 | 3 | 点击确定 | 任务删除成功，系统给出删除成功提示，该记录从列表中消失 |
 
-##### 验证克隆OceanBase for MySQL/OceanBase for OracleSQL至工作流任务功能 「P2」
+##### 【P2】验证克隆OceanBase for MySQL/OceanBase for OracleSQL至工作流任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.有新增成功的OceanBase for MySQL/OceanBase for OracleSQL任务和工作流任务
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 右键该新建成功的OceanBase for MySQL/OceanBase for OracleSQL，选择克隆至工作流 | 弹出克隆至工作流弹窗，节点名称为任务名称_copy |
 | 3 | 选择其中一个工作流，点击确定 | 克隆至工作流任务成功，相关数据正确回显 |
 
-##### 验证克隆OceanBase for MySQL/OceanBase for OracleSQL任务功能 「P2」
+##### 【P2】验证克隆OceanBase for MySQL/OceanBase for OracleSQL任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎2.有新增成功的OceanBase for MySQL/OceanBase for OracleSQL任务
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 右键该新建成功的OceanBase for MySQL/OceanBase for OracleSQL，选择克隆 | 弹出克隆弹窗，任务名称为任务名称_copy |
 | 3 | 点击确定 | 克隆成功，相关数据正确回显 |
 
-##### 验证select语句下载功能正常 「P2」
+##### 【P2】验证select语句下载功能正常
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线项目-数据开发模块，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
+| 1 | 进入【离线项目-数据开发模块】页面，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
 | 2 | 类型选择OceanBase for MySQL/OceanBase for Oracle SQL，输入正确的任务名称，存储位置默认为数据开发，点击确定 | OceanBase for MySQL/OceanBase for Oracle SQL类型新增成功； |
 | 3 | 输入以下sql: | 默认注释模版如： |
 | 4 | obop table if exists putong_table | -- name 任务名称 |
@@ -2123,16 +2366,18 @@ c
 | 11 |  | 当前页面弹出下载弹窗，文件名称正确回显，文件格式默认为scv，编码格式默认为utf-8 |
 | 12 |  | 数据下载成功，相关数据正确回显 |
 
-##### 验证表可在OceanBase for MySQL/OceanBase for OracleSQL里查询到 「P2」
+##### 【P2】验证表可在OceanBase for MySQL/OceanBase for OracleSQL里查询到
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线项目-数据开发模块，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
+| 1 | 进入【离线项目-数据开发模块】页面，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
 | 2 | 类型选择OceanBase for MySQL/OceanBase for Oracle SQL，输入正确的任务名称，存储位置默认为数据开发，点击确定 | OceanBase for MySQL/OceanBase for Oracle SQL类型新增成功； |
 | 3 | 输入以下sql: | 默认注释模版如： |
 | 4 | obop table if exists putong_table | -- name 任务名称 |
@@ -2144,16 +2389,18 @@ c
 | 10 |  | 下方有表查询结果，数据为(1,'putong1')，支持下载 |
 | 11 |  | 下方有表查询结果，数据为(1,'putong1')，支持下载 |
 
-##### 验证临时运行多条OceanBase for MySQL/OceanBase for Oracle SQL任务功能 「P1」
+##### 【P1】验证临时运行多条OceanBase for MySQL/OceanBase for Oracle SQL任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线项目-数据开发模块，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
+| 1 | 进入【离线项目-数据开发模块】页面，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
 | 2 | 类型选择OceanBase for MySQL/OceanBase for Oracle SQL，输入正确的任务名称，存储位置默认为数据开发，点击确定 | OceanBase for MySQL/OceanBase for Oracle SQL类型新增成功； |
 | 3 | 输入以下sql: | 默认注释模版如： |
 | 4 | obop table if exists putong_table | -- name 任务名称 |
@@ -2164,16 +2411,18 @@ c
 | 9 |  | 前端会按照分号进行划分，分别调4次临时运行的接口，临时运行成功； |
 | 10 |  | 下方有表查询结果，数据为(1,'putong1')，支持下载 |
 
-##### 验证临时运行单条OceanBase for MySQL/OceanBase for Oracle SQL任务功能 「P1」
+##### 【P1】验证临时运行单条OceanBase for MySQL/OceanBase for Oracle SQL任务功能
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线项目-数据开发模块，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
+| 1 | 进入【离线项目-数据开发模块】页面，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
 | 2 | 类型选择OceanBase for MySQL/OceanBase for Oracle SQL，输入正确的任务名称，存储位置默认为数据开发，点击确定 | OceanBase for MySQL/OceanBase for Oracle SQL类型新增成功； |
 | 3 | 输入以下sql: | 默认注释模版如： |
 | 4 | obop table if exists putong_table | -- name 任务名称 |
@@ -2184,16 +2433,18 @@ c
 | 9 |  | 单条sql临时运行成功； |
 | 10 |  | 下方有表查询结果，数据为(1,'putong1')，支持下载 |
 
-##### 验证新增OceanBase for MySQL/OceanBase for Oracle SQL任务类型成功 「P2」
+##### 【P2】验证新增OceanBase for MySQL/OceanBase for Oracle SQL任务类型成功
 
 > 前置条件
 ```
 1.当前项目已成功对接OceanBase for MySQL/OceanBase for Oracle SQL引擎
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线项目-数据开发模块，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
+| 1 | 进入【离线项目-数据开发模块】页面，点击新建任务，点击任务类型下拉框 | 任务类型可选数据有OceanBase for MySQL/OceanBase for Oracle SQL |
 | 2 | 类型选择OceanBase for MySQL/OceanBase for Oracle SQL，输入正确的任务名称，存储位置默认为数据开发，点击确定 | OceanBase for MySQL/OceanBase for Oracle SQL类型新增成功； |
 | 3 |  | 默认注释模版如： |
 | 4 |  | -- name 任务名称 |
@@ -2203,162 +2454,184 @@ c
 | 8 |  | -- desc 任务描述； |
 | 9 |  | 无环境参数 |
 
-##### 验证同步历史 查看详情 查看报告 「P3」
+##### 【P2】验证同步历史 查看详情 查看报告
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步、任务成功 | 不校验查看结果 |
 | 4 | 查看页面 | 不校验查看结果 |
 | 5 | 点击 查看详情 | 任务状态，失败，存在查看报告 按钮 |
 | 6 | 点击查看报告 | 看到错误的原因 |
 
-##### 验证同步历史 查看详情 存在失败数据 「P2」
+##### 【P2】验证同步历史 查看详情 存在失败数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步、任务成功 | 不校验查看结果 |
 | 4 | 查看页面 | 不校验查看结果 |
 | 5 | 点击 查看详情 | 任务状态，失败，存在查看报告 按钮 |
 
-##### 验证同步历史 查看详情 查看任务 「P1」
+##### 【P1】验证同步历史 查看详情 查看任务
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步、任务成功 | 不校验查看结果 |
 | 4 | 查看页面 | 不校验查看结果 |
 | 5 | 点击 查看详情 | 任务状态，成功，存在查看任务 按钮 |
 | 6 | 点击查看任务 | 进入 数据开发，任务详情 |
 
-##### 验证同步历史 查看详情 存在成功状态数据 「P1」
+##### 【P1】验证同步历史 查看详情 存在成功状态数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步、任务成功 | 不校验查看结果 |
 | 4 | 查看页面 | 不校验查看结果 |
 | 5 | 点击 查看详情 | 任务状态，成功，存在查看任务 按钮 |
 
-##### 验证同步历史 查看详情 不存在数据 「P3」
+##### 【P2】验证同步历史 查看详情 不存在数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步、终止同步 | 不校验查看结果 |
 | 4 | 查看页面 | 表数量0 |
 | 5 | 点击 查看详情 | 内容为空，展示 “暂无数据” |
 
-##### 验证同步历史 存在数据 「P1」
+##### 【P1】验证同步历史 存在数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 整库同步几次 | 数据正确，内容与预期完全一致，无异常或错误 |
 | 4 | 查看页面 | 参考历史 Oracle 、PostgreSQL 的页面，同步几次展示几条数据 |
 
-##### 验证同步历史 不存在数据 「P3」
+##### 【P2】验证同步历史 不存在数据
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 点击 操作中的同步历史按钮 | 出现 整库同步配置历史弹窗 |
 | 3 | 查看页面 | 参考历史 Oracle 、PostgreSQL 的页面 |
 
-##### 验证整库同步 增量、分批上传 「P3」
+##### 【P2】验证整库同步 增量、分批上传
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 选中2条，选中增量（gmd_time）、选中分批上传（6小时1张表），设置具体时间10点，发布任务 | 任务进入发布状态，页面加载中。任务进度0%，共2条，成功0，失败0条 |
 | 3 | 任务完成成功 | 任务进度100%，共2条，成功2条，失败0条。绿色进度条 |
 | 4 | 进入数据开发页面，查看任务信息（开始时间,增量同步字段） | 任务信息正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证整库同步 全量、分批上传 「P1」
+##### 【P1】验证整库同步 全量、分批上传
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 选中2条，选中全量、选中分批上传（6小时1张表），设置具体时间10点，发布任务 | 任务进入发布状态，页面加载中。任务进度0%，共2条，成功0，失败0条 |
 | 3 | 任务完成成功 | 任务进度100%，共2条，成功2条，失败0条。绿色进度条 |
 | 4 | 进入数据开发页面，查看任务信息（开始时间） | 任务信息正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证整库同步 增量、整体上传 「P1」
+##### 【P1】验证整库同步 增量、整体上传
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 选中2条，选中增量（gmd_time）、选中整批上传，设置具体时间12点，发布任务 | 任务进入发布状态，页面加载中。任务进度0%，共2条，成功0，失败0条 |
 | 3 | 任务完成成功 | 任务进度100%，共2条，成功2条，失败0条。绿色进度条 |
 | 4 | 进入数据开发页面，查看任务信息（增量同步字段、开始时间） | 任务信息正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证整库同步 全量、整体上传 「P3」
+##### 【P2】验证整库同步 全量、整体上传
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 选中2条，选中全量、选中整批上传，设置具体时间12点，发布任务 | 任务进入发布状态，页面加载中。任务进度0%，共2，成功0，失败0条 |
 | 3 | 等待任务运行 | 任务进度50%，共2条，成功1，失败0条。蓝色进度条 |
 | 4 | 任务完成成功 | 任务进度100%，共2条，成功2条，失败0条。绿色进度条 |
@@ -2366,333 +2639,383 @@ c
 | 6 | 进入数据开发页面，查看任务信息 | 任务信息正确，内容与预期完全一致，无异常或错误 |
 | 7 | 进入运维中心，补数据运行，新生成的任务 | 任务能正常运行 |
 
-##### 验证整库同步 数据表列表，页面交互 「P1」
+##### 【P1】验证整库同步 数据表列表，页面交互
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 滚动数据表列表 | 能正常上下滚动 |
 | 3 | 勾选，数据表 | 表被选中 |
 | 4 | 全选，数据表 | 表被全选 |
 
-##### 验证整库同步 库中存在表 「P1」
+##### 【P1】验证整库同步 库中存在表
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 查看整库同步页面 | 参考历史页面，其中数据表列表不为空，且数据正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证整库同步 库中不存在表 「P3」
+##### 【P2】验证整库同步 库中不存在表
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
+| 1 | 进入【数据源】页面，点击数据源【OceanBase for MySQL/OceanBase for Oracle】的整库同步按钮 | 进入整库同步页面 |
 | 2 | 查看整库同步页面 | 参考历史页面，其中数据表列表为空 |
 
-##### 验证整库同步 按钮展示 「P1」
+##### 【P1】验证整库同步 按钮展示
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建项目，对接ob计算引擎 | 进入数据源，所对接引擎操作列存在 整库同步、同步历史操作按钮功能 |
 | 3 | 引入ob数据源，查看操作按钮 | 存在 整库同步、同步历史操作按钮功能 |
 
-##### 验证同步元数据 部分表成功 「P1」
+##### 【P1】验证同步元数据 部分表成功
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入项目，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
+| 1 | 进入【项目】页面，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 2 | 底层beeline 连接，创建表1、2、3 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 选择元数据，同步元数据，选择表1，确认 | 同数据同步成功，存在新增表【1】同步进入离线库 |
 | 4 | 重新进入同步元数据，部分表，页面 | 存在表 2，3 |
 
-##### 验证同步元数据 全部表成功 无新增表 「P3」
+##### 【P2】验证同步元数据 全部表成功 无新增表
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入项目，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
+| 1 | 进入【项目】页面，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 2 | 选择元数据，同步元数据，选择全部，确认 | 同数据同步成功，无新增表同步进入离线库 |
 
-##### 验证同步元数据 全部表成功 存在未被同步的表 「P2」
+##### 【P2】验证同步元数据 全部表成功 存在未被同步的表
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入项目，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
+| 1 | 进入【项目】页面，数据源页面 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 2 | 底层beeline 连接，创建表1、2、3 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 选择元数据，同步元数据，选择全部，确认 | 同数据同步成功，存在新增表【1、2、3】同步进入离线库 |
 
-##### 验证同步元数据 数据源操作--同步元数据按钮的展示 「P1」
+##### 【P1】验证同步元数据 数据源操作--同步元数据按钮的展示
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 创建项目，对接OceanBase for MySQL/OceanBase for Oracle计算引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 进入数据源页面，数据源类型结果查看 | OceanBase for MySQL/OceanBase for Oracle |
 | 4 | 页面样式与操作按钮功能 | 数据源名称后存在 Meta 标识，操作存在同步元数据按钮 |
 
-##### 验证在生产项目中OceanBase for MySQL/OceanBase for Oracle数据源不支持配置映射功能 「P2」
+##### 【P2】验证在生产项目中OceanBase for MySQL/OceanBase for Oracle数据源不支持配置映射功能
 
 > 前置条件
 ```
 1.离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目作为生产项目
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入生产项目，点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入，无映射配置选项 |
+| 1 | 进入【生产项目】页面，点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入，无映射配置选项 |
 
-##### 验证OceanBase for MySQL/OceanBase for Oracle数据源在测试项目中映射配置功能正常 「P1」
+##### 【P1】验证OceanBase for MySQL/OceanBase for Oracle数据源在测试项目中映射配置功能正常
 
 > 前置条件
 ```
 1.离线测试项目与生产项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle 2.当前项目（测试项目）已经成功绑定发布目标项目
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作 | 操作支持取消引入和映射配置 |
 | 3 | 点击OceanBase for MySQL/OceanBase for Oracle数据源后的操作--映射配置 | 当前页面弹出OceanBase for MySQL/OceanBase for Oracle数据源映射配置弹窗，在本项目文本框下显示的为用户名 |
 | 4 | 点击发布目标 | 下拉弹窗中显示出生产项目中成功引入的OceanBase for MySQL/OceanBase for Oracle数据源 |
 | 5 | 选择其中一个，点击确定 | 映射配置弹窗关闭，OceanBase for MySQL/OceanBase for Oracle数据源映射配置关系设置成功，OceanBase for MySQL/OceanBase for Oracle映射关系变更为“已配置” |
 
-##### 验证未在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消成功 「P2」
+##### 【P2】验证未在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消成功
 
 > 前置条件
 ```
 1.成功进入测试项目 2.数据源中心存在授权给离线计算的OceanBase for MySQL/OceanBase for Oracle，且该数据源未在离线任务中使用
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击未被使用的OceanBase for MySQL/OceanBase for Oracle数据源后的操作，点击取消引入 | 弹出二次确认弹窗 |
 | 3 | 点击确定 | 取消引入成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消失败 「P2」
+##### 【P2】验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle数据源取消引入--取消失败
 
 > 前置条件
 ```
 验证已经在任务中使用的OceanBase for MySQL/OceanBase for Oracle取消引入--取消失败
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击已经被任务使用的OceanBase for MySQL/OceanBase for Oracle数据源后的操作，点击取消引入 | 弹出二次确认弹窗 |
 | 3 | 点击确定 | 取消引入失败，页面弹出对应的提示信息 |
 
-##### 验证数据源中心修改OceanBase for MySQL/OceanBase for Oracle配置同步至离线功能 「P3」
+##### 【P2】验证数据源中心修改OceanBase for MySQL/OceanBase for Oracle配置同步至离线功能
 
 > 前置条件
 ```
 离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据源中心，编辑已经引入到离线项目中的OceanBase for MySQL/OceanBase for Oracle数据源，如修改描述，查看离线中对应的OceanBase for MySQL/OceanBase for Oracle数据源信息 | 离线中的OceanBase for MySQL/OceanBase for Oracle数据源信息同步修改 |
+| 1 | 进入【数据源中心】页面，编辑已经引入到离线项目中的OceanBase for MySQL/OceanBase for Oracle数据源，如修改描述，查看离线中对应的OceanBase for MySQL/OceanBase for Oracle数据源信息 | 离线中的OceanBase for MySQL/OceanBase for Oracle数据源信息同步修改 |
 
-##### 验证筛选OceanBase for MySQL/OceanBase for Oracle数据源功能正常 「P3」
+##### 【P2】验证筛选OceanBase for MySQL/OceanBase for Oracle数据源功能正常
 
 > 前置条件
 ```
 离线测试项目中已经成功引入OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击数据源页面筛选按钮 | 显示数据源类型列表，新增OceanBase for MySQL/OceanBase for Oracle数据源类型，顺序与数据源中心一致 |
 | 3 | 选中OceanBase for MySQL/OceanBase for Oracle，点击确定 | OceanBase for MySQL/OceanBase for Oracle类型的数据源被成功筛选出来，相关信息正确回显 |
 | 4 | 在搜索框中输入OceanBase for MySQL/OceanBase for Oracle名称 | 满足条件的OceanBase for MySQL/OceanBase for Oracle数据源被筛选出来 |
 
-##### 验证支持引入OceanBase for MySQL/OceanBase for Oracle数据源功能正常 「P1」
+##### 【P1】验证支持引入OceanBase for MySQL/OceanBase for Oracle数据源功能正常
 
 > 前置条件
 ```
 1.成功进入测试项目 2.数据源中心存在授权给离线计算的OceanBase for MySQL/OceanBase for Oracle
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 点击数据源--引入数据源 | 当前页面弹窗引入数据源列表 |
 | 3 | 选择OceanBase for MySQL/OceanBase for Oracle类型的数据源 | OceanBase for MySQL/OceanBase for Oracle的相关信息在离线项目页面中正确回显，相关字段详见prd |
 | 4 | 选中OceanBase for MySQL/OceanBase for Oracle数据源，点击确定 | 引入OceanBase for MySQL/OceanBase for Oracle数据源成功，当前弹窗关闭 |
 
-##### 验证编辑项目，移出计算引擎 「P3」
+##### 【P2】验证编辑项目，移出计算引擎
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台移出OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 编辑项目，项目设置-开发设置 | 计算引擎不存在或OceanBase for MySQL/OceanBase for Oracle任务失败 |
 
-##### 验证对接过的schmea在可选schema下拉框过滤功能 「P3」
+##### 【P2】验证对接过的schmea在可选schema下拉框过滤功能
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 登陆admin用户，进入离线，进行新增项目操作，输入正确的项目名称，如test_0510，项目所有者选择admin用户，对接引擎选择OceanBase for MySQL/OceanBase for Oracle，其中OceanBase for MySQL/OceanBase for Oracle sql对接方式选择对接已有，选择任意一个catalog，例数据源类型为hive的catalog，点击对接目标，选择下拉框中任意一个schema，点击提交 | 项目正在进行创建；控制台配置无误项目创建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 | 3 | 再次新增项目，对接已有OceanBase for MySQL/OceanBase for Oracle sql引擎，选中步骤一选中的catalog，点击对接目标，查看下拉框可选数据 | 可选schema过滤掉步骤一已经选中的schema |
 
-##### 验证编辑项目，添加计算引擎，对接schema 「P3」
+##### 【P2】验证编辑项目，添加计算引擎，对接schema
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 编辑项目，添加计算引擎，弹出弹框，选择OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择对接以后OceanBase for MySQL/OceanBase for Oracle | 展示对接目标交互框，返回所有可选择的schema |
 | 4 | 保存 | 创建成功，项目数据写在对接的schema中 |
 
-##### 验证编辑项目，添加计算引擎，创建schema，schema重名 「P3」
+##### 【P2】验证编辑项目，添加计算引擎，创建schema，schema重名
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 编辑项目，添加计算引擎，弹出弹框，选择OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择创建 | 【对接目标】筛选框隐藏 |
 | 4 | 保存 | 创建失败，原因为当前schema已经存在 |
 
-##### 验证编辑项目，添加计算引擎，创建schema 「P1」
+##### 【P1】验证编辑项目，添加计算引擎，创建schema
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 编辑项目，添加计算引擎，弹出弹框，选择OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择创建/对接 | for oracle【创建】筛选框隐藏 |
 | 4 | 保存 | for mysql【创建】筛选框正常显示 |
 | 5 |  | oracle对接成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 | 6 |  | mysql创建成功，底层创建一个和用户名相同的schema |
 
-##### 验证编辑项目，未添加计算引擎 「P3」
+##### 【P2】验证编辑项目，未添加计算引擎
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 控制台不配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 编辑项目，添加计算引擎 | 没有OceanBase for MySQL/OceanBase for Oracle的模块 |
 
-##### 验证新建项目，对接schema 「P3」
+##### 【P2】验证新建项目，对接schema
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 新建项目，填写名称和标识，勾选OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择对接以后OceanBase for MySQL/OceanBase for Oracle | 展示对接目标交互框，返回所有可选择的schema |
 | 4 | 保存 | 创建成功，项目数据写在对接的schema中 |
 
-##### 验证新建项目，创建schema，schema重名 「P3」
+##### 【P2】验证新建项目，创建schema，schema重名
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 新建项目，填写名称和标识，勾选OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择创建 | 【对接目标】筛选框隐藏 |
 | 4 | 保存 | 项目创建失败，原因为当前schema已经存在 |
 
-##### 验证添加完OceanBase for MySQL/OceanBase for Oracle引擎后在数据源中心新增meta数据源功能 「P1」
+##### 【P1】验证添加完OceanBase for MySQL/OceanBase for Oracle引擎后在数据源中心新增meta数据源功能
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入数据源模块 | 数据源中新增一条类型是OceanBase for MySQL/OceanBase for Oracle的数据源，连接信息展示为jdbcUrl与用户名及对应schema，操作列支持映射配置及取消引入，其中取消引入默认为灰色 |
 
-##### 验证新建项目，创建schema 「P1」
+##### 【P1】验证新建项目，创建schema
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入数据开发模块，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
+| 1 | 进入【数据开发模块】页面，新建向导模式的数据同步任务 | 成功进入数据开发模块，新建向导模式的数据同步任务页面，页面内容正常加载显示，无报错 |
 | 2 | 在控制台配置OceanBase for MySQL/OceanBase for Oracle引擎 | 系统提示操作成功，页面/数据状态更新为最新 |
 | 3 | 新建项目，填写名称和标识，勾选OceanBase for MySQL/OceanBase for Oracle计算引擎，方式选择创建/对接 | for oracle【创建】筛选框隐藏 |
 | 4 | 保存 | for mysql【创建】筛选框正常显示 |

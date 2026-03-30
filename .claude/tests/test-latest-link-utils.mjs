@@ -20,7 +20,7 @@ const repoRoot = resolve(__dirname, "..", "..");
 const runId = `${process.pid}-${Date.now()}`;
 const targetOne = resolve(__dirname, `__latest_link_target_one_${runId}.txt`);
 const targetTwo = resolve(__dirname, `__latest_link_target_two_${runId}.txt`);
-const latestLink = resolve(repoRoot, "latest-test-output.txt");
+const latestLink = resolve(repoRoot, `__latest_link_target_one_${runId}.txt`);
 
 let passed = 0;
 let failed = 0;
@@ -35,10 +35,13 @@ function assert(condition, msg) {
   }
 }
 
+const latestLinkTwo = resolve(repoRoot, `__latest_link_target_two_${runId}.txt`);
+
 function cleanup() {
   rmSync(targetOne, { force: true });
   rmSync(targetTwo, { force: true });
   rmSync(latestLink, { force: true });
+  rmSync(latestLinkTwo, { force: true });
 }
 
 process.on("exit", cleanup);
@@ -46,24 +49,24 @@ cleanup();
 
 console.log("\n=== Test: refreshLatestLink ===");
 writeFileSync(targetOne, "one", "utf8");
-refreshLatestLink(targetOne, "latest-test-output.txt");
-assert(existsSync(latestLink), "首次刷新后创建 latest-test-output.txt");
+refreshLatestLink(targetOne);
+assert(existsSync(latestLink), "首次刷新后在根目录创建与源文件同名的链接");
 if (existsSync(latestLink)) {
   const stat = lstatSync(latestLink);
-  assert(stat.isSymbolicLink(), "latest-test-output.txt 是符号链接");
+  assert(stat.isSymbolicLink(), "链接是符号链接");
   if (stat.isSymbolicLink()) {
     assert(resolve(repoRoot, readlinkSync(latestLink)) === targetOne, "首次刷新指向第一个目标文件");
   }
 }
 
 writeFileSync(targetTwo, "two", "utf8");
-refreshLatestLink(targetTwo, "latest-test-output.txt");
-assert(existsSync(latestLink), "第二次刷新后仍存在 latest-test-output.txt");
-if (existsSync(latestLink)) {
-  const stat = lstatSync(latestLink);
-  assert(stat.isSymbolicLink(), "第二次刷新后仍为符号链接");
+refreshLatestLink(targetTwo);
+assert(existsSync(latestLinkTwo), "第二次刷新后在根目录创建与源文件同名的链接");
+if (existsSync(latestLinkTwo)) {
+  const stat = lstatSync(latestLinkTwo);
+  assert(stat.isSymbolicLink(), "第二次链接是符号链接");
   if (stat.isSymbolicLink()) {
-    assert(resolve(repoRoot, readlinkSync(latestLink)) === targetTwo, "第二次刷新指向第二个目标文件");
+    assert(resolve(repoRoot, readlinkSync(latestLinkTwo)) === targetTwo, "第二次刷新指向第二个目标文件");
   }
 }
 

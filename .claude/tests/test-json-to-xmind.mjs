@@ -166,23 +166,12 @@ const tmpOutput = resolve(__dirname, "202603-测试需求.xmind");
 const tmpOutputAlt = resolve(__dirname, "202603-Story-20260322.xmind");
 const invalidNamedOutput = resolve(__dirname, "test-output.xmind");
 const legacyAppendOutput = resolve(__dirname, "legacy-output.xmind");
-const explicitLatestOutput = resolve(__dirname, "latest-output.xmind");
-const latestOutputLink = resolve(repoRoot, "latest-output.xmind");
-const latestOutputBackup = resolve(__dirname, `_latest-output-backup-${process.pid}.xmind`);
-const explicitLatestOutputBackup = resolve(
-  __dirname,
-  `_explicit-latest-output-backup-${process.pid}.xmind`,
-);
-let latestOutputBackedUp = false;
-let explicitLatestOutputBackedUp = false;
 
-preserveLatestOutput();
-preserveExplicitLatestOutput();
-process.on("exit", () => {
-  cleanup();
-  restoreLatestOutput();
-  restoreExplicitLatestOutput();
-});
+/** 根据实际输出路径计算根目录快捷链接路径 */
+function getLatestLinkPath(outputPath) {
+  return resolve(repoRoot, basename(outputPath));
+}
+process.on("exit", cleanup);
 
 function pathExists(path) {
   try {
@@ -194,59 +183,29 @@ function pathExists(path) {
 }
 
 function cleanup() {
-  if (existsSync(tmpInput)) unlinkSync(tmpInput);
-  if (existsSync(tmpInputSecond)) unlinkSync(tmpInputSecond);
-  if (existsSync(tmpOutput)) unlinkSync(tmpOutput);
-  if (existsSync(tmpOutputAlt)) unlinkSync(tmpOutputAlt);
-  if (existsSync(invalidNamedOutput)) unlinkSync(invalidNamedOutput);
-  if (existsSync(legacyAppendOutput)) unlinkSync(legacyAppendOutput);
-  if (existsSync(explicitLatestOutput)) unlinkSync(explicitLatestOutput);
-}
-
-function preserveLatestOutput() {
-  if (pathExists(latestOutputLink)) {
-    renameSync(latestOutputLink, latestOutputBackup);
-    latestOutputBackedUp = true;
-  }
-}
-
-function preserveExplicitLatestOutput() {
-  if (pathExists(explicitLatestOutput)) {
-    renameSync(explicitLatestOutput, explicitLatestOutputBackup);
-    explicitLatestOutputBackedUp = true;
-  }
-}
-
-function restoreLatestOutput() {
-  if (pathExists(latestOutputLink)) unlinkSync(latestOutputLink);
-  if (latestOutputBackedUp && pathExists(latestOutputBackup)) {
-    renameSync(latestOutputBackup, latestOutputLink);
-    latestOutputBackedUp = false;
-  } else if (pathExists(latestOutputBackup)) {
-    unlinkSync(latestOutputBackup);
-  }
-}
-
-function restoreExplicitLatestOutput() {
-  if (pathExists(explicitLatestOutput)) unlinkSync(explicitLatestOutput);
-  if (explicitLatestOutputBackedUp && pathExists(explicitLatestOutputBackup)) {
-    renameSync(explicitLatestOutputBackup, explicitLatestOutput);
-    explicitLatestOutputBackedUp = false;
-  } else if (pathExists(explicitLatestOutputBackup)) {
-    unlinkSync(explicitLatestOutputBackup);
-  }
+  [tmpInput, tmpInputSecond, tmpOutput, tmpOutputAlt, invalidNamedOutput, legacyAppendOutput].forEach(
+    (p) => { if (existsSync(p)) unlinkSync(p); }
+  );
+  // 清理根目录同名快捷链接
+  [tmpOutput, tmpOutputAlt].forEach((p) => {
+    const link = getLatestLinkPath(p);
+    if (pathExists(link)) unlinkSync(link);
+  });
 }
 
 function assertLatestOutputPointsTo(expectedOutputPath, label) {
-  assert(pathExists(latestOutputLink), `${label}: 创建了仓库根目录 latest-output.xmind`);
-  if (!pathExists(latestOutputLink)) return;
+  const linkPath = getLatestLinkPath(expectedOutputPath);
+  assert(pathExists(linkPath), `${label}: 创建了根目录同名快捷链接 ${basename(linkPath)}`);
+  if (!pathExists(linkPath)) return;
 
-  const linkStat = lstatSync(latestOutputLink);
-  assert(linkStat.isSymbolicLink(), `${label}: latest-output.xmind 是符号链接`);
-  if (!linkStat.isSymbolicLink()) return;
-
-  const linkedPath = resolve(repoRoot, readlinkSync(latestOutputLink));
-  assert(linkedPath === expectedOutputPath, `${label}: latest-output.xmind 指向实际输出文件`);
+  const linkStat = lstatSync(linkPath);
+  assert(linkStat.isSymbolicLink(), `${label}: 根目录同名链接是符号链接`);
+  if (linkStat.isSymbolicLink()) {
+    assert(
+      resolve(repoRoot, readlinkSync(linkPath)) === resolve(expectedOutputPath),
+      `${label}: 快捷链接指向实际输出文件`,
+    );
+  }
 }
 
 async function readXmindContent(outputPath) {
@@ -257,17 +216,14 @@ async function readXmindContent(outputPath) {
 
 // ─── Tests ──────────────────────────────────────────────────
 
-await runTest("显式输出 latest-output.xmind 应被拒绝", () => {
+await runTest("不符合命名 contract 的输出文件名应被拒绝", () => {
   writeFileSync(tmpInput, JSON.stringify(validJson), "utf8");
-  const result = runScript(`${tmpInput} latest-output.xmind`);
+  const result = runScript(`${tmpInput} invalid-name.xmind`);
   assert(result.code !== 0, "退出码非 0");
   assert(
-    result.stderr.includes("latest-output.xmind") &&
-      result.stderr.includes("保留输出文件名"),
-    "错误消息清楚说明 latest-output.xmind 为保留输出文件名",
+    result.stderr.includes("命名 contract"),
+    "错误消息说明需符合命名 contract",
   );
-  assert(!pathExists(explicitLatestOutput), "未创建显式 latest-output.xmind 输出文件");
-  assert(!pathExists(latestOutputLink), "未刷新仓库根目录 latest-output.xmind 符号链接");
 });
 
 await runTest("有效 JSON 生成 XMind", () => {

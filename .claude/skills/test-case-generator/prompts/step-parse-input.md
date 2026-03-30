@@ -164,33 +164,57 @@
 
 ## 1.2 断点续传检测
 
-检查工作目录下是否存在 `.qa-state.json`：
+### 状态文件命名规则
+
+| 本次生成范围 | 状态文件名 | 示例 |
+|-------------|-----------|------|
+| **单 PRD**（用户指定了一个具体 PRD 文件） | `.qa-state-{prd-slug}.json` | `cases/requirements/data-assets/v6.4.10/.qa-state-【通用配置】json格式配置.json` |
+| **批量**（用户未指定，生成目录下全部 PRD） | `.qa-state.json` | `cases/requirements/data-assets/v6.4.10/.qa-state.json` |
+
+**prd-slug 生成规则：**
+- 取目标 PRD 文件的 basename，去掉 `.md` 后缀
+- 示例：`【通用配置】json格式配置.md` → `.qa-state-【通用配置】json格式配置.json`
+
+> 这样同一版本目录下，每个 PRD 的生成进度互相独立，不会因为启动新需求而覆盖旧状态。
+
+### 多进行中需求检测
+
+开始新流程前，先扫描工作目录下所有 `.qa-state*.json` 文件，向用户列出正在进行中（未完成验收）的需求：
 
 ```
-cases/requirements/<module>/<working-dir>/.qa-state.json
+检测到以下需求正在进行中（未验收）：
+
+[1] 【通用配置】json格式配置（进度：archive，等待验收）
+[2] 【数据地图】表详情展示（进度：writer，生成中断）
+
+本次将开始生成：【数据质量】内置规则丰富
+
+直接回复「继续」开始新流程，或输入编号查看/续传已有流程。
 ```
 
-示例：
-- `cases/requirements/data-assets/v6.4.10/.qa-state.json`
-- `cases/requirements/custom/xyzh/.qa-state.json`
+用户可在此选择先处理旧流程再启动新流程，也可直接继续启动新需求的生成。
 
-**如果存在：**
+### 续传逻辑
+
+定位到当前 PRD 的状态文件后：
+
+**如果状态文件存在：**
 
 读取状态文件，向用户展示上次进度（中断步骤、已完成/未完成项），询问是否继续。
 
-这一步只用于判断**是否进入续传模式**；如果用户明确要"只重跑某个模块"，应走后文的模块级重跑流程；如果用户要"从头重来"，应先删除 `.qa-state.json` 和已增强的 PRD 文件（`status: enhanced`）后再重新发起完整流程或快速模式。
+这一步只用于判断**是否进入续传模式**；如果用户明确要"只重跑某个模块"，应走后文的模块级重跑流程；如果用户要"从头重来"，应先删除对应状态文件和已增强的 PRD 文件（`status: enhanced`）后再重新发起完整流程或快速模式。
 
 - 选「是」→ 按以下逻辑恢复：
   - `awaiting_verification: true`：说明流程已停在 Step 9 的用户验证阶段。保持 `last_completed_step: 9` 不变，重新展示验证提示（XMind 路径来自 `output_xmind`，归档 MD 来自 `archive_md_path`），等待用户回复后执行 Step 10
   - 否则 → 从 `last_completed_step + 1` 继续；其中普通续传只自动重启 `pending` 或中断的 `in_progress` Writer。`failed` Writer 保持终态，需先由用户/编排器显式选择「重试」，并将其状态写回 `in_progress` 后再启动
-- 选「否」→ 删除 .qa-state.json，重新开始
+- 选「否」→ 删除对应状态文件，重新开始
 - 不存在 → 创建初始状态文件，开始新流程。
 
 ---
 
 ## 1.3 初始化状态文件
 
-如果 `<story-dir>/.qa-state.json` 不存在或为空，直接写入初始状态（如文件已存在且有效则跳过）：
+如果当前 PRD 对应的状态文件（`.qa-state.json` 或 `.qa-state-{prd-slug}.json`）不存在或为空，直接写入初始状态（如文件已存在且有效则跳过）：
 
 ```json
 {

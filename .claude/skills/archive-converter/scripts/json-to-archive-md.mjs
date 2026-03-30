@@ -7,8 +7,9 @@
  *   node json-to-archive-md.mjs --from-xmind <file.xmind> [output-dir]
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, dirname, basename, extname } from "path";
+import { fileURLToPath } from "url";
 import { getDtstackModules } from "../../../shared/scripts/load-config.mjs";
 import {
   deriveArchiveBaseName,
@@ -17,12 +18,16 @@ import {
 } from "../../../shared/scripts/output-naming-contracts.mjs";
 import {
   buildFrontMatter,
+  buildCanonicalArchiveCaseBlock,
   inferTags,
   extractModuleKey,
   extractVersionFromPath,
 } from "../../../shared/scripts/front-matter-utils.mjs";
 
 // ─── JSON → MD ──────────────────────────────────────────────
+
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const CASES_ROOT = resolve(SCRIPT_DIR, "../../../../cases");
 
 function countCaseTypes(modules) {
   const counts = { normal: 0, abnormal: 0, boundary: 0 };
@@ -48,7 +53,66 @@ function countCaseTypes(modules) {
   return total > 0 ? counts : null;
 }
 
-function jsonToMd(data, sourcePath) {
+export function normalizeArchivePriority(value, fallback = "P2") {
+  const normalized = String(value ?? "")
+    .toUpperCase()
+    .replace(/[【】「」[\]()（）\s]/g, "");
+  if (normalized === "P0" || normalized === "0") return "P0";
+  if (normalized === "P1" || normalized === "1") return "P1";
+  if (normalized === "P2" || normalized === "2" || normalized === "P3" || normalized === "3") return "P2";
+  return fallback;
+}
+
+function normalizeArchiveSteps(rawSteps = []) {
+  return (Array.isArray(rawSteps) ? rawSteps : [])
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return { step: entry, expected: "" };
+      }
+
+      return {
+        step: entry?.step ?? entry?.action ?? entry?.操作步骤 ?? "",
+        expected: entry?.expected ?? entry?.result ?? entry?.预期结果 ?? "",
+      };
+    })
+    .filter((entry) => entry.step || entry.expected);
+}
+
+export function buildArchiveCaseInput(tc = {}, options = {}) {
+  const normalizedSteps = normalizeArchiveSteps(tc.steps ?? []);
+  const fallbackPrecondition = Object.prototype.hasOwnProperty.call(options, "defaultPrecondition")
+    ? options.defaultPrecondition
+    : "";
+  const precondition = tc.precondition ?? tc.preconditions ?? fallbackPrecondition;
+  const steps = normalizedSteps.length > 0
+    ? normalizedSteps
+    : options.ensureStepRow
+      ? [{
+        step: options.defaultStepText ?? "",
+        expected: options.defaultExpectedText ?? "",
+      }]
+      : [];
+
+  return {
+    priority: normalizeArchivePriority(tc.priority, options.defaultPriority ?? "P2"),
+    title: tc.title || options.defaultTitle || "(标题缺失)",
+    precondition,
+    steps,
+  };
+}
+
+export function formatArchiveCaseMarkdown(tc = {}, options = {}) {
+  return buildCanonicalArchiveCaseBlock(buildArchiveCaseInput(tc, options));
+}
+
+export function formatArchiveCaseLines(tc = {}, options = {}) {
+  return [
+    ...formatArchiveCaseMarkdown(tc, options).trimEnd().split("\n"),
+    "",
+  ];
+}
+
+export function jsonToMd(data, sourcePath) {
   const { meta, modules } = data;
   const title = meta.version
     ? `【${meta.version}】${meta.requirement_name}`
@@ -121,8 +185,10 @@ function jsonToMd(data, sourcePath) {
   lines.push("");
 
   for (const mod of modules ?? []) {
+    const hasPages = Array.isArray(mod.pages) && mod.pages.length > 0;
+    const hasSubGroups = Array.isArray(mod.sub_groups) && mod.sub_groups.length > 0;
     // 4-level format: module → page → sub_group → test_case
-    if (mod.pages) {
+    if (hasPages) {
       lines.push(`## ${mod.name}`);
       lines.push("");
       for (const page of mod.pages) {
@@ -133,35 +199,43 @@ function jsonToMd(data, sourcePath) {
             lines.push(`#### ${sg.name}`);
             lines.push("");
             for (const tc of sg.test_cases ?? []) {
-              lines.push(...formatCase(tc));
+              lines.push(...formatArchiveCaseLines(tc, {
+                defaultPrecondition: "无",
+              }));
             }
           }
         }
         if (page.test_cases && page.test_cases.length > 0) {
           for (const tc of page.test_cases) {
-            lines.push(...formatCase(tc));
+            lines.push(...formatArchiveCaseLines(tc, {
+              defaultPrecondition: "无",
+            }));
           }
         }
       }
     }
     // 3-level format: module → sub_group → test_case
-    if (mod.sub_groups && !mod.pages) {
+    if (hasSubGroups && !hasPages) {
       lines.push(`## ${mod.name}`);
       lines.push("");
       for (const sg of mod.sub_groups) {
         lines.push(`### ${sg.name}`);
         lines.push("");
         for (const tc of sg.test_cases ?? []) {
-          lines.push(...formatCase(tc));
+          lines.push(...formatArchiveCaseLines(tc, {
+            defaultPrecondition: "无",
+          }));
         }
       }
     }
     // 2-level format: module → test_case
-    if (mod.test_cases && !mod.pages) {
+    if (mod.test_cases && !hasPages && !hasSubGroups) {
       lines.push(`## ${mod.name}`);
       lines.push("");
       for (const tc of mod.test_cases) {
-        lines.push(...formatCase(tc));
+        lines.push(...formatArchiveCaseLines(tc, {
+          defaultPrecondition: "无",
+        }));
       }
     }
   }
@@ -169,43 +243,9 @@ function jsonToMd(data, sourcePath) {
   return lines.join("\n");
 }
 
-function escPipe(s) {
-  return (s || "").replace(/\|/g, "\\|").replace(/\n/g, " ");
-}
-
-function formatCase(tc) {
-  const lines = [];
-  const priority = tc.priority || "P2";
-  lines.push(`##### 【${priority}】${tc.title || "(标题缺失)"}`);
-  lines.push("");
-  lines.push("> 前置条件");
-  lines.push("```");
-  lines.push(tc.precondition || tc.preconditions || "无");
-  lines.push("```");
-  lines.push("");
-  lines.push("> 用例步骤");
-  lines.push("");
-
-  const steps = tc.steps ?? [];
-  if (steps.length > 0) {
-    lines.push("| 编号 | 步骤 | 预期 |");
-    lines.push("| --- | --- | --- |");
-    steps.forEach((s, i) => {
-      const step = escPipe(s.step || s.action || s.操作步骤 || "(步骤缺失)");
-      const expected = escPipe(
-        s.expected || s.result || s.预期结果 || "(预期缺失)",
-      );
-      lines.push(`| ${i + 1} | ${step} | ${expected} |`);
-    });
-  }
-
-  lines.push("");
-  return lines;
-}
-
 // ─── XMind → MD ─────────────────────────────────────────────
 
-async function xmindToMd(xmindPath) {
+export async function parseXmindToArchiveResults(xmindPath) {
   const { default: JSZip } = await import("jszip");
   const zipData = readFileSync(resolve(xmindPath));
   const zip = await JSZip.loadAsync(zipData);
@@ -230,7 +270,16 @@ async function xmindToMd(xmindPath) {
 
       for (const modNode of modNodes) {
         const modName = modNode.title || "";
-        const pageNodes = modNode.children?.attached ?? [];
+        const nodeChildren = modNode.children?.attached ?? [];
+        const directCases = nodeChildren.filter(isTestCase).map(extractCase);
+        if (directCases.length > 0) {
+          totalCases += directCases.length;
+          caseBlocks.push({
+            section: modName,
+            cases: directCases,
+          });
+        }
+        const pageNodes = nodeChildren.filter((child) => !isTestCase(child));
 
         for (const pageNode of pageNodes) {
           const pageName = pageNode.title || "";
@@ -297,6 +346,7 @@ async function xmindToMd(xmindPath) {
         origin: "xmind",
       });
 
+      const bodyLines = [];
       const lines = [];
       lines.push(xmindFm.trimEnd());
       lines.push("");
@@ -311,29 +361,37 @@ async function xmindToMd(xmindPath) {
         const sgName = parts[2] || "";
 
         if (modName !== lastMod) {
-          lines.push(`## ${modName}`);
-          lines.push("");
+          bodyLines.push(`## ${modName}`);
+          bodyLines.push("");
           lastMod = modName;
           lastPage = "";
         }
         if (pageName && pageName !== lastPage) {
-          lines.push(`### ${pageName}`);
-          lines.push("");
+          bodyLines.push(`### ${pageName}`);
+          bodyLines.push("");
           lastPage = pageName;
         }
         if (sgName) {
-          lines.push(`#### ${sgName}`);
-          lines.push("");
+          bodyLines.push(`#### ${sgName}`);
+          bodyLines.push("");
         }
 
         for (const tc of block.cases) {
-          lines.push(...formatCaseFromXmind(tc));
+          bodyLines.push(...formatArchiveCaseLines(tc, {
+            defaultPrecondition: "无",
+            ensureStepRow: true,
+            defaultStepText: "待补充",
+            defaultExpectedText: "待补充",
+          }));
         }
       }
+
+      lines.push(bodyLines.join("\n"));
 
       results.push({
         title: l1Title,
         projectName,
+        body: bodyLines.join("\n"),
         content: lines.join("\n"),
         totalCases,
       });
@@ -343,16 +401,17 @@ async function xmindToMd(xmindPath) {
   return results;
 }
 
+async function xmindToMd(xmindPath) {
+  return parseXmindToArchiveResults(xmindPath);
+}
+
 function isTestCase(node) {
   if (node.markers && node.markers.length > 0) return true;
   const children = node.children?.attached ?? [];
   if (children.length === 0) return false;
   return children.every((child) => {
     const grandchildren = child.children?.attached ?? [];
-    return (
-      grandchildren.length <= 1 &&
-      grandchildren.every((gc) => !gc.children?.attached?.length)
-    );
+    return grandchildren.every((gc) => !gc.children?.attached?.length);
   });
 }
 
@@ -371,40 +430,14 @@ function extractCase(node) {
   for (const stepNode of node.children?.attached ?? []) {
     const step = stepNode.title || "";
     const expectedNodes = stepNode.children?.attached ?? [];
-    const expected = expectedNodes[0]?.title || "";
+    const expected = expectedNodes
+      .map((expectedNode) => expectedNode?.title || "")
+      .filter(Boolean)
+      .join("\n");
     steps.push({ step, expected });
   }
 
   return { title, precondition, priority, steps };
-}
-
-function formatCaseFromXmind(tc) {
-  const lines = [];
-  const priority = tc.priority || "P2";
-  lines.push(`##### 【${priority}】${tc.title || "(标题缺失)"}`);
-  lines.push("");
-  lines.push("> 前置条件");
-  lines.push("```");
-  lines.push(tc.precondition || tc.preconditions || "无");
-  lines.push("```");
-  lines.push("");
-  lines.push("> 用例步骤");
-  lines.push("");
-
-  lines.push("| 编号 | 步骤 | 预期 |");
-  lines.push("| --- | --- | --- |");
-  if (tc.steps.length > 0) {
-    tc.steps.forEach((s, i) => {
-      const step = escPipe(s.step || "(步骤缺失)");
-      const expected = escPipe(s.expected || "(预期缺失)");
-      lines.push(`| ${i + 1} | ${step} | ${expected} |`);
-    });
-  } else {
-    lines.push("| 1 | 待补充 | 待补充 |");
-  }
-
-  lines.push("");
-  return lines;
 }
 
 // ─── 路径与工具函数 ─────────────────────────────────────────
@@ -413,12 +446,9 @@ const { zh: _dtstackZh, en: _dtstackEn } = getDtstackModules();
 const DTSTACK_MODULE_MAP = {};
 _dtstackZh.forEach((zh, i) => { DTSTACK_MODULE_MAP[zh] = _dtstackEn[i]; });
 const DTSTACK_MODULES = Object.keys(DTSTACK_MODULE_MAP);
+const DTSTACK_MODULE_KEYS = new Set(Object.values(DTSTACK_MODULE_MAP));
 
-function determineOutputDir(projectName, versionOrTitle, requirementName) {
-  const base = resolve(
-    dirname(new URL(import.meta.url).pathname),
-    "../../cases",
-  );
+export function determineOutputDir(projectName, versionOrTitle, requirementName) {
   return determineOutputDirWithMeta(projectName, versionOrTitle, requirementName, {});
 }
 
@@ -427,20 +457,24 @@ function isSemanticVersion(version) {
 }
 
 function determineDtstackModuleKey(projectName, requirementName, meta = {}) {
-  if (meta.module_key && DTSTACK_MODULE_MAP[meta.module_key]) {
-    return meta.module_key;
+  const explicitModuleKey = String(meta.module_key || "").trim();
+  if (explicitModuleKey) {
+    if (DTSTACK_MODULE_MAP[explicitModuleKey]) {
+      return DTSTACK_MODULE_MAP[explicitModuleKey];
+    }
+    if (DTSTACK_MODULE_KEYS.has(explicitModuleKey)) {
+      return explicitModuleKey;
+    }
   }
 
-  return DTSTACK_MODULES.find(
+  const matchedModule = DTSTACK_MODULES.find(
     (m) => projectName?.includes(m) || requirementName?.includes(m),
-  ) || null;
+  );
+  return matchedModule ? DTSTACK_MODULE_MAP[matchedModule] : null;
 }
 
-function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName, meta = {}) {
-  const base = resolve(
-    dirname(new URL(import.meta.url).pathname),
-    "../../cases",
-  );
+export function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName, meta = {}) {
+  const base = CASES_ROOT;
   // prd_version 优先（语义版本 vX.Y.Z，DTStack 模块由 Writer 从 PRD frontmatter 写入）
   let version = meta.prd_version
     ? String(meta.prd_version).trim()
@@ -455,9 +489,9 @@ function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName
   const dtModule = determineDtstackModuleKey(projectName, requirementName, meta);
   if (dtModule) {
     if (isSemanticVersion(version)) {
-      return resolve(base, `archive/${DTSTACK_MODULE_MAP[dtModule]}/${version}`);
+      return resolve(base, `archive/${dtModule}/${version}`);
     }
-    return resolve(base, `archive/${DTSTACK_MODULE_MAP[dtModule]}`);
+    return resolve(base, `archive/${dtModule}`);
   }
 
   // 其他项目兜底
@@ -466,43 +500,44 @@ function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName
 
 // ─── CLI 入口 ───────────────────────────────────────────────
 
-const args = process.argv.slice(2);
-const fromXmind = args.includes("--from-xmind");
-const filteredArgs = args.filter((a) => a !== "--from-xmind");
-
-if (filteredArgs.length < 1) {
-  console.error("Usage:");
-  console.error("  node json-to-archive-md.mjs <input.json> [output-dir]");
-  console.error(
-    "  node json-to-archive-md.mjs --from-xmind <file.xmind> [output-dir]",
-  );
-  process.exit(1);
+function isDirectExecution() {
+  if (!process.argv[1]) return false;
+  return resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }
 
-const inputPath = filteredArgs[0];
-const outputDir = filteredArgs[1] || null;
+async function main(argv = process.argv.slice(2)) {
+  const fromXmind = argv.includes("--from-xmind");
+  const filteredArgs = argv.filter((arg) => arg !== "--from-xmind");
 
-if (fromXmind) {
-  xmindToMd(inputPath)
-    .then((results) => {
-      for (const result of results) {
-        const dir =
-          outputDir || determineOutputDir(result.projectName, result.title);
-        mkdirSync(dir, { recursive: true });
-        const fileName =
-          deriveArchiveBaseNameFromXmind(inputPath, result.title, results.length) + ".md";
-        const outputPath = resolve(dir, fileName);
-        writeFileSync(outputPath, result.content, "utf-8");
-        console.log(
-          `✅ 归档 MD 已生成：${outputPath}（${result.totalCases} 条用例）`,
-        );
-      }
-    })
-    .catch((err) => {
-      console.error("转换失败:", err.message);
-      process.exit(1);
-    });
-} else {
+  if (filteredArgs.length < 1) {
+    console.error("Usage:");
+    console.error("  node json-to-archive-md.mjs <input.json> [output-dir]");
+    console.error(
+      "  node json-to-archive-md.mjs --from-xmind <file.xmind> [output-dir]",
+    );
+    process.exit(1);
+  }
+
+  const inputPath = filteredArgs[0];
+  const outputDir = filteredArgs[1] || null;
+
+  if (fromXmind) {
+    const results = await xmindToMd(inputPath);
+    for (const result of results) {
+      const dir =
+        outputDir || determineOutputDir(result.projectName, result.title, result.title);
+      mkdirSync(dir, { recursive: true });
+      const fileName =
+        deriveArchiveBaseNameFromXmind(inputPath, result.title, results.length) + ".md";
+      const outputPath = resolve(dir, fileName);
+      writeFileSync(outputPath, result.content, "utf-8");
+      console.log(
+        `✅ 归档 MD 已生成：${outputPath}（${result.totalCases} 条用例）`,
+      );
+    }
+    return;
+  }
+
   const content = readFileSync(resolve(inputPath), "utf-8");
   const data = JSON.parse(content);
   const md = jsonToMd(data, inputPath);
@@ -534,4 +569,11 @@ if (fromXmind) {
   }
 
   console.log(`✅ 归档 MD 已生成：${outputPath}（${totalCases} 条用例）`);
+}
+
+if (isDirectExecution()) {
+  main().catch((err) => {
+    console.error("转换失败:", err.message);
+    process.exit(1);
+  });
 }

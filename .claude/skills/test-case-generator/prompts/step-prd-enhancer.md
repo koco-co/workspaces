@@ -25,10 +25,10 @@
 
 ## 快捷链接刷新
 
-增强成功后，刷新根目录符号链接：
+增强成功后，刷新根目录符号链接（链接名与实际文件同名）：
 
 ```bash
-ln -sf <实际enhanced.md路径> ./latest-prd-enhanced.md
+node .claude/shared/scripts/refresh-latest-link.mjs "<实际enhanced.md路径>"
 ```
 
 ## 错误处理

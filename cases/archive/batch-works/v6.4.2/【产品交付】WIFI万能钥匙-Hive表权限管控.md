@@ -16,7 +16,6 @@ health_warnings: []
 case_count: 26
 origin: csv
 ---
-# 【产品交付】WIFI万能钥匙-Hive表权限管控 v6.4.2
 > 来源：zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.2/【产品交付】WIFI万能钥匙-Hive表权限管控.csv
 > 用例数：26
 
@@ -24,28 +23,32 @@ origin: csv
 
 ## hive表权限管控
 
-##### 验证【通用信息】页面展示正确 「P2」
+##### 【P2】验证【通用信息】页面展示正确
 
 > 前置条件
 ```
 无
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息 | 1）【select查询结果限制】模块下方新增【数据权限管理】模块 |
 | 2 |  | 2）【数据权限管理】模块展示字段：数据地图外部表权限管控 |
 
-##### 验证【数据权限管控】模块显示&交互正确 「P2」
+##### 【P2】验证【数据权限管控】模块显示&交互正确
 
 > 前置条件
 ```
 1）当前存在多个集群：集群A、集群B
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入集群A的【多集群管理-绑定租户-通用信息】页面，查看【数据地图外部表权限管控】 | 1）默认不勾选 |
+| 1 | 进入【集群A的【多集群管理-绑定租户-通用信息】页面，查看【数据地图外部表权限管控】 | 1）默认不勾选 |
 | 2 | 鼠标移至“问号icon” | 2）【数据地图外部表权限管控】右侧存在“问号icon” |
 | 3 | 勾选【数据地图外部表权限管控】 | hover展示：用于管控未同步至离线数据地图的数据表操作权限。开启后，任务中不能直接操作数据地图外部表 |
 | 4 | 点击“编辑” | 1）toast提示：切换成功！ |
@@ -61,7 +64,7 @@ origin: csv
 | 14 |  | “Hive”仍为未勾选状态 |
 | 15 |  | 保存成功，“Hive”为勾选状态 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_create 「P1」
+##### 【P1】验证hivesql任务权限正确_开启数据权限管控_hive表生效_create
 
 > 前置条件
 ```
@@ -73,6 +76,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -97,7 +102,7 @@ insert into table table_a values (1,'qq');
 | 19 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 20 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_insert 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_insert
 
 > 前置条件
 ```
@@ -109,6 +114,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -140,7 +147,7 @@ insert into table table_a values (1,'qq');
 | 26 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 27 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_select 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_select
 
 > 前置条件
 ```
@@ -152,6 +159,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -183,7 +192,7 @@ insert into table table_a values (1,'qq');
 | 26 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 27 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_show tables 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_show tables
 
 > 前置条件
 ```
@@ -195,6 +204,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -202,7 +213,7 @@ insert into table table_a values (1,'qq');
 | 2 | 数据开发用户进入项目A的【数据开发-周期任务】页面，新建hivesql任务，保存并临时运行，sql脚本如下：show tables; | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 |  | 2）临时运行成功，数据查询成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_create 「P1」
+##### 【P1】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_create
 
 > 前置条件
 ```
@@ -214,6 +225,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -234,7 +247,7 @@ insert into table table_a values (1,'qq');
 | 15 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 16 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_insert 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_insert
 
 > 前置条件
 ```
@@ -246,6 +259,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -271,7 +286,7 @@ insert into table table_a values (1,'qq');
 | 20 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 21 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_select 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_select
 
 > 前置条件
 ```
@@ -283,6 +298,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -308,7 +325,7 @@ insert into table table_a values (1,'qq');
 | 20 |  | 2）周期任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 | 21 |  | 3）补数据运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_show tables 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_show tables
 
 > 前置条件
 ```
@@ -321,13 +338,15 @@ create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息 | 成功进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发用户进入项目B的【数据开发-周期任务】页面，新建hivesql任务，保存并临时运行，sql脚本如下：show tables; | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 |  | 2）临时运行成功，数据查询成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_hive表生效_create 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_hive表生效_create
 
 > 前置条件
 ```
@@ -339,6 +358,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -361,7 +382,7 @@ insert into table table_a values (1,'qq');
 | 17 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 18 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_hive表生效_insert 「P1」
+##### 【P1】验证sparksql任务权限正确_开启数据权限管控_hive表生效_insert
 
 > 前置条件
 ```
@@ -373,6 +394,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -402,7 +425,7 @@ insert into table table_a values (1,'qq');
 | 24 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 25 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_hive表生效_select 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_hive表生效_select
 
 > 前置条件
 ```
@@ -414,6 +437,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -443,7 +468,7 @@ insert into table table_a values (1,'qq');
 | 24 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 25 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_hive表生效_show tables 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_hive表生效_show tables
 
 > 前置条件
 ```
@@ -455,6 +480,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -462,7 +489,7 @@ insert into table table_a values (1,'qq');
 | 2 | 数据开发用户进入项目A的【数据开发-手动任务】页面，新建sparksql任务，保存并临时运行，sql脚本如下：show tables; | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 |  | 2）临时运行成功，数据查询成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_无生效表类型_create 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_无生效表类型_create
 
 > 前置条件
 ```
@@ -474,6 +501,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -491,7 +520,7 @@ insert into table table_a values (1,'qq');
 | 12 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 13 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_无生效表类型_insert 「P1」
+##### 【P1】验证sparksql任务权限正确_开启数据权限管控_无生效表类型_insert
 
 > 前置条件
 ```
@@ -503,6 +532,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -524,7 +555,7 @@ insert into table table_a values (1,'qq');
 | 16 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 17 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_无生效表类型_select 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_无生效表类型_select
 
 > 前置条件
 ```
@@ -536,6 +567,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -557,7 +590,7 @@ insert into table table_a values (1,'qq');
 | 16 |  | 1） 系统提示任务提交成功，任务状态更新为【待运行/调度中/运行中】 |
 | 17 |  | 2）手动任务运行成功，状态更新为【成功】，运行/执行结果符合预期，日志无报错 |
 
-##### 验证sparksql任务权限正确_开启数据权限管控_无生效表类型_show tables 「P2」
+##### 【P2】验证sparksql任务权限正确_开启数据权限管控_无生效表类型_show tables
 
 > 前置条件
 ```
@@ -570,13 +603,15 @@ create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息 | 成功进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息页面，页面内容正常加载显示，无报错 |
 | 2 | 数据开发用户进入项目B的【数据开发-手动任务】页面，新建sparksql任务，保存并临时运行，sql脚本如下：show tables; | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 |  | 2）临时运行成功，数据查询成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_create 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_create
 
 > 前置条件
 ```
@@ -589,6 +624,8 @@ create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息 | 成功进入【控制台-多集群管理】页面，选择集群A进入【绑定租户-通用信息】页面，查看页面展示信息页面，页面内容正常加载显示，无报错 |
@@ -599,7 +636,7 @@ insert into table table_a values (1,'qq');
 | 6 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 7 |  | 2）临时运行成功，表创建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_insert 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_insert
 
 > 前置条件
 ```
@@ -611,6 +648,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -624,7 +663,7 @@ insert into table table_a values (1,'qq');
 | 8 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 9 |  | 2）临时运行成功，数据写入成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_select 「P1」
+##### 【P1】验证hivesql任务权限正确_开启数据权限管控_hive表生效_select
 
 > 前置条件
 ```
@@ -636,6 +675,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -649,7 +690,7 @@ insert into table table_a values (1,'qq');
 | 8 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 9 |  | 2）临时运行成功，数据查询成功，下载成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_hive表生效_show tables 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_hive表生效_show tables
 
 > 前置条件
 ```
@@ -661,6 +702,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -668,7 +711,7 @@ insert into table table_a values (1,'qq');
 | 2 | 数据开发用户进入项目A的【数据开发-临时查询】页面，新建hivesql任务，保存并临时运行，sql脚本如下：show tables; | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 3 |  | 2）临时运行成功，数据查询成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_create 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_create
 
 > 前置条件
 ```
@@ -680,6 +723,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -691,7 +736,7 @@ insert into table table_a values (1,'qq');
 | 6 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 7 |  | 2）临时运行成功，表创建成功，系统给出创建成功提示，列表中出现新创建的记录 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_insert 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_insert
 
 > 前置条件
 ```
@@ -703,6 +748,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -716,7 +763,7 @@ insert into table table_a values (1,'qq');
 | 8 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 9 |  | 2）临时运行成功，数据写入成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_select 「P1」
+##### 【P1】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_select
 
 > 前置条件
 ```
@@ -728,6 +775,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -741,7 +790,7 @@ insert into table table_a values (1,'qq');
 | 8 |  | 1） 系统提示保存成功，修改内容已生效并在页面中更新显示 |
 | 9 |  | 2）临时运行成功，数据查询成功，下载成功，系统给出成功反馈，相关页面/数据状态更新为最新 |
 
-##### 验证hivesql任务权限正确_开启数据权限管控_无生效表类型_show tables 「P2」
+##### 【P2】验证hivesql任务权限正确_开启数据权限管控_无生效表类型_show tables
 
 > 前置条件
 ```
@@ -753,6 +802,8 @@ sql如下：
 create table if not exists table_a (id int, name string);
 insert into table table_a values (1,'qq');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |

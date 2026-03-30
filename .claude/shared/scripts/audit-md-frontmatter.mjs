@@ -25,11 +25,13 @@ import {
   extractModuleKey,
   extractPrdId,
   extractVersionFromPath,
+  inferTags,
   isValidDateString,
   normalizeDateString,
   parseFrontMatter,
 } from "./front-matter-utils.mjs";
-import { normalizeTableStyleArchiveBody } from "./normalize-md-content.mjs";
+import { resolveMdContentSource } from "./md-content-source-resolver.mjs";
+import { normalizeArchiveBody } from "./normalize-md-content.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROOT = resolve(__dirname, "../../..");
@@ -95,7 +97,7 @@ const LEGACY_REQUIREMENT_KEYS = new Set([
   "source",
   "created_at",
 ]);
-const VALID_REQUIREMENT_STATUSES = new Set(["raw", "formalized", "enhanced"]);
+const VALID_REQUIREMENT_STATUSES = new Set(["raw", "elicited", "formalized", "enhanced"]);
 
 function resolveArgPath(flag) {
   if (!args.includes(flag)) return null;
@@ -217,12 +219,145 @@ function inferRequirementStatus(filePath, currentStatus) {
   return "raw";
 }
 
-function pickArchivePrdPath(meta, legacySource) {
+function pickArchivePrdPath(meta, legacySource, confirmedPrdPath = "") {
   if (asString(meta.prd_path)) return asString(meta.prd_path);
   if (legacySource && /cases\/requirements\/.+\.md$/i.test(legacySource)) {
     return legacySource;
   }
+  if (confirmedPrdPath) return confirmedPrdPath;
   return "";
+}
+
+function chooseArchiveDescription(meta, semanticEnrichment = null) {
+  const currentDescription = asString(meta.description);
+  if (currentDescription && currentDescription.length <= 60) {
+    return currentDescription;
+  }
+  if (semanticEnrichment?.inferredDescription) {
+    return semanticEnrichment.inferredDescription;
+  }
+  return currentDescription || undefined;
+}
+
+function chooseArchiveTags(meta, semanticEnrichment = null) {
+  const currentTags = hasOwn(meta, "tags") ? toStringArray(meta.tags) : [];
+  if (currentTags.length >= 3 && currentTags.length <= 10) {
+    return currentTags;
+  }
+  if (semanticEnrichment?.enrichedTags?.length) {
+    return semanticEnrichment.enrichedTags;
+  }
+  return currentTags.length > 0 ? currentTags : undefined;
+}
+
+function buildArchiveSemanticEnrichment(meta, filePath, body) {
+  let sourceInfo = null;
+  try {
+    sourceInfo = resolveMdContentSource(filePath, { rootDir: ROOT });
+  } catch {
+    return null;
+  }
+
+  const confirmedPrdPath = sourceInfo?.existingCandidatePrdPaths?.[0] || "";
+  const prdSource = confirmedPrdPath
+    ? readMarkdownSemanticSource(confirmedPrdPath)
+    : null;
+  const prdName = asString(prdSource?.frontMatter?.prd_name)
+    || asString(prdSource?.frontMatter?.suite_name)
+    || prdSource?.headings?.[0]
+    || "";
+  const inferredPrdId = extractPrdId(confirmedPrdPath)
+    ?? extractPrdId(prdName)
+    ?? undefined;
+  const mergedTags = mergeUniqueStrings(
+    toStringArray(meta.tags),
+    toStringArray(prdSource?.frontMatter?.tags),
+    inferTags({
+      title: prdName || asString(meta.suite_name) || asString(meta.name),
+      headings: mergeUniqueStrings(
+        extractMarkdownHeadings(body, [2, 3, 4]),
+        prdSource?.headings || [],
+      ),
+      modulePath: relativePath(filePath),
+      meta: {
+        ...meta,
+        tags: mergeUniqueStrings(
+          toStringArray(meta.tags),
+          toStringArray(prdSource?.frontMatter?.tags),
+        ),
+      },
+    }),
+  ).slice(0, 10);
+  const inferredDescription = buildTraceableDescription([
+    prdName,
+    asString(meta.suite_name) || asString(meta.name),
+    asString(meta.description),
+  ]);
+
+  return {
+    confirmedPrdPath,
+    inferredPrdId,
+    enrichedTags: mergedTags.length > 0 ? mergedTags : undefined,
+    inferredDescription,
+  };
+}
+
+function readMarkdownSemanticSource(relativePrdPath) {
+  const fullPath = resolve(ROOT, relativePrdPath);
+  try {
+    const content = readFileSync(fullPath, "utf8");
+    const { frontMatter, body } = parseFrontMatter(content);
+    return {
+      frontMatter: frontMatter || {},
+      body,
+      headings: extractMarkdownHeadings(body, [1, 2, 3]),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function extractMarkdownHeadings(body, allowedLevels = [1, 2, 3]) {
+  const levels = new Set(allowedLevels);
+  const headings = [];
+  for (const match of String(body).matchAll(/^(#{1,6})\s+(.+)$/gm)) {
+    const level = match[1]?.length || 0;
+    if (!levels.has(level)) continue;
+    const heading = normalizeSemanticText(match[2]);
+    if (heading) headings.push(heading);
+  }
+  return headings;
+}
+
+function buildTraceableDescription(candidates) {
+  const normalizedCandidates = candidates
+    .map((candidate) => normalizeSemanticText(candidate))
+    .filter(Boolean);
+  const shortCandidate = normalizedCandidates.find((candidate) => candidate.length <= 60);
+  if (shortCandidate) return shortCandidate;
+  const firstCandidate = normalizedCandidates[0] || "";
+  return firstCandidate ? firstCandidate.slice(0, 60).trim() : undefined;
+}
+
+function normalizeSemanticText(value) {
+  return asString(value)
+    .replace(/\s*(?:（|\()(?:xmind|XMind)(?:）|\))\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function mergeUniqueStrings(...values) {
+  const merged = [];
+  const seen = new Set();
+  for (const value of values) {
+    for (const item of Array.isArray(value) ? value : [value]) {
+      const normalized = asString(item);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      merged.push(normalized);
+    }
+  }
+  return merged;
 }
 
 function pickRequirementSource(meta, legacySource, filePath) {
@@ -276,6 +411,7 @@ function auditArchiveBody(body) {
   const issues = [];
   const firstLine = firstNonEmptyLine(body);
   const structure = classifyArchiveBodyStructure(body);
+  const caseCount = countArchiveCases(body);
 
   if (firstLine.startsWith("# ")) {
     issues.push({
@@ -285,7 +421,10 @@ function auditArchiveBody(body) {
     });
   }
 
-  if (structure !== ARCHIVE_BODY_STRUCTURE_CATEGORIES.CANONICAL_TABLE) {
+  if (
+    structure !== ARCHIVE_BODY_STRUCTURE_CATEGORIES.CANONICAL_TABLE
+    && !(structure === ARCHIVE_BODY_STRUCTURE_CATEGORIES.REQUIREMENTS_NARRATIVE && caseCount === 0)
+  ) {
     issues.push({
       code: "body-structure",
       severity: "warning",
@@ -335,9 +474,10 @@ function auditArchiveBody(body) {
     const beforeTable = sectionLines.slice(1, tableHeaderIndex);
     const hasPreconditionContent = beforeTable.some((line) => {
       const trimmed = line.trim();
-      return (
-        trimmed.startsWith("```") ||
-        /^\d+[、.）)]/.test(trimmed)
+      return Boolean(
+        trimmed
+        && trimmed !== "> 前置条件"
+        && trimmed !== "> 用例步骤",
       );
     });
     if (hasPreconditionContent && !beforeTable.some((line) => line.trim() === "> 前置条件")) {
@@ -412,15 +552,17 @@ function findFirstDataRow(lines, startIndex) {
   return -1;
 }
 
-function buildArchiveCanonicalFields(meta, filePath, body) {
+function buildArchiveCanonicalFields(meta, filePath, body, semanticEnrichment = null) {
   const legacySource = asString(meta.source);
   const suiteName = asString(meta.suite_name) || asString(meta.name);
-  const description = asString(meta.description);
+  const description = chooseArchiveDescription(meta, semanticEnrichment);
   const product = asString(meta.product) || asString(meta.module) || extractModuleKey(filePath) || "";
   const prdVersion = asString(meta.prd_version) || asString(meta.version) || extractVersionFromPath(filePath) || "";
   const prdId = toNumber(meta.prd_id)
     ?? extractPrdId(basename(filePath))
-    ?? extractPrdId(suiteName);
+    ?? extractPrdId(suiteName)
+    ?? semanticEnrichment?.inferredPrdId
+    ?? undefined;
   const createAt = normalizeDateString(meta.create_at ?? meta.created_at, getMtimeDate(filePath));
   const healthWarnings = hasOwn(meta, "health_warnings")
     ? toStringArray(meta.health_warnings)
@@ -435,7 +577,8 @@ function buildArchiveCanonicalFields(meta, filePath, body) {
     title: suiteName,
     body,
   });
-  const prdPath = pickArchivePrdPath(meta, legacySource);
+  const prdPath = pickArchivePrdPath(meta, legacySource, semanticEnrichment?.confirmedPrdPath);
+  const tags = chooseArchiveTags(meta, semanticEnrichment);
 
   const fields = {
     suite_name: suiteName || undefined,
@@ -446,7 +589,7 @@ function buildArchiveCanonicalFields(meta, filePath, body) {
     prd_url: asString(meta.prd_url) || undefined,
     product: VALID_PRODUCTS.has(product) ? product : undefined,
     dev_version: asString(meta.dev_version) || undefined,
-    tags: hasOwn(meta, "tags") ? toStringArray(meta.tags) : undefined,
+    tags,
     create_at: createAt,
     update_at: isValidDateString(asString(meta.update_at)) ? asString(meta.update_at) : undefined,
     status,
@@ -461,8 +604,9 @@ function buildArchiveCanonicalFields(meta, filePath, body) {
 
 function buildRequirementCanonicalFields(meta, filePath) {
   const legacySource = asString(meta.source);
-  const prdName = asString(meta.prd_name) || asString(meta.suite_name) || asString(meta.name);
-  const description = asString(meta.description);
+  const bodyHeading = extractMarkdownHeadings(meta.__body || "", [1])[0] || "";
+  const prdName = asString(meta.prd_name) || asString(meta.suite_name) || asString(meta.name) || bodyHeading;
+  const description = asString(meta.description) || bodyHeading;
   const product = asString(meta.product) || asString(meta.module) || extractModuleKey(filePath) || "";
   const prdVersion = asString(meta.prd_version) || asString(meta.version) || extractVersionFromPath(filePath) || "";
   const prdId = toNumber(meta.prd_id)
@@ -655,7 +799,7 @@ function auditRequirementFrontmatter(meta, canonical, filePath, hadFrontMatter) 
   }
 
   if (!hasOwn(meta, "status") || !VALID_REQUIREMENT_STATUSES.has(asString(canonical.status))) {
-    issues.push(issue("status", "error", "status 非 raw / formalized / enhanced"));
+    issues.push(issue("status", "error", "status 非 raw / elicited / formalized / enhanced"));
   }
 
   return issues;
@@ -669,7 +813,7 @@ function formatIssue(entry) {
   return `${entry.severity === "error" ? "❌" : "⚠️"} ${entry.message}`;
 }
 
-function processFile(filePath) {
+async function processFile(filePath) {
   const docType = getDocType(filePath);
   if (!docType) return null;
 
@@ -679,15 +823,25 @@ function processFile(filePath) {
   const rawMeta = frontMatter || {};
   const rawBody = hadFrontMatter ? body : originalContent;
   const bodyNormalization = docType === "archive"
-    ? normalizeTableStyleArchiveBody(rawBody)
+    ? await normalizeArchiveBody(rawBody, {
+      markdownPath: filePath,
+      rootDir: ROOT,
+      frontMatter: rawMeta,
+    })
+    : null;
+  const canonicalAuditBody = docType === "archive"
+    ? bodyNormalization.body
+    : rawBody;
+  const semanticEnrichment = docType === "archive" && FIX
+    ? buildArchiveSemanticEnrichment(rawMeta, filePath, canonicalAuditBody)
     : null;
   const effectiveBody = docType === "archive" && FIX
     ? bodyNormalization.body
     : rawBody;
 
   const canonicalFields = docType === "archive"
-    ? buildArchiveCanonicalFields(rawMeta, filePath, effectiveBody)
-    : buildRequirementCanonicalFields(rawMeta, filePath);
+    ? buildArchiveCanonicalFields(rawMeta, filePath, canonicalAuditBody, semanticEnrichment)
+    : buildRequirementCanonicalFields({ ...rawMeta, __body: rawBody }, filePath);
 
   const mergedFields = mergeOrderedFields(
     docType === "archive" ? ARCHIVE_FIELD_ORDER : REQUIREMENT_FIELD_ORDER,
@@ -697,8 +851,11 @@ function processFile(filePath) {
   );
 
   const rebuiltContent = buildFrontMatter(mergedFields) + effectiveBody;
+  const auditBody = docType === "archive" && FIX
+    ? effectiveBody
+    : rawBody;
   const issues = docType === "archive"
-    ? auditArchiveFrontmatter(rawMeta, canonicalFields, filePath, effectiveBody, hadFrontMatter)
+    ? auditArchiveFrontmatter(rawMeta, canonicalFields, filePath, auditBody, hadFrontMatter)
     : auditRequirementFrontmatter(rawMeta, canonicalFields, filePath, hadFrontMatter);
 
   const fixCounts = collectFixCounts(
@@ -707,7 +864,7 @@ function processFile(filePath) {
     canonicalFields,
     mergedFields,
     filePath,
-    rawBody,
+    effectiveBody,
     bodyNormalization,
   );
   const changed = rebuiltContent !== originalContent;
@@ -765,6 +922,8 @@ function collectFixCounts(
     if (bodyNormalization?.stats?.insertedStepMarker) add("body_step_marker", bodyNormalization.stats.insertedStepMarker);
     if (bodyNormalization?.stats?.insertedPreconditionMarker) add("body_precondition_marker", bodyNormalization.stats.insertedPreconditionMarker);
     if (bodyNormalization?.stats?.normalizedFirstStep) add("body_first_step", bodyNormalization.stats.normalizedFirstStep);
+    if (bodyNormalization?.stats?.rebuiltFromXmind) add("body_rebuilt_from_xmind", bodyNormalization.stats.rebuiltFromXmind);
+    if (bodyNormalization?.stats?.rebuiltFromBulletTree) add("body_rebuilt_from_bullet_tree", bodyNormalization.stats.rebuiltFromBulletTree);
   } else {
     if (hasOwn(rawMeta, "name") || hasOwn(rawMeta, "suite_name")) add("legacy_name_to_prd_name");
     if (hasOwn(rawMeta, "module")) add("legacy_module_to_product");
@@ -894,11 +1053,9 @@ function buildFixSummary(results) {
   return lines.join("\n");
 }
 
-function main() {
+async function main() {
   const files = getTargetFiles();
-  const results = files
-    .map(processFile)
-    .filter(Boolean);
+  const results = (await Promise.all(files.map(processFile))).filter(Boolean);
 
   const report = buildReport(results);
   if (report) {
@@ -920,4 +1077,7 @@ function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error(error?.stack || error?.message || String(error));
+  process.exit(1);
+});

@@ -1,1 +1,1 @@
-cases/requirements/data-assets/v6.4.10/【内置规则丰富】完整性，json中key值范围校验.md
+cases/requirements/data-assets/v6.4.10/【通用配置】json格式配置.md

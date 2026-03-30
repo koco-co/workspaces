@@ -1,3 +1,12 @@
+---
+prd_name: 任务交接文档：PRD 15696【通用配置】json格式配置
+description: 任务交接文档：PRD 15696【通用配置】json格式配置
+prd_version: v6.4.10
+prd_source: cases/requirements/data-assets/v6.4.10/HANDOFF.md
+product: data-assets
+create_at: 2026-03-30
+status: raw
+---
 # 任务交接文档：PRD 15696【通用配置】json格式配置
 
 **交接时间**：2026-03-30

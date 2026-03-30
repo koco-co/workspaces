@@ -3,7 +3,6 @@ import { basename, extname, join, resolve } from "path";
 
 const NAMING_CONFIG = {
   xmind: {
-    reservedBasenames: ["latest-output.xmind"],
     legacyPolicy: "allow-existing-target-only",
     acceptedPatterns: {
       prdLevel: { template: "YYYYMM-<功能名>.xmind", regex: "^\\d{6}-.+\\.xmind$" },
