@@ -54,6 +54,10 @@ function readFixture(relativePath) {
   return readFileSync(resolve(tempRoot, relativePath), "utf8");
 }
 
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function runAudit(args = []) {
   return spawnSync(
     process.execPath,
@@ -68,8 +72,11 @@ function runAudit(args = []) {
 
 const archiveRelativePath = "cases/archive/data-assets/v6.4.9/legacy-archive(#12345).md";
 const requirementRelativePath = "cases/requirements/data-assets/v6.4.9/legacy-prd-formalized.md";
+const elicitedRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/elicited-prd.md";
+const headingOnlyRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/handoff.md";
 const bulletArchiveRelativePath = "cases/archive/data-assets/v6.4.9/tree-style-archive.md";
 const nonSemverRelativePath = "cases/archive/data-assets/主流程/flow-archive.md";
+const plainPreconditionRelativePath = "cases/archive/data-assets/v6.4.9/plain-precondition-archive.md";
 
 const archiveBody = [
   "# Legacy archive(#12345)",
@@ -128,6 +135,21 @@ const canonicalArchiveBody = [
   "",
 ].join("\n");
 
+const plainPreconditionArchiveBody = [
+  "## 数据资产",
+  "",
+  "##### 【P1】验证纯文本前置条件",
+  "",
+  "已登录管理员账户",
+  "",
+  "> 用例步骤",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 点击查询按钮 | 成功 |",
+  "",
+].join("\n");
+
 writeFixture(
   archiveRelativePath,
   [
@@ -159,6 +181,35 @@ writeFixture(
     "created_at: 2026-03-02",
     "---",
     requirementBody,
+  ].join("\n"),
+);
+
+writeFixture(
+  elicitedRequirementRelativePath,
+  [
+    "---",
+    "prd_name: 已澄清需求",
+    "description: 已澄清需求",
+    "product: data-assets",
+    "create_at: 2026-03-02",
+    "status: elicited",
+    "---",
+    requirementBody,
+  ].join("\n"),
+);
+
+writeFixture(
+  headingOnlyRequirementRelativePath,
+  [
+    "---",
+    "product: data-assets",
+    "create_at: 2026-03-04",
+    "status: raw",
+    "---",
+    "# 任务交接文档：PRD 15696【通用配置】json格式配置",
+    "",
+    "交接说明正文。",
+    "",
   ].join("\n"),
 );
 
@@ -206,10 +257,35 @@ writeFixture(
   ].join("\n"),
 );
 
+writeFixture(
+  plainPreconditionRelativePath,
+  [
+    "---",
+    "suite_name: 纯文本前置条件样例",
+    "description: 纯文本前置条件样例",
+    "product: data-assets",
+    "prd_version: v6.4.9",
+    "tags:",
+    "  - 数据资产",
+    "  - 前置条件",
+    "  - 纯文本",
+    "create_at: 2026-03-03",
+    "case_count: 1",
+    "origin: xmind",
+    "status: \"\"",
+    "health_warnings: []",
+    "---",
+    plainPreconditionArchiveBody,
+  ].join("\n"),
+);
+
 const originalArchive = readFixture(archiveRelativePath);
 const originalRequirement = readFixture(requirementRelativePath);
+const originalElicitedRequirement = readFixture(elicitedRequirementRelativePath);
+const originalHeadingOnlyRequirement = readFixture(headingOnlyRequirementRelativePath);
 const originalBulletArchive = readFixture(bulletArchiveRelativePath);
 const originalCanonicalArchive = readFixture(nonSemverRelativePath);
+const originalPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
 
 console.log("\n=== Test: dry-run reports issues but does not modify fixtures ===");
 const dryRunResult = runAudit(["--dry-run"]);
@@ -227,7 +303,22 @@ assert(dryRunResult.stdout.includes("前置条件"), "dry-run 报告包含前置
 assert(dryRunResult.stdout.includes("进入【"), "dry-run 报告包含首步格式问题");
 assert(dryRunResult.stdout.includes(bulletArchiveRelativePath), "dry-run 报告包含 bullet/XMind archive 文件路径");
 assert(dryRunResult.stdout.includes("bullet/XMind tree"), "dry-run 报告包含 bullet/XMind tree 分类");
+assert(
+  new RegExp(`${escapeRegExp(bulletArchiveRelativePath)}[\\s\\S]*case_count`, "m").test(dryRunResult.stdout),
+  "dry-run 会按可重建后的实际用例数报告 bullet/XMind archive 的 case_count 问题",
+  [dryRunResult.stdout],
+);
 assert(dryRunResult.stdout.includes(requirementRelativePath), "dry-run 报告包含 requirement 文件路径");
+assert(
+  !new RegExp(`${escapeRegExp(elicitedRequirementRelativePath)}[\\s\\S]*status`, "m").test(dryRunResult.stdout),
+  "合法的 requirement status: elicited 不会被误报为非法",
+  [dryRunResult.stdout],
+);
+assert(
+  new RegExp(`${escapeRegExp(plainPreconditionRelativePath)}[\\s\\S]*前置条件`, "m").test(dryRunResult.stdout),
+  "dry-run 会报告纯文本前置条件缺少 > 前置条件 标记",
+  [dryRunResult.stdout],
+);
 assert(
   !dryRunResult.stdout.includes(`${nonSemverRelativePath}\n- ❌ \`prd_version\``),
   "非语义版本目录不会仅因缺 prd_version 被错误报告",
@@ -240,7 +331,10 @@ assert(
 );
 assert(readFixture(archiveRelativePath) === originalArchive, "dry-run 不修改 archive 文件");
 assert(readFixture(requirementRelativePath) === originalRequirement, "dry-run 不修改 requirement 文件");
+assert(readFixture(elicitedRequirementRelativePath) === originalElicitedRequirement, "dry-run 不修改 elicited requirement 文件");
+assert(readFixture(headingOnlyRequirementRelativePath) === originalHeadingOnlyRequirement, "dry-run 不修改 heading-only requirement 文件");
 assert(readFixture(bulletArchiveRelativePath) === originalBulletArchive, "dry-run 不修改 bullet/XMind archive 文件");
+assert(readFixture(plainPreconditionRelativePath) === originalPlainPreconditionArchive, "dry-run 不修改纯文本前置条件 archive 文件");
 
 console.log("\n=== Test: fix mode canonicalizes archive frontmatter and preserves body ===");
 const fixResult = runAudit(["--fix"]);
@@ -306,7 +400,48 @@ assert(
   "requirement 修复仅修改 frontmatter，不改 body",
   [fixedRequirement],
 );
-assert(readFixture(bulletArchiveRelativePath).endsWith(bulletArchiveBody), "fix 模式不改写 bullet/XMind body");
+const fixedElicitedRequirement = readFixture(elicitedRequirementRelativePath);
+assert(/(^|\n)status:\s*elicited/.test(fixedElicitedRequirement), "fix 模式会保留合法的 elicited requirement 状态", [
+  fixedElicitedRequirement,
+]);
+const fixedHeadingOnlyRequirement = readFixture(headingOnlyRequirementRelativePath);
+assert(
+  /(^|\n)prd_name:\s*任务交接文档：PRD 15696【通用配置】json格式配置/.test(fixedHeadingOnlyRequirement),
+  "缺少 prd_name 的 requirement 会从首个 H1 安全回填",
+  [fixedHeadingOnlyRequirement],
+);
+assert(
+  /(^|\n)description:\s*任务交接文档：PRD 15696【通用配置】json格式配置/.test(fixedHeadingOnlyRequirement),
+  "缺少 description 的 requirement 会从首个 H1 安全回填",
+  [fixedHeadingOnlyRequirement],
+);
+const fixedBulletArchive = readFixture(bulletArchiveRelativePath);
+assert(
+  /(^|\n)case_count:\s*1/.test(fixedBulletArchive),
+  "bullet/XMind archive 修复后会同步正确 case_count",
+  [fixedBulletArchive],
+);
+assert(
+  fixedBulletArchive.includes("##### 【P2】验证搜索条件组合筛选"),
+  "bullet/XMind archive 修复后会重建 canonical case 标题",
+  [fixedBulletArchive],
+);
+assert(
+  fixedBulletArchive.includes("> 前置条件\n```\n```"),
+  "bullet/XMind archive 无法解析前置条件时保持空白 fenced block",
+  [fixedBulletArchive],
+);
+assert(
+  fixedBulletArchive.includes("| 1 | 进入【质量问题台账-列表页】页面，输入关键词与状态 | 返回过滤结果 |"),
+  "bullet/XMind archive 修复后会把 bullet tree 映射为 canonical step table",
+  [fixedBulletArchive],
+);
+const fixedPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
+assert(
+  fixedPlainPreconditionArchive.includes("> 前置条件\n```\n已登录管理员账户\n```"),
+  "fix 模式会把纯文本前置条件重写为 canonical 前置条件区块",
+  [fixedPlainPreconditionArchive],
+);
 assert(readFixture(nonSemverRelativePath).endsWith(canonicalArchiveBody), "fix 模式不改写 canonical body");
 
 console.log("\n=== Test: post-fix dry-run reduces table-style body warnings ===");
@@ -321,8 +456,9 @@ assert(
   [postFixDryRunResult.stdout],
 );
 assert(
-  postFixDryRunResult.stdout.includes(bulletArchiveRelativePath),
-  "bullet/XMind-style archive 仍保留给后续专门任务处理",
+  !postFixDryRunResult.stdout.includes(`${bulletArchiveRelativePath}\n- ⚠️ Body 结构类型为`)
+    && !postFixDryRunResult.stdout.includes(`${bulletArchiveRelativePath}\n- ⚠️ 步骤表格第一步未以“进入【”开头`),
+  "修复后 bullet/XMind-style archive 不再出现 body 结构/首步格式警告",
   [postFixDryRunResult.stdout],
 );
 

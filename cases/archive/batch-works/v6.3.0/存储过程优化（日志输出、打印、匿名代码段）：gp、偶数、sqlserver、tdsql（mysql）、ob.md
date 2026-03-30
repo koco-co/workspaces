@@ -21,7 +21,6 @@ health_warnings: []
 case_count: 9
 origin: csv
 ---
-# 存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob v6.3.0
 > 来源：zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.0/存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob.csv
 > 用例数：9
 
@@ -29,12 +28,14 @@ origin: csv
 
 ## 离线开发-运维中心-补数据任务
 
-##### 验证运维中心补数据任务的补数据任务实例 「P1」
+##### 【P1】验证运维中心补数据任务的补数据任务实例
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -46,12 +47,14 @@ origin: csv
 
 ## 离线开发-运维中心-手动任务
 
-##### 验证运维中心手动任务的手动任务实例日志 「P1」
+##### 【P1】验证运维中心手动任务的手动任务实例日志
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -62,12 +65,14 @@ origin: csv
 
 ## 离线开发-运维中心-周期任务
 
-##### 验证运维中心周期任务的周期任务实例日志 「P1」
+##### 【P1】验证运维中心周期任务的周期任务实例日志
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -77,7 +82,7 @@ origin: csv
 
 ## 离线开发-数据开发-临时查询
 
-##### 验证临时查询中的SQL Server类型的临时查询临时运行 「P1」
+##### 【P1】验证临时查询中的SQL Server类型的临时查询临时运行
 
 > 前置条件
 ```
@@ -103,6 +108,8 @@ INSERT INTO Customers (CustomerID, Name) VALUES (2, N'Jane Smith');
 INSERT INTO Customers (CustomerID, Name) VALUES (3, N'Michael Johnson');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【离线开发】-【数据开发】-【临时查询】页面 | 成功进入【离线开发】-【数据开发】-【临时查询】页面，页面内容正常加载显示，无报错 |
@@ -112,7 +119,7 @@ INSERT INTO Customers (CustomerID, Name) VALUES (3, N'Michael Johnson');
 | 5 | 下载运行日志 | 校验下载内容 |
 | 6 | 在运行历史中，点击查看日志 | 校验日志内容 |
 
-##### 验证临时查询中的OuShuDB类型的临时查询临时运行 「P1」
+##### 【P1】验证临时查询中的OuShuDB类型的临时查询临时运行
 
 > 前置条件
 ```
@@ -137,6 +144,8 @@ SELECT * FROM example_procedure('SQL');
 SELECT total_count, matched_count FROM example_procedure('SQL');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【离线开发】-【数据开发】-【临时查询】页面 | 成功进入【离线开发】-【数据开发】-【临时查询】页面，页面内容正常加载显示，无报错 |
@@ -148,7 +157,7 @@ SELECT total_count, matched_count FROM example_procedure('SQL');
 
 ## 离线开发-数据开发-手动任务
 
-##### 验证手动任务中的SQL Server类型的手动任务临时运行 「P1」
+##### 【P1】验证手动任务中的SQL Server类型的手动任务临时运行
 
 > 前置条件
 ```
@@ -169,6 +178,8 @@ EXEC SearchCustomers @searchTerm = N'John';
 SELECT @totalCount AS TotalCount, @matchedCount AS MatchedCount;
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【离线开发】-【数据开发】-【手动任务】页面 | 成功进入【离线开发】-【数据开发】-【手动任务】页面，页面内容正常加载显示，无报错 |
@@ -177,7 +188,7 @@ SELECT @totalCount AS TotalCount, @matchedCount AS MatchedCount;
 | 4 | 调用SQL Server函数，点击运行 | 查看控制台输出，校验输出结果 |
 | 5 | 在运行历史中，点击查看日志 | 校验日志内容 |
 
-##### 验证手动任务中的OuShuDB类型的手动任务临时运行 「P1」
+##### 【P1】验证手动任务中的OuShuDB类型的手动任务临时运行
 
 > 前置条件
 ```
@@ -202,6 +213,8 @@ SELECT * FROM example_procedure('SQL');
 SELECT total_count, matched_count FROM example_procedure('SQL');
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【离线开发】-【数据开发】-【手动任务】页面 | 成功进入【离线开发】-【数据开发】-【手动任务】页面，页面内容正常加载显示，无报错 |
@@ -213,7 +226,7 @@ SELECT total_count, matched_count FROM example_procedure('SQL');
 
 ## 离线开发-数据开发-周期任务
 
-##### 验证周期任务中的SQL Server类型的周期任务临时运行 「P1」
+##### 【P1】验证周期任务中的SQL Server类型的周期任务临时运行
 
 > 前置条件
 ```
@@ -268,6 +281,8 @@ INSERT INTO Customers (CustomerID, Name) VALUES (3, N'Michael Johnson');
 EXEC dbo.GetEmployeeDetails_001  @InputEmployeeID = 1;
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
 | 1 | 进入【离线开发】-【数据开发】-【周期任务】页面 | 成功进入【离线开发】-【数据开发】-【周期任务】页面，页面内容正常加载显示，无报错 |
@@ -276,7 +291,7 @@ EXEC dbo.GetEmployeeDetails_001  @InputEmployeeID = 1;
 | 4 | 调用SQL Server函数，点击运行 | 查看控制台输出，校验输出结果 |
 | 5 | 在运行历史中，点击查看日志 | 校验日志内容 |
 
-##### 验证周期任务中的OuShuDB类型的周期任务临时运行 「P1」
+##### 【P1】验证周期任务中的OuShuDB类型的周期任务临时运行
 
 > 前置条件
 ```
@@ -361,6 +376,8 @@ SELECT * FROM example_procedure('SQL');
 -- 获取输出参数的值
 SELECT total_count, matched_count FROM example_procedure('SQL');
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |

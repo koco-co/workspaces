@@ -12,7 +12,7 @@
 ## 「确认通过」
 
 1. 删除临时文件：`rm -rf <working_dir>/temp/`
-2. 删除状态文件：`rm -f <working_dir>/.qa-state.json`
+2. 删除状态文件：`rm -f <working_dir>/<state_file>`（`<state_file>` 为本次流程使用的状态文件名，单 PRD 为 `.qa-state-{prd-slug}.json`，批量为 `.qa-state.json`）
 3. 向用户输出最终完成通知（见「完成通知」章节）
 
 ---
@@ -28,7 +28,7 @@
 
 ## 「继续补改」
 
-1. 保留 `.qa-state.json`
+1. 保留当前状态文件（`.qa-state-{prd-slug}.json` 或 `.qa-state.json`）
 2. 不删除 `temp/`
 3. 等待用户后续继续、重跑或补改指令
 
@@ -55,7 +55,7 @@
 
 ## 终态说明
 
-Step notify 为终态清理：写入 `last_completed_step: "notify"` 为可选；如实现需要，可在删除前瞬时写入该值；但流程正常完成后必须删除 `.qa-state.json`，不保留稳定的可恢复状态。
+Step notify 为终态清理：写入 `last_completed_step: "notify"` 为可选；如实现需要，可在删除前瞬时写入该值；但流程正常完成后必须删除当前 PRD 对应的状态文件（`.qa-state-{prd-slug}.json` 或 `.qa-state.json`），不保留稳定的可恢复状态。
 
 `「确认通过」` / `「已修改，请同步」` 这两个固定回复仅用于测试用例生成流程，不用于单独 PRD 增强、Bug 分析或冲突分析。
 

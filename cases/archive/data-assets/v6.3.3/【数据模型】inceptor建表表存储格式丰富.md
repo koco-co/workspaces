@@ -1,8 +1,9 @@
 ---
 suite_name: 【数据模型】inceptor建表表存储格式丰富 v6.3.3
 description: 【数据模型】inceptor建表表存储格式丰富 v6.3.3
+prd_id: 15693
 prd_version: v6.3.3
-prd_path: ""
+prd_path: cases/requirements/data-assets/v6.4.10/.trash/PRD-15693-raw.md
 product: data-assets
 tags:
   - 数据资产
@@ -15,7 +16,6 @@ health_warnings: []
 case_count: 1
 origin: csv
 ---
-# 【数据模型】inceptor建表表存储格式丰富 v6.3.3
 > 来源：zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.3/【数据模型】inceptor建表表存储格式丰富.csv
 > 用例数：1
 
@@ -23,7 +23,7 @@ origin: csv
 
 ## 数据资产-数据地图
 
-##### 验证inceptor-HOLODESK-外部表-范围分区建表正常 「P1」
+##### 【P1】验证inceptor-HOLODESK-外部表-范围分区建表正常
 
 > 前置条件
 ```
@@ -39,8 +39,10 @@ part2 ,分区值范围50
 字段2: name String , 不勾选分区；1.
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入资产数据模型建表页面2. 点击【新建表】，写入数据源选择inceptor3. 如前提条件内配置4. 保存，新建表 | 成功进入资产数据模型建表页面2. 点击【新建表】，写入数据源选择inceptor3. 如前提条件内配置4. 保存，新建表，页面内容正常加载显示，无报错 |
+| 1 | 进入【资产数据模型建表页面2. 点击【新建表】页面，写入数据源选择inceptor3. 如前提条件内配置4. 保存，新建表 | 成功进入资产数据模型建表页面2. 点击【新建表】，写入数据源选择inceptor3. 如前提条件内配置4. 保存，新建表，页面内容正常加载显示，无报错 |
 | 2 |  | （补充：2. 1. 建表语句解析正常2. 建表成功3. 底层表查看表信息正常4. 数据地图查看表信息正常） |
 

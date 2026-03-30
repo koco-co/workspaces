@@ -1,8 +1,9 @@
 ---
 suite_name: 【数据模型】【太极】数据模型支持dm for oracle建表 v6.3.2
 description: 【数据模型】【太极】数据模型支持dm for oracle建表 v6.3.2
+prd_id: 15693
 prd_version: v6.3.2
-prd_path: ""
+prd_path: cases/requirements/data-assets/v6.4.10/.trash/PRD-15693-raw.md
 product: data-assets
 tags:
   - 数据资产
@@ -18,7 +19,6 @@ health_warnings: []
 case_count: 1
 origin: csv
 ---
-# 【数据模型】【太极】数据模型支持dm for oracle建表 v6.3.2
 > 来源：zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.2/【数据模型】【太极】数据模型支持dm for oracle建表.csv
 > 用例数：1
 
@@ -26,12 +26,14 @@ origin: csv
 
 ## 数据资产-数据模型
 
-##### 验证DM For Oracle模型建表审批功能 「P2」
+##### 【P2】验证DM For Oracle模型建表审批功能
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |

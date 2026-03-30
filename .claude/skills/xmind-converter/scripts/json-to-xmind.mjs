@@ -38,8 +38,6 @@ import { getDtstackModules } from '../../../shared/scripts/load-config.mjs'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = resolve(SCRIPT_DIR, '..', '..')
-const RESERVED_OUTPUT_NAME = 'latest-output.xmind'
-const LATEST_OUTPUT_PATH = resolve(REPO_ROOT, 'latest-output.xmind')
 const { zh: DTSTACK_ZH_MODULES, en: DTSTACK_EN_MODULES } = getDtstackModules()
 
 const PRIORITY_MAP = {
@@ -295,19 +293,19 @@ function validateOutputPath(outputPath) {
 
 function refreshLatestOutput(outputPath) {
   const resolvedOutputPath = resolve(outputPath)
-  if (resolvedOutputPath === LATEST_OUTPUT_PATH) return
-
-  const linkTarget = relative(REPO_ROOT, resolvedOutputPath)
+  const linkPath = resolve(REPO_ROOT, basename(resolvedOutputPath))
+  if (resolvedOutputPath === linkPath) return
 
   try {
-    unlinkSync(LATEST_OUTPUT_PATH)
+    unlinkSync(linkPath)
   } catch (err) {
     if (err.code !== 'ENOENT') {
       throw err
     }
   }
 
-  symlinkSync(linkTarget, LATEST_OUTPUT_PATH)
+  const linkTarget = relative(REPO_ROOT, resolvedOutputPath)
+  symlinkSync(linkTarget, linkPath)
 }
 
 async function appendToExisting(data, outputPath) {

@@ -17,7 +17,6 @@ health_warnings: []
 case_count: 3
 origin: csv
 ---
-# 【黑建投交付】dm for mysql一键建表 v6.4.1
 > 来源：zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.1/【黑建投交付】dm for mysql一键建表.csv
 > 用例数：3
 
@@ -25,7 +24,7 @@ origin: csv
 
 ## dm for mysql一键建表
 
-##### 验证oracle2dmmysql，dmmysql一键建表功能 「P2」
+##### 【P2】验证oracle2dmmysql，dmmysql一键建表功能
 
 > 前置条件
 ```
@@ -76,9 +75,11 @@ HEXTORAW('1A2B3C'),
 COMMIT;
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线开发-项目A-数据开发-周期任务，新建数据同步任务，source选择前置中的表oracle_demo_data_types_source | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
+| 1 | 进入【离线开发-项目A-数据开发-周期任务】页面，新建数据同步任务，source选择前置中的表oracle_demo_data_types_source | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
 | 2 | 进入sink端，数据源选择dm for mysql数据源，查看表名后是否有【一键生成目标表】按钮 | 有按钮 |
 | 3 | 点击【一键生成目标表】，查看建表sql | 字段和字段类型与hive一致 |
 | 4 | 点击确定 | 表名回填一键建表sql中的表名，如：oracle_demo_data_types_source |
@@ -86,7 +87,7 @@ COMMIT;
 | 6 | 同名映射后，一直点击下一步，保存，临时运行 | 任务运行成功，状态显示为【运行成功/成功】，无报错信息 |
 | 7 | 查看dm for mysql数据源schema下，是否有表：oracle_demo_data_types_source | 表存在，且数据写入正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证mysql2dmmysql，dmmysql一键建表功能 「P2」
+##### 【P2】验证mysql2dmmysql，dmmysql一键建表功能
 
 > 前置条件
 ```
@@ -158,9 +159,11 @@ CURDATE(), CURTIME(), NOW(), YEAR(CURDATE()),
 );
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线开发-项目A-数据开发-周期任务，新建数据同步任务，source选择前置中的表mysql_demo_data_types_source | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
+| 1 | 进入【离线开发-项目A-数据开发-周期任务】页面，新建数据同步任务，source选择前置中的表mysql_demo_data_types_source | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
 | 2 | 进入sink端，数据源选择dm for mysql数据源，查看表名后是否有【一键生成目标表】按钮 | 有按钮 |
 | 3 | 点击【一键生成目标表】，查看建表sql | 字段和字段类型与hive一致 |
 | 4 | 点击确定 | 表名回填一键建表sql中的表名，如：mysql_demo_data_types_source |
@@ -168,7 +171,7 @@ CURDATE(), CURTIME(), NOW(), YEAR(CURDATE()),
 | 6 | 同名映射后，一直点击下一步，保存，临时运行 | 任务运行成功，状态显示为【运行成功/成功】，无报错信息 |
 | 7 | 查看dm for mysql数据源schema下，是否有表：mysql_demo_data_types_source | 表存在，且数据写入正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证hive2dmmysql，dmmysql一键建表功能 「P1」
+##### 【P1】验证hive2dmmysql，dmmysql一键建表功能
 
 > 前置条件
 ```
@@ -230,9 +233,11 @@ INSERT INTO TABLE hive_orc_demo_data_types_sink VALUES
 )
 ```
 
+> 用例步骤
+
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
-| 1 | 进入离线开发-项目A-数据开发-周期任务，新建数据同步任务，source选择前置中的表hive_orc_demo_data_types_sink | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
+| 1 | 进入【离线开发-项目A-数据开发-周期任务】页面，新建数据同步任务，source选择前置中的表hive_orc_demo_data_types_sink | 选择项已高亮/回显选中状态，相关联动字段随之更新 |
 | 2 | 进入sink端，数据源选择dm for mysql数据源，查看表名后是否有【一键生成目标表】按钮 | 有按钮 |
 | 3 | 点击【一键生成目标表】，查看建表sql | 字段和字段类型与hive一致 |
 | 4 | 点击确定 | 表名回填一键建表sql中的表名，如：hive_orc_demo_data_types_sink |

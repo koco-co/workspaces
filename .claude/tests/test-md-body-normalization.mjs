@@ -9,7 +9,10 @@ import {
   buildCanonicalArchiveCaseBlock,
   classifyArchiveBodyStructure,
 } from "../shared/scripts/front-matter-utils.mjs";
-import { normalizeTableStyleArchiveBody } from "../shared/scripts/normalize-md-content.mjs";
+import {
+  normalizeArchiveBody,
+  normalizeTableStyleArchiveBody,
+} from "../shared/scripts/normalize-md-content.mjs";
 
 let passed = 0;
 let failed = 0;
@@ -138,6 +141,153 @@ assert(
   nonInferableResult.stats.normalizedFirstStep === 0,
   "无法安全推断页面时不会强行改写首步",
   [JSON.stringify(nonInferableResult.stats)],
+);
+
+console.log("\n=== Test: explicit enter step with brackets stays well-formed ===");
+const explicitBracketStepBody = [
+  "## 数据资产",
+  "",
+  "##### 验证显式进入页面",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 进入  【数据资产】页面，点击按钮 | 页面正常加载 |",
+  "",
+].join("\n");
+const explicitBracketResult = normalizeTableStyleArchiveBody(explicitBracketStepBody);
+assert(
+  explicitBracketResult.body.includes("| 1 | 进入【数据资产】页面，点击按钮 | 页面正常加载 |"),
+  "显式进入页面步骤归一化后不应产生重复右括号",
+  [explicitBracketResult.body],
+);
+
+console.log("\n=== Test: malformed nested bracket step is preserved ===");
+const nestedBracketStepBody = [
+  "## 数据资产",
+  "",
+  "##### 验证异常括号输入",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 进入  【数据【资产】】页面，点击按钮 | 页面正常加载 |",
+  "",
+].join("\n");
+const nestedBracketResult = normalizeTableStyleArchiveBody(nestedBracketStepBody);
+assert(
+  nestedBracketResult.body.includes("| 1 | 进入  【数据【资产】】页面，点击按钮 | 页面正常加载 |"),
+  "嵌套括号等异常输入无法安全规范化时应保留原文",
+  [nestedBracketResult.body],
+);
+
+console.log("\n=== Test: heading transitions refresh case context ===");
+const headingTransitionBody = [
+  "## 数据资产",
+  "",
+  "### 页面甲",
+  "",
+  "#### 列表页",
+  "",
+  "##### 验证页面甲主流程",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 点击新增按钮 | 打开新增页 |",
+  "",
+  "### 页面乙",
+  "",
+  "#### 详情页",
+  "",
+  "##### 验证页面乙主流程",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 点击编辑按钮 | 打开编辑态 |",
+  "",
+].join("\n");
+const headingTransitionResult = normalizeTableStyleArchiveBody(headingTransitionBody);
+assert(
+  headingTransitionResult.body.includes("| 1 | 进入【页面乙-详情页】页面，点击编辑按钮 | 打开编辑态 |"),
+  "H3/H4 标题切换后，后续 case 会使用新的页面上下文",
+  [headingTransitionResult.body],
+);
+assert(
+  !headingTransitionResult.body.includes("| 1 | 进入【页面甲-列表页】页面，点击编辑按钮 | 打开编辑态 |"),
+  "后续 case 不应沿用上一个 case 的页面上下文",
+  [headingTransitionResult.body],
+);
+
+console.log("\n=== Test: h2 transition clears stale page context ===");
+const h2TransitionBody = [
+  "## 模块甲",
+  "",
+  "### 页面甲",
+  "",
+  "##### 验证模块甲功能",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 点击查询按钮 | 查询成功 |",
+  "",
+  "## 模块乙",
+  "",
+  "##### 验证模块乙功能",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 点击保存按钮 | 保存成功 |",
+  "",
+].join("\n");
+const h2TransitionResult = normalizeTableStyleArchiveBody(h2TransitionBody);
+assert(
+  h2TransitionResult.body.includes("| 1 | 点击保存按钮 | 保存成功 |"),
+  "H2 切换后若没有新的页面标题，应保守保留原始首步",
+  [h2TransitionResult.body],
+);
+assert(
+  !h2TransitionResult.body.includes("| 1 | 进入【页面甲】页面，点击保存按钮 | 保存成功 |"),
+  "H2 切换会清空陈旧的页面上下文",
+  [h2TransitionResult.body],
+);
+
+console.log("\n=== Test: action-like case title can be promoted into first step ===");
+const actionTitlePromotionBody = [
+  "## 数据导入",
+  "",
+  "##### 【P2】进入数据开发-周期任务页面, 选中任一任务后, 点击导入, 选择csv文件后, 点击下一步",
+  "",
+  "| 编号 | 步骤 | 预期 |",
+  "| --- | --- | --- |",
+  "| 1 | 1) 导入csv文件后, 弹出本地数据导入页面, 并将csv文件内容自动解析<br>2) 点击下一步后, 可以选择表类型和表 |  |",
+  "",
+].join("\n");
+const actionTitlePromotionResult = normalizeTableStyleArchiveBody(actionTitlePromotionBody);
+assert(
+  actionTitlePromotionResult.body.includes("| 1 | 进入【数据开发-周期任务】页面, 选中任一任务后, 点击导入, 选择csv文件后, 点击下一步 | 1) 导入csv文件后, 弹出本地数据导入页面, 并将csv文件内容自动解析<br>2) 点击下一步后, 可以选择表类型和表 |"),
+  "当 case 标题本身是动作、首行更像预期时，会把标题下沉到首步并保留原内容为预期",
+  [actionTitlePromotionResult.body],
+);
+
+console.log("\n=== Test: narrative archive still strips top-level H1 safely ===");
+const narrativeArchiveBody = [
+  "# 负载测试说明",
+  "> 来源：cases/xmind/batch-works/demo.xmind",
+  "",
+  "---",
+  "",
+  "### 属性能测试范围",
+  "",
+  "暂无测试用例，详见报告。",
+  "",
+].join("\n");
+const narrativeResult = await normalizeArchiveBody(narrativeArchiveBody);
+assert(narrativeResult.changed, "narrative-only archive 至少会移除顶层 H1");
+assert(!narrativeResult.body.startsWith("# "), "narrative-only archive 修复后不再保留顶层 H1", [
+  narrativeResult.body,
+]);
+assert(
+  narrativeResult.stats.removedTopLevelH1 === 1,
+  "narrative-only archive 的 H1 修复会计入统计",
+  [JSON.stringify(narrativeResult.stats)],
 );
 
 console.log("\n=== Test: bullet/XMind-style body stays untouched ===");

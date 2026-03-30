@@ -1,8 +1,9 @@
 ---
 suite_name: 【规则调度设置】 spark任务调参 v6.4.8
 description: 【规则调度设置】 spark任务调参 v6.4.8
+prd_id: 15693
 prd_version: v6.4.8
-prd_path: ""
+prd_path: cases/requirements/data-assets/v6.4.10/.trash/PRD-15693-raw.md
 product: data-assets
 tags:
   - 数据资产
@@ -15,7 +16,6 @@ health_warnings: []
 case_count: 14
 origin: csv
 ---
-# 【规则调度设置】 spark任务调参 v6.4.8
 > 来源：zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.8/【规则调度设置】 spark任务调参.csv
 > 用例数：14
 
@@ -23,12 +23,14 @@ origin: csv
 
 ## 数据资产-数据质量-规则调度设置
 
-##### 验证Spark环境参数配置生效(spark.driver.maxResultSize) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.driver.maxResultSize)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -38,12 +40,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 点击 Tracking UI: ApplicationMaster，在 Environment 页签确认该参数值 | 应为2g |
 
-##### 验证Spark环境参数配置生效(logLevel) 「P1」
+##### 【P1】验证Spark环境参数配置生效(logLevel)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -53,12 +57,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 点击 Tracking UI: ApplicationMaster -❯ Executors -❯ stderr/stdout | 日志不再打印 INFO 级别信息 |
 
-##### 验证Spark环境参数配置生效(spark.speculation) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.speculation)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -68,12 +74,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 点击 Tracking UI: ApplicationMaster，在 Environment 页签确认 spark.speculation | 应为true |
 
-##### 验证Spark环境参数配置生效(spark.network.timeout) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.network.timeout)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -83,12 +91,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 点击 Tracking UI: ApplicationMaster，在 Environment 页签搜索该参数 | 确认 Value 为 300s |
 
-##### 验证Spark环境参数配置生效(spark.sql.shuffle.partitions) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.sql.shuffle.partitions)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -98,12 +108,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 点击 Tracking UI: ApplicationMaster 进入 Spark UI，在 Stages 页签查看 Shuffle 操作的 Tasks 总数 | 应为 10 |
 
-##### 验证Spark环境参数配置生效(spark.yarn.executor.memoryOverhead) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.yarn.executor.memoryOverhead)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -113,12 +125,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【 Allocated Memory MB】字段下, 对应任务的值 | Allocated Memory MB 总量会增加。例如 executor.memory 为 1g 时，该字段应显示约 2048MB |
 
-##### 验证Spark环境参数配置生效(spark.driver.memory) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.driver.memory)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -128,12 +142,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【 Allocated Memory MB】字段下, 对应任务的值 | 找到 AppMaster 对应的那个 Container，其 Allocated Memory MB 应为 2048MB + Overhead |
 
-##### 验证Spark环境参数配置生效(spark.driver.cores) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.driver.cores)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -143,12 +159,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【Allocated CPU Vcores】字段下, 对应任务的值 | Allocated CPU Vcores 的总量应在默认基础上增加 1（因为 Driver 占用了更多核） |
 
-##### 验证Spark环境参数配置生效(spark.executor.memory) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.executor.memory)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -158,12 +176,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【Allocated Memory MB】字段下, 对应任务的值 | 单个 Container 的 Allocated Memory MB 应显著增加（通常显示为 2048MB + Overhead |
 
-##### 验证Spark环境参数配置生效(spark.executor.cores) 「P1」
+##### 【P1】验证Spark环境参数配置生效(spark.executor.cores)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -173,12 +193,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【Allocated CPU Vcores】字段下, 对应任务的值 | 【Allocated CPU Vcores】 字段应显示为：3 = instances * 2 + driver.cores |
 
-##### 验证Spark环境参数配置生效(spark.executor.instances) 「P2」
+##### 【P2】验证Spark环境参数配置生效(spark.executor.instances)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -188,12 +210,14 @@ origin: csv
 | 4 | 运行规则任务 | 任务运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 | 5 | 进入Apache Hadoop YARN界面, 检查【Running Containers】字段下, 对应任务的值 | 【Running Containers】 字段应显示为 4 = 3 + 1 (Driver/AM) |
 
-##### 验证规则任务详情-环境参数显示正常(SparkThrift2.x) 「P1」
+##### 【P1】验证规则任务详情-环境参数显示正常(SparkThrift2.x)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -203,12 +227,14 @@ origin: csv
 | 4 | 保存后, 进入规则任务详情页中, 点击【环境参数】 | 展开环境参数抽屉, 参数显示正常，功能行为符合预期，无报错或异常 |
 | 5 | 运行规则任务 | 运行成功, 校验结果正常，功能行为符合预期，无报错或异常 |
 
-##### 验证调度属性编辑环境参数配置(SparkThrift2.x) 「P1」
+##### 【P1】验证调度属性编辑环境参数配置(SparkThrift2.x)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |
@@ -218,12 +244,14 @@ origin: csv
 | 4 | 进入规则任务详情, 点击【环境参数】 | 进入【配置环境参数】界面, 配置参数回显正确，内容与预期完全一致，无异常或错误 |
 | 5 | 设置spark.executor.cores=3 后保存 | 修改成功, 配置参数回显正确，内容与预期完全一致，无异常或错误 |
 
-##### 验证调度属性新增环境参数配置(SparkThrift2.x) 「P2」
+##### 【P2】验证调度属性新增环境参数配置(SparkThrift2.x)
 
 > 前置条件
 ```
 无
 ```
+
+> 用例步骤
 
 | 编号 | 步骤 | 预期 |
 | --- | --- | --- |

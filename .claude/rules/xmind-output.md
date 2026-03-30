@@ -75,10 +75,4 @@ DTStack（尤其 `data-assets`）输出优先对齐 `cases/xmind/data-assets/202
 
 ## XMind 快捷访问
 
-生成、追加或替换成功后，脚本会在仓库根目录创建或刷新符号链接：
-
-```bash
-ln -sf <实际XMind路径> ./latest-output.xmind
-```
-
-该链接始终指向本次实际生成或更新的 XMind 文件。
+生成、追加或替换成功后，脚本会在仓库根目录创建与实际 XMind 文件**同名**的符号链接，便于直接双击打开。

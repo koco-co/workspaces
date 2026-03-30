@@ -374,7 +374,7 @@ mv "<原始PRD文件>" "<原文件目录>/.trash/"
 增强成功后，必须刷新仓库根目录快捷链接，便于用户直接验收：
 
 ```bash
-node .claude/shared/scripts/refresh-latest-link.mjs "<enhanced-path>" latest-prd-enhanced.md
+node .claude/shared/scripts/refresh-latest-link.mjs "<enhanced-path>"
 ```
 
 `latest-prd-enhanced.md` 是 **PRD 增强流程的主验收入口**；如果后续继续进入测试用例生成流程，最终验收对象仍以 `latest-output.xmind` 为准。

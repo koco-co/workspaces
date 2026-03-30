@@ -204,16 +204,12 @@ assert(
   ".claude/rules/xmind-output.md 记录了 latest-output.xmind 工作流",
 );
 assert(
-  jsonToXmindContent.includes("const LATEST_OUTPUT_PATH = resolve(REPO_ROOT, 'latest-output.xmind')"),
-  "json-to-xmind.mjs 定义了仓库根目录 latest-output.xmind 目标",
-);
-assert(
   jsonToXmindContent.includes("function refreshLatestOutput(outputPath)"),
-  "json-to-xmind.mjs 提供了 latest-output.xmind 刷新逻辑",
+  "json-to-xmind.mjs 提供了根目录同名快捷链接刷新逻辑",
 );
 assert(
-  jsonToXmindContent.includes("symlinkSync(linkTarget, LATEST_OUTPUT_PATH)"),
-  "json-to-xmind.mjs 通过符号链接刷新 latest-output.xmind",
+  jsonToXmindContent.includes("symlinkSync(linkTarget, linkPath)"),
+  "json-to-xmind.mjs 通过符号链接刷新快捷链接",
 );
 
 console.log(`\n══════════════════════════════════════`);

@@ -18,11 +18,7 @@
 
 ## 快捷链接刷新
 
-XMind 生成成功后，刷新根目录符号链接：
-
-```bash
-ln -sf <实际XMind路径> ./latest-output.xmind
-```
+XMind 生成成功后，脚本会自动在根目录创建与实际文件同名的符号链接（已内置于 json-to-xmind.mjs）。
 
 ## 错误处理
 
