@@ -37,8 +37,9 @@ import { assertNewOutputPathMatchesContract } from '../../../shared/scripts/outp
 import { getDtstackModules } from '../../../shared/scripts/load-config.mjs'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
-const REPO_ROOT = resolve(SCRIPT_DIR, '..', '..')
+const REPO_ROOT = resolve(SCRIPT_DIR, '..', '..', '..', '..')
 const { zh: DTSTACK_ZH_MODULES, en: DTSTACK_EN_MODULES } = getDtstackModules()
+const RESERVED_OUTPUT_NAME = 'latest-output.xmind'
 
 const PRIORITY_MAP = {
   P0: Marker.Priority.p1,
@@ -293,19 +294,25 @@ function validateOutputPath(outputPath) {
 
 function refreshLatestOutput(outputPath) {
   const resolvedOutputPath = resolve(outputPath)
-  const linkPath = resolve(REPO_ROOT, basename(resolvedOutputPath))
-  if (resolvedOutputPath === linkPath) return
+  const linkTarget = relative(REPO_ROOT, resolvedOutputPath)
+  const linkPaths = [resolve(REPO_ROOT, RESERVED_OUTPUT_NAME)]
+  const legacyLinkPath = resolve(REPO_ROOT, basename(resolvedOutputPath))
 
-  try {
-    unlinkSync(linkPath)
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      throw err
-    }
+  if (legacyLinkPath !== resolvedOutputPath && legacyLinkPath !== linkPaths[0]) {
+    linkPaths.push(legacyLinkPath)
   }
 
-  const linkTarget = relative(REPO_ROOT, resolvedOutputPath)
-  symlinkSync(linkTarget, linkPath)
+  for (const linkPath of linkPaths) {
+    try {
+      unlinkSync(linkPath)
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        throw err
+      }
+    }
+
+    symlinkSync(linkTarget, linkPath)
+  }
 }
 
 async function appendToExisting(data, outputPath) {
