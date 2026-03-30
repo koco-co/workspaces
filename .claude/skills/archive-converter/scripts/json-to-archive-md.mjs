@@ -88,7 +88,9 @@ function jsonToMd(data, sourcePath) {
     meta?.module_key ||
     extractModuleKey(inferredOutputDir) ||
     extractModuleKey(sourcePath);
+  // prd_version 优先（DTStack 语义版本 vX.Y.Z），其次从 version 或输出目录路径提取
   const version =
+    extractVersionFromPath(meta?.prd_version || "") ||
     extractVersionFromPath(meta?.version || "") ||
     extractVersionFromPath(inferredOutputDir);
 
@@ -439,7 +441,10 @@ function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName
     dirname(new URL(import.meta.url).pathname),
     "../../cases",
   );
-  let version = (versionOrTitle || "").replace(/版本$/, "").trim();
+  // prd_version 优先（语义版本 vX.Y.Z，DTStack 模块由 Writer 从 PRD frontmatter 写入）
+  let version = meta.prd_version
+    ? String(meta.prd_version).trim()
+    : (versionOrTitle || "").replace(/版本$/, "").trim();
   if (version && !version.startsWith("v")) version = "v" + version;
 
   if (projectName === "信永中和") {

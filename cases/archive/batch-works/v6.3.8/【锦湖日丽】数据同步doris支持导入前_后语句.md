@@ -1,16 +1,18 @@
 ---
-name: 【锦湖日丽】数据同步doris支持导入前_后语句 v6.3.8
+suite_name: 【锦湖日丽】数据同步doris支持导入前_后语句 v6.3.8
 description: 【锦湖日丽】数据同步doris支持导入前_后语句 v6.3.8
+prd_version: v6.3.8
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发-数据同步
   - 锦湖日丽
   - 数据同步doris支持导入前_后语句
-module: batch-works
-version: v6.3.8
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.8/【锦湖日丽】数据同步doris支持导入前_后语句.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 6
-created_at: 2026-03-29
 origin: csv
 ---
 # 【锦湖日丽】数据同步doris支持导入前_后语句 v6.3.8

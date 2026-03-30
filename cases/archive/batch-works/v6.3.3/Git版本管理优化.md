@@ -1,15 +1,17 @@
 ---
-name: Git版本管理优化 v6.3.3
+suite_name: Git版本管理优化 v6.3.3
 description: Git版本管理优化 v6.3.3
+prd_version: v6.3.3
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-项目管理
   - Git版本管理优化
-module: batch-works
-version: v6.3.3
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.3/Git版本管理优化.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 26
-created_at: 2026-03-29
 origin: csv
 ---
 # Git版本管理优化 v6.3.3

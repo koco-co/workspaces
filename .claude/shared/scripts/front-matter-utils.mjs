@@ -7,8 +7,17 @@
  *   inferTags({ title, headings, modulePath, meta })   → string[]
  *   parseFrontMatter(mdContent)                        → { frontMatter, body, docType }
  *   validateFrontMatter(fields, docType)               → { valid: boolean, missing: string[] }
+ *   getDocTypeFromPath(filePath)                        → "archive" | "requirements" | null
  *   extractModuleKey(filePath)                         → string | null
  *   extractVersionFromPath(filePath)                   → string | null
+ *   extractPrdId(text)                                 → number | null
+ *   countArchiveCases(body)                            → number
+ *   classifyArchiveBodyStructure(body)                 → stable body structure category
+ *   buildCanonicalArchiveCaseBlock(input)              → canonical archive case block string
+ *   asTrimmedString(value)                             → string
+ *   toStringArray(value)                               → string[]
+ *   isValidDateString(value)                           → boolean
+ *   normalizeDateString(value, fallbackDate?)          → string
  */
 import { loadConfig } from "./load-config.mjs";
 
@@ -19,6 +28,35 @@ const STOP_WORDS = new Set([
   "页面", "功能", "模块", "列表", "测试", "验证", "测试用例", "用例",
   "步骤", "预期", "前置条件",
 ]);
+
+export const ARCHIVE_BODY_STRUCTURE_CATEGORIES = Object.freeze({
+  CANONICAL_TABLE: "canonical table",
+  HYBRID_TABLE: "hybrid table",
+  BULLET_XMIND_TREE: "bullet/XMind tree",
+  REQUIREMENTS_NARRATIVE: "requirements narrative",
+});
+
+const CANONICAL_ARCHIVE_CASE_TITLE_RE = /^#####\s+【(P0|P1|P2)】.+$/;
+const CANONICAL_ARCHIVE_STEP_TABLE_HEADER_RE = /^\|\s*编号\s*\|\s*步骤\s*\|\s*预期\s*\|?\s*$/;
+const CANONICAL_ARCHIVE_STEP_TABLE_SEPARATOR_RE = /^\|\s*:?-{3,}\s*\|\s*:?-{3,}\s*\|\s*:?-{3,}\s*\|?\s*$/;
+const BULLET_OR_TREE_LINE_RE = /^\s*(?:[-*+•]|\d+[.)]|[├└│][─\s]*)\s+\S/;
+
+export const CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT = Object.freeze({
+  headingLevel: "#####",
+  titlePattern: CANONICAL_ARCHIVE_CASE_TITLE_RE,
+  priorities: Object.freeze(["P0", "P1", "P2"]),
+  preconditionMarker: "> 前置条件",
+  preconditionFence: "```",
+  stepMarker: "> 用例步骤",
+  stepTableHeader: "| 编号 | 步骤 | 预期 |",
+  stepTableSeparator: "| --- | --- | --- |",
+  blankPolicy: Object.freeze({
+    allowEmptyPreconditionFence: true,
+    allowOmittedStepRows: true,
+    allowBlankStepCell: true,
+    allowBlankExpectedCell: true,
+  }),
+});
 
 // ─── buildFrontMatter ────────────────────────────────────────────────────────
 
@@ -201,41 +239,62 @@ export function parseFrontMatter(mdContent) {
   const body = normalized.slice(endIdx + 5); // after "\n---\n"
 
   const frontMatter = {};
+  const pendingContainer = Symbol("pending-front-matter-container");
   let currentKey = null;
-  let currentList = null;
-  let currentObj = null;
+
+  function finalizePendingContainer(key) {
+    if (key && frontMatter[key] === pendingContainer) {
+      frontMatter[key] = [];
+    }
+  }
 
   for (const line of fmText.split("\n")) {
     // 数组元素：`  - value`
     const listItem = line.match(/^  - (.+)$/);
-    if (listItem && currentKey && Array.isArray(frontMatter[currentKey])) {
-      frontMatter[currentKey].push(unquoteYaml(listItem[1]));
-      continue;
+    if (listItem && currentKey) {
+      if (frontMatter[currentKey] === pendingContainer) {
+        frontMatter[currentKey] = [];
+      }
+      if (Array.isArray(frontMatter[currentKey])) {
+        frontMatter[currentKey].push(unquoteYaml(listItem[1]));
+        continue;
+      }
     }
 
     // 对象属性：`  key: value`
     const objProp = line.match(/^  ([a-z_]+):\s*(.*)$/);
-    if (objProp && currentObj !== null) {
-      currentObj[objProp[1]] = unquoteYaml(objProp[2].trim());
-      continue;
+    if (objProp && currentKey) {
+      if (frontMatter[currentKey] === pendingContainer) {
+        frontMatter[currentKey] = {};
+      }
+      if (
+        frontMatter[currentKey]
+        && typeof frontMatter[currentKey] === "object"
+        && !Array.isArray(frontMatter[currentKey])
+      ) {
+        frontMatter[currentKey][objProp[1]] = unquoteYaml(objProp[2].trim());
+        continue;
+      }
     }
 
     // 顶层键值对：`key: value` 或 `key:` (array/object)
     const kv = line.match(/^([a-z_]+):\s*(.*)$/);
     if (kv) {
+      finalizePendingContainer(currentKey);
       currentKey = kv[1];
       const raw = kv[2].trim();
-      currentList = null;
-      currentObj = null;
       if (raw === "") {
-        // 下一行决定是数组还是对象（保守：先设数组，遇到 `  key:` 时切换）
+        // 下一行决定是数组还是对象；若没有子项则向后兼容为空数组
+        frontMatter[currentKey] = pendingContainer;
+      } else if (raw === "[]") {
         frontMatter[currentKey] = [];
-        currentList = frontMatter[currentKey];
       } else {
         frontMatter[currentKey] = unquoteYaml(raw);
       }
     }
   }
+
+  finalizePendingContainer(currentKey);
 
   const docType = frontMatter.doc_type || null;
   return { frontMatter, body, docType };
@@ -303,6 +362,34 @@ function unquoteYaml(s) {
 
 // ─── 路径工具 ────────────────────────────────────────────────────────────────
 
+export function getDocTypeFromPath(filePath) {
+  if (!filePath) return null;
+  const normalized = String(filePath).replace(/\\/g, "/");
+  if (normalized.includes("/cases/archive/") || normalized.startsWith("cases/archive/")) {
+    return "archive";
+  }
+  if (normalized.includes("/cases/requirements/") || normalized.startsWith("cases/requirements/")) {
+    return "requirements";
+  }
+  return null;
+}
+
+export function asTrimmedString(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+export function toStringArray(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => asTrimmedString(item))
+      .filter(Boolean);
+  }
+  const single = asTrimmedString(value);
+  if (!single || single === "[]") return [];
+  return [single];
+}
+
 /**
  * 从任意文件路径推断模块 key
  * 处理:
@@ -348,7 +435,248 @@ export function extractVersionFromPath(filePath) {
   return m ? `v${m[1]}` : null;
 }
 
+/**
+ * 从文本或文件名中提取 PRD ID，如 (#10307) / （#10307） / PRD-10307
+ * @param {string} text
+ * @returns {number | null}
+ */
+export function extractPrdId(text) {
+  if (!text) return null;
+  const normalized = String(text);
+  const match =
+    normalized.match(/\(#(\d+)\)/) ||
+    normalized.match(/（#(\d+)）/) ||
+    normalized.match(/\bPRD-(\d+)\b/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * 统计 archive 正文中的用例数（`##### ` 标题）
+ * @param {string} body
+ * @returns {number}
+ */
+export function countArchiveCases(body = "") {
+  return [...String(body).matchAll(/^#####\s+/gm)].length;
+}
+
+/**
+ * 识别 archive body 当前结构类型，为 phase 2 body 归一化提供稳定契约。
+ *
+ * @param {string} body
+ * @returns {"canonical table" | "hybrid table" | "bullet/XMind tree" | "requirements narrative"}
+ */
+export function classifyArchiveBodyStructure(body = "") {
+  const normalized = String(body).replace(/\r\n/g, "\n").trim();
+  if (!normalized) {
+    return ARCHIVE_BODY_STRUCTURE_CATEGORIES.REQUIREMENTS_NARRATIVE;
+  }
+
+  const caseSections = splitArchiveCaseSections(normalized);
+  if (caseSections.length > 0 && caseSections.every(isCanonicalArchiveCaseSection)) {
+    return ARCHIVE_BODY_STRUCTURE_CATEGORIES.CANONICAL_TABLE;
+  }
+
+  if (hasArchiveStepTable(normalized)) {
+    return ARCHIVE_BODY_STRUCTURE_CATEGORIES.HYBRID_TABLE;
+  }
+
+  if (looksLikeBulletXmindTree(normalized)) {
+    return ARCHIVE_BODY_STRUCTURE_CATEGORIES.BULLET_XMIND_TREE;
+  }
+
+  return ARCHIVE_BODY_STRUCTURE_CATEGORIES.REQUIREMENTS_NARRATIVE;
+}
+
+/**
+ * 构造 canonical archive case block。缺失信息保持留空，不写入占位词。
+ *
+ * @param {{
+ *   priority?: "P0" | "P1" | "P2",
+ *   title: string,
+ *   precondition?: string,
+ *   steps?: Array<{ step?: string, expected?: string } | string>
+ * }} input
+ * @returns {string}
+ */
+export function buildCanonicalArchiveCaseBlock({
+  priority = "P2",
+  title,
+  precondition = "",
+  steps = [],
+} = {}) {
+  const normalizedTitle = String(title ?? "").trim();
+  if (!normalizedTitle) {
+    throw new Error("buildCanonicalArchiveCaseBlock: `title` is required");
+  }
+
+  const normalizedPriority = CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.priorities.includes(priority)
+    ? priority
+    : "P2";
+  const preconditionLines = toNormalizedLines(precondition);
+  const normalizedSteps = Array.isArray(steps) ? steps : [];
+  const lines = [
+    `##### 【${normalizedPriority}】${normalizedTitle}`,
+    "",
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionMarker,
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionFence,
+    ...preconditionLines,
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionFence,
+    "",
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.stepMarker,
+    "",
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.stepTableHeader,
+    CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.stepTableSeparator,
+  ];
+
+  normalizedSteps.forEach((entry, index) => {
+    const stepText = typeof entry === "string" ? entry : entry?.step;
+    const expectedText = typeof entry === "string" ? "" : entry?.expected;
+    lines.push(`| ${index + 1} | ${escapeMarkdownTableCell(stepText)} | ${escapeMarkdownTableCell(expectedText)} |`);
+  });
+
+  return `${lines.join("\n")}\n`;
+}
+
+/**
+ * 检测是否为 YYYY-MM-DD 日期格式
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function isValidDateString(value) {
+  if (typeof value !== "string") return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+}
+
+/**
+ * 归一化日期字符串；无法解析时回退到 fallbackDate / 今天
+ * @param {string | number | Date | null | undefined} value
+ * @param {string | Date | null} [fallbackDate]
+ * @returns {string}
+ */
+export function normalizeDateString(value, fallbackDate = null) {
+  if (typeof value === "string" && isValidDateString(value)) {
+    return value.trim();
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return new Date(value).toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+  }
+
+  if (fallbackDate instanceof Date && !Number.isNaN(fallbackDate.getTime())) {
+    return fallbackDate.toISOString().slice(0, 10);
+  }
+
+  if (typeof fallbackDate === "string" && isValidDateString(fallbackDate)) {
+    return fallbackDate.trim();
+  }
+
+  return new Date().toISOString().slice(0, 10);
+}
+
 // ─── 内部辅助 ────────────────────────────────────────────────────────────────
+
+function hasArchiveStepTable(body) {
+  return String(body)
+    .split("\n")
+    .some((line) => CANONICAL_ARCHIVE_STEP_TABLE_HEADER_RE.test(line.trim()));
+}
+
+function looksLikeBulletXmindTree(body) {
+  const lines = String(body).split("\n");
+  return lines.some((line) => BULLET_OR_TREE_LINE_RE.test(line));
+}
+
+function splitArchiveCaseSections(body) {
+  const matches = [...String(body).matchAll(/^#####\s+.+$/gm)];
+  return matches.map((match, index) => {
+    const start = match.index ?? 0;
+    const end = index + 1 < matches.length
+      ? (matches[index + 1].index ?? body.length)
+      : body.length;
+    return String(body).slice(start, end);
+  });
+}
+
+function isCanonicalArchiveCaseSection(section) {
+  const lines = String(section).replace(/\r\n/g, "\n").split("\n");
+  const titleLine = lines.find((line) => line.trim())?.trim() || "";
+  if (!CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.titlePattern.test(titleLine)) {
+    return false;
+  }
+
+  const preconditionIndex = lines.findIndex(
+    (line) => line.trim() === CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionMarker,
+  );
+  const stepMarkerIndex = lines.findIndex(
+    (line) => line.trim() === CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.stepMarker,
+  );
+  if (preconditionIndex === -1 || stepMarkerIndex === -1 || preconditionIndex >= stepMarkerIndex) {
+    return false;
+  }
+
+  const openingFenceIndex = findNextNonEmptyLineIndex(lines, preconditionIndex + 1);
+  if (openingFenceIndex === -1 || lines[openingFenceIndex].trim() !== CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionFence) {
+    return false;
+  }
+
+  const closingFenceIndex = findClosingFenceIndex(lines, openingFenceIndex + 1, stepMarkerIndex);
+  if (closingFenceIndex === -1 || closingFenceIndex >= stepMarkerIndex) {
+    return false;
+  }
+
+  const tableHeaderIndex = findNextNonEmptyLineIndex(lines, stepMarkerIndex + 1);
+  if (tableHeaderIndex === -1 || !CANONICAL_ARCHIVE_STEP_TABLE_HEADER_RE.test(lines[tableHeaderIndex].trim())) {
+    return false;
+  }
+
+  const separatorIndex = findNextNonEmptyLineIndex(lines, tableHeaderIndex + 1);
+  if (separatorIndex === -1 || !CANONICAL_ARCHIVE_STEP_TABLE_SEPARATOR_RE.test(lines[separatorIndex].trim())) {
+    return false;
+  }
+
+  return true;
+}
+
+function findNextNonEmptyLineIndex(lines, startIndex) {
+  for (let index = startIndex; index < lines.length; index++) {
+    if (lines[index].trim()) return index;
+  }
+  return -1;
+}
+
+function findClosingFenceIndex(lines, startIndex, endIndex) {
+  for (let index = startIndex; index < endIndex; index++) {
+    if (lines[index].trim() === CANONICAL_ARCHIVE_CASE_BLOCK_CONTRACT.preconditionFence) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function toNormalizedLines(value) {
+  const text = String(value ?? "").replace(/\r\n/g, "\n").trim();
+  return text ? text.split("\n") : [];
+}
+
+function escapeMarkdownTableCell(value) {
+  return String(value ?? "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n/g, "<br>")
+    .replace(/\|/g, "\\|");
+}
 
 /** 从 config.json 中查找模块 key 对应的中文名 */
 function getZhNameForModuleKey(moduleKey) {

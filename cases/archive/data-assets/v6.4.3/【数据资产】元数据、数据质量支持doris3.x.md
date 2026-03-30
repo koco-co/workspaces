@@ -1,16 +1,18 @@
 ---
-name: 【数据资产】元数据、数据质量支持doris3.x v6.4.3
+suite_name: 【数据资产】元数据、数据质量支持doris3.x v6.4.3
 description: 【数据资产】元数据、数据质量支持doris3.x v6.4.3
+prd_version: v6.4.3
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-元数据
   - 元数据
   - 数据质量支持doris3.x
-module: data-assets
-version: v6.4.3
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.3/【数据资产】元数据、数据质量支持doris3.x.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 27
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据资产】元数据、数据质量支持doris3.x v6.4.3

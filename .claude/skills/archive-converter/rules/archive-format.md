@@ -95,6 +95,24 @@ node .claude/skills/archive-converter/scripts/backfill-archive-frontmatter.mjs  
 node .claude/skills/archive-converter/scripts/backfill-archive-frontmatter.mjs --force      # 强制覆盖
 ```
 
+### 全量审计 / 安全修复
+
+```bash
+# 全量只读审计（archive + requirements）
+node .claude/shared/scripts/audit-md-frontmatter.mjs --dry-run
+
+# 仅审计某个目录/文件
+node .claude/shared/scripts/audit-md-frontmatter.mjs --path cases/archive/data-assets/
+node .claude/shared/scripts/audit-md-frontmatter.mjs --path cases/requirements/data-assets/v6.4.9/某需求.md
+
+# 对可推断字段执行安全修复（仅修改 frontmatter）
+node .claude/shared/scripts/audit-md-frontmatter.mjs --fix
+```
+
+- 默认只输出审计报告，不写文件；必须显式传 `--fix` 才会写回。
+- 审计阶段会报告 body 规范问题（如 H1、优先级前缀、步骤标记），但自动修复只会改 frontmatter。
+- 对 legacy frontmatter（`name/module/version/source/created_at`）会在 `--fix` 时迁移到 canonical 新字段。
+
 ## 层级映射
 
 > 需求名称（`suite_name`）已移入 frontmatter，MD body 从 `##` 开始。

@@ -159,10 +159,13 @@ function buildCaseTopic(testCase) {
     return Topic(stepText).children([Topic(expectedText)])
   })
 
-  const caseTopic = Topic(testCase.title || '⚠️标题缺失').markers([marker])
+  const rawTitle = testCase.title || '⚠️标题缺失'
+  const cleanTitle = rawTitle.replace(/^【P\d+】\s*/, '')
+  const caseTopic = Topic(cleanTitle).markers([marker])
 
-  if (testCase.precondition) {
-    caseTopic.note(testCase.precondition)
+  const preconditionText = testCase.preconditions || testCase.precondition
+  if (preconditionText) {
+    caseTopic.note(preconditionText)
   }
 
   if (steps.length > 0) {

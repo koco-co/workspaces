@@ -17,7 +17,10 @@ node .claude/skills/archive-converter/scripts/json-to-archive-md.mjs \
 
 输出路径自动推断（根据 meta.project_name 和 meta.version），也可手动指定。
 
-DTStack 如识别到语义版本（如 `v6.4.10`），默认会落到 `cases/archive/<module>/v6.4.10/`；如存在 `archive_file_name` / `requirement_title`，文件名优先使用具体需求标题。
+目录路由规则：
+- **DTStack 模块**：`meta.prd_version`（如 `v6.4.10`）存在时落到 `cases/archive/<module>/v6.4.10/`；不存在时落到 `cases/archive/<module>/`
+- **XYZH/定制模块**：始终落到 `cases/archive/custom/xyzh/`（无版本子目录）
+- 文件名：如存在 `archive_file_name` / `requirement_title`，优先使用具体需求标题
 
 ## 9.1.5 重建归档索引
 

@@ -1,14 +1,18 @@
 ---
-name: "【岚图+标品】离线Doris3.x适配(#9404)（XMind）"
+suite_name: "【岚图+标品】离线Doris3.x适配(#9404)（XMind）"
 description: "【岚图+标品】离线Doris3.x适配(#9404)（XMind）"
+prd_id: 9404
+prd_version: v6.4.2
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 岚图+标品
   - 离线Doris3.x适配
-module: batch-works
-version: v6.4.2
-source: zentao-cases/XMind/离线开发/202510-离线开发v6.4.2.xmind
-created_at: 2026-03-29
+create_at: 2026-03-29
+status: ""
+health_warnings: []
+case_count: 0
 origin: xmind
 ---
 # 【岚图+标品】离线Doris3.x适配(#9404)（XMind）

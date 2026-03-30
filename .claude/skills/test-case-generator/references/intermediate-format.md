@@ -11,7 +11,8 @@ Writer Subagent 输出的 JSON 文件必须严格符合本 Schema。
   "meta": {
     "project_name": "string  // 项目名称，如「信永中和」「DTStack」",
     "product": "string       // 产品名称，如「数据运营门户」",
-    "version": "string       // 版本标识，如「0322版本」「202603版本」",
+    "version": "string       // 版本标识：DTStack 模块用语义版本如「v6.4.10」；非 DTStack 用日期格式如「0322版本」「202603版本」",
+    "prd_version": "string   // 迭代版本号，格式 vX.Y.Z（如「v6.4.10」）。DTStack 模块必填，从 PRD frontmatter prd_version 字段获取；驱动 archive/xmind 输出子目录",
     "requirement_name": "string  // 需求名称，如「数据质量-质量问题台账」",
     "requirement_id": "string    // 需求ID，如「PRD-26」（可选）",
     "prd_path": "string          // PRD 文件相对路径（可选）",
@@ -114,7 +115,8 @@ Writer Subagent 输出的 JSON 文件必须严格符合本 Schema。
 |-----------|---------------------|-----------------|
 | `requirement_name` | `suite_name` | `prd_name` |
 | `module_key` | `product` | `product` |
-| `version` | `prd_version` | `prd_version` |
+| `prd_version` | `prd_version` | `prd_version` |
+| `version` | `prd_version`（仅当 prd_version 缺失时回退） | — |
 | `prd_path` | `prd_path` | `prd_source` |
 | `requirement_id` | `prd_id` | `prd_id` |
 | `prd_url` | `prd_url` | `prd_url` |
@@ -143,7 +145,8 @@ Writer Subagent 输出时可包含以下可选字段（提升 frontmatter 填充
 | 字段 | 约束 |
 |------|------|
 | `meta.project_name` | 必须与 XMind 输出目录对应 |
-| `meta.version` | 格式：`YYYYMM版本` 或 `mmdd版本` |
+| `meta.prd_version` | **DTStack 模块必填**；格式 `vX.Y.Z`（如 `v6.4.10`）；从 PRD frontmatter `prd_version` 字段获取；驱动 archive 和 xmind 输出的版本子目录（如 `data-assets/v6.4.10/`） |
+| `meta.version` | DTStack 模块与 `prd_version` 保持一致（如 `v6.4.10`）；非 DTStack 用日期格式（如 `202603版本`）供 XMind L1 标题显示 |
 | `meta.tags` | 可选；3-8 个领域关键词；产品/功能域名词、业务实体名词、客户标识（不含页面级通用词） |
 | `meta.module_key` | 可选；模块 key（如 `data-assets`、`xyzh`），用于 archive 目录路由 |
 | `modules[].name` | L2: 菜单/模块名称（如「质量问题台账」）|

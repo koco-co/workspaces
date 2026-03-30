@@ -1,16 +1,18 @@
 ---
-name: 【gate交付】EMRFS+S3存储架构对接 v6.3.6
+suite_name: 【gate交付】EMRFS+S3存储架构对接 v6.3.6
 description: 【gate交付】EMRFS+S3存储架构对接 v6.3.6
+prd_version: v6.3.6
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-控制台-存储组件
   - gate交付
   - EMRFS+S3存储架构对接
-module: batch-works
-version: v6.3.6
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.6/【gate交付】EMRFS+S3存储架构对接.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 49
-created_at: 2026-03-29
 origin: csv
 ---
 # 【gate交付】EMRFS+S3存储架构对接 v6.3.6

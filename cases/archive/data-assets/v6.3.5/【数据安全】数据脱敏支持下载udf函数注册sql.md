@@ -1,16 +1,18 @@
 ---
-name: 【数据安全】数据脱敏支持下载udf函数注册sql v6.3.5
+suite_name: 【数据安全】数据脱敏支持下载udf函数注册sql v6.3.5
 description: 【数据安全】数据脱敏支持下载udf函数注册sql v6.3.5
+prd_version: v6.3.5
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-数据安全
   - 数据安全
   - 数据脱敏支持下载udf函数注册sql
-module: data-assets
-version: v6.3.5
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.5/【数据安全】数据脱敏支持下载udf函数注册sql.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 1
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据安全】数据脱敏支持下载udf函数注册sql v6.3.5

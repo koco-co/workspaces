@@ -1,6 +1,9 @@
 ---
-name: 【产品交付】马应龙-针对仅具备表查看权限但无 DQL 查询权限的用户，数据地图-数据预览的数据不可见 v6.4.2
+suite_name: 【产品交付】马应龙-针对仅具备表查看权限但无 DQL 查询权限的用户，数据地图-数据预览的数据不可见 v6.4.2
 description: 【产品交付】马应龙-针对仅具备表查看权限但无 DQL 查询权限的用户，数据地图-数据预览的数据不可见 v6.4.2
+prd_version: v6.4.2
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 数据地图DQL权限优化
@@ -11,11 +14,10 @@ tags:
   - 查询权限的用户
   - 数据地图
   - 数据预览的数据不可见
-module: batch-works
-version: v6.4.2
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.2/【产品交付】马应龙-针对仅具备表查看权限但无 DQL 查询权限的用户，数据地图-数据预览的数据不可见.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 10
-created_at: 2026-03-29
 origin: csv
 ---
 # 【产品交付】马应龙-针对仅具备表查看权限但无 DQL 查询权限的用户，数据地图-数据预览的数据不可见 v6.4.2

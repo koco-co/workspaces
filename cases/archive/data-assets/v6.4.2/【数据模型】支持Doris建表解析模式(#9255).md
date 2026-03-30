@@ -1,14 +1,18 @@
 ---
-name: "【数据模型】支持Doris建表解析模式(#9255)（XMind）"
+suite_name: "【数据模型】支持Doris建表解析模式(#9255)（XMind）"
 description: "【数据模型】支持Doris建表解析模式(#9255)（XMind）"
+prd_id: 9255
+prd_version: v6.4.2
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据模型
   - 支持Doris建表解析模式
-module: data-assets
-version: v6.4.2
-source: zentao-cases/XMind/数据资产/202508-数据资产v6.4.2.xmind
-created_at: 2026-03-29
+create_at: 2026-03-29
+status: ""
+health_warnings: []
+case_count: 0
 origin: xmind
 ---
 # 【数据模型】支持Doris建表解析模式(#9255)（XMind）

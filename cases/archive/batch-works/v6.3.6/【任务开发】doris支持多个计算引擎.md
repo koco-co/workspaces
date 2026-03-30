@@ -1,16 +1,18 @@
 ---
-name: 【任务开发】doris支持多个计算引擎 v6.3.6
+suite_name: 【任务开发】doris支持多个计算引擎 v6.3.6
 description: 【任务开发】doris支持多个计算引擎 v6.3.6
+prd_version: v6.3.6
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发-Doris计算引擎
   - 任务开发
   - doris支持多个计算引擎
-module: batch-works
-version: v6.3.6
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.6/【任务开发】doris支持多个计算引擎.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 118
-created_at: 2026-03-29
 origin: csv
 ---
 # 【任务开发】doris支持多个计算引擎 v6.3.6

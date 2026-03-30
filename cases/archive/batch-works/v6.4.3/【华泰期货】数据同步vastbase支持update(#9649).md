@@ -1,16 +1,20 @@
 ---
-name: "【华泰期货】数据同步vastbase支持update(#9649)（XMind）"
+suite_name: "【华泰期货】数据同步vastbase支持update(#9649)（XMind）"
 description: "【华泰期货】数据同步vastbase支持update(#9649)（XMind）"
+prd_id: 9649
+prd_version: v6.4.3
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 周期任务
   - 手动任务
   - 华泰期货
   - 数据同步vastbase支持update
-module: batch-works
-version: v6.4.3
-source: zentao-cases/XMind/离线开发/202511-离线开发v6.4.3.xmind
-created_at: 2026-03-29
+create_at: 2026-03-29
+status: ""
+health_warnings: []
+case_count: 78
 origin: xmind
 ---
 # 【华泰期货】数据同步vastbase支持update(#9649)（XMind）

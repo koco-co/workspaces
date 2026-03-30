@@ -1,6 +1,10 @@
 ---
-name: "【宁波港】数据同步支持ob for oracle(#9736)（XMind）"
+suite_name: "【宁波港】数据同步支持ob for oracle(#9736)（XMind）"
 description: "【宁波港】数据同步支持ob for oracle(#9736)（XMind）"
+prd_id: 9736
+prd_version: v6.4.4
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 数据源
@@ -11,10 +15,10 @@ tags:
   - 数据同步支持ob
   - for
   - oracle
-module: batch-works
-version: v6.4.4
-source: zentao-cases/XMind/离线开发/202512-离线开发v6.4.4.xmind
-created_at: 2026-03-29
+create_at: 2026-03-29
+status: ""
+health_warnings: []
+case_count: 306
 origin: xmind
 ---
 # 【宁波港】数据同步支持ob for oracle(#9736)（XMind）

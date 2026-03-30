@@ -1,6 +1,9 @@
 ---
-name: 【定制分支】Shell on Agent优先级可以控制EM生效 v6.3.2
+suite_name: 【定制分支】Shell on Agent优先级可以控制EM生效 v6.3.2
 description: 【定制分支】Shell on Agent优先级可以控制EM生效 v6.3.2
+prd_version: v6.3.2
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发
@@ -8,11 +11,10 @@ tags:
   - Shell
   - on
   - Agent优先级可以控制EM生效
-module: batch-works
-version: v6.3.2
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.2/【定制分支】Shell on Agent优先级可以控制EM生效.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 2
-created_at: 2026-03-29
 origin: csv
 ---
 # 【定制分支】Shell on Agent优先级可以控制EM生效 v6.3.2

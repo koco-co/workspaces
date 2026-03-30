@@ -1,16 +1,18 @@
 ---
-name: 【产品交付】本地数据导入支持选择oracle表类型 v6.4.2
+suite_name: 【产品交付】本地数据导入支持选择oracle表类型 v6.4.2
 description: 【产品交付】本地数据导入支持选择oracle表类型 v6.4.2
+prd_version: v6.4.2
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 本地数据导入- oracle
   - 产品交付
   - 本地数据导入支持选择oracle表类型
-module: batch-works
-version: v6.4.2
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.2/【产品交付】本地数据导入支持选择oracle表类型.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 12
-created_at: 2026-03-29
 origin: csv
 ---
 # 【产品交付】本地数据导入支持选择oracle表类型 v6.4.2
