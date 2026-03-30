@@ -1,6 +1,9 @@
 ---
-name: Spark Ranger权限管理优化 v6.3.1
+suite_name: Spark Ranger权限管理优化 v6.3.1
 description: Spark Ranger权限管理优化 v6.3.1
+prd_version: v6.3.1
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发-权限管理
@@ -8,11 +11,10 @@ tags:
   - 离线开发-数据开发-任务日志
   - Spark
   - Ranger权限管理优化
-module: batch-works
-version: v6.3.1
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.1/Spark Ranger权限管理优化.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 219
-created_at: 2026-03-29
 origin: csv
 ---
 # Spark Ranger权限管理优化 v6.3.1

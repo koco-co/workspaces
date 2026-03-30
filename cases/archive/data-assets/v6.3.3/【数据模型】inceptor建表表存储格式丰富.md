@@ -1,16 +1,18 @@
 ---
-name: 【数据模型】inceptor建表表存储格式丰富 v6.3.3
+suite_name: 【数据模型】inceptor建表表存储格式丰富 v6.3.3
 description: 【数据模型】inceptor建表表存储格式丰富 v6.3.3
+prd_version: v6.3.3
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-数据地图
   - 数据模型
   - inceptor建表表存储格式丰富
-module: data-assets
-version: v6.3.3
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.3/【数据模型】inceptor建表表存储格式丰富.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 1
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据模型】inceptor建表表存储格式丰富 v6.3.3

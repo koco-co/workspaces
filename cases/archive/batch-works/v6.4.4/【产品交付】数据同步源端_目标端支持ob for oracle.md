@@ -1,6 +1,9 @@
 ---
-name: 【产品交付】数据同步源端_目标端支持ob for oracle v6.4.4
+suite_name: 【产品交付】数据同步源端_目标端支持ob for oracle v6.4.4
 description: 【产品交付】数据同步源端_目标端支持ob for oracle v6.4.4
+prd_version: v6.4.4
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 数据同步支持ob for oracle
@@ -8,11 +11,10 @@ tags:
   - 数据同步源端_目标端支持ob
   - for
   - oracle
-module: batch-works
-version: v6.4.4
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.4/【产品交付】数据同步源端_目标端支持ob for oracle.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 46
-created_at: 2026-03-29
 origin: csv
 ---
 # 【产品交付】数据同步源端_目标端支持ob for oracle v6.4.4

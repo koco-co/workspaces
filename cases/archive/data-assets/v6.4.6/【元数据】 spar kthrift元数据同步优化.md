@@ -1,17 +1,19 @@
 ---
-name: 【元数据】 spar kthrift元数据同步优化 v6.4.6
+suite_name: 【元数据】 spar kthrift元数据同步优化 v6.4.6
 description: 【元数据】 spar kthrift元数据同步优化 v6.4.6
+prd_version: v6.4.6
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-元数据
   - 元数据
   - spar
   - kthrift元数据同步优化
-module: data-assets
-version: v6.4.6
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.6/【元数据】 spar kthrift元数据同步优化.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 6
-created_at: 2026-03-29
 origin: csv
 ---
 # 【元数据】 spar kthrift元数据同步优化 v6.4.6

@@ -1,16 +1,18 @@
 ---
-name: 【数据治理】治理概览页面根据是否存在hive数据源类型展示概览图 v6.4.3
+suite_name: 【数据治理】治理概览页面根据是否存在hive数据源类型展示概览图 v6.4.3
 description: 【数据治理】治理概览页面根据是否存在hive数据源类型展示概览图 v6.4.3
+prd_version: v6.4.3
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-数据治理-治理概览
   - 数据治理
   - 治理概览页面根据是否存在hive数据源类型展示概览图
-module: data-assets
-version: v6.4.3
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.3/【数据治理】治理概览页面根据是否存在hive数据源类型展示概览图.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 4
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据治理】治理概览页面根据是否存在hive数据源类型展示概览图 v6.4.3

@@ -1,17 +1,19 @@
 ---
-name: 【Gate交付】新增业务流程任务类型 v6.4.0
+suite_name: 【Gate交付】新增业务流程任务类型 v6.4.0
 description: 【Gate交付】新增业务流程任务类型 v6.4.0
+prd_version: v6.4.0
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 新增业务流程-第一批用例
   - 新增业务流程-第二批用例
   - Gate交付
   - 新增业务流程任务类型
-module: batch-works
-version: v6.4.0
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.0/【Gate交付】新增业务流程任务类型.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 241
-created_at: 2026-03-29
 origin: csv
 ---
 # 【Gate交付】新增业务流程任务类型 v6.4.0

@@ -1,16 +1,18 @@
 ---
-name: 【数据模型】doris建表支持设置datetime精度 v6.4.7
+suite_name: 【数据模型】doris建表支持设置datetime精度 v6.4.7
 description: 【数据模型】doris建表支持设置datetime精度 v6.4.7
+prd_version: v6.4.7
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-数据模型
   - 数据模型
   - doris建表支持设置datetime精度
-module: data-assets
-version: v6.4.7
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.7/【数据模型】doris建表支持设置datetime精度.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 5
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据模型】doris建表支持设置datetime精度 v6.4.7

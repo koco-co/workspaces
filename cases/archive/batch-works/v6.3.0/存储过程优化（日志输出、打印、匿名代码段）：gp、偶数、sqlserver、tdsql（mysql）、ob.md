@@ -1,6 +1,9 @@
 ---
-name: 存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob v6.3.0
+suite_name: 存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob v6.3.0
 description: 存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob v6.3.0
+prd_version: v6.3.0
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-运维中心-补数据任务
@@ -12,11 +15,10 @@ tags:
   - 存储过程优化
   - ：gp
   - 偶数
-module: batch-works
-version: v6.3.0
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.0/存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 9
-created_at: 2026-03-29
 origin: csv
 ---
 # 存储过程优化（日志输出、打印、匿名代码段）：gp、偶数、sqlserver、tdsql（mysql）、ob v6.3.0

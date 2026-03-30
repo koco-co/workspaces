@@ -1,15 +1,17 @@
 ---
-name: 【数据资产-业务中心】redis交互逻辑优化 v6.3.4
+suite_name: 【数据资产-业务中心】redis交互逻辑优化 v6.3.4
 description: 【数据资产-业务中心】redis交互逻辑优化 v6.3.4
+prd_version: v6.3.4
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 业务中心
   - redis交互逻辑优化
-module: data-assets
-version: v6.3.4
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.3.4/【数据资产-业务中心】redis交互逻辑优化.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 1
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据资产-业务中心】redis交互逻辑优化 v6.3.4

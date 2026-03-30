@@ -1,16 +1,18 @@
 ---
-name: 【数据质量】支持cron表达式设置调度周期 v6.4.6
+suite_name: 【数据质量】支持cron表达式设置调度周期 v6.4.6
 description: 【数据质量】支持cron表达式设置调度周期 v6.4.6
+prd_version: v6.4.6
+prd_path: ""
+product: data-assets
 tags:
   - 数据资产
   - 数据资产-数据质量-规则任务配置
   - 数据质量
   - 支持cron表达式设置调度周期
-module: data-assets
-version: v6.4.6
-source: zentao-cases/dtstack-platform/数据资产/archive-cases/v6.4.6/【数据质量】支持cron表达式设置调度周期.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 17
-created_at: 2026-03-29
 origin: csv
 ---
 # 【数据质量】支持cron表达式设置调度周期 v6.4.6

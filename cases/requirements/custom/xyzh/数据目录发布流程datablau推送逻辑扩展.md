@@ -1,12 +1,12 @@
 ---
-name: PRD-16-数据目录发布流程datablau推送逻辑扩展
+prd_name: PRD-16-数据目录发布流程datablau推送逻辑扩展
 description: 【流程中心-流程发起-数据目录发布流程】能力拓展：
-source: 内部需求文档
-module: xyzh
 prd_id: 16
-story: Story-20260305
-created_at: 2026-03-29
+prd_source: 内部需求文档
+product: xyzh
+create_at: 2026-03-29
 status: raw
+story: Story-20260305
 ---
 ## 基本信息
 

@@ -49,16 +49,19 @@ YYYYMM-<功能名>.xmind
 
 ### 输出目录
 
-根据 `meta.project_name` 自动判断：
+**DTStack 模块**：当 `meta.prd_version` 存在（如 `v6.4.10`）时，输出到版本子目录；否则输出到模块根目录：
 
-| project_name | 输出目录 |
-|---|---|
-| 信永中和 | `cases/xmind/custom/xyzh/` |
-| DTStack 离线开发 | `cases/xmind/batch-works/` |
-| DTStack 数据资产 | `cases/xmind/data-assets/` |
-| DTStack 统一查询 | `cases/xmind/data-query/` |
-| DTStack 变量中心 | `cases/xmind/variable-center/` |
-| 其他 | `cases/xmind/` |
+| project_name | 有 prd_version（如 v6.4.10） | 无 prd_version |
+|---|---|---|
+| DTStack 离线开发 | `cases/xmind/batch-works/v6.4.10/` | `cases/xmind/batch-works/` |
+| DTStack 数据资产 | `cases/xmind/data-assets/v6.4.10/` | `cases/xmind/data-assets/` |
+| DTStack 统一查询 | `cases/xmind/data-query/v6.4.10/` | `cases/xmind/data-query/` |
+| DTStack 变量中心 | `cases/xmind/variable-center/v6.4.10/` | `cases/xmind/variable-center/` |
+| DTStack 公共组件 | `cases/xmind/public-service/v6.4.10/` | `cases/xmind/public-service/` |
+| 信永中和 | `cases/xmind/custom/xyzh/`（无版本子目录） | `cases/xmind/custom/xyzh/` |
+| 其他 | `cases/xmind/` | `cases/xmind/` |
+
+> `meta.module_key`（如 `data-assets`）优先用于确定模块路径；`meta.prd_version` 决定是否创建版本子目录。
 
 ---
 

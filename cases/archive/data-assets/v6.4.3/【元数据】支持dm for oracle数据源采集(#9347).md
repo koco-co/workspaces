@@ -14,6 +14,7 @@ tags:
 create_at: 2026-03-29
 status: ""
 health_warnings: []
+case_count: 6
 origin: xmind
 ---
 

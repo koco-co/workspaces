@@ -2,6 +2,7 @@
 
 > 本文件是 qa-flow 所有 Markdown 文档 front-matter 的权威 Schema 定义。
 > 所有 backfill 脚本、Writer/Reviewer Subagent 输出模板必须与本 Schema 保持一致。
+> 全量审计/修复入口：`node .claude/shared/scripts/audit-md-frontmatter.mjs --dry-run`（预览） / `--fix`（写回可推断字段）。
 
 ## 用例归档（Archive）Front-Matter
 

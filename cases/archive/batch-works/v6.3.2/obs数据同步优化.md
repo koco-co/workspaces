@@ -1,15 +1,17 @@
 ---
-name: obs数据同步优化 v6.3.2
+suite_name: obs数据同步优化 v6.3.2
 description: obs数据同步优化 v6.3.2
+prd_version: v6.3.2
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发-数据同步
   - obs数据同步优化
-module: batch-works
-version: v6.3.2
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.2/obs数据同步优化.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 6
-created_at: 2026-03-29
 origin: csv
 ---
 # obs数据同步优化 v6.3.2

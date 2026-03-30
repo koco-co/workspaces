@@ -1,16 +1,18 @@
 ---
-name: 【建投交付】AI功能迁移 v6.3.6
+suite_name: 【建投交付】AI功能迁移 v6.3.6
 description: 【建投交付】AI功能迁移 v6.3.6
+prd_version: v6.3.6
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - 离线开发-数据开发-AI功能
   - 建投交付
   - AI功能迁移
-module: batch-works
-version: v6.3.6
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.3.6/【建投交付】AI功能迁移.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 173
-created_at: 2026-03-29
 origin: csv
 ---
 # 【建投交付】AI功能迁移 v6.3.6

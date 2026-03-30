@@ -1,6 +1,9 @@
 ---
-name: 【黑建投交付】dm for mysql一键建表 v6.4.1
+suite_name: 【黑建投交付】dm for mysql一键建表 v6.4.1
 description: 【黑建投交付】dm for mysql一键建表 v6.4.1
+prd_version: v6.4.1
+prd_path: ""
+product: batch-works
 tags:
   - 离线开发
   - dm for mysql一键建表
@@ -8,11 +11,10 @@ tags:
   - dm
   - for
   - mysql一键建表
-module: batch-works
-version: v6.4.1
-source: zentao-cases/dtstack-platform/离线开发/archive-cases/v6.4.1/【黑建投交付】dm for mysql一键建表.csv
+create_at: 2026-03-29
+status: ""
+health_warnings: []
 case_count: 3
-created_at: 2026-03-29
 origin: csv
 ---
 # 【黑建投交付】dm for mysql一键建表 v6.4.1
