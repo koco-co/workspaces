@@ -75,7 +75,7 @@ step-*.md（具体步骤行为）
 
 | Skill | 编排复杂度 | 步骤数 | 子 Agent | 关键依赖 |
 |-------|-----------|--------|----------|----------|
-| `test-case-generator` | ★★★★★ | 12步（0-11+1.5） | writer × N + reviewer × 1 | jszip, lanhu-mcp, .repos/ |
+| `test-case-generator` | ★★★★★ | 13步（0-12） | writer × N + reviewer × 1 | jszip, lanhu-mcp, .repos/ |
 | `prd-enhancer` | ★★★ | 4步 | 无 | 图片读取、front-matter |
 | `archive-converter` | ★★★ | 3步 | 无 | jszip, convert-*.mjs |
 | `xmind-converter` | ★★ | 1步 | 无 | jszip |
@@ -88,17 +88,17 @@ step-*.md（具体步骤行为）
 test-case-generator 编排
   ├── [Step 0] 初始化 → .qa-state-{slug}.json
   ├── [Step 1] parse-input → 蓝湖URL/文件解析
-  ├── [Step 1.5] req-elicit → PRD 补全
-  ├── [Step 2] source-sync → .repos/ 分支验证
-  ├── [Step 3] prd-formalize → 源码驱动形式化
-  ├── [Step 4] prd-enhancer → Skill 调用
-  ├── [Step 5] brainstorm → 历史用例检索 + 解耦分析
-  ├── [Step 6] checklist → 用户确认
-  ├── [Step 7] writer × N → 并行 subagent
-  ├── [Step 8] reviewer → 质量阈值判断
-  ├── [Step 9] xmind → JSON → .xmind
-  ├── [Step 10] archive → Markdown 归档
-  └── [Step 11] notify → 状态文件清理
+  ├── [Step 2] req-elicit → PRD 补全
+  ├── [Step 3] source-sync → .repos/ 分支验证
+  ├── [Step 4] prd-formalize → 源码驱动形式化
+  ├── [Step 5] prd-enhancer → Skill 调用
+  ├── [Step 6] brainstorm → 历史用例检索 + 解耦分析
+  ├── [Step 7] checklist → 用户确认
+  ├── [Step 8] writer × N → 并行 subagent
+  ├── [Step 9] reviewer → 质量阈值判断
+  ├── [Step 10] xmind → JSON → .xmind
+  ├── [Step 11] archive → Markdown 归档
+  └── [Step 12] notify → 状态文件清理
 ```
 
 ---
@@ -202,7 +202,7 @@ assert(existsSync(resolve(root, ".claude/tests")), ".claude/tests 目录存在")
 - **方案 A（推荐）**：在 `config.json` 中正式添加 `dataAssetsVersionMap` 字段，维护 XMind 文件名到版本号的映射：
   ```json
   "dataAssetsVersionMap": {
-    "202603-数据资产v6.4.10.xmind": "v6.4.10"
+    "数据资产v6.4.10.xmind": "v6.4.10"
   }
   ```
 - **方案 B**：删除该测试断言，若版本映射仍无业务需求则不实现。
@@ -815,12 +815,12 @@ writer-subagent-reference.md（参考资料，编排器按需注入）
 
 | 顺序 | 任务 | 涉及文件 | 工作量 |
 |------|------|---------|-------|
-| 1.1 | 修复 `test-workflow-doc-validator.mjs`：`agentsRoot` 条件性读取 | `test-workflow-doc-validator.mjs` | 2行 |
-| 1.2 | 修复 `.claude/agents/` 文档声明（删除或创建目录） | `README.md`, `directory-naming.md` | 各2行 |
-| 1.3 | 修复 `test-load-config.mjs:69`：更新 scripts 路径断言 | `test-load-config.mjs` | 2行 |
-| 1.4 | 修复 `test-load-config.mjs:41`：添加 `dataAssetsVersionMap` 到 config.json，或删除断言 | `config.json` 或测试文件 | 5行 |
-| 1.5 | 修复 `test-lanhu-mcp-runtime.mjs:38`：更新 cookieRefreshScript 路径断言 | `test-lanhu-mcp-runtime.mjs` | 2行 |
-| 1.6 | 修复 jszip 依赖：在 `.claude/tests/` 下添加 package.json | 新文件 | 10行 |
+| 1 | 修复 `test-workflow-doc-validator.mjs`：`agentsRoot` 条件性读取 | `test-workflow-doc-validator.mjs` | 2行 |
+| 2 | 修复 `.claude/agents/` 文档声明（删除或创建目录） | `README.md`, `directory-naming.md` | 各2行 |
+| 3 | 修复 `test-load-config.mjs:69`：更新 scripts 路径断言 | `test-load-config.mjs` | 2行 |
+| 4 | 修复 `test-load-config.mjs:41`：添加 `dataAssetsVersionMap` 到 config.json，或删除断言 | `config.json` 或测试文件 | 5行 |
+| 5 | 修复 `test-lanhu-mcp-runtime.mjs:38`：更新 cookieRefreshScript 路径断言 | `test-lanhu-mcp-runtime.mjs` | 2行 |
+| 6 | 修复 jszip 依赖：在 `.claude/tests/` 下添加 package.json | 新文件 | 10行 |
 
 ### 阶段 2：P1 架构加固（短期，1-3 天）
 
@@ -828,12 +828,12 @@ writer-subagent-reference.md（参考资料，编排器按需注入）
 
 | 顺序 | 任务 | 涉及文件 | 优先理由 |
 |------|------|---------|---------|
-| 2.1 | CLAUDE.md 修正 `prd-formalizer` → `prd-formalize` 拼写 | `CLAUDE.md` | 影响 Agent 步骤定位 |
-| 2.2 | CLAUDE.md 补充单 PRD 状态文件命名规则 | `CLAUDE.md` | 续传功能正确性 |
-| 2.3 | `.qa-state.json` 合同单一来源：SKILL.md 和 step-parse-input.md 改为引用 | 2个文件 | 减少漂移 |
-| 2.4 | 清理 / 收口 skill 内规则副本，至少为 `test-case-writing` / `archive-format` / `xmind-output` 增加“以全局版本为准”声明 | skill 内规则文件 | 规则治理 |
-| 2.5 | 提升 jszip 到 shared/scripts/package.json，修复跨 skill 路径依赖 | 多文件 | 依赖健壮性 |
-| 2.6 | `lanhuPlanPath` 断言从测试中清理或补充对应文档 | `test-workflow-doc-validator.mjs` | 测试真实性 |
+| 1 | CLAUDE.md 修正 `prd-formalizer` → `prd-formalize` 拼写 | `CLAUDE.md` | 影响 Agent 步骤定位 |
+| 2 | CLAUDE.md 补充单 PRD 状态文件命名规则 | `CLAUDE.md` | 续传功能正确性 |
+| 3 | `.qa-state.json` 合同单一来源：SKILL.md 和 step-parse-input.md 改为引用 | 2个文件 | 减少漂移 |
+| 4 | 清理 / 收口 skill 内规则副本，至少为 `test-case-writing` / `archive-format` / `xmind-output` 增加”以全局版本为准”声明 | skill 内规则文件 | 规则治理 |
+| 5 | 提升 jszip 到 shared/scripts/package.json，修复跨 skill 路径依赖 | 多文件 | 依赖健壮性 |
+| 6 | `lanhuPlanPath` 断言从测试中清理或补充对应文档 | `test-workflow-doc-validator.mjs` | 测试真实性 |
 
 ### 阶段 3：P1 Prompt 优化（中期，3-5 天）
 
@@ -841,10 +841,10 @@ writer-subagent-reference.md（参考资料，编排器按需注入）
 
 | 顺序 | 任务 |
 |------|------|
-| 3.1 | Writer Subagent Prompt 拆分重构（291行 → 核心 80行 + 参考） |
-| 3.2 | Reviewer Subagent Prompt 重构（291行 → 核心 60行 + 规则引用） |
-| 3.3 | 统一所有 step-*.md 的标准化模板格式 |
-| 3.4 | Step prompt 内硬编码路径改为读取 config 的注释说明 |
+| 1 | Writer Subagent Prompt 拆分重构（291行 → 核心 80行 + 参考） |
+| 2 | Reviewer Subagent Prompt 重构（291行 → 核心 60行 + 规则引用） |
+| 3 | 统一所有 step-*.md 的标准化模板格式 |
+| 4 | Step prompt 内硬编码路径改为读取 config 的注释说明 |
 
 ### 阶段 4：P2 治理改善（长期，持续）
 
@@ -887,7 +887,7 @@ writer-subagent-reference.md（参考资料，编排器按需注入）
 
 修改任何 SKILL.md 或 step-*.md 后，验证以下场景：
 
-- [ ] 普通模式：`为 data-assets v6.4.10 生成测试用例`（完整 11 步执行）
+- [ ] 普通模式：`为 data-assets v6.4.10 生成测试用例`（完整 12 步执行）
 - [ ] 快速模式：`--quick` 跳过 brainstorm 和 checklist
 - [ ] 续传模式：中断后重发指令，从 `last_completed_step` 继续
 - [ ] 蓝湖 URL 模式：lanhu-mcp 正常启动，Cookie 刷新流程正常

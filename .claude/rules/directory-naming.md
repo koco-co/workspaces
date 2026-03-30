@@ -62,7 +62,7 @@ qa-flow/
 
 ### 通用
 
-- PRD 级 XMind 输出：`YYYYMM-<功能名>.xmind`（legacy，新流程直接写入版本目录）
+- PRD 级 XMind 输出：`<功能名>.xmind`（新流程直接写入版本目录）
 - Story 聚合 Markdown 只在明确需要”一个 Story 汇总文件”时使用
 - 历史遗留文件名可继续保留，例如 `信永中和测试用例.xmind`
 - 报告文件：`<标题>.html`，按日期目录归档到 `reports/bugs/` 或 `reports/conflicts/`

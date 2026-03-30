@@ -4,6 +4,7 @@
     "dagschedulex",
     "datasourcex",
     "dtstack",
+    "ENOENT",
     "flink",
     "htmlcov",
     "httprunner",
