@@ -2,5 +2,8 @@
   "name": "qa-shared-scripts",
   "type": "module",
   "private": true,
-  "description": "Shared foundation scripts used by multiple qa-flow skills"
+  "description": "Shared foundation scripts used by multiple qa-flow skills",
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
 }

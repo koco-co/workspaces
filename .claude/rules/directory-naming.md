@@ -39,7 +39,6 @@ qa-flow/
     ├── config.json     # 集中路径配置
     ├── rules/          # 按需加载规范
     ├── skills/         # 项目 Skills
-    ├── agents/         # 子代理定义
     └── scripts/        # Node.js 脚本
 ```
 

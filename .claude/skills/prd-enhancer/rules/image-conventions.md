@@ -1,3 +1,5 @@
+> **注意**：本文件是 `.claude/rules/image-conventions.md` 的 skill 内镜像，以全局版本为准。如有冲突，请以 `.claude/rules/image-conventions.md` 为准。
+
 # 图片引用规范
 
 > 适用范围：本仓库所有 Markdown 文件中的图片引用。

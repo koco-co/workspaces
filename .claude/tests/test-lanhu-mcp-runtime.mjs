@@ -35,7 +35,7 @@ assert(existsSync(config.setupScript), "tools/lanhu-mcp 下存在 setup-env.sh")
 assert(existsSync(config.quickstartScript), "tools/lanhu-mcp 下存在 quickstart.sh");
 assert(config.logFile.endsWith(".claude/tmp/lanhu-mcp.log"), "logFile 指向 .claude/tmp/lanhu-mcp.log");
 assert(config.serverUrl === "http://127.0.0.1:8000", "serverUrl 与 config.json 一致");
-assert(config.cookieRefreshScript.endsWith(".claude/scripts/refresh-lanhu-cookie.py"), "cookieRefreshScript 指向 refresh-lanhu-cookie.py");
+assert(config.cookieRefreshScript.endsWith(".claude/skills/using-qa-flow/scripts/refresh-lanhu-cookie.py"), "cookieRefreshScript 指向 using-qa-flow/scripts/refresh-lanhu-cookie.py");
 assert(existsSync(config.cookieRefreshScript), "cookieRefreshScript 文件已存在");
 
 console.log("\n=== Test: getLanhuMcpUrl ===");

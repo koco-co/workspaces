@@ -1,3 +1,5 @@
+> **注意**：本文件是 `.claude/rules/xmind-output.md` 的 skill 内镜像，以全局版本为准。如有冲突，请以 `.claude/rules/xmind-output.md` 为准。
+
 # XMind 输出规范
 
 ## Canonical 命名 contract
