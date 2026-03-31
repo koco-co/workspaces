@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-project-structure-shared-scripts
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md
 started: 2026-03-31T12:44:14.461Z
@@ -74,5 +74,13 @@ blocked: 0
   reason: "User reported: 17 test files run; 2 failures detected. Failures are in Phase 04 work (test-archive-history-scripts.mjs: XYZH route path; prd-enhancer formalized file retention). Phase 02 baseline (16 files) all pass. Exit code 0."
   severity: minor
   test: 11
-  artifacts: []
-  missing: []
+  root_cause: "Phase 04-02 and 04-03 commits changed archive-converter and prd-enhancer behavior without updating corresponding tests. (1) feat(04-02) made json-to-archive-md.mjs config-driven but XYZH route test still expects old path format. (2) feat(04-03) changed prd-enhancer SKILL.md wording so 'formalized file' assertion in test-formalized-prd-contract.mjs no longer matches. Phase 02 baseline (16 files) all passed at time of delivery."
+  artifacts:
+    - path: ".claude/tests/test-archive-history-scripts.mjs"
+      issue: "XYZH route assertion expects old hardcoded path; Phase 04-02 made routing config-driven"
+    - path: ".claude/tests/test-formalized-prd-contract.mjs"
+      issue: "prd-enhancer formalized file assertion no longer matches after Phase 04-03 rewording"
+  missing:
+    - "Update test-archive-history-scripts.mjs XYZH route assertion to match config-driven path from Phase 04-02"
+    - "Update test-formalized-prd-contract.mjs prd-enhancer assertion to match Phase 04-03 SKILL.md wording"
+  debug_session: ""
