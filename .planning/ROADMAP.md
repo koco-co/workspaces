@@ -64,7 +64,12 @@ Plans:
   2. A user can upload a CSV or XMind history file during init and the wizard infers module keys and case hierarchy from it
   3. The generated config.json and CLAUDE.md are syntactically valid and immediately usable by the test-case-generator workflow without manual edits
   4. Multi-version (e.g., v1.0 + v2.0) and multi-module scenarios are expressible in the generated config without requiring post-init hand-editing
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — init-wizard.mjs project scanning + history file parsing + tests
+- [ ] 03-02-PLAN.md — Config generation + CLAUDE.md template + re-init support + tests
+- [ ] 03-03-PLAN.md — SKILL.md Step 0 dialog orchestration + end-to-end validation
 
 ### Phase 4: Core Skills Redesign
 **Goal**: All six Skills work on any project using config-driven routing and generic examples; no DTStack terminology appears in any user-visible prompt or output
@@ -108,7 +113,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Generalization Refactor | 5/5 | Complete    | 2026-03-31 |
 | 2. Project Structure + Shared Scripts | 3/3 | Complete    | 2026-03-31 |
-| 3. Init Wizard | 0/TBD | Not started | - |
+| 3. Init Wizard | 0/3 | Planning complete | - |
 | 4. Core Skills Redesign | 0/TBD | Not started | - |
 | 5. IM Notification Integration | 0/TBD | Not started | - |
 | 6. Documentation | 0/TBD | Not started | - |
