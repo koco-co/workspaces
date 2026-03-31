@@ -232,7 +232,7 @@ node .claude/shared/scripts/refresh-latest-link.mjs "<项目根>/reports/conflic
 
 ---
 
-## 四、前端报错分析模式（模式C）完整流程
+## 四、第四章：前端报错分析模式（模式C）完整流程
 
 ### Step 1：报错类型识别
 
