@@ -13,22 +13,16 @@
  *   node convert-history-cases.mjs                           # 全量转化（增量，跳过已存在）
  *   node convert-history-cases.mjs --force                   # 强制覆盖所有
  *   node convert-history-cases.mjs --path <file-or-dir>      # 仅转化指定文件/目录
- *   node convert-history-cases.mjs --module 离线开发         # 仅转化指定模块
+ *   node convert-history-cases.mjs --module <名称或key>      # 仅转化指定模块
  *   node convert-history-cases.mjs --detect                  # 仅检测未转化文件
- *   node convert-history-cases.mjs --detect --module 信永中和 # 检测指定模块未转化文件
  *
  * 输入来源:
- *   1. cases/history/xyzh/v0.2.0/ *.csv
- *   2. cases/history/xyzh/v0.2.1/ *.csv
- *   3. cases/xmind/**\/*.xmind
+ *   - cases/history/${module_key}/${version}/*.csv（动态扫描，无需硬编码）
+ *   - cases/xmind/**\/*.xmind
  *
- * 输出目标:
- *   CSV  → cases/archive/custom/xyzh/<version>/<文件名>.md
- *   XMind（信永中和）→ cases/archive/custom/xyzh/<文件名>.md
- *   XMind（离线开发）→ cases/archive/batch-works/<文件名>.md
- *   XMind（数据资产）→ cases/archive/data-assets/<文件名>.md
- *   XMind（统一查询）→ cases/archive/data-query/<文件名>.md
- *   XMind（变量中心）→ cases/archive/variable-center/<文件名>.md
+ * 输出目标（通过 resolveModulePath 动态解析）:
+ *   CSV  → cases/archive/${module_key}/${version}/<文件名>.md
+ *   XMind → cases/archive/${module_key}/<文件名>.md（或含版本目录）
  */
 
 import {
@@ -41,7 +35,12 @@ import {
 } from "fs";
 import { resolve, join, dirname, basename } from "path";
 import { fileURLToPath } from "url";
-import { getModuleMap, getDtstackModules } from "../../../shared/scripts/load-config.mjs";
+import {
+  loadConfigFromPath,
+  loadConfig,
+  getModuleKeys,
+  resolveModulePath,
+} from "../../../shared/scripts/load-config.mjs";
 import {
   buildFrontMatter,
   inferTags,
@@ -51,6 +50,55 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "../../../.."); // qa-flow 根目录
+
+// ─── Config 驱动的模块映射 ──────────────────────────────────────────────────
+
+/**
+ * 从 config.modules 动态构建模块名称映射（中文名 + key → key）。
+ * 支持任意项目，无需手动维护映射表。
+ *
+ * @param {string} [configPath] - 可选：自定义 config 路径（用于测试隔离）
+ * @returns {Record<string, string>} map: zh名/key → moduleKey
+ */
+export function buildModuleMap(configPath) {
+  const config = configPath ? loadConfigFromPath(configPath) : loadConfig();
+  const map = {};
+  for (const [key, mod] of Object.entries(config.modules || {})) {
+    if (mod.zh) map[mod.zh] = key;
+    map[key] = key;
+    if (mod.aliases) {
+      for (const alias of mod.aliases) {
+        map[alias] = key;
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * 从 meta 信息确定 archive 输出目录（使用 resolveModulePath）。
+ *
+ * @param {{ module_key?: string, version?: string }} meta
+ * @param {string} [configPath] - 可选：自定义 config 路径（用于测试隔离）
+ * @returns {string} 工作区相对路径（含尾部斜杠）
+ */
+export function resolveOutputDir(meta, configPath) {
+  const config = configPath ? loadConfigFromPath(configPath) : loadConfig();
+  const moduleKey = meta.module_key;
+  const version = meta.version;
+  if (moduleKey && config.modules?.[moduleKey]) {
+    return resolveModulePath(moduleKey, 'archive', config, version || null);
+  }
+  // 兜底：不带模块键时返回 archive/ 根目录
+  const casesRoot = config.casesRoot ?? 'cases/';
+  return `${casesRoot}archive/`;
+}
+
+// ─── 运行时使用默认 config 的模块映射 ───────────────────────────────────────
+
+const MODULE_MAP = buildModuleMap();
+const ALL_MODULE_KEYS = getModuleKeys();
+
 // ─── CLI 参数解析 ────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const FORCE = args.includes("--force");
@@ -62,19 +110,8 @@ const MODULE_ARG = args.includes("--module")
   ? args[args.indexOf("--module") + 1]
   : null;
 
-const VALID_MODULES = [
-  "离线开发",
-  "数据资产",
-  "统一查询",
-  "变量中心",
-  "信永中和",
-  "公共组件",
-];
-if (MODULE_ARG && !VALID_MODULES.includes(MODULE_ARG)) {
-  console.error(`❌ 无效模块名: ${MODULE_ARG}`);
-  console.error(`   有效模块: ${VALID_MODULES.join(", ")}`);
-  process.exit(1);
-}
+// 模块验证：仅记录有效模块名列表（延迟到 main() 验证，避免影响模块导入）
+const VALID_MODULE_NAMES = Object.keys(MODULE_MAP);
 
 // ─── 结果统计 ────────────────────────────────────────────────────────────────
 const stats = { skipped: [], success: [], failed: [] };
@@ -541,7 +578,7 @@ function xmindOutputDir(xmindPath) {
   // parts[0]='cases', parts[1]='xmind', parts[2]=模块目录, [3]=子目录或文件名
   const top = parts[2] || "";
   if (top === "custom") {
-    const subProject = parts[3] || "xyzh";
+    const subProject = parts[3] || "";
     return join(ROOT, "cases/archive/custom", subProject);
   }
   // parts[3] 存在且不是 .xmind 文件时，为版本子目录（如 v6.4.9、6.3.x、主流程）
@@ -555,31 +592,47 @@ function xmindOutputDir(xmindPath) {
 
 // ─── 模块 / 路径辅助 ─────────────────────────────────────────────────────────
 
-// 信永中和 CSV 目录（原始 CSV 在 history/xyzh/v0.x.x/ 下，输出到 archive/custom/xyzh/）
-const CUSTOM_CSV_DIRS = [
-  {
-    dir: join(ROOT, "cases/history/xyzh/v0.2.0"),
-    version: "v0.2.0",
-    module: "信永中和",
-  },
-  {
-    dir: join(ROOT, "cases/history/xyzh/v0.2.1"),
-    version: "v0.2.1",
-    module: "信永中和",
-  },
-];
+/**
+ * 动态扫描 cases/history/ 下的 CSV 目录
+ * 结构: cases/history/{moduleKey}/{version}/*.csv
+ * 无需硬编码，自动发现所有模块的 CSV 历史文件
+ *
+ * @param {string} [filterModuleKey] - 可选：只扫描指定 moduleKey
+ */
+function buildCsvDirs(filterModuleKey) {
+  const config = loadConfig();
+  const casesRoot = config.casesRoot ?? 'cases/';
+  const historyBase = join(ROOT, casesRoot, 'history');
+  const dirs = [];
+  if (!existsSync(historyBase)) return dirs;
 
-// 模块中英文映射（从 config.json 集中读取）
-const MODULE_MAP = getModuleMap();
-const { zh: DTSTACK_MODULES_ZH, en: DTSTACK_MODULES_EN } = getDtstackModules();
+  for (const moduleEntry of readdirSync(historyBase, { withFileTypes: true })) {
+    if (!moduleEntry.isDirectory()) continue;
+    const moduleKey = moduleEntry.name;
+    if (filterModuleKey && moduleKey !== filterModuleKey) continue;
+    const moduleDir = join(historyBase, moduleKey);
+    // 扫描版本子目录
+    for (const versionEntry of readdirSync(moduleDir, { withFileTypes: true })) {
+      if (!versionEntry.isDirectory()) continue;
+      const version = versionEntry.name;
+      dirs.push({ dir: join(moduleDir, version), version, module: moduleKey });
+    }
+    // 也扫描根目录下的 CSV（无版本子目录）
+    const rootCsvs = readdirSync(moduleDir).filter(f => f.endsWith('.csv'));
+    if (rootCsvs.length > 0) {
+      dirs.push({ dir: moduleDir, version: '', module: moduleKey });
+    }
+  }
+  return dirs;
+}
 
-/** 扫描各模块 archive 下的 CSV 文件 */
-function getDtstackCSVFiles(module) {
+/** 扫描各模块 archive 下的 CSV 文件（兼容遗留归档文件） */
+function getArchiveCSVFiles(module) {
   const results = [];
   const modKey = module ? MODULE_MAP[module] || module : null;
-  const modules = modKey ? [modKey] : DTSTACK_MODULES_EN;
+  const modules = modKey ? [modKey] : ALL_MODULE_KEYS;
   for (const mod of modules) {
-    if (!DTSTACK_MODULES_EN.includes(mod)) continue;
+    if (!ALL_MODULE_KEYS.includes(mod)) continue;
     const archiveDir = join(ROOT, "cases/archive", mod);
     if (!existsSync(archiveDir)) continue;
     // 遍历子目录（版本号目录）
@@ -600,45 +653,51 @@ function getXMindDirs(module) {
   const xmindBase = join(ROOT, "cases/xmind");
   if (!module) return [xmindBase];
   const modKey = MODULE_MAP[module] || module;
-  if (modKey === "public-service") return [];
   return [join(xmindBase, modKey)];
 }
 
 // ─── 主流程 ──────────────────────────────────────────────────────────────────
 
 async function processCSVFiles(module) {
-  // 1. 信永中和 CSV（v0.x.x/ → archive/v0.x.x/）
-  if (!module || module === "信永中和" || module === "custom/xyzh") {
-    for (const { dir, version } of CUSTOM_CSV_DIRS) {
-      const csvFiles = findFiles(dir, ".csv");
-      for (const csvPath of csvFiles) {
-        const name = basename(csvPath, ".csv");
-        const outDir = join(ROOT, "cases/archive/custom/xyzh", version);
-        const outFile = join(outDir, `${name}.md`);
+  // 1. 扫描 cases/history/ 下的 CSV 文件（动态，config 驱动）
+  const modKey = module ? MODULE_MAP[module] || module : null;
+  const historyCsvDirs = buildCsvDirs(modKey || undefined);
+  for (const { dir, version, module: csvModule } of historyCsvDirs) {
+    const csvFiles = findFiles(dir, ".csv");
+    const config = loadConfig();
+    for (const csvPath of csvFiles) {
+      const name = basename(csvPath, ".csv");
+      let outDir;
+      if (csvModule && config.modules?.[csvModule]) {
+        const archivePath = resolveModulePath(csvModule, 'archive', config, version || null);
+        outDir = join(ROOT, archivePath);
+      } else {
+        outDir = join(ROOT, "cases/archive", csvModule || 'history', version || '');
+      }
+      const outFile = join(outDir, `${name}.md`);
 
-        if (existsSync(outFile) && !FORCE) {
-          stats.skipped.push(outFile.replace(ROOT + "/", ""));
-          continue;
-        }
+      if (existsSync(outFile) && !FORCE) {
+        stats.skipped.push(outFile.replace(ROOT + "/", ""));
+        continue;
+      }
 
-        try {
-          ensureDir(outDir);
-          const md = convertCSV(csvPath, version);
-          writeFileSync(outFile, md, "utf-8");
-          stats.success.push(outFile.replace(ROOT + "/", ""));
-        } catch (e) {
-          stats.failed.push({
-            file: csvPath.replace(ROOT + "/", ""),
-            error: e.message,
-          });
-        }
+      try {
+        ensureDir(outDir);
+        const md = convertCSV(csvPath, version);
+        writeFileSync(outFile, md, "utf-8");
+        stats.success.push(outFile.replace(ROOT + "/", ""));
+      } catch (e) {
+        stats.failed.push({
+          file: csvPath.replace(ROOT + "/", ""),
+          error: e.message,
+        });
       }
     }
   }
 
-  // 2. DTStack CSV（archive/<module>/<version>/*.csv → 同目录 .md）
-  const dtstackCSVs = getDtstackCSVFiles(module);
-  for (const { csvPath, version } of dtstackCSVs) {
+  // 2. archive/<module>/<version>/*.csv → 同目录 .md（遗留兜底）
+  const archiveCSVs = getArchiveCSVFiles(module);
+  for (const { csvPath, version } of archiveCSVs) {
     const name = basename(csvPath, ".csv");
     const outDir = dirname(csvPath);
     const outFile = join(outDir, `${name}.md`);
@@ -695,30 +754,37 @@ async function detectUnconverted(module) {
   const unconverted = [];
   let alreadyConverted = 0;
 
-  // CSV 源（信永中和）
-  if (!module || module === "信永中和" || module === "custom/xyzh") {
-    for (const { dir, version } of CUSTOM_CSV_DIRS) {
-      const csvFiles = findFiles(dir, ".csv");
-      for (const csvPath of csvFiles) {
-        const name = basename(csvPath, ".csv");
-        const outDir = join(ROOT, "cases/archive/custom/xyzh", version);
-        const outFile = join(outDir, `${name}.md`);
-        if (existsSync(outFile)) {
-          alreadyConverted++;
-        } else {
-          unconverted.push({
-            source: csvPath.replace(ROOT + "/", ""),
-            target: outFile.replace(ROOT + "/", ""),
-            type: "csv",
-          });
-        }
+  // CSV 源（动态扫描 cases/history/）
+  const modKey = module ? MODULE_MAP[module] || module : null;
+  const historyCsvDirs = buildCsvDirs(modKey || undefined);
+  const config = loadConfig();
+  for (const { dir, version, module: csvModule } of historyCsvDirs) {
+    const csvFiles = findFiles(dir, ".csv");
+    for (const csvPath of csvFiles) {
+      const name = basename(csvPath, ".csv");
+      let outDir;
+      if (csvModule && config.modules?.[csvModule]) {
+        const archivePath = resolveModulePath(csvModule, 'archive', config, version || null);
+        outDir = join(ROOT, archivePath);
+      } else {
+        outDir = join(ROOT, "cases/archive", csvModule || 'history', version || '');
+      }
+      const outFile = join(outDir, `${name}.md`);
+      if (existsSync(outFile)) {
+        alreadyConverted++;
+      } else {
+        unconverted.push({
+          source: csvPath.replace(ROOT + "/", ""),
+          target: outFile.replace(ROOT + "/", ""),
+          type: "csv",
+        });
       }
     }
   }
 
-  // CSV 源（DTStack 模块）
-  const dtstackCSVs = getDtstackCSVFiles(module);
-  for (const { csvPath } of dtstackCSVs) {
+  // CSV 源（archive 下遗留 CSV）
+  const archiveCSVs = getArchiveCSVFiles(module);
+  for (const { csvPath } of archiveCSVs) {
     const name = basename(csvPath, ".csv");
     const outFile = join(dirname(csvPath), `${name}.md`);
     if (existsSync(outFile)) {
@@ -860,6 +926,13 @@ function printSummary() {
 // ─── 入口 ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  // 模块名验证（使用 config 驱动的有效模块名）
+  if (MODULE_ARG && VALID_MODULE_NAMES.length > 0 && !MODULE_MAP[MODULE_ARG]) {
+    console.error(`❌ 无效模块名: ${MODULE_ARG}`);
+    console.error(`   有效模块: ${VALID_MODULE_NAMES.join(", ")}`);
+    process.exit(1);
+  }
+
   // --detect: 仅检测，输出 JSON 后退出
   if (DETECT) {
     const report = await detectUnconverted(MODULE_ARG);
@@ -885,7 +958,19 @@ async function main() {
   printSummary();
 }
 
-main().catch((e) => {
-  console.error("❌ 脚本执行失败:", e);
-  process.exit(1);
-});
+// 仅在直接执行时运行 main（导入为模块时不执行，便于测试）
+function isDirectExecution() {
+  if (!process.argv[1]) return false;
+  try {
+    return resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectExecution()) {
+  main().catch((e) => {
+    console.error("❌ 脚本执行失败:", e);
+    process.exit(1);
+  });
+}
