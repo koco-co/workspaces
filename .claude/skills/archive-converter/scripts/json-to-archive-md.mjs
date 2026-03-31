@@ -152,7 +152,7 @@ export function jsonToMd(data, sourcePath) {
     meta?.module_key ||
     extractModuleKey(inferredOutputDir) ||
     extractModuleKey(sourcePath);
-  // prd_version 优先（DTStack 语义版本 vX.Y.Z），其次从 version 或输出目录路径提取
+  // prd_version 优先（语义版本 vX.Y.Z），其次从 version 或输出目录路径提取
   const version =
     extractVersionFromPath(meta?.prd_version || "") ||
     extractVersionFromPath(meta?.version || "") ||
@@ -444,13 +444,14 @@ function extractCase(node) {
 
 const _allModuleKeys = getModuleKeys();
 const _moduleConfig = loadConfig().modules || {};
-// Build zh→key map from config for output dir resolution
-const DTSTACK_MODULE_MAP = {};
+const _allModuleKeysSet = new Set(_allModuleKeys);
+// Build zh→key map from config for output dir resolution (config-driven, no hardcoded names)
+const MODULE_MAP = {};
 for (const [key, mod] of Object.entries(_moduleConfig)) {
-  if (mod.zh) DTSTACK_MODULE_MAP[mod.zh] = key;
+  if (mod.zh) MODULE_MAP[mod.zh] = key;
+  MODULE_MAP[key] = key;
 }
-const DTSTACK_MODULES = Object.keys(DTSTACK_MODULE_MAP);
-const DTSTACK_MODULE_KEYS = new Set(_allModuleKeys);
+const MODULE_ZH_NAMES = Object.keys(MODULE_MAP).filter(k => !_allModuleKeysSet.has(k));
 
 export function determineOutputDir(projectName, versionOrTitle, requirementName) {
   return determineOutputDirWithMeta(projectName, versionOrTitle, requirementName, {});
@@ -460,46 +461,43 @@ function isSemanticVersion(version) {
   return /^v?\d+\.\d+\.\d+$/i.test((version || "").trim());
 }
 
-function determineDtstackModuleKey(projectName, requirementName, meta = {}) {
+function resolveModuleKey(projectName, requirementName, meta = {}) {
   const explicitModuleKey = String(meta.module_key || "").trim();
   if (explicitModuleKey) {
-    if (DTSTACK_MODULE_MAP[explicitModuleKey]) {
-      return DTSTACK_MODULE_MAP[explicitModuleKey];
+    if (MODULE_MAP[explicitModuleKey]) {
+      return MODULE_MAP[explicitModuleKey];
     }
-    if (DTSTACK_MODULE_KEYS.has(explicitModuleKey)) {
+    if (_allModuleKeysSet.has(explicitModuleKey)) {
       return explicitModuleKey;
     }
   }
 
-  const matchedModule = DTSTACK_MODULES.find(
+  // Match by zh name or module key appearing in projectName/requirementName
+  const matchedKey = Object.keys(MODULE_MAP).find(
     (m) => projectName?.includes(m) || requirementName?.includes(m),
   );
-  return matchedModule ? DTSTACK_MODULE_MAP[matchedModule] : null;
+  return matchedKey ? MODULE_MAP[matchedKey] : null;
 }
 
 export function determineOutputDirWithMeta(projectName, versionOrTitle, requirementName, meta = {}) {
   const base = CASES_ROOT;
-  // prd_version 优先（语义版本 vX.Y.Z，DTStack 模块由 Writer 从 PRD frontmatter 写入）
+  // prd_version 优先（语义版本 vX.Y.Z），其次从 versionOrTitle 提取
   let version = meta.prd_version
     ? String(meta.prd_version).trim()
     : (versionOrTitle || "").replace(/版本$/, "").trim();
   if (version && !version.startsWith("v")) version = "v" + version;
 
-  if (projectName === "信永中和") {
-    return resolve(base, `archive/custom/xyzh/${version}`);
-  }
-
-  // DTStack 平台模块：按模块名路由到 archive/<module>/
-  const dtModule = determineDtstackModuleKey(projectName, requirementName, meta);
-  if (dtModule) {
+  // 通用：使用 resolveModulePath 路由到 config 驱动路径
+  const moduleKey = resolveModuleKey(projectName, requirementName, meta);
+  if (moduleKey) {
     if (isSemanticVersion(version)) {
-      return resolve(base, `archive/${dtModule}/${version}`);
+      return resolve(base, `archive/${moduleKey}/${version}`);
     }
-    return resolve(base, `archive/${dtModule}`);
+    return resolve(base, `archive/${moduleKey}`);
   }
 
-  // 其他项目兜底
-  return resolve(base, `archive/${version}`);
+  // 兜底：按版本或空目录
+  return resolve(base, `archive/${version || ''}`);
 }
 
 // ─── CLI 入口 ───────────────────────────────────────────────
