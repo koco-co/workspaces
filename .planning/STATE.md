@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-02-PLAN.md (script call sites generalization)
-last_updated: "2026-03-31T11:01:23.813Z"
+stopped_at: Completed 01-05-PLAN.md (DTStack data migration, awaiting checkpoint Task 3)
+last_updated: "2026-03-31T11:10:05.954Z"
 last_activity: 2026-03-31 — Roadmap created, all 30 v1 requirements mapped to 6 phases
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01-generalization-refactor P01 | 6 | 2 tasks | 9 files |
 | Phase 01-generalization-refactor P04 | 9 | 1 tasks | 12 files |
 | Phase 01-generalization-refactor P02 | 4 | 2 tasks | 7 files |
+| Phase 01-generalization-refactor P05 | 334 | 2 tasks | 386 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 01-generalization-refactor]: All repoBranchMapping references renamed to branchMapping; zentaoId renamed to trackerId; Doris/Hive/SparkThrift replaced with ${datasource_type} templates
 - [Phase 01-generalization-refactor]: getPreferredArchiveBaseName exported as public API from output-naming-contracts.mjs (no source_standard guard)
 - [Phase 01-generalization-refactor]: config.versionMap || {} pattern established for all optional config map fields
+- [Phase 01-generalization-refactor]: DTStack data preserved on dtstack-data branch (git checkout -b from release HEAD), not deleted
+- [Phase 01-generalization-refactor]: xyzh data kept on release branch as non-DTStack client example for generalized framework
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T11:01:23.811Z
-Stopped at: Completed 01-02-PLAN.md (script call sites generalization)
+Last session: 2026-03-31T11:10:05.953Z
+Stopped at: Completed 01-05-PLAN.md (DTStack data migration, awaiting checkpoint Task 3)
 Resume file: None

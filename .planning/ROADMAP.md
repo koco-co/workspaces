@@ -12,7 +12,7 @@ qa-flow v2 transforms a DTStack-specific internal tool into a universal QA autom
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Generalization Refactor** - Remove all DTStack-specific coupling from config, rules, prompts, and scripts
+- [x] **Phase 1: Generalization Refactor** - Remove all DTStack-specific coupling from config, rules, prompts, and scripts (completed 2026-03-31)
 - [ ] **Phase 2: Project Structure + Shared Scripts** - Redesign directory layout and adapt shared Node.js scripts to new config schema
 - [ ] **Phase 3: Init Wizard** - Build interactive using-qa-flow init with structure inference and config scaffolding
 - [ ] **Phase 4: Core Skills Redesign** - Rewrite all Skills to be config-driven with generic examples, zero business coupling
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All DTStack business data (examples, config, requirements) is accessible from the dtstack-data branch and not present on main
   4. loadConfig() throws a descriptive error naming the missing field when a required config key is absent
   5. All existing tests pass against the generalized codebase
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md — Config schema redesign + loadConfig() validation + Wave 0 test scaffolds
@@ -101,7 +101,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Generalization Refactor | 4/5 | In Progress|  |
+| 1. Generalization Refactor | 5/5 | Complete   | 2026-03-31 |
 | 2. Project Structure + Shared Scripts | 0/TBD | Not started | - |
 | 3. Init Wizard | 0/TBD | Not started | - |
 | 4. Core Skills Redesign | 0/TBD | Not started | - |
