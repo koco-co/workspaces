@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-generalization-refactor-01-PLAN.md
-last_updated: "2026-03-31T10:49:50.835Z"
+stopped_at: Completed 01-04-PLAN.md (prompts/skills generalization)
+last_updated: "2026-03-31T10:53:38.662Z"
 last_activity: 2026-03-31 — Roadmap created, all 30 v1 requirements mapped to 6 phases
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01-generalization-refactor P03 | 525625min | 1 tasks | 5 files |
 | Phase 01-generalization-refactor P01 | 6 | 2 tasks | 9 files |
+| Phase 01-generalization-refactor P04 | 9 | 1 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - [Phase 01-generalization-refactor]: Hand-written validation in loadConfig() — no Ajv/Zod dependencies, matches zero-dep project preference
 - [Phase 01-generalization-refactor]: loadConfigFromPath(path) + resetConfigCache() exported for test isolation without module cache interference
 - [Phase 01-generalization-refactor]: getRepoBranchMappingPath() kept as deprecated alias for getBranchMappingPath() during transition
+- [Phase 01-generalization-refactor]: Replace DTStack/XYZH split-rule section in CLAUDE.md with conditional config.repos guard
+- [Phase 01-generalization-refactor]: All repoBranchMapping references renamed to branchMapping; zentaoId renamed to trackerId; Doris/Hive/SparkThrift replaced with ${datasource_type} templates
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31T10:49:50.834Z
-Stopped at: Completed 01-generalization-refactor-01-PLAN.md
+Last session: 2026-03-31T10:53:38.660Z
+Stopped at: Completed 01-04-PLAN.md (prompts/skills generalization)
 Resume file: None
