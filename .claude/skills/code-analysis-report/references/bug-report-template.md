@@ -302,3 +302,123 @@
 6. 修复建议区块开头必须保留 AI 免责提示，不得删除
 7. token/密码等敏感信息统一替换为 `***`
 8. 环境信息和租户信息必须填写，无法提取时填 `[未提供，请补充]`
+
+---
+
+## 前端报错分析报告模板（模式C）
+
+使用与后端 Bug 报告相同的内联 CSS 样式和整体布局，替换以下字段以适配前端错误上下文。
+
+```html
+<!-- 前端报错分析报告模板 -->
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; max-width: 960px; margin: 0 auto; padding: 24px; background-color: #f4f6f8; color: #1f2328; line-height: 1.6;">
+
+<div style="background: linear-gradient(90deg, #f7768e 0%, #e0af68 100%); padding: 35px 30px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(247, 118, 142, 0.2);">
+  <div style="font-size: 22px; font-weight: 700; color: #ffffff; margin-bottom: 8px; letter-spacing: 0.5px;">
+    {前端报错一句话标题}
+  </div>
+  <div style="font-size: 14px; color: rgba(255, 255, 255, 0.9); font-family: 'Consolas', 'Monaco', monospace;">
+    {错误类型} @ {ComponentName}.{jsx|tsx|vue}:{行号}
+  </div>
+</div>
+
+<table style="width: 100%; border-collapse: separate; border-spacing: 24px 0; margin-left: -12px; margin-right: -12px; margin-bottom: 24px;">
+  <tr style="vertical-align: top;">
+    <td style="width: 50%; background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #e1e4e8;">
+      <h2 style="font-size: 15px; font-weight: 700; color: #1f2328; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid #e1e4e8;">基本信息</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; width: 85px; vertical-align: top;">错误类型</td>
+          <td style="padding: 8px 0; color: #1f2328; font-weight: 600;">{{error_type}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">框架</td>
+          <td style="padding: 8px 0;">
+            <code style="background-color: #ddf4ff; padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 13px; color: #0969da; border: 1px solid #b6e3ff;">{{framework}}</code>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">组件路径</td>
+          <td style="padding: 8px 0;">
+            <code style="background-color: #f6f8fa; padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 13px; color: #24292f; border: 1px solid #d0d7de;">{{component_path}}</code>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">代码分支</td>
+          <td style="padding: 8px 0;">
+            <code style="background-color: #f6f8fa; padding: 3px 8px; border-radius: 6px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 13px; color: #24292f; border: 1px solid #d0d7de;">{分支名}</code>
+          </td>
+        </tr>
+      </table>
+    </td>
+
+    <td style="width: 50%; background-color: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #e1e4e8;">
+      <h2 style="font-size: 15px; font-weight: 700; color: #1f2328; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid #e1e4e8;">环境与上下文</h2>
+      <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; width: 85px; vertical-align: top;">浏览器/环境</td>
+          <td style="padding: 8px 0; color: #1f2328; font-weight: 600;">{{browser_env}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">框架版本</td>
+          <td style="padding: 8px 0; color: #1f2328;">{{framework_version}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">Node 版本</td>
+          <td style="padding: 8px 0; color: #1f2328;">{{node_version}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 16px 8px 0; color: #656d76; vertical-align: top;">问题类型</td>
+          <td style="padding: 8px 0;">
+            <span style="display: inline-block; background-color: #fff8c5; color: #9a6700; padding: 3px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">{代码缺陷 / 环境配置问题 / 框架兼容问题}</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<div style="background-color: #ffffff; border-radius: 12px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #e1e4e8;">
+  <h2 style="font-size: 16px; font-weight: 700; color: #1f2328; margin: 0 0 20px 0; padding-bottom: 12px; border-bottom: 2px solid #ff9e64;">根本原因分析</h2>
+  <div style="background-color: #fff9f0; border-left: 4px solid #ff9e64; padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+    <p style="margin: 0 0 6px 0; font-size: 13px; color: #b45309; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">问题本质</p>
+    <p style="margin: 0; color: #3d444d; font-size: 14px; line-height: 1.8;">{{root_cause_analysis}}</p>
+  </div>
+  <h3 style="font-size: 14px; font-weight: 700; color: #1f2328; margin: 0 0 10px 0;">组件堆栈：</h3>
+  <pre style="background-color: #f6f8fa; border: 1px solid #d0d7de; padding: 16px 20px; border-radius: 8px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 13px; line-height: 2; color: #24292f;">{{component_stack}}</pre>
+</div>
+
+<div style="background-color: #ffffff; border-radius: 12px; padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); border: 1px solid #e1e4e8;">
+  <h2 style="font-size: 16px; font-weight: 700; color: #1f2328; margin: 0 0 20px 0; padding-bottom: 12px; border-bottom: 2px solid #9ece6a;">修复建议</h2>
+  <div style="background-color: #f6f8fa; border: 1px dashed #d0d7de; border-radius: 8px; padding: 14px 20px; margin-bottom: 24px;">
+    <span style="margin-right: 10px; font-size: 16px;">⚠️</span>
+    <p style="margin: 0; font-size: 13px; color: #656d76; line-height: 1.6; display: inline;">
+      <strong style="color: #24292f;">以下为 AI 分析结果，仅供参考，请开发人员结合实际业务逻辑酌情判断后再实施修改。</strong>
+    </p>
+  </div>
+  <p style="font-size: 14px; color: #3d444d; line-height: 1.8;">{{fix_suggestions}}</p>
+</div>
+
+<table style="width: 100%; border-collapse: collapse; background-color: transparent; padding: 16px 20px;">
+  <tr>
+    <td style="padding: 0;">
+      <span style="font-size: 12px; color: #8c959f; font-family: 'JetBrains Mono', monospace;">Frontend Error Report &nbsp;·&nbsp; {分支名} &nbsp;·&nbsp; {YYYY-MM-DD HH:mm}</span>
+    </td>
+    <td style="padding: 0; text-align: right;">
+      <span style="font-size: 12px; color: #8c959f; font-family: 'JetBrains Mono', monospace;">Generated by AI Analysis Engine</span>
+    </td>
+  </tr>
+</table>
+
+</div>
+```
+
+### 前端报告区块使用说明
+
+| 区块 | 是否必须 | 说明 |
+|------|---------|------|
+| 顶部 Banner | 必须 | 使用前端报错专用渐变色（红橙色） |
+| 基本信息 + 环境信息两列 | 必须 | 无法从报错提取时填 `[未提供，请补充]` |
+| 根本原因分析 | 必须 | 用组件堆栈替代 Java 堆栈 |
+| 修复建议（含 AI 免责提示） | 必须 | 必须保留免责提示 |
+| 页脚 | 必须 | 始终输出 |
