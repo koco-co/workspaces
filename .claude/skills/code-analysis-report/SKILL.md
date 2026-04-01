@@ -508,19 +508,30 @@ Bug ID   : #{bugId}
 
 ---
 
-### IM 通知（自动）
+### IM 通知（自动，强制执行 — 见 `.claude/rules/notification-hook.md`）
 
-在终端输出完成报告后，调用通知模块：
+根据模式选择对应事件类型：
 
+**模式 A/B/C（Bug 分析 / 前端报错）：**
 ```bash
 node .claude/shared/scripts/notify.mjs \
   --event bug-report \
   --data '{"reportFile":"<报告文件路径>","summary":"<报告摘要，如：发现 N 个 P1 Bug>"}'
 ```
 
-参数说明：
-- `reportFile`：生成的 HTML 报告文件相对路径（如 `reports/bugs/2024-01-01/bug-xxx.html`）
-- `summary`：简短摘要，包含 Bug 数量和严重级别
+**模式 D（合并冲突分析）：**
+```bash
+node .claude/shared/scripts/notify.mjs \
+  --event conflict-analyzed \
+  --data '{"reportFile":"<报告文件路径>","conflictCount":<冲突文件数>,"branches":"<涉及分支>"}'
+```
+
+**模式 E（Hotfix 用例生成 / 线上问题转化）：**
+```bash
+node .claude/shared/scripts/notify.mjs \
+  --event hotfix-case-generated \
+  --data '{"bugId":"<禅道BugID>","branch":"<hotfix分支>","file":"<用例文件路径>","changedFiles":<变更文件数>}'
+```
 
 > ⚠️ 若 notify.mjs 执行失败，仅 console.error 记录，不影响已生成的报告文件。
 > 💡 调试：添加 `--dry-run` 查看发送内容。
