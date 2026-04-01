@@ -30,6 +30,12 @@ import {
   normalizeDateString,
   parseFrontMatter,
 } from "./front-matter-utils.mjs";
+import {
+  normalizeArchiveStatus,
+  normalizeRequirementStatus,
+  toArchiveDocumentStatus,
+  toRequirementDocumentStatus,
+} from "./frontmatter-status-utils.mjs";
 import { resolveMdContentSource } from "./md-content-source-resolver.mjs";
 import { normalizeArchiveBody } from "./normalize-md-content.mjs";
 
@@ -99,7 +105,6 @@ const LEGACY_REQUIREMENT_KEYS = new Set([
   "source",
   "created_at",
 ]);
-const VALID_REQUIREMENT_STATUSES = new Set(["raw", "elicited", "formalized", "enhanced"]);
 
 function resolveArgPath(flag) {
   if (!args.includes(flag)) return null;
@@ -218,12 +223,19 @@ function inferArchiveOrigin({ source, title, body }) {
 }
 
 function inferRequirementStatus(filePath, currentStatus) {
-  const normalized = asString(currentStatus).toLowerCase();
-  if (VALID_REQUIREMENT_STATUSES.has(normalized)) return normalized;
+  const normalized = normalizeRequirementStatus(currentStatus);
+  if (normalized) return normalized;
   const base = basename(filePath, ".md").toLowerCase();
   if (base.endsWith("-enhanced")) return "enhanced";
   if (base.endsWith("-formalized")) return "formalized";
   return "raw";
+}
+
+function toWritableStatus(docType, value) {
+  if (docType === "archive") {
+    return toArchiveDocumentStatus(value) || asString(value);
+  }
+  return toRequirementDocumentStatus(value) || "";
 }
 
 function pickArchivePrdPath(meta, legacySource, confirmedPrdPath = "") {
@@ -577,7 +589,9 @@ function buildArchiveCanonicalFields(meta, filePath, body, semanticEnrichment = 
   const repos = hasOwn(meta, "repos")
     ? toStringArray(meta.repos)
     : undefined;
-  const status = hasOwn(meta, "status") ? String(meta.status) : "";
+  const status = hasOwn(meta, "status")
+    ? normalizeArchiveStatus(meta.status) || asString(meta.status)
+    : "";
   const caseCount = countArchiveCases(body);
   const origin = asString(meta.origin) || inferArchiveOrigin({
     source: legacySource || asString(meta.prd_path),
@@ -810,7 +824,7 @@ function auditRequirementFrontmatter(meta, canonical, filePath, hadFrontMatter) 
     issues.push(issue("create-at", "error", "`create_at` 缺失或格式错误"));
   }
 
-  if (!hasOwn(meta, "status") || !VALID_REQUIREMENT_STATUSES.has(asString(canonical.status))) {
+  if (!hasOwn(meta, "status") || !normalizeRequirementStatus(meta.status)) {
     issues.push(issue("status", "error", "status 非 raw / elicited / formalized / enhanced"));
   }
 
@@ -857,7 +871,10 @@ async function processFile(filePath) {
 
   const mergedFields = mergeOrderedFields(
     docType === "archive" ? ARCHIVE_FIELD_ORDER : REQUIREMENT_FIELD_ORDER,
-    canonicalFields,
+    {
+      ...canonicalFields,
+      status: toWritableStatus(docType, canonicalFields.status),
+    },
     rawMeta,
     docType === "archive" ? LEGACY_ARCHIVE_KEYS : LEGACY_REQUIREMENT_KEYS,
   );
@@ -926,7 +943,9 @@ function collectFixCounts(
     if (!hasOwn(rawMeta, "prd_version") && mergedFields.prd_version) add("prd_version");
     if (!hasOwn(rawMeta, "prd_id") && mergedFields.prd_id !== undefined) add("prd_id");
     if (!hasOwn(rawMeta, "origin") && mergedFields.origin) add("origin");
-    if (!hasOwn(rawMeta, "status")) add("status");
+    if (!hasOwn(rawMeta, "status") || asString(rawMeta.status) !== asString(mergedFields.status)) {
+      add("status");
+    }
     if (!hasOwn(rawMeta, "health_warnings")) add("health_warnings");
     if (!hasOwn(rawMeta, "create_at") && mergedFields.create_at === mtimeDate) add("create_at_from_mtime");
     if (bodyNormalization?.stats?.removedTopLevelH1) add("body_h1", bodyNormalization.stats.removedTopLevelH1);
@@ -942,7 +961,11 @@ function collectFixCounts(
     if (hasOwn(rawMeta, "version")) add("legacy_version_to_prd_version");
     if (hasOwn(rawMeta, "source")) add("legacy_source_to_prd_source");
     if (hasOwn(rawMeta, "created_at")) add("legacy_created_at_to_create_at");
-    if (!hasOwn(rawMeta, "status") || !VALID_REQUIREMENT_STATUSES.has(asString(rawMeta.status))) {
+    if (
+      !hasOwn(rawMeta, "status")
+      || !normalizeRequirementStatus(rawMeta.status)
+      || asString(rawMeta.status) !== asString(mergedFields.status)
+    ) {
       add("status");
     }
   }

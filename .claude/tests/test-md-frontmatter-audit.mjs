@@ -67,6 +67,13 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function hasStatusIssue(output, relativePath) {
+  return new RegExp(
+    `${escapeRegExp(relativePath)}(?:\\n- [^\\n]*)*\\n- [^\\n]*status`,
+    "m",
+  ).test(output);
+}
+
 function runAudit(args = []) {
   return spawnSync(
     process.execPath,
@@ -82,8 +89,11 @@ function runAudit(args = []) {
 const archiveRelativePath = "cases/archive/data-assets/v6.4.9/legacy-archive(#12345).md";
 const requirementRelativePath = "cases/requirements/data-assets/v6.4.9/legacy-prd-formalized.md";
 const elicitedRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/elicited-prd.md";
+const chineseRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/chinese-status-prd.md";
 const headingOnlyRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/handoff.md";
 const bulletArchiveRelativePath = "cases/archive/data-assets/v6.4.9/tree-style-archive.md";
+const englishArchiveStatusRelativePath = "cases/archive/data-assets/v6.4.9/english-status-archive.md";
+const chineseArchiveRelativePath = "cases/archive/data-assets/v6.4.9/chinese-status-archive.md";
 const nonSemverRelativePath = "cases/archive/data-assets/主流程/flow-archive.md";
 const plainPreconditionRelativePath = "cases/archive/data-assets/v6.4.9/plain-precondition-archive.md";
 
@@ -208,6 +218,20 @@ writeFixture(
 );
 
 writeFixture(
+  chineseRequirementRelativePath,
+  [
+    "---",
+    "prd_name: 中文状态需求",
+    "description: 中文状态需求",
+    "product: data-assets",
+    "create_at: 2026-03-05",
+    "status: 已澄清",
+    "---",
+    requirementBody,
+  ].join("\n"),
+);
+
+writeFixture(
   headingOnlyRequirementRelativePath,
   [
     "---",
@@ -242,6 +266,50 @@ writeFixture(
     "health_warnings: []",
     "---",
     bulletArchiveBody,
+  ].join("\n"),
+);
+
+writeFixture(
+  englishArchiveStatusRelativePath,
+  [
+    "---",
+    "suite_name: 英文 archive 状态样例",
+    "description: 英文 archive 状态样例",
+    "prd_version: v6.4.9",
+    "product: data-assets",
+    "tags:",
+    "  - 数据资产",
+    "  - 状态兼容",
+    "  - 归档",
+    "create_at: 2026-03-05",
+    "case_count: 1",
+    "origin: xmind",
+    "status: archived",
+    "health_warnings: []",
+    "---",
+    canonicalArchiveBody,
+  ].join("\n"),
+);
+
+writeFixture(
+  chineseArchiveRelativePath,
+  [
+    "---",
+    "suite_name: 中文 archive 状态样例",
+    "description: 中文 archive 状态样例",
+    "prd_version: v6.4.9",
+    "product: data-assets",
+    "tags:",
+    "  - 数据资产",
+    "  - 状态兼容",
+    "  - 归档",
+    "create_at: 2026-03-05",
+    "case_count: 1",
+    "origin: xmind",
+    "status: 已归档",
+    "health_warnings: []",
+    "---",
+    canonicalArchiveBody,
   ].join("\n"),
 );
 
@@ -291,8 +359,11 @@ writeFixture(
 const originalArchive = readFixture(archiveRelativePath);
 const originalRequirement = readFixture(requirementRelativePath);
 const originalElicitedRequirement = readFixture(elicitedRequirementRelativePath);
+const originalChineseRequirement = readFixture(chineseRequirementRelativePath);
 const originalHeadingOnlyRequirement = readFixture(headingOnlyRequirementRelativePath);
 const originalBulletArchive = readFixture(bulletArchiveRelativePath);
+const originalEnglishArchiveStatus = readFixture(englishArchiveStatusRelativePath);
+const originalChineseArchive = readFixture(chineseArchiveRelativePath);
 const originalCanonicalArchive = readFixture(nonSemverRelativePath);
 const originalPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
 
@@ -319,8 +390,18 @@ assert(
 );
 assert(dryRunResult.stdout.includes(requirementRelativePath), "dry-run 报告包含 requirement 文件路径");
 assert(
-  !new RegExp(`${escapeRegExp(elicitedRequirementRelativePath)}[\\s\\S]*status`, "m").test(dryRunResult.stdout),
+  !hasStatusIssue(dryRunResult.stdout, elicitedRequirementRelativePath),
   "合法的 requirement status: elicited 不会被误报为非法",
+  [dryRunResult.stdout],
+);
+assert(
+  !hasStatusIssue(dryRunResult.stdout, chineseRequirementRelativePath),
+  "中文 requirement status: 已澄清 不会被误报为非法",
+  [dryRunResult.stdout],
+);
+assert(
+  !hasStatusIssue(dryRunResult.stdout, chineseArchiveRelativePath),
+  "中文 archive status: 已归档 不会被误报为非法",
   [dryRunResult.stdout],
 );
 assert(
@@ -341,8 +422,11 @@ assert(
 assert(readFixture(archiveRelativePath) === originalArchive, "dry-run 不修改 archive 文件");
 assert(readFixture(requirementRelativePath) === originalRequirement, "dry-run 不修改 requirement 文件");
 assert(readFixture(elicitedRequirementRelativePath) === originalElicitedRequirement, "dry-run 不修改 elicited requirement 文件");
+assert(readFixture(chineseRequirementRelativePath) === originalChineseRequirement, "dry-run 不修改中文 requirement 文件");
 assert(readFixture(headingOnlyRequirementRelativePath) === originalHeadingOnlyRequirement, "dry-run 不修改 heading-only requirement 文件");
 assert(readFixture(bulletArchiveRelativePath) === originalBulletArchive, "dry-run 不修改 bullet/XMind archive 文件");
+assert(readFixture(englishArchiveStatusRelativePath) === originalEnglishArchiveStatus, "dry-run 不修改英文 archive 状态文件");
+assert(readFixture(chineseArchiveRelativePath) === originalChineseArchive, "dry-run 不修改中文 archive 状态文件");
 assert(readFixture(plainPreconditionRelativePath) === originalPlainPreconditionArchive, "dry-run 不修改纯文本前置条件 archive 文件");
 
 console.log("\n=== Test: fix mode canonicalizes archive frontmatter and preserves body ===");
@@ -399,7 +483,7 @@ assert(/(^|\n)prd_source:\s*"?内部需求文档"?/.test(fixedRequirement), "req
 assert(/(^|\n)prd_version:\s*v6\.4\.9/.test(fixedRequirement), "requirement 已迁移 prd_version");
 assert(/(^|\n)product:\s*data-assets/.test(fixedRequirement), "requirement 已写入 product");
 assert(/(^|\n)create_at:\s*2026-03-02/.test(fixedRequirement), "requirement 已迁移 create_at");
-assert(/(^|\n)status:\s*formalized/.test(fixedRequirement), "requirement 已根据文件名推断 status");
+assert(/(^|\n)status:\s*已形式化/.test(fixedRequirement), "requirement 已根据文件名推断状态并写入中文文档值");
 assert(!/(^|\n)name:/.test(fixedRequirement), "requirement 已移除 legacy name 字段");
 assert(!/(^|\n)module:/.test(fixedRequirement), "requirement 已移除 legacy module 字段");
 assert(!/(^|\n)version:/.test(fixedRequirement), "requirement 已移除 legacy version 字段");
@@ -410,8 +494,12 @@ assert(
   [fixedRequirement],
 );
 const fixedElicitedRequirement = readFixture(elicitedRequirementRelativePath);
-assert(/(^|\n)status:\s*elicited/.test(fixedElicitedRequirement), "fix 模式会保留合法的 elicited requirement 状态", [
+assert(/(^|\n)status:\s*已澄清/.test(fixedElicitedRequirement), "fix 模式会把合法的 elicited requirement 状态写为中文文档值", [
   fixedElicitedRequirement,
+]);
+const fixedChineseRequirement = readFixture(chineseRequirementRelativePath);
+assert(/(^|\n)status:\s*已澄清/.test(fixedChineseRequirement), "fix 模式会保留中文 requirement 状态语义", [
+  fixedChineseRequirement,
 ]);
 const fixedHeadingOnlyRequirement = readFixture(headingOnlyRequirementRelativePath);
 assert(
@@ -444,6 +532,18 @@ assert(
   fixedBulletArchive.includes("| 1 | 进入【质量问题台账-列表页】页面，输入关键词与状态 | 返回过滤结果 |"),
   "bullet/XMind archive 修复后会把 bullet tree 映射为 canonical step table",
   [fixedBulletArchive],
+);
+const fixedEnglishArchiveStatus = readFixture(englishArchiveStatusRelativePath);
+assert(
+  /(^|\n)status:\s*已归档/.test(fixedEnglishArchiveStatus),
+  "fix 模式会把合法的英文 archive 状态写为中文文档值",
+  [fixedEnglishArchiveStatus],
+);
+const fixedChineseArchive = readFixture(chineseArchiveRelativePath);
+assert(
+  /(^|\n)status:\s*已归档/.test(fixedChineseArchive),
+  "fix 模式会保留中文 archive 状态语义",
+  [fixedChineseArchive],
 );
 const fixedPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
 assert(
