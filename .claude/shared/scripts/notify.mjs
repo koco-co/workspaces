@@ -162,7 +162,7 @@ export function getEnabledChannels() {
 
 /**
  * Build a notification message for a workflow event.
- * @param {string} event - Event type: "case-generated" | "bug-report" | "workflow-failed" | "archive-converted"
+ * @param {string} event - Event type: "case-generated" | "bug-report" | "workflow-failed" | "archive-converted" | "hotfix-case-generated" | "conflict-analyzed"
  * @param {object} data  - Event-specific data
  * @returns {{ title: string, markdown: string, html: string }}
  */
@@ -178,10 +178,12 @@ export function buildMessage(event, data) {
   const timestamp = new Date().toLocaleString("zh-CN", { hour12: false });
 
   const labelMap = {
-    "case-generated":    "用例生成完成",
-    "bug-report":        "Bug 报告生成",
-    "workflow-failed":   "工作流失败",
-    "archive-converted": "归档转化完成",
+    "case-generated":         "用例生成完成",
+    "bug-report":             "Bug 报告生成",
+    "workflow-failed":        "工作流失败",
+    "archive-converted":      "归档转化完成",
+    "hotfix-case-generated":  "线上问题用例转化",
+    "conflict-analyzed":      "合并冲突分析完成",
   };
   const label = labelMap[event] ?? event;
 
@@ -201,6 +203,12 @@ export function buildMessage(event, data) {
       break;
     case "archive-converted":
       body = `- 文件数：${data.fileCount}\n- 用例数：${data.caseCount}`;
+      break;
+    case "hotfix-case-generated":
+      body = `- Bug ID：${data.bugId ?? "N/A"}\n- 修复分支：${data.branch ?? "N/A"}\n- 用例文件：${data.file ?? "N/A"}\n- 变更文件数：${data.changedFiles ?? "N/A"}`;
+      break;
+    case "conflict-analyzed":
+      body = `- 报告文件：${data.reportFile ?? "N/A"}\n- 冲突文件数：${data.conflictCount ?? "N/A"}\n- 涉及分支：${data.branches ?? "N/A"}`;
       break;
     default:
       body = JSON.stringify(data, null, 2);
@@ -427,7 +435,7 @@ if (isDirectExecution()) {
 
   if (!event) {
     console.error("Usage: node notify.mjs --event <type> --data '<json>' [--dry-run]");
-    console.error("Events: case-generated, bug-report, workflow-failed, archive-converted");
+    console.error("Events: case-generated, bug-report, workflow-failed, archive-converted, hotfix-case-generated, conflict-analyzed");
     process.exit(1);
   }
 
