@@ -71,7 +71,7 @@ git log --oneline -1
 
 ## Step 3：判断问题类型（环境问题 vs 代码问题）
 
-使用 `references/env-vs-code-checklist.md` 快速过滤：
+使用 `.claude/skills/code-analysis-report/references/env-vs-code-checklist.md` 快速过滤：
 
 - 命中 `Connection refused` / `Connection timed out` / `Unable to acquire JDBC Connection` / `Could not resolve placeholder '${xxx}'` / `SSL handshake failed` / `Address already in use` / `OutOfMemoryError: Java heap space` 等特征时，优先标记为环境问题。
 - 若同时存在环境特征和代码特征，在报告中并列两种可能，并分别给出验证方法。
@@ -90,7 +90,7 @@ git log --oneline -1
 ## Step 5：生成报告
 
 1. 将分析结果整理为 JSON，写入 `reports/bugs/{YYYY-MM-DD}/{BugTitle}.json`。
-2. 参考 `references/bug-report-template.md` 的后端 JSON Schema 补齐字段。
+2. 参考 `.claude/skills/code-analysis-report/references/bug-report-template.md` 的后端 JSON Schema 补齐字段。
 3. 执行渲染：
 
 ```bash
@@ -100,7 +100,13 @@ node .claude/skills/code-analysis-report/scripts/render-report.mjs \
   reports/bugs/{date}/{BugTitle}.html
 ```
 
-4. 刷新快捷链接：`node .claude/shared/scripts/refresh-latest-link.mjs`
+4. 刷新快捷链接：
+
+```bash
+node .claude/shared/scripts/refresh-latest-link.mjs \
+  "reports/bugs/{date}/{BugTitle}.html" \
+  "latest-bug-report.html"
+```
 
 ---
 

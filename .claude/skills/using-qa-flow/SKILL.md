@@ -153,7 +153,7 @@ source .venv/bin/activate && pip install -r tools/lanhu-mcp/requirements.txt
 
 ```bash
 cd .claude/skills/xmind-converter/scripts && npm install
-node .claude/skills/xmind-converter/scripts/json-to-xmind.mjs --help
+node json-to-xmind.mjs --help
 ```
 
 - 安装完成后，必须通过 `--help` 验证脚本可用。
@@ -170,6 +170,7 @@ YAML
 ```
 
 - 按 `prompts/source-repo-setup.md` 执行交互式问答，将 `repos: []` 补全为真实仓库映射并生成/更新 `.repos/source-map.yaml`。
+- `.repos/source-map.yaml` 仅作为本地仓库清单与初始化回显使用；`sync-source-repos.mjs` 实际以 `.claude/config.json` 的 `repos` 与 `branchMapping` 为准。
 - 当任一 Skill 需要 `.repos/` 上下文但映射文件缺失时，应自动触发此步骤。
 
 ### Step 5：验证并输出状态汇总

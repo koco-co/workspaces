@@ -31,7 +31,7 @@ git pull origin <当前分支>
 
 1. 定位每个 `<<<<<<< HEAD` / `=======` / `>>>>>>>` 冲突块的文件位置和行范围。
 2. 分析双方代码意图，而不是只比较字面差异。
-3. 使用 `references/conflict-resolution.md` 分类：
+3. 使用 `.claude/skills/code-analysis-report/references/conflict-resolution.md` 分类：
    - 安全合并
    - 重复修改
    - 格式 / 注释冲突
@@ -56,7 +56,7 @@ git pull origin <当前分支>
 ## Step 4：生成冲突报告
 
 1. 将分析结果写入 `reports/conflicts/{YYYY-MM-DD}/{description}.json`。
-2. 字段结构遵循 `references/conflict-resolution.md` 的 JSON Schema。
+2. 字段结构遵循 `.claude/skills/code-analysis-report/references/conflict-resolution.md` 的 JSON Schema。
 3. 执行渲染：
 
 ```bash
@@ -66,7 +66,13 @@ node .claude/skills/code-analysis-report/scripts/render-report.mjs \
   reports/conflicts/{date}/{description}.html
 ```
 
-4. 刷新快捷链接：`node .claude/shared/scripts/refresh-latest-link.mjs`
+4. 刷新快捷链接：
+
+```bash
+node .claude/shared/scripts/refresh-latest-link.mjs \
+  "reports/conflicts/{date}/{description}.html" \
+  "latest-conflict-report.html"
+```
 
 ---
 

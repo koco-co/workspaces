@@ -182,6 +182,12 @@ function asOptionalString(value) {
   return String(value);
 }
 
+function hasPresentValue(value) {
+  if (value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  return String(value).trim() !== "";
+}
+
 function toStringArray(value) {
   if (Array.isArray(value)) {
     return value
@@ -377,6 +383,25 @@ function mergeUniqueStrings(...values) {
     }
   }
   return merged;
+}
+
+function hasArchivePrdAssociation(...candidates) {
+  return candidates.some((candidate) => {
+    if (!candidate) return false;
+    return (
+      ["prd_id", "prd_version", "prd_path", "prd_url"].some((key) => hasPresentValue(candidate[key]))
+      || /cases\/requirements\/.+\.md$/i.test(asString(candidate.source))
+    );
+  });
+}
+
+function buildArchivePrdLinkFields({ prdId, prdVersion, prdPath, prdUrl }) {
+  const fields = {};
+  if (hasPresentValue(prdId)) fields.prd_id = prdId;
+  if (hasPresentValue(prdVersion)) fields.prd_version = prdVersion;
+  if (hasPresentValue(prdPath)) fields.prd_path = prdPath;
+  if (hasPresentValue(prdUrl)) fields.prd_url = asString(prdUrl);
+  return fields;
 }
 
 function pickRequirementSource(meta, legacySource, filePath) {
@@ -576,12 +601,6 @@ function buildArchiveCanonicalFields(meta, filePath, body, semanticEnrichment = 
   const suiteName = asString(meta.suite_name) || asString(meta.name);
   const description = chooseArchiveDescription(meta, semanticEnrichment);
   const product = asString(meta.product) || asString(meta.module) || extractModuleKey(filePath) || "";
-  const prdVersion = asString(meta.prd_version) || asString(meta.version) || extractVersionFromPath(filePath) || "";
-  const prdId = toNumber(meta.prd_id)
-    ?? extractPrdId(basename(filePath))
-    ?? extractPrdId(suiteName)
-    ?? semanticEnrichment?.inferredPrdId
-    ?? undefined;
   const createAt = normalizeDateString(meta.create_at ?? meta.created_at, getMtimeDate(filePath));
   const healthWarnings = hasOwn(meta, "health_warnings")
     ? toStringArray(meta.health_warnings)
@@ -599,15 +618,41 @@ function buildArchiveCanonicalFields(meta, filePath, body, semanticEnrichment = 
     body,
   });
   const prdPath = pickArchivePrdPath(meta, legacySource, semanticEnrichment?.confirmedPrdPath);
+  const hasPrdAssociation = hasArchivePrdAssociation(
+    meta,
+    prdPath ? { prd_path: prdPath } : null,
+    semanticEnrichment?.confirmedPrdPath ? { prd_path: semanticEnrichment.confirmedPrdPath } : null,
+  );
+  const prdVersion = hasPrdAssociation
+    ? (
+      asString(meta.prd_version)
+      || extractVersionFromPath(prdPath)
+      || asString(meta.version)
+      || extractVersionFromPath(filePath)
+      || ""
+    )
+    : "";
+  const prdId = hasPrdAssociation
+    ? (
+      toNumber(meta.prd_id)
+      ?? extractPrdId(prdPath)
+      ?? extractPrdId(basename(filePath))
+      ?? extractPrdId(suiteName)
+      ?? semanticEnrichment?.inferredPrdId
+      ?? undefined
+    )
+    : undefined;
   const tags = chooseArchiveTags(meta, semanticEnrichment);
 
   const fields = {
     suite_name: suiteName || undefined,
     description: description || undefined,
-    prd_id: prdId ?? undefined,
-    prd_version: prdVersion || undefined,
-    prd_path: prdPath,
-    prd_url: asString(meta.prd_url) || undefined,
+    ...buildArchivePrdLinkFields({
+      prdId,
+      prdVersion,
+      prdPath,
+      prdUrl: asString(meta.prd_url) || undefined,
+    }),
     product: (!STRICT_PRODUCT_VALIDATION && product) || VALID_PRODUCTS.has(product) ? product : undefined,
     dev_version: asString(meta.dev_version) || undefined,
     tags,
@@ -663,6 +708,7 @@ function auditArchiveFrontmatter(meta, canonical, filePath, body, hadFrontMatter
   const issues = [];
   const derivedProduct = canonical.product || extractModuleKey(filePath) || "";
   const derivedVersion = extractVersionFromPath(filePath);
+  const hasPrdAssociation = hasArchivePrdAssociation(meta, canonical);
   const tags = toStringArray(canonical.tags);
   const existingCaseCount = toNumber(meta.case_count);
   const actualCaseCount = canonical.case_count ?? countArchiveCases(body);
@@ -703,14 +749,18 @@ function auditArchiveFrontmatter(meta, canonical, filePath, body, hadFrontMatter
 
   // When modules are configured, only warn about prd_id for non-custom modules (DTSTACK_PRODUCTS).
   // When modules are unconfigured (strict validation off), warn for any archive in a versioned path.
-  const shouldWarnPrdId = STRICT_PRODUCT_VALIDATION
+  const shouldWarnPrdId = hasPrdAssociation && (STRICT_PRODUCT_VALIDATION
     ? DTSTACK_PRODUCTS.has(derivedProduct)
-    : Boolean(derivedVersion);
+    : Boolean(derivedVersion));
   if (shouldWarnPrdId && canonical.prd_id === undefined) {
     issues.push(issue("prd-id", "warning", "`prd_id` 缺失（文件名未包含 #NNNN）"));
   }
 
-  if (derivedVersion && !hasOwn(meta, "prd_version")) {
+  if (hasPrdAssociation && !hasPresentValue(canonical.prd_path)) {
+    issues.push(issue("prd-path", "error", "`prd_path` 缺失或无效"));
+  }
+
+  if (hasPrdAssociation && derivedVersion && !hasPresentValue(canonical.prd_version)) {
     issues.push(issue(
       "prd-version",
       "error",
@@ -718,7 +768,7 @@ function auditArchiveFrontmatter(meta, canonical, filePath, body, hadFrontMatter
         ? "`prd_version` 缺失（当前使用 legacy `version` 字段）"
         : `\`prd_version\` 缺失或与目录版本不一致（期望: ${derivedVersion}）`,
     ));
-  } else if (derivedVersion && canonical.prd_version !== derivedVersion) {
+  } else if (hasPrdAssociation && derivedVersion && canonical.prd_version !== derivedVersion) {
     issues.push(issue(
       "prd-version",
       "error",
