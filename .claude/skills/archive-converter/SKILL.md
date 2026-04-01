@@ -17,8 +17,8 @@ description: 历史用例归档转化 Skill。将非 Markdown 格式的历史测
 
 - 默认是**增量转化**：已有归档文件会跳过；需要强制覆盖时显式使用 `--force`。
 - 支持三种运行视角：**全量模式**、**指定模式**、**检测模式**；检测模式只列待处理项，不写文件。
-- 输出路径统一走 `resolveModulePath(moduleKey, 'archive', config, version)`，不手写目录。
-- 归档 front-matter 的文档状态写回统一中文值；Archive 示例统一写作 `status: "已归档"`。
+- 已配置模块优先走 `resolveModulePath(moduleKey, 'archive', config, version)`；未知模块或 `custom/`、特殊分类子目录保留 source-relative `cases/archive/...` fallback。
+- 归档 front-matter 的文档状态按共享 schema 写回中文值；Archive 示例统一写作 `status: "已归档"`。
 
 ---
 
@@ -37,9 +37,9 @@ description: 历史用例归档转化 Skill。将非 Markdown 格式的历史测
 
 | 来源 | 输出目录 | 说明 |
 | --- | --- | --- |
-| 模块 XMind | `cases/archive/${module_key}/` | 无版本目录时使用 |
-| 带版本的模块 XMind | `cases/archive/${module_key}/v${version}/` | 版本从路径或配置推断 |
-| 模块 CSV | `cases/archive/${module_key}/v${version}/` | 与 Archive 规范保持一致 |
+| 已配置模块的历史来源 | `resolveModulePath(moduleKey, 'archive', config, version)` | 配置驱动的 canonical 路由 |
+| 可识别语义版本且模块配置支持版本目录 | `cases/archive/${module_key}/v${version}/` | 仅作为常见落盘形态示例 |
+| 未配置模块 / `custom/` / 特殊分类目录 | `cases/archive/...` | 保留 source-relative fallback，避免模板仓库或历史目录失联 |
 
 **归档 front-matter 示例：**
 
@@ -64,7 +64,7 @@ origin: xmind
 
 ## 执行约束
 
-- 执行前必须阅读：本文件、`rules/archive-format.md`、`.claude/skills/archive-converter/scripts/convert-history-cases.mjs`。
+- 执行前必须阅读：本文件、`.claude/rules/archive-format.md`、`.claude/skills/archive-converter/scripts/convert-history-cases.mjs`。
 - `--module` 参数接受中文名或 key；映射关系来自 `.claude/config.json` 的 `modules`，不得在文档中手写固定模块映射表。
 - 只对当前目标范围内的历史文件做转化，不改写无关 Archive 文档。
 - `--detect` 模式只做盘点；除非用户明确要求或传入 `--force`，否则不覆盖已存在的归档文件。
@@ -79,12 +79,12 @@ origin: xmind
 1. 目标范围、运行模式与脚本参数已经对应正确。
 2. 所有成功转化的文件都写入 `cases/archive/` 下的 canonical 目录。
 3. 结果摘要明确给出成功 / 跳过 / 失败统计；失败项附带原因。
-4. 归档文档符合 `rules/archive-format.md`，且示例状态、写回状态统一为中文 Archive 状态。
+4. 归档文档符合 `.claude/rules/archive-format.md`，且示例状态、写回状态统一为中文 Archive 状态。
 5. 若由 `test-case-generator` 自动调用，后续步骤可以直接消费新生成的 Archive Markdown。
 
 ---
 
 ## 引用索引
 
-- `rules/archive-format.md`：Archive Markdown 模板、front-matter 与层级映射
+- `.claude/rules/archive-format.md`：Archive Markdown 模板、front-matter 与层级映射
 - `.claude/skills/archive-converter/scripts/convert-history-cases.mjs`：历史用例批量 / 增量转化脚本

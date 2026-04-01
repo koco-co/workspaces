@@ -19,6 +19,7 @@ description: PRD 文档增强 Skill。读取 PRD 中的 Obsidian 图片引用，
 - 增强文件识别以 front-matter `status` 为准：读取兼容 `enhanced` / `已增强`，写回统一 `已增强`。
 - 对同一 PRD 再次执行时，先做增量检测；若原始 PRD 未变化，优先复用现有增强文件。
 - 如需全量重来，删除同目录现有增强文件后重新执行。
+- 本 Skill 消费的是临时整理结果或正式 PRD；**不要求在 requirements 目录保留 formalized 文件**。
 - 单独调用本 Skill 时，主验收入口是仓库根目录 `latest-prd-enhanced.md`。
 - `确认通过`、`已修改，请同步` 等回复口径属于 test-case-generator 验收阶段，不属于本 Skill 的单独执行口径。
 
@@ -78,6 +79,7 @@ description: PRD 文档增强 Skill。读取 PRD 中的 Obsidian 图片引用，
 - 不删除原文内容，不改变正文业务语义；只做图片引用标准化、页面要点补充、front-matter 对齐与必要结构补全。
 - 图片下方的用户可见结构统一使用 `图N 页面要点`，不得回退到旧版图片描述块。
 - `latest-prd-enhanced.md` 是本 Skill 的主验收入口；若后续进入用例生成流程，再以 `latest-output.xmind` 作为最终验收物。
+- 刷新快捷链接时必须使用显式命令：`node .claude/shared/scripts/refresh-latest-link.mjs "<enhanced-path>" latest-prd-enhanced.md`
 
 ---
 

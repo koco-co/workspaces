@@ -114,6 +114,7 @@ const bulletArchiveRelativePath = "cases/archive/data-assets/v6.4.9/tree-style-a
 const englishArchiveStatusRelativePath = "cases/archive/data-assets/v6.4.9/english-status-archive.md";
 const chineseArchiveRelativePath = "cases/archive/data-assets/v6.4.9/chinese-status-archive.md";
 const nonSemverRelativePath = "cases/archive/data-assets/主流程/flow-archive.md";
+const standaloneVersionedArchiveRelativePath = "cases/archive/data-assets/v6.4.9/standalone-versioned-archive.md";
 const plainPreconditionRelativePath = "cases/archive/data-assets/v6.4.9/plain-precondition-archive.md";
 const directBackfillRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/direct-backfill-prd-formalized.md";
 const directBackfillArchiveRelativePath = "cases/archive/data-assets/v6.4.9/direct-backfill-archive.md";
@@ -358,6 +359,27 @@ writeFixture(
 );
 
 writeFixture(
+  standaloneVersionedArchiveRelativePath,
+  [
+    "---",
+    "suite_name: 独立版本归档",
+    "description: 无 PRD 关联的独立归档样例",
+    "product: data-assets",
+    "tags:",
+    "  - 数据资产",
+    "  - 独立归档",
+    "  - 回归",
+    "create_at: 2026-03-03",
+    "case_count: 1",
+    "origin: xmind",
+    "status: 已归档",
+    "health_warnings: []",
+    "---",
+    canonicalArchiveBody,
+  ].join("\n"),
+);
+
+writeFixture(
   plainPreconditionRelativePath,
   [
     "---",
@@ -451,6 +473,7 @@ const originalBulletArchive = readFixture(bulletArchiveRelativePath);
 const originalEnglishArchiveStatus = readFixture(englishArchiveStatusRelativePath);
 const originalChineseArchive = readFixture(chineseArchiveRelativePath);
 const originalCanonicalArchive = readFixture(nonSemverRelativePath);
+const originalStandaloneVersionedArchive = readFixture(standaloneVersionedArchiveRelativePath);
 const originalPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
 
 console.log("\n=== Test: status utils preserve case-insensitive compatibility ===");
@@ -599,6 +622,11 @@ assert(
   [dryRunResult.stdout],
 );
 assert(
+  !dryRunResult.stdout.includes(`${standaloneVersionedArchiveRelativePath}\n- ❌ \`prd_version\``),
+  "语义版本目录下的独立 archive 不会仅因缺 prd_version 被错误报告",
+  [dryRunResult.stdout],
+);
+assert(
   !dryRunResult.stdout.includes(`${nonSemverRelativePath}\n- ⚠️ Body 结构类型为`),
   "已归一化 archive 不会被错误标记为非 canonical table",
   [dryRunResult.stdout],
@@ -611,6 +639,7 @@ assert(readFixture(headingOnlyRequirementRelativePath) === originalHeadingOnlyRe
 assert(readFixture(bulletArchiveRelativePath) === originalBulletArchive, "dry-run 不修改 bullet/XMind archive 文件");
 assert(readFixture(englishArchiveStatusRelativePath) === originalEnglishArchiveStatus, "dry-run 不修改英文 archive 状态文件");
 assert(readFixture(chineseArchiveRelativePath) === originalChineseArchive, "dry-run 不修改中文 archive 状态文件");
+assert(readFixture(standaloneVersionedArchiveRelativePath) === originalStandaloneVersionedArchive, "dry-run 不修改独立 versioned archive 文件");
 assert(readFixture(plainPreconditionRelativePath) === originalPlainPreconditionArchive, "dry-run 不修改纯文本前置条件 archive 文件");
 
 console.log("\n=== Test: fix mode canonicalizes archive frontmatter and preserves body ===");
@@ -622,14 +651,15 @@ assert(fixResult.status === 0, "fix 模式执行成功", [
 
 const fixedArchive = readFixture(archiveRelativePath);
 assert(/(^|\n)suite_name:\s*"Legacy archive\(#12345\)"/.test(fixedArchive), "archive 已写入 canonical suite_name");
-assert(/(^|\n)prd_id:\s*12345/.test(fixedArchive), "archive 已从文件名推断 prd_id");
-assert(/(^|\n)prd_version:\s*v6\.4\.9/.test(fixedArchive), "archive 已写入 prd_version");
 assert(/(^|\n)product:\s*data-assets/.test(fixedArchive), "archive 已写入 product");
 assert(/(^|\n)create_at:\s*2026-03-01/.test(fixedArchive), "archive 已迁移 create_at");
 assert(/(^|\n)case_count:\s*1/.test(fixedArchive), "archive 已写入正确 case_count");
 assert(/(^|\n)origin:\s*xmind/.test(fixedArchive), "archive 已推断 origin");
 assert(/(^|\n)status:\s*已归档/.test(fixedArchive), "archive 会把旧英文 status 写为中文文档值");
 assert(/(^|\n)health_warnings:\s*\[\]/.test(fixedArchive), "archive 已补空数组 health_warnings");
+assert(!/(^|\n)prd_id:/.test(fixedArchive), "archive 未确认 PRD 关联时不会凭文件名补写 prd_id", [fixedArchive]);
+assert(!/(^|\n)prd_version:/.test(fixedArchive), "archive 未确认 PRD 关联时不会仅凭目录版本补写 prd_version", [fixedArchive]);
+assert(!/(^|\n)prd_path:/.test(fixedArchive), "archive 未确认 PRD 关联时不会写半套 prd_path", [fixedArchive]);
 assert(!/(^|\n)name:/.test(fixedArchive), "archive 已移除 legacy name 字段");
 assert(!/(^|\n)module:/.test(fixedArchive), "archive 已移除 legacy module 字段");
 assert(!/(^|\n)version:/.test(fixedArchive), "archive 已移除 legacy version 字段");
@@ -708,6 +738,16 @@ assert(
   [fixedBulletArchive],
 );
 assert(
+  /(^|\n)prd_version:\s*v6\.4\.9/.test(fixedBulletArchive),
+  "bullet/XMind archive 已确认的 prd_version 不会在 fix 模式被抹掉",
+  [fixedBulletArchive],
+);
+assert(
+  /(^|\n)prd_path:\s*cases\/requirements\/data-assets\/v6\.4\.9\/tree-style-prd\.md/.test(fixedBulletArchive),
+  "bullet/XMind archive 已确认的 prd_path 不会在 fix 模式被抹掉",
+  [fixedBulletArchive],
+);
+assert(
   fixedBulletArchive.includes("##### 【P2】验证搜索条件组合筛选"),
   "bullet/XMind archive 修复后会重建 canonical case 标题",
   [fixedBulletArchive],
@@ -733,6 +773,12 @@ assert(
   /(^|\n)status:\s*已归档/.test(fixedChineseArchive),
   "fix 模式会保留中文 archive 状态语义",
   [fixedChineseArchive],
+);
+const fixedStandaloneVersionedArchive = readFixture(standaloneVersionedArchiveRelativePath);
+assert(
+  !/(^|\n)prd_version:/.test(fixedStandaloneVersionedArchive),
+  "fix 模式不会为独立 versioned archive 虚构 prd_version",
+  [fixedStandaloneVersionedArchive],
 );
 const fixedPlainPreconditionArchive = readFixture(plainPreconditionRelativePath);
 assert(

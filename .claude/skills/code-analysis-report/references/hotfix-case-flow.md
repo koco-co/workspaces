@@ -54,12 +54,28 @@ git checkout origin/hotfix_{version}_{bugId}
 
 ## Step 3：立即分析 hotfix 代码变更
 
+优先使用与 Hotfix 版本对应的 release 分支作为 diff 基线；**禁止直接固定对比 `origin/master`**。
+
 ```bash
 cd .repos/{org}/{repo}
-# 查看 hotfix 分支独有提交
-git log --oneline origin/master..HEAD 2>/dev/null || git log --oneline -10
-# 查看完整 diff
-git diff origin/master HEAD
+git fetch origin "release_{version}" 2>/dev/null || true
+BASE_REF="origin/release_{version}"
+MERGE_BASE="$(git merge-base HEAD "${BASE_REF}" 2>/dev/null || true)"
+if [ -n "${MERGE_BASE}" ]; then
+  # 查看 hotfix 分支独有提交
+  git log --oneline "${MERGE_BASE}"..HEAD
+  # 查看完整 diff
+  git diff "${MERGE_BASE}" HEAD
+else
+  FALLBACK_BASE="$(git rev-parse HEAD^ 2>/dev/null || true)"
+  if [ -n "${FALLBACK_BASE}" ]; then
+    echo "⚠ 未找到 release_{version}，暂以最近父提交作为 fallback 基线；完成报告中必须注明该限制"
+    git log --oneline "${FALLBACK_BASE}"..HEAD
+    git diff "${FALLBACK_BASE}" HEAD
+  else
+    git show --stat --patch HEAD
+  fi
+fi
 ```
 
 重点关注：
@@ -69,6 +85,7 @@ git diff origin/master HEAD
 - Mapper XML / 建表 SQL（字段名）
 - 枚举类 / 常量类（状态值）
 
+> 若无法直接命中 `release_{version}`，必须显式写出 fallback 基线；禁止静默退回 `origin/master`。
 > 该步骤必须保留为“提交列表 + 完整 diff”双视角，不得简化成只看 commit title。
 
 ---
@@ -81,7 +98,7 @@ git diff origin/master HEAD
 | --- | --- | --- |
 | `dt-insight-web` | `dt-insight-front/dt-insight-studio` | `dataAssets/release_{version}` |
 
-若后端 org 命中上表，直接拉取对应前端分支。若未命中上表，则先从 `.claude/config.json`、`.repos/` 目录与现有仓库命名中自动推断前端仓库和分支；如仍无法确定，则标记为“前端仓库/分支待补充”并继续后续步骤，**禁止向用户追问、禁止阻断流程**。
+若后端 org 命中上表，直接拉取对应前端分支。若未命中上表，则先从 `.claude/config.json`、`.repos/` 目录与现有仓库命名中自动推断前端仓库和分支；如仍无法确定，则标记为“前端仓库/分支待补充”并继续后续步骤，但后续只允许基于历史用例 / 现有文档 / 后端 diff 填写**已确认**的内容，并在正文或 `health_warnings` 中显式标记待确认项；**禁止向用户追问、禁止阻断流程、禁止猜测前端导航或字段规则**。
 
 拉取前端分支：
 
@@ -129,14 +146,14 @@ curl -s --connect-timeout 5 "http://zenpms.dtstack.cn/zentao/bug-view-{bugId}.ht
 遵循以下规则，仅生成 **一条** 精准的功能测试用例：
 
 1. **用例标题格式**：必须使用 `【{zentao_bug_id}】验证xxx`，不得使用 `【P0/P1/P2】`
-2. **导航路径**：必须从前端路由配置 / 菜单配置中确认，禁止猜测
-3. **表单字段**：必须从前端源码（TSX 组件）中确认，包含字段名、是否必填、长度限制
+2. **导航路径**：优先从前端路由配置 / 菜单配置中确认；若 Step 4 未能定位前端仓库，则只能引用历史用例或现有文档中可交叉验证的路径，并在正文或 `health_warnings` 标记“待前端仓库确认”，禁止猜测
+3. **表单字段**：优先从前端源码（TSX 组件）中确认，包含字段名、是否必填、长度限制；若前端仓库不可用且修复涉及表单，则必须显式写出“字段待前端源码确认”，不得凭空补字段约束
 4. **SQL 字段名**：必须从 Mapper XML / 建表 SQL 中确认，禁止使用猜测字段名
 5. **步骤完整性**：从零开始（包含新建测试数据），不假设数据已存在
 6. **预期结果格式**：使用 `xxx（修复后）`，不得使用 `xxx（修复前）`
 7. **禁止模糊词**：不得出现“应该”“可能”“大概”等不确定词汇
 
-详细规范见 `references/hotfix-case-writing.md`
+详细规范见 `.claude/skills/code-analysis-report/references/hotfix-case-writing.md`
 
 ---
 
@@ -212,8 +229,8 @@ Bug ID   : #{bugId}
 ## Step 10：自审查清单（必须执行，不可跳过）
 
 - [ ] 用例标题使用 `【{zentao_bug_id}】验证xxx`，未使用 `【P0/P1/P2】`
-- [ ] 导航路径与前端菜单配置一致（已对照源码验证）
-- [ ] 表单字段名称与前端 TSX 源码一致
+- [ ] 前端仓库可定位时，导航路径已与前端菜单配置一致；不可定位时，已标记待确认项且未猜测
+- [ ] 前端仓库可定位且修复涉及表单时，字段名称已与前端 TSX 源码一致；若仓库不可用，已显式标注字段待确认
 - [ ] SQL 字段名与 Mapper XML / 建表 SQL 一致
 - [ ] 预期结果使用“xxx（修复后）”格式，无“修复前”描述
 - [ ] front-matter 仅使用 canonical Archive 字段；未写 `title` / `zentao_*` / 非法 `origin` 值
