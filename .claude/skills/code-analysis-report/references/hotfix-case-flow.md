@@ -2,6 +2,11 @@
 
 适用场景：用户提供 `应用: {org}/{repo}, 版本: hotfix_{version}_{bugId}` 输入，希望把线上问题修复转化为一条可执行、可归档的测试用例。
 
+> ⚡ **最高优先级触发规则**：若输入同时包含 `应用: {org}/{repo}` 与 `版本: hotfix_{version}_{bugId}`，必须立即进入模式E。
+> - **禁止展示模式选择菜单**
+> - **禁止向用户询问任何问题**
+> - **直接开始拉取后端 hotfix 分支**
+
 ---
 
 ## 触发信号
@@ -29,32 +34,7 @@
 
 ---
 
-## Step 2：获取禅道 Bug 详情
-
-尝试访问禅道页面：
-
-```bash
-curl -s "http://zenpms.dtstack.cn/zentao/bug-view-{bugId}.html"
-```
-
-**成功**：从页面中提取：
-
-- Bug 标题
-- Bug 描述 / 复现步骤
-- 期望效果 / 备注
-
-**失败（需要登录或网络不通）**：提示用户补充以下信息后继续：
-
-```text
-⚠ 无法自动访问禅道（可能需要登录），请提供以下信息（可直接粘贴禅道页面截图或文字）：
-1. Bug 标题
-2. Bug 描述 / 复现步骤
-3. 期望效果 / 备注
-```
-
----
-
-## Step 3：拉取后端 hotfix 分支
+## Step 2：拉取后端 hotfix 分支（立即执行）
 
 ```bash
 cd .repos/{org}/{repo}
@@ -72,7 +52,7 @@ git checkout origin/hotfix_{version}_{bugId}
 
 ---
 
-## Step 4：分析 hotfix 代码变更
+## Step 3：立即分析 hotfix 代码变更
 
 ```bash
 cd .repos/{org}/{repo}
@@ -93,7 +73,7 @@ git diff origin/master HEAD
 
 ---
 
-## Step 5：确定前端仓库和分支
+## Step 4：确定前端仓库和分支
 
 **默认映射规则：**
 
@@ -101,7 +81,7 @@ git diff origin/master HEAD
 | --- | --- | --- |
 | `dt-insight-web` | `dt-insight-front/dt-insight-studio` | `dataAssets/release_{version}` |
 
-若后端 org 不在上表中，必须询问用户确认前端仓库和分支，不得猜测。
+若后端 org 命中上表，直接拉取对应前端分支。若未命中上表，则先从 `.claude/config.json`、`.repos/` 目录与现有仓库命名中自动推断前端仓库和分支；如仍无法确定，则标记为“前端仓库/分支待补充”并继续后续步骤，**禁止向用户追问、禁止阻断流程**。
 
 拉取前端分支：
 
@@ -111,6 +91,26 @@ git fetch origin
 git checkout {frontendBranch}
 git pull origin {frontendBranch}
 ```
+
+---
+
+## Step 5：最后尝试获取禅道 Bug 详情（非阻塞）
+
+```bash
+curl -s --connect-timeout 5 "http://zenpms.dtstack.cn/zentao/bug-view-{bugId}.html"
+```
+
+**成功**：从页面中提取：
+
+- Bug 标题
+- Bug 描述 / 复现步骤
+- 期望效果 / 备注
+
+**失败（需要登录或网络不通）**：
+
+- 输出：`⚠ 禅道访问失败，已基于代码变更继续生成用例`
+- **不停止流程，不等待用户补料，继续执行 Step 6**
+- 生成用例时，可追加备注：`> 注：禅道信息不可用，本用例基于代码变更生成。如需补充 Bug 背景，请参考：{zentao_url}`
 
 ---
 
@@ -128,12 +128,15 @@ git pull origin {frontendBranch}
 
 遵循以下规则，仅生成 **一条** 精准的功能测试用例：
 
-1. **导航路径**：必须从前端路由配置 / 菜单配置中确认，禁止猜测
-2. **表单字段**：必须从前端源码（TSX 组件）中确认，包含字段名、是否必填、长度限制
-3. **SQL 字段名**：必须从 Mapper XML / 建表 SQL 中确认，禁止使用猜测字段名
-4. **步骤完整性**：从零开始（包含新建测试数据），不假设数据已存在
-5. **预期结果格式**：使用 `xxx（修复后）`，不得使用 `xxx（修复前）`
-6. **禁止模糊词**：不得出现“应该”“可能”“大概”等不确定词汇
+1. **用例标题格式**：必须使用 `【{zentao_bug_id}】验证xxx`，不得使用 `【P0/P1/P2】`
+2. **导航路径**：必须从前端路由配置 / 菜单配置中确认，禁止猜测
+3. **表单字段**：必须从前端源码（TSX 组件）中确认，包含字段名、是否必填、长度限制
+4. **SQL 字段名**：必须从 Mapper XML / 建表 SQL 中确认，禁止使用猜测字段名
+5. **步骤完整性**：从零开始（包含新建测试数据），不假设数据已存在
+6. **预期结果格式**：使用 `xxx（修复后）`，不得使用 `xxx（修复前）`
+7. **禁止模糊词**：不得出现“应该”“可能”“大概”等不确定词汇
+
+详细规范见 `references/hotfix-case-writing.md`
 
 ---
 
@@ -208,6 +211,7 @@ Bug ID   : #{bugId}
 
 ## Step 10：自审查清单（必须执行，不可跳过）
 
+- [ ] 用例标题使用 `【{zentao_bug_id}】验证xxx`，未使用 `【P0/P1/P2】`
 - [ ] 导航路径与前端菜单配置一致（已对照源码验证）
 - [ ] 表单字段名称与前端 TSX 源码一致
 - [ ] SQL 字段名与 Mapper XML / 建表 SQL 一致
