@@ -104,7 +104,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Core notification module (notify.mjs + tests + .env.example + nodemailer)
-- [ ] 05-02-PLAN.md — Skill integration (test-case-generator, code-analysis-report, archive-converter notify calls)
+- [x] 05-02-PLAN.md — Skill integration (test-case-generator, code-analysis-report, archive-converter notify calls)
 
 ### Phase 6: Documentation
 **Goal**: A first-time visitor to the GitHub repository can understand what qa-flow does, install it, and run their first test-case-generator workflow using only the README

@@ -46,7 +46,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **NOTF-03**: 飞书 webhook 通知
 - [x] **NOTF-04**: 企业微信 webhook 通知
 - [x] **NOTF-05**: 邮箱通知 — 使用 nodemailer
-- [ ] **NOTF-06**: 通知触发点集成 — Bug 报告 / 用例生成 / 脚本执行完成后自动触发
+- [x] **NOTF-06**: 通知触发点集成 — Bug 报告 / 用例生成 / 脚本执行完成后自动触发
 - [x] **NOTF-07**: .env 配置模板 — 各渠道 webhook URL / SMTP 配置
 
 ### Documentation
@@ -117,7 +117,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | NOTF-03 | Phase 5 | Complete |
 | NOTF-04 | Phase 5 | Complete |
 | NOTF-05 | Phase 5 | Complete |
-| NOTF-06 | Phase 5 | Pending |
+| NOTF-06 | Phase 5 | Complete |
 | NOTF-07 | Phase 5 | Complete |
 | DOCS-01 | Phase 6 | Pending |
 | DOCS-02 | Phase 6 | Pending |
