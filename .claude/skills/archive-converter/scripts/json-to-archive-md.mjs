@@ -170,14 +170,14 @@ export function jsonToMd(data, sourcePath) {
     prd_url: meta?.prd_url || "",
     product: moduleKey || undefined,
     dev_version: meta?.dev_version || "",
-      tags,
-      create_at: today,
-      update_at: today,
-      status: DEFAULT_ARCHIVE_DOCUMENT_STATUS,
-      health_warnings: [],
-      repos: Array.isArray(meta?.repos) ? meta.repos : [],
-      // 可选保留统计字段（脚本内部）
-      case_count: totalCases,
+    tags,
+    create_at: today,
+    update_at: today,
+    status: DEFAULT_ARCHIVE_DOCUMENT_STATUS,
+    health_warnings: [],
+    repos: Array.isArray(meta?.repos) ? meta.repos : [],
+    // 可选保留统计字段（脚本内部）
+    case_count: totalCases,
     case_types: caseTypes || undefined,
     origin: "json",
   });
