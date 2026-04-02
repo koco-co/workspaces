@@ -167,35 +167,9 @@ curl -s --connect-timeout 5 "http://zenpms.dtstack.cn/zentao/bug-view-{bugId}.ht
 
 例：`hotfix_6.2.x_145513-资产目录列表分页.md`
 
-**front-matter 模板：**
+**front-matter 与字段规范**：见 `references/hotfix-case-writing.md` 第一节。
 
-```yaml
----
-suite_name: "在线问题转化-{bugId}-{功能简述}"
-description: "{一句话描述本用例验证的内容}"
-# 若已关联到 PRD，再补充 prd_id / prd_version / prd_path / prd_url；
-# 若暂无 PRD，请不要写空字符串占位。
-product: "{module_key}"
-dev_version: "hotfix_{version}_{bugId}"
-tags:
-  - hotfix
-  - online-case
-  - {功能关键词}
-create_at: "{YYYY-MM-DD}"
-update_at: "{YYYY-MM-DD}"
-status: "草稿"
-health_warnings: []
-repos:
-  - ".repos/{org}/{repo}"
-case_count: 1
-origin: json
----
-```
-
-> 说明：禅道来源信息请写入正文「问题背景 / 来源说明」段或完成报告，不要在 frontmatter 中新增 `title`、`zentao_*`，也不要把 `origin` 写成当前 schema 不支持的 `zentao`。
-> 如未来确实要支持 `origin=zentao`，需同步扩展 `.claude/shared/schemas/front-matter-schema.md` 与 `.claude/rules/archive-format.md`。
-
-**存储路径：** `cases/issues/{filename}.md`
+**存储路径：** `cases/issues/YYYYMM/`（YYYYMM 为用例生成的年月，如 `202604`）
 
 ---
 
@@ -208,10 +182,10 @@ origin: json
 Bug ID   : #{bugId}
 应用     : {org}/{repo}
 分支     : hotfix_{version}_{bugId}
-输出文件 : cases/issues/{filename}.md
+输出文件 : cases/issues/YYYYMM/{filename}.md
 
 👉 请前往以下路径查收用例：
-   cases/issues/{filename}.md
+   cases/issues/YYYYMM/{filename}.md
 ══════════════════════════════════════════
 ```
 
@@ -241,6 +215,6 @@ node .claude/shared/scripts/notify.mjs \
 - [ ] front-matter 仅使用 canonical Archive 字段；未写 `title` / `zentao_*` / 非法 `origin` 值
 - [ ] `origin` 使用当前 schema 允许的值（Hotfix 示例默认 `json`），`status` 使用中文值（如 `草稿`）
 - [ ] 若暂无 PRD 信息，未把 `prd_id` / `prd_version` / `prd_path` 写成空字符串占位
-- [ ] 文件已保存到 `cases/issues/`
+- [ ] 文件已保存到 `cases/issues/YYYYMM/`
 - [ ] 步骤从零开始（包含新建测试数据），无跳步假设
 - [ ] 无模糊词（“应该”“可能”“参考”等）

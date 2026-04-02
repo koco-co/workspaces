@@ -209,10 +209,10 @@ WHERE name = '{规则名称}'
 **存储路径：**
 
 ```
-cases/archive/online-cases/{yyyy-MM-dd}/{hotfix_version}_{bugId}-{功能简述}.md
+cases/issues/YYYYMM/{hotfix_version}_{bugId}-{功能简述}.md
 ```
 
-按用例**生成日期**创建子目录，同一天生成的多条用例存放在同一个日期目录下。
+YYYYMM 为用例**生成的年月**（如 `202604`），同一月生成的多条用例存放在同一目录下。
 
 ---
 
@@ -253,5 +253,5 @@ cases/archive/online-cases/{yyyy-MM-dd}/{hotfix_version}_{bugId}-{功能简述}.
 - [ ] 所有预期结果同时包含「修复前：xxx」和「修复后：xxx」两行
 - [ ] 步骤从零开始（包含新建测试数据），无跳步假设
 - [ ] 无模糊词（"应该"、"可能"、"参考"等）
-- [ ] 文件存储在 `cases/archive/online-cases/{yyyy-MM-dd}/`
+- [ ] 文件存储在 `cases/issues/YYYYMM/`
 - [ ] 完成报告已在终端输出
