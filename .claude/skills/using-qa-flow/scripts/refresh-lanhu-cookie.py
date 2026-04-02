@@ -2,12 +2,15 @@
 """
 refresh-lanhu-cookie.py
 
-使用 Playwright 登录蓝湖并刷新 tools/lanhu-mcp/.env 中的 LANHU_COOKIE。
+使用 Playwright 登录蓝湖并刷新根目录 .env 中的 LANHU_COOKIE。
+
+Cookie 写入策略（与 lanhu-mcp-runtime.mjs 保持一致）：
+  优先写入项目根目录 .env；若 LANHU_ENV_FILE 环境变量指定了路径则写入该路径。
 
 环境变量:
   LANHU_LOGIN_EMAIL       蓝湖登录邮箱（必填）
   LANHU_LOGIN_PASSWORD    蓝湖登录密码（必填）
-  LANHU_ENV_FILE          .env 文件路径（可选，默认取自 .claude/config.json）
+  LANHU_ENV_FILE          .env 文件路径（可选，默认为项目根目录 .env）
   LANHU_HEADLESS          是否无头运行（可选，默认 true）
 """
 
@@ -27,21 +30,21 @@ CONFIG_PATH = REPO_ROOT / ".claude" / "config.json"
 LOGIN_URL = "https://lanhuapp.com/web/#/login"
 
 
-def load_lanhu_paths() -> tuple[Path, Path]:
+def resolve_env_file() -> Path:
+    """确定 .env 文件路径：LANHU_ENV_FILE > 根 .env > tools/lanhu-mcp/.env"""
+    explicit = os.getenv("LANHU_ENV_FILE", "").strip()
+    if explicit:
+        return Path(explicit).expanduser().resolve()
+    root_env = REPO_ROOT / ".env"
+    if root_env.exists():
+        return root_env
+    # 回退到 tools/lanhu-mcp/.env（与 lanhu-mcp-runtime.mjs 一致）
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    integration = config.get("integrations", {}).get("lanhuMcp")
-    if not integration:
-        raise RuntimeError("未在 .claude/config.json 中找到 integrations.lanhuMcp 配置")
-
-    runtime_path = integration.get("runtimePath")
-    env_file = integration.get("envFile")
-    if not runtime_path or not env_file:
-        raise RuntimeError("integrations.lanhuMcp 缺少 runtimePath/envFile 配置")
-
-    return (REPO_ROOT / runtime_path).resolve(), (REPO_ROOT / env_file).resolve()
+    runtime_path = config.get("integrations", {}).get("lanhuMcp", {}).get("runtimePath", "tools/lanhu-mcp/")
+    return (REPO_ROOT / runtime_path / ".env").resolve()
 
 
-DEFAULT_RUNTIME_PATH, DEFAULT_ENV_FILE = load_lanhu_paths()
+DEFAULT_ENV_FILE = resolve_env_file()
 
 
 def require_env(name: str) -> str:
@@ -83,9 +86,6 @@ async def refresh_cookie() -> None:
     login_password = require_env("LANHU_LOGIN_PASSWORD")
     env_path = Path(os.getenv("LANHU_ENV_FILE", str(DEFAULT_ENV_FILE))).expanduser().resolve()
     headless = os.getenv("LANHU_HEADLESS", "true").lower() != "false"
-
-    if env_path == DEFAULT_ENV_FILE and not DEFAULT_RUNTIME_PATH.exists():
-        raise RuntimeError(f"未找到 lanhu-mcp 运行目录：{DEFAULT_RUNTIME_PATH}")
 
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=headless)
