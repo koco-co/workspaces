@@ -50,7 +50,13 @@ function assert(condition, msg, details = []) {
 }
 
 function walkFiles(dir, predicate, acc = []) {
-  for (const entry of readdirSync(dir)) {
+  let entries;
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return acc; // directory does not exist, skip
+  }
+  for (const entry of entries) {
     const fullPath = resolve(dir, entry);
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
@@ -93,13 +99,14 @@ assert(
   toRelativeList(stateFilesWithFormalizedRef),
 );
 
-console.log("\n=== Test: step-prd-formalize 必须声明 formalized 结果不落 cases/requirements ===");
+console.log("\n=== Test: step-prd-formalize 必须声明 formalized 结果不落 cases/prds ===");
 const stepPrdFormalizeContent = readFileSync(stepPrdFormalizePath, "utf8");
 assert(
   !stepPrdFormalizeContent.includes("PRD-XX-<功能名>-formalized.md"),
   "step-prd-formalize 不再声明 PRD-*-formalized.md 为稳定输出",
 );
 assert(
+  stepPrdFormalizeContent.includes("不在 `cases/prds` 下持久化 formalized.md") ||
   stepPrdFormalizeContent.includes("不在 `cases/requirements` 下持久化 formalized.md"),
   "step-prd-formalize 明确 formalized 结果不在 requirements 目录持久化",
 );

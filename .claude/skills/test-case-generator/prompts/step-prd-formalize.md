@@ -4,7 +4,11 @@
 > 前置条件: `last_completed_step` == `"source-sync"`
 > 快速模式: 执行
 
-> 本步骤仅在 config.json 中 `repos` 字段为非空对象时执行。将原始 PRD 文本结合源码上下文整理为正式需求文档。若 `repos: {}` 则跳过此步骤。
+> 本步骤仅在 config.json 中 `repos` 字段为非空对象时执行。将原始 PRD 文本结合源码上下文整理为正式需求文档。
+> **若 `repos: {}` 则跳过**：
+> 1. 向 execution_log 追加 `{"step": "prd-formalize", "status": "skipped", "reason": "config.repos is empty"}`
+> 2. 更新 `last_completed_step` 为 `"prd-formalize"`
+> 3. 继续下一步（prd-enhancer）
 
 ## 触发时机
 
@@ -31,8 +35,8 @@
    - 前置条件（数据源/环境依赖）
 5. 输出正式需求整理结果：
    - 产物形态：临时整理结果 / formalize 摘要
-   - 持久化策略：**不在 `cases/requirements` 下持久化 formalized.md**
-   - 如需短暂落盘，仅允许写入当前会话目录或 requirements 目录下的 `.trash/` 临时区，并在增强完成后清理
+   - 持久化策略：**不在 `cases/prds` 下持久化 formalized.md**
+   - 如需短暂落盘，仅允许写入当前会话目录或 prds 目录下的 `.trash/` 临时区，并在增强完成后清理
    - 后续 prd-enhancer 直接消费上述临时整理结果或摘要，不再依赖稳定的 `PRD-*-formalized.md` 文件
 
 ## 质量要求

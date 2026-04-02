@@ -116,6 +116,83 @@ export function getModuleKeys() {
   return Object.keys(loadConfig().modules ?? {});
 }
 
+/**
+ * Resolve module artifact directory path.
+ * Convention: {casesRoot}{type}/{moduleKey}/
+ * Override: module config's explicit type field if present.
+ * When mod.versioned === true and version is provided, appends v{version}/.
+ * @param {string} moduleKey
+ * @param {'xmind'|'archive'|'requirements'|'history'} type
+ * @param {object} [config]
+ * @param {string} [version] - Optional version string (e.g. 'v6.4.10')
+ * @returns {string} workspace-relative path, trailing slash included
+ */
+export function resolveModulePath(moduleKey, type, config = loadConfig(), version = null) {
+  const mod = config.modules?.[moduleKey];
+  if (!mod) {
+    throw new Error(
+      `Unknown module key: "${moduleKey}". Run /using-qa-flow init to configure modules.`
+    );
+  }
+  let basePath;
+  if (mod[type]) {
+    basePath = mod[type].endsWith('/') ? mod[type] : mod[type] + '/';
+  } else {
+    const casesRoot = config.casesRoot ?? 'cases/';
+    basePath = `${casesRoot}${type}/${moduleKey}/`;
+  }
+  if (version && mod.versioned === true) {
+    const versionSegment = version.startsWith('v') ? version : `v${version}`;
+    return `${basePath}${versionSegment}/`;
+  }
+  return basePath;
+}
+
+/**
+ * Resolve time-period (YYYYMM) artifact directory path.
+ * Used by the new flat directory structure: cases/{type}/{yyyymm}/
+ *
+ * @param {'prds'|'archive'|'xmind'|'issues'|'history'} type
+ * @param {string|number} yyyymm - 6-digit year-month, e.g. "202604" or 202604
+ * @param {object} [config]
+ * @returns {string} workspace-relative path, trailing slash included
+ */
+export function resolveTimePeriodPath(type, yyyymm, config = loadConfig()) {
+  const casesRoot = config.casesRoot ?? 'cases/';
+  const period = String(yyyymm).replace(/\D/g, '').slice(0, 6);
+  if (period.length !== 6) {
+    throw new Error(`Invalid YYYYMM period: "${yyyymm}". Expected 6-digit string like "202604".`);
+  }
+  return `${casesRoot}${type}/${period}/`;
+}
+
+/**
+ * Get the current year-month as YYYYMM string.
+ * @returns {string} e.g. "202604"
+ */
+export function getCurrentPeriod() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  return `${y}${m}`;
+}
+
+/**
+ * Guard: require config.modules to be non-empty.
+ * Throws with guidance when empty.
+ * @param {object} [config]
+ * @returns {string[]} Module key array
+ */
+export function requireNonEmptyModules(config = loadConfig()) {
+  const keys = Object.keys(config.modules ?? {});
+  if (keys.length === 0) {
+    throw new Error(
+      'config.modules is empty. Please run /using-qa-flow init to configure your project modules.'
+    );
+  }
+  return keys;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Path helpers
 // ────────────────────────────────────────────────────────────────────────────
