@@ -153,8 +153,6 @@ function getTargetFiles() {
   const casesRoot = CONFIG.casesRoot ?? 'cases/';
   return [
     ...collectMdFiles(join(ROOT, casesRoot, "archive")),
-    ...collectMdFiles(join(ROOT, casesRoot, "requirements")),
-    // New YYYYMM-based directories
     ...collectMdFiles(join(ROOT, casesRoot, "prds")),
     ...collectMdFiles(join(ROOT, casesRoot, "issues")),
   ].sort();
@@ -162,12 +160,12 @@ function getTargetFiles() {
 
 const _casesRoot = CONFIG.casesRoot ?? 'cases/';
 const _archivePrefix = `${_casesRoot}archive/`;
-const _requirementsPrefix = `${_casesRoot}requirements/`;
+const _prdsPrefix = `${_casesRoot}prds/`;
 
 function getDocType(filePath) {
   const rel = relativePath(filePath);
   if (rel.startsWith(_archivePrefix)) return "archive";
-  if (rel.startsWith(_requirementsPrefix)) return "requirements";
+  if (rel.startsWith(_prdsPrefix)) return "requirements";
   return null;
 }
 

@@ -328,7 +328,7 @@ async function main() {
     requirementName: titledRequirementName,
     version: "v6.4.10",
     story: "Story-20260328",
-    prdPath: `cases/requirements/data-assets/Story-20260328/PRD-15530-${titledArchiveFileName}.md`,
+    prdPath: `cases/prds/data-assets/Story-20260328/PRD-15530-${titledArchiveFileName}.md`,
   });
   writeFileSync(
     titledInputPath,
@@ -467,7 +467,7 @@ async function main() {
           requirementName: tempReviewedRequirementName,
           version: "v6.4.10",
           requirementId: "PRD-18888",
-          prdPath: `cases/requirements/data-assets/v6.4.10/${tempReviewedRequirementName}.md`,
+          prdPath: `cases/prds/data-assets/v6.4.10/${tempReviewedRequirementName}.md`,
         }),
         meta: {
           ...createJsonFixture({
@@ -475,7 +475,7 @@ async function main() {
             requirementName: tempReviewedRequirementName,
             version: "v6.4.10",
             requirementId: "PRD-18888",
-            prdPath: `cases/requirements/data-assets/v6.4.10/${tempReviewedRequirementName}.md`,
+            prdPath: `cases/prds/data-assets/v6.4.10/${tempReviewedRequirementName}.md`,
           }).meta,
           module_key: "data-assets",
           prd_version: "v6.4.10",
@@ -563,7 +563,7 @@ async function main() {
         requirementName: metaRequirementName,
         version: "vtest-meta",
         requirementId: "PRD-52",
-        prdPath: `cases/requirements/data-assets/Story-20260322/${metaPrdBaseName}`,
+        prdPath: `cases/prds/data-assets/Story-20260322/${metaPrdBaseName}`,
         story: "Story-20260322",
       }),
       null,

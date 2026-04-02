@@ -386,9 +386,9 @@ export function scanProject(rootDir) {
     }
   }
 
-  // Also scan cases/requirements/ and cases/prds/ for additional module keys
+  // Also scan cases/prds/ for additional module keys
   // Note: YYYYMM directories (6-digit numbers) are time-period dirs, not module keys (isYyyymmDir defined above)
-  for (const reqDirName of ['requirements', 'prds']) {
+  for (const reqDirName of ['prds']) {
     const reqDir = join(casesDir, reqDirName);
     const reqSubdirs = listSubdirectories(reqDir).filter((d) => !isYyyymmDir(d));
     for (const key of reqSubdirs) {
@@ -430,11 +430,10 @@ export function scanProject(rootDir) {
   const historyDir = join(casesDir, 'history');
   const historyFiles = findFilesRecursive(historyDir, ['.csv', '.xmind']);
 
-  // ── Signal 5: PRD version patterns from cases/requirements/ or cases/prds/ ──
-  // Use the first existing directory (prefer new prds, fallback to requirements)
+  // ── Signal 5: PRD version patterns from cases/prds/ ──
   const reqDir = existsSync(join(casesDir, 'prds'))
     ? join(casesDir, 'prds')
-    : join(casesDir, 'requirements');
+    : null;
   const prdVersionPatterns = [];
   if (existsSync(reqDir)) {
     const versionRegex = /\bv(\d+\.\d+\.\d+)\b/i;

@@ -179,7 +179,7 @@ function buildPrdCandidates({
     .map((value) => normalizeRelativePath(value));
 
   if (docType === "requirements") {
-    // Both cases/requirements/ and cases/prds/ are "requirements" doc type
+    // cases/prds/ files are "requirements" doc type
     candidates.add(markdownRelPath);
     explicitMarkdownCandidates.forEach((value) => candidates.add(value));
     return candidates.values();
@@ -305,22 +305,29 @@ function resolveModulePaths(product, config) {
     const casesRoot = config?.casesRoot ?? 'cases/';
     return {
       xmindDir: normalizeDirectoryPath(`${casesRoot}xmind/${product}/`),
-      requirementsDir: normalizeDirectoryPath(`${casesRoot}requirements/${product}/`),
+      requirementsDir: normalizeDirectoryPath(`${casesRoot}prds/${product}/`),
       historyDir: normalizeDirectoryPath(`${casesRoot}history/${product}/`),
     };
   }
   // Use resolveModulePath for known modules
   try {
+    // For requirements dir, check if module explicitly defines a 'requirements' path;
+    // if not, use the cases/prds/ convention (not cases/requirements/)
+    const casesRoot = config?.casesRoot ?? 'cases/';
+    const modDef = config?.modules?.[product];
+    const requirementsDir = modDef?.requirements
+      ? normalizeDirectoryPath(resolveModulePath(product, 'requirements', config))
+      : normalizeDirectoryPath(`${casesRoot}prds/${product}/`);
     return {
       xmindDir: normalizeDirectoryPath(resolveModulePath(product, 'xmind', config)),
-      requirementsDir: normalizeDirectoryPath(resolveModulePath(product, 'requirements', config)),
+      requirementsDir,
       historyDir: normalizeDirectoryPath(resolveModulePath(product, 'history', config)),
     };
   } catch {
     const casesRoot = config?.casesRoot ?? 'cases/';
     return {
       xmindDir: normalizeDirectoryPath(`${casesRoot}xmind/${product}/`),
-      requirementsDir: normalizeDirectoryPath(`${casesRoot}requirements/${product}/`),
+      requirementsDir: normalizeDirectoryPath(`${casesRoot}prds/${product}/`),
       historyDir: normalizeDirectoryPath(`${casesRoot}history/${product}/`),
     };
   }

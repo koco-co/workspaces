@@ -389,10 +389,7 @@ export function getDocTypeFromPath(filePath) {
   if (normalized.includes("/cases/issues/") || normalized.startsWith("cases/issues/")) {
     return "archive";
   }
-  if (normalized.includes("/cases/requirements/") || normalized.startsWith("cases/requirements/")) {
-    return "requirements";
-  }
-  // cases/prds/ = new name for requirements (PRD documents)
+  // cases/prds/ = PRD documents
   if (normalized.includes("/cases/prds/") || normalized.startsWith("cases/prds/")) {
     return "requirements";
   }
@@ -423,7 +420,7 @@ export function toStringArray(value) {
  *   cases/xmind/data-assets/...           → data-assets
  *   cases/xmind/custom/xyzh/...           → xyzh
  *   cases/history/xyzh/...                → xyzh
- *   cases/requirements/data-assets/...    → data-assets
+ *   cases/prds/data-assets/...            → data-assets
  *
  * @param {string} filePath
  * @returns {string | null}
@@ -437,12 +434,12 @@ function extractModuleKeyFromPath(p) {
   const s = p.replace(/\\/g, "/");
 
   // custom/xyzh pattern (legacy)
-  const customM = s.match(/(?:archive|xmind|requirements|prds|issues)\/custom\/([^/]+)/);
+  const customM = s.match(/(?:archive|xmind|prds|issues)\/custom\/([^/]+)/);
   if (customM) return customM[1];
 
-  // archive/<key>  /  xmind/<key>  /  requirements/<key>  /  history/<key>  /  prds/<key>  /  issues/<key>
+  // archive/<key>  /  xmind/<key>  /  history/<key>  /  prds/<key>  /  issues/<key>
   const stdM = s.match(
-    /(?:archive|xmind|requirements|history|prds|issues)\/([^/]+)/,
+    /(?:archive|xmind|history|prds|issues)\/([^/]+)/,
   );
   if (stdM && stdM[1] !== "custom") {
     // Skip YYYYMM time-period directories (6-digit numbers)
