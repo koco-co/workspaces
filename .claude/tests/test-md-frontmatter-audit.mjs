@@ -106,17 +106,17 @@ function runNodeScript(script, args = []) {
 }
 
 const archiveRelativePath = "cases/archive/data-assets/v6.4.9/legacy-archive(#12345).md";
-const requirementRelativePath = "cases/requirements/data-assets/v6.4.9/legacy-prd-formalized.md";
-const elicitedRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/elicited-prd.md";
-const chineseRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/chinese-status-prd.md";
-const headingOnlyRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/handoff.md";
+const requirementRelativePath = "cases/prds/data-assets/v6.4.9/legacy-prd-formalized.md";
+const elicitedRequirementRelativePath = "cases/prds/data-assets/v6.4.9/elicited-prd.md";
+const chineseRequirementRelativePath = "cases/prds/data-assets/v6.4.9/chinese-status-prd.md";
+const headingOnlyRequirementRelativePath = "cases/prds/data-assets/v6.4.9/handoff.md";
 const bulletArchiveRelativePath = "cases/archive/data-assets/v6.4.9/tree-style-archive.md";
 const englishArchiveStatusRelativePath = "cases/archive/data-assets/v6.4.9/english-status-archive.md";
 const chineseArchiveRelativePath = "cases/archive/data-assets/v6.4.9/chinese-status-archive.md";
 const nonSemverRelativePath = "cases/archive/data-assets/主流程/flow-archive.md";
 const standaloneVersionedArchiveRelativePath = "cases/archive/data-assets/v6.4.9/standalone-versioned-archive.md";
 const plainPreconditionRelativePath = "cases/archive/data-assets/v6.4.9/plain-precondition-archive.md";
-const directBackfillRequirementRelativePath = "cases/requirements/data-assets/v6.4.9/direct-backfill-prd-formalized.md";
+const directBackfillRequirementRelativePath = "cases/prds/data-assets/v6.4.9/direct-backfill-prd-formalized.md";
 const directBackfillArchiveRelativePath = "cases/archive/data-assets/v6.4.9/direct-backfill-archive.md";
 const directReviewedArchiveRelativePath = "cases/archive/data-assets/v6.4.9/direct-reviewed-status-archive.md";
 
@@ -277,7 +277,7 @@ writeFixture(
     "suite_name: 树形归档样例",
     "description: XMind 标题树样例",
     "prd_version: v6.4.9",
-    "prd_path: cases/requirements/data-assets/v6.4.9/tree-style-prd.md",
+    "prd_path: cases/prds/data-assets/v6.4.9/tree-style-prd.md",
     "product: data-assets",
     "tags:",
     "  - 数据资产",
@@ -442,7 +442,7 @@ writeFixture(
     "---",
     "suite_name: 旧评审状态归档",
     "description: 旧评审状态归档",
-    "prd_path: cases/requirements/data-assets/v6.4.9/reviewed-prd.md",
+    "prd_path: cases/prds/data-assets/v6.4.9/reviewed-prd.md",
     "product: data-assets",
     "prd_version: v6.4.9",
     "status: REVIEWED",
@@ -743,7 +743,7 @@ assert(
   [fixedBulletArchive],
 );
 assert(
-  /(^|\n)prd_path:\s*cases\/requirements\/data-assets\/v6\.4\.9\/tree-style-prd\.md/.test(fixedBulletArchive),
+  /(^|\n)prd_path:\s*cases\/prds\/data-assets\/v6\.4\.9\/tree-style-prd\.md/.test(fixedBulletArchive),
   "bullet/XMind archive 已确认的 prd_path 不会在 fix 模式被抹掉",
   [fixedBulletArchive],
 );

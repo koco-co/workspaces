@@ -1,6 +1,6 @@
 /**
  * backfill-prd-frontmatter.mjs
- * 为 cases/requirements/ 下的 PRD Markdown 文件添加 YAML front-matter
+ * 为 cases/prds/ 下的 PRD Markdown 文件添加 YAML front-matter
  *
  * 用法:
  *   node backfill-prd-frontmatter.mjs              # 增量（跳过已有 front-matter）
@@ -28,10 +28,9 @@ import { toRequirementDocumentStatus } from "../../../shared/scripts/frontmatter
 import { getWorkspaceRoot } from "../../../shared/scripts/load-config.mjs";
 
 const ROOT = getWorkspaceRoot();
-// Scan both new cases/prds/ and legacy cases/requirements/ directories
+// Scan cases/prds/ directory
 const REQ_DIRS = [
   join(ROOT, "cases/prds"),
-  join(ROOT, "cases/requirements"),
 ];
 
 // ─── CLI 参数 ─────────────────────────────────────────────────────────────────

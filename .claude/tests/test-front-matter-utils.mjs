@@ -272,7 +272,7 @@ const pathOnlyArchiveValidation = validateFrontMatter({
   product: "data-assets",
   tags: ["回归"],
   create_at: "2026-04-01",
-  prd_path: "cases/requirements/data-assets/v1.0.0/示例.md",
+  prd_path: "cases/prds/data-assets/v1.0.0/示例.md",
 }, "archive");
 assert(
   !pathOnlyArchiveValidation.valid
