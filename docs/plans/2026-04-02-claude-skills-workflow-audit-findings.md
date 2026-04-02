@@ -244,12 +244,12 @@ date: "2026-04-02"
 
 #### rules 维护面过宽
 
-## P1-rule-mirror-drift-without-guard：global rules 与 skill-local 镜像已形成事实性双权威
+## P1-rule-mirror-drift-without-guard：global rules 与 skill-local 镜像仍是双权威，且守护覆盖不完整
 
-- 问题：`.claude/skills/archive-converter/rules/archive-format.md`、`test-case-generator/rules/test-case-writing.md`、`xmind-converter/rules/xmind-output.md` 都声明“以 `.claude/rules/*.md` 全局版本为准”；但仓库没有任何自动同步或 diff 守护，且当前已出现事实性漂移。最明显的两组：全局 `test-case-writing.md` 已新增 Archive MD 层级、`【P0/P1/P2】` 优先级前缀、`> 用例步骤` 标签、正向用例合并与表单多字段合并规则，skill 镜像仍停留在旧版简化写法；全局 `xmind-output.md` 已改为 `cases/xmind/YYYYMM/` / `cases/archive/YYYYMM/` 的年月制路径与 `<中文产品名>` Root 描述，但 skill 镜像仍写成 `${module}/v${version}` 路径与 `<项目名>` Root。
-- 原因：这些“镜像规则”本质上是手工复制件，只靠文件开头的一句“以全局版本为准”提醒，没有生成链路，也没有测试比较成对文件是否一致。
-- 影响：读取全局 rules 的 agent 与只读取 skill-local rules 的 agent 会得到不同格式 / 路径 contract；一旦维护者只改了其中一份，当前这种双权威状态就会继续扩大，尤其会直接污染 XMind / 用例正文的输出结构。
-- 建议：二选一收口：1）skill-local rules 退化为薄引用文件，只保留“请读取对应全局规则”；或 2）改为生成产物，并增加 pair-wise diff 守护。只要没有自动同步，就不应在镜像文件里继续承载可漂移的正文规则。
+- 问题：`.claude/skills/archive-converter/rules/archive-format.md`、`test-case-generator/rules/test-case-writing.md`、`xmind-converter/rules/xmind-output.md` 都声明“以 `.claude/rules/*.md` 全局版本为准”；其中 `archive-format` 已在 `test-workflow-doc-validator.mjs` 中通过 `stripMirrorNotice(archiveSkillRuleMirrorContent) === archiveFormatContent.trim()` 做单点镜像一致性校验，说明仓库并非完全没有 guard。但 `test-case-writing` 与 `xmind-output` 仍缺少同类成对守护，且当前已出现事实性漂移。最明显的两组：全局 `test-case-writing.md` 已新增 Archive MD 层级、`【P0/P1/P2】` 优先级前缀、`> 用例步骤` 标签、正向用例合并与表单多字段合并规则，skill 镜像仍停留在旧版简化写法；全局 `xmind-output.md` 已改为 `cases/xmind/YYYYMM/` / `cases/archive/YYYYMM/` 的年月制路径与 `<中文产品名>` Root 描述，但 skill 镜像仍写成 `${module}/v${version}` 路径与 `<项目名>` Root。
+- 原因：这些“镜像规则”本质上仍是手工复制件。`archive-format` 的单点 guard 证明“镜像一致性校验”可行，但仓库缺少统一的生成链路或成对覆盖策略，导致 `test-case-writing`、`xmind-output` 仍主要依赖文件开头一句“以全局版本为准”提醒，双权威没有真正收口。
+- 影响：当前风险不是“完全无守护”，而是“守护覆盖不完整 + 双权威仍存在”。这意味着 `archive-format` 之外的镜像仍可能在维护者只改一侧时继续漂移；读取全局 rules 的 agent 与只读取 skill-local rules 的 agent 仍会在 XMind 路径 / Root contract、用例正文结构等关键输出上得到不同结果。
+- 建议：以 `archive-format` 已存在的 `test-workflow-doc-validator.mjs` 单点 guard 为最小模板，将 `test-case-writing` 与 `xmind-output` 也补成 pair-wise diff 守护，或直接让 skill-local rules 退化为薄引用 / 生成产物。问题本质是“守护覆盖不完整 + 双权威未收口”，而不是“仓库完全没有守护”。
 - 涉及文件：`.claude/rules/archive-format.md`、`.claude/skills/archive-converter/rules/archive-format.md`、`.claude/rules/test-case-writing.md`、`.claude/skills/test-case-generator/rules/test-case-writing.md`、`.claude/rules/xmind-output.md`、`.claude/skills/xmind-converter/rules/xmind-output.md`
 
 ### P2（文案 / 可读性 / 向导体验）
