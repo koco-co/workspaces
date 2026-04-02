@@ -140,25 +140,16 @@ which uv && uv venv .venv && echo "✅ uv venv 创建成功" \
 
 - 目标：确保后续 Python 依赖安装有独立运行环境。
 
-### Step 2：lanhu-cli 安装
+### Step 2：lanhu-mcp 安装与验证
 
 ```bash
-# 克隆仓库到 tools/lanhu-cli/
-git clone https://github.com/koco-co/lanhu-cli.git tools/lanhu-cli --depth=1
-
-# 创建虚拟环境并安装依赖
-cd tools/lanhu-cli && uv venv .venv && uv pip install -e .
-
-# 安装 Playwright（截图功能必须，纯文本模式可跳过）
-.venv/bin/playwright install chromium
-
-# 复制 .env 模板并填入 Cookie
-cp .env.example .env
+# 进入 lanhu-mcp 目录并执行安装脚本
+cd tools/lanhu-mcp && bash setup-env.sh
 ```
 
-- 安装完成后验证：`tools/lanhu-cli/.venv/bin/lanhu --help`
-- 若 `tools/lanhu-cli/` 目录已存在（已克隆），跳过克隆步骤，直接验证可用性。
-- Cookie 配置：在 `tools/lanhu-cli/.env` 中填写 `LANHU_COOKIE="<从浏览器 DevTools 复制的完整 Cookie>"`
+- 安装完成后验证：`cd tools/lanhu-mcp && bash quickstart.sh`
+- 若 `tools/lanhu-mcp/.venv/` 已存在，跳过安装步骤，直接验证可用性。
+- Cookie 配置：在项目根目录 `.env` 中填写 `LANHU_COOKIE="<从浏览器 DevTools 复制的完整 Cookie>"`（根 `.env` 优先；`tools/lanhu-mcp/.env` 作为回退）
 
 ### Step 3：脚本运行环境（Node.js）
 

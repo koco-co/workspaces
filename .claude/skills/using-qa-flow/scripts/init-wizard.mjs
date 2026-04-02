@@ -135,7 +135,6 @@ export function buildConfigObject({
 }) {
   const defaultLanhuMcp = {
     runtimePath: 'tools/lanhu-mcp/',
-    envFile: 'tools/lanhu-mcp/.env',
     setupScript: 'tools/lanhu-mcp/setup-env.sh',
     quickstartScript: 'tools/lanhu-mcp/quickstart.sh',
     entryScript: 'tools/lanhu-mcp/lanhu_mcp_server.py',

@@ -12,24 +12,16 @@
 **处理流程：**
 
 1. **提取 URL 参数**：从 URL 中解析 `tid`、`pid`、`docId`、`docType`
-2. **确认 lanhu-cli 可用**：
-   ```bash
-   tools/lanhu-cli/.venv/bin/lanhu --help
-   ```
-   - 若命令不存在 → 提示用户先执行环境初始化（`/using-qa-flow init`）后重试
-
-3. **获取页面列表**：
-   ```bash
-   tools/lanhu-cli/.venv/bin/lanhu pages list "<URL>"
-   ```
-   - 若返回 418 → Cookie 已过期，向用户展示：
+2. **通过蓝湖 MCP 工具获取页面列表**：
+   - 直接调用 `lanhu_get_pages` 工具，传入蓝湖 URL
+   - 若返回 Cookie 过期错误 → 向用户展示：
      ```
-     蓝湖 Cookie 已过期，请更新 tools/lanhu-cli/.env 中的 LANHU_COOKIE 值后重试。
+     蓝湖 Cookie 已过期，请更新根目录 .env 中的 LANHU_COOKIE 值后重试。
 
      操作步骤：
      1. 在浏览器打开 lanhuapp.com 并登录
      2. 按 F12 → Network → 任意 api/ 请求 → 复制 Request Headers 中的 Cookie 字符串
-     3. 更新 tools/lanhu-cli/.env：LANHU_COOKIE="<粘贴的完整 Cookie>"
+     3. 更新项目根目录 .env：LANHU_COOKIE="<粘贴的完整 Cookie>"
      4. 重新发送指令继续
      ```
      **等待用户确认后重试，不自动继续下一步。**
@@ -53,20 +45,15 @@
        取消    → 回复「取消」中止本次导入
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      ```
-   - **等待用户明确回复**后才进入第 4 步；不回复不继续
+   - **等待用户明确回复**后才进入第 3 步；不回复不继续
    - 解析用户回复，确定最终页面列表，回显确认：
      ```
      已选择 {M} 个页面：商品列表、新增商品、订单详情
      正在分析页面内容…
      ```
-4. **分析页面内容**，参数根据用户选择构建：
-   ```bash
-   # 全部页面
-   tools/lanhu-cli/.venv/bin/lanhu pages analyze "<URL>" --mode text_only --analysis-mode tester
-
-   # 指定页面（逗号分隔，使用用户选择的页面名称）
-   tools/lanhu-cli/.venv/bin/lanhu pages analyze "<URL>" --page-names "商品列表,新增商品" --mode text_only --analysis-mode tester
-   ```
+3. **分析页面内容**：
+   - 调用 `lanhu_get_ai_analyze_page_result` 工具，传入蓝湖 URL 和用户选择的页面名称
+   - `mode` 使用 `text_only`，`analysis_mode` 使用 `tester`
 5. **整理输出为 PRD Markdown**：
    - 文件格式：**先写 YAML front-matter，再写正文**（见下方 Schema）
    - 将工具返回的文本内容按页面组织为标准 MD 格式

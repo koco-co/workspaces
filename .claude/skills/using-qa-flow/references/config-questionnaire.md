@@ -26,7 +26,7 @@ node .claude/skills/using-qa-flow/scripts/init-wizard.mjs --command load-existin
 - `project.name`、`displayName`、`casesRoot`：优先回填现有 config；若无现有值，再使用目录推断结果或默认 `cases/`
 - 模块列表：优先使用目录扫描 + 历史文件解析后的合并结果；无结果时从空列表开始问答
 - `repos`、`branchMapping`、`stackTrace`：如用户选择不配置源码仓库，则写入 `repos = {}`、`branchMapping = null`、`stackTrace = {}`
-- `lanhuCli`：如用户不自定义，使用默认 `tools/lanhu-cli/`、`tools/lanhu-cli/.env` 等字段
+- `lanhuMcp`：如用户不自定义，使用默认 `tools/lanhu-mcp/` 等字段（Cookie 统一存放在根 `.env`）
 - 最终确认阶段不展示完整 JSON（D-10），只展示纯文字分组摘要
 
 ## 五大功能组问题模板
@@ -72,11 +72,11 @@ node .claude/skills/using-qa-flow/scripts/init-wizard.mjs --command load-existin
 
 ```text
 ### ④ 集成工具
-是否需要配置蓝湖 CLI 集成？(y/n)
+是否需要配置蓝湖 MCP 集成？(y/n)
 如果 y：逐一确认各字段（展示默认值，用户可直接回车接受）
-- cliPath（默认 tools/lanhu-cli/）
-- envFile（默认 tools/lanhu-cli/.env）
-如果 n：使用默认 lanhuCli 配置
+- runtimePath（默认 tools/lanhu-mcp/）
+- serverPort（默认 8000）
+如果 n：使用默认 lanhuMcp 配置
 ```
 
 ### ⑤ 最终确认写入（D-10）
@@ -98,7 +98,7 @@ node .claude/skills/using-qa-flow/scripts/init-wizard.mjs --command load-existin
 {repos 摘要或「未配置」}
 
 **集成工具**
-{lanhuCli 摘要}
+{lanhuMcp 摘要}
 
 确认写入吗？(y/n)
 ```
