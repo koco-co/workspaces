@@ -6,7 +6,7 @@
 
 **Architecture:** 主 Orchestrator Agent 管理动态任务队列（≤5 个并发），每个 Script-Writer Sub-Agent 负责 MD 中一个 L3 页面的全部用例：使用 claude-in-chrome MCP 探索真实 UI → 结合前端源码写 TypeScript Playwright `test()` 块 → 执行临时 spec 验证 → 返回 SubAgentResult。主 Agent 合并结果写入 `smoke.spec.ts`（P0）和 `full.spec.ts`（全量），并在失败时通过 Bug-Reporter Sub-Agent 生成含完整 curl 信息的 HTML 报告。
 
-**Tech Stack:** TypeScript + Playwright v1.50+、Node.js ESM、claude-in-chrome MCP、现有 xmind-converter skill、notify.mjs
+**Tech Stack:** TypeScript + Playwright v1.50+、**Bun**（替代 npm/npx）、Node.js ESM、claude-in-chrome MCP、现有 xmind-converter skill、notify.mjs
 
 ---
 
@@ -24,8 +24,9 @@
 | `.claude/skills/ui-autotest/prompts/00-orchestrator.md` | 主 Agent 编排指令（动态队列 + 用户中转协议） |
 | `.claude/skills/ui-autotest/prompts/01-script-writer.md` | Script-Writer Sub-Agent 指令（探索 + 写脚本 + 执行） |
 | `.claude/skills/ui-autotest/prompts/02-bug-reporter.md` | Bug-Reporter Sub-Agent 指令（两级策略 + HTML 报告） |
+| `.claude/skills/ui-autotest/scripts/load-qa-env.mjs` | 多环境配置加载（读 QA_ACTIVE_ENV，返回当前环境的 baseUrl/username/password/cookie/domain） |
 | `.claude/skills/ui-autotest/scripts/parse-md-cases.mjs` | MD → 任务队列 JSON（导出函数 + CLI 接口） |
-| `.claude/skills/ui-autotest/scripts/session-login.mjs` | 登录 + 保存 `.auth/session.json` |
+| `.claude/skills/ui-autotest/scripts/session-login.mjs` | Cookie 注入（优先）/ UI 登录（兜底）→ 保存 `.auth/session.json` |
 | `.claude/skills/ui-autotest/scripts/merge-spec-blocks.mjs` | 合并 test() 块 → smoke.spec.ts + full.spec.ts |
 | `.claude/tests/test-ui-autotest-parse.mjs` | parse-md-cases.mjs 单元测试 |
 | `.claude/tests/test-ui-autotest-merge.mjs` | merge-spec-blocks.mjs 单元测试 |
@@ -50,18 +51,18 @@
 - Create: `tests/e2e/.gitkeep`
 - Create: `reports/e2e/.gitkeep`
 
-- [ ] **Step 1: 添加 @playwright/test 开发依赖**
+- [ ] **Step 1: 添加 @playwright/test 开发依赖（使用 Bun）**
 
 ```bash
-npm install -D @playwright/test
+bun add -d @playwright/test
 ```
 
-Expected: `package.json` devDependencies 中新增 `"@playwright/test": "^1.50.x"`
+Expected: `package.json` devDependencies 中新增 `"@playwright/test": "^1.50.x"`，生成/更新 `bun.lockb`
 
 - [ ] **Step 2: 安装 Chromium 浏览器**
 
 ```bash
-npx playwright install chromium
+bunx playwright install chromium
 ```
 
 Expected: 输出 `Chromium 已安装` 类似信息，无报错
@@ -139,7 +140,7 @@ export default defineConfig({
 - [ ] **Step 2: 验证配置可解析**
 
 ```bash
-npx playwright --version
+bunx playwright --version
 ```
 
 Expected: 输出版本号，无报错
@@ -153,7 +154,96 @@ git commit -m "feat: add playwright.config.ts for ui-autotest"
 
 ---
 
-## Task 3: parse-md-cases.mjs（TDD）
+## Task 3: load-qa-env.mjs（多环境配置加载器）
+
+**Files:**
+- Create: `.claude/skills/ui-autotest/scripts/load-qa-env.mjs`
+
+- [ ] **Step 1: 创建多环境加载脚本**
+
+```javascript
+// load-qa-env.mjs
+// 读取 .env 中的 QA_ACTIVE_ENV，返回对应环境的完整配置。
+// 约定：每个环境的变量以 QA_*_{ENV_KEY} 格式命名，ENV_KEY 为大写。
+import { readFileSync, existsSync } from 'fs'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const projectRoot = resolve(__dirname, '../../../../')
+
+function parseEnvFile(filePath) {
+  if (!existsSync(filePath)) return {}
+  const lines = readFileSync(filePath, 'utf8').split('\n')
+  return lines.reduce((acc, line) => {
+    const match = line.match(/^([^#=\s][^=]*)=(.*)$/)
+    if (match) acc[match[1].trim()] = match[2].trim()
+    return acc
+  }, {})
+}
+
+/**
+ * 加载当前活跃环境的 QA 配置。
+ * 读取顺序：process.env > .env 文件。
+ *
+ * @returns {{ activeEnv: string, baseUrl: string, username: string, password: string, domain: string, cookie: string }}
+ */
+export function loadQaEnv() {
+  const fileEnv = parseEnvFile(resolve(projectRoot, '.env'))
+  const env = { ...fileEnv, ...process.env }
+
+  const activeEnv = (env.QA_ACTIVE_ENV || '').toUpperCase()
+  if (!activeEnv) throw new Error('未设置 QA_ACTIVE_ENV，请在 .env 中指定当前活跃环境（如 QA_ACTIVE_ENV=ltqc）')
+
+  const baseUrl = env[`QA_BASE_URL_${activeEnv}`]
+  const username = env[`QA_USERNAME_${activeEnv}`]
+  const password = env[`QA_PASSWORD_${activeEnv}`]
+  const domain = env[`QA_DOMAIN_${activeEnv}`]
+  const cookie = env[`QA_COOKIE_${activeEnv}`] || ''
+
+  if (!baseUrl) throw new Error(`未找到环境 "${activeEnv}" 的 QA_BASE_URL_${activeEnv} 配置`)
+
+  return { activeEnv: activeEnv.toLowerCase(), baseUrl, username, password, domain, cookie }
+}
+
+// CLI：打印当前环境配置（密码和 cookie 脱敏）
+if (process.argv[1].endsWith('load-qa-env.mjs')) {
+  const cfg = loadQaEnv()
+  console.log('当前活跃环境:', cfg.activeEnv)
+  console.log('  baseUrl :', cfg.baseUrl)
+  console.log('  username:', cfg.username)
+  console.log('  password:', cfg.password ? '(已配置)' : '(未配置)')
+  console.log('  domain  :', cfg.domain)
+  console.log('  cookie  :', cfg.cookie ? `(已配置, ${cfg.cookie.length} chars)` : '(未配置)')
+}
+```
+
+- [ ] **Step 2: 验证加载器**
+
+```bash
+node .claude/skills/ui-autotest/scripts/load-qa-env.mjs
+```
+
+Expected（基于当前 .env 的 ltqc 配置）：
+```
+当前活跃环境: ltqc
+  baseUrl : http://shuzhan63-test-ltqc.k8s.dtstack.cn
+  username: admin@dtstack.com
+  password: (已配置)
+  domain  : shuzhan63-test-ltqc.k8s.dtstack.cn
+  cookie  : (已配置, xxx chars)
+```
+
+- [ ] **Step 3: 提交**
+
+```bash
+git add .claude/skills/ui-autotest/scripts/load-qa-env.mjs
+git commit -m "feat: add multi-env config loader load-qa-env.mjs"
+```
+
+---
+
+## Task 4: parse-md-cases.mjs（TDD）
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/scripts/parse-md-cases.mjs`
@@ -397,91 +487,90 @@ git commit -m "feat: add parse-md-cases.mjs with unit tests"
 
 ---
 
-## Task 4: session-login.mjs
+## Task 5: session-login.mjs（Cookie 注入优先）
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/scripts/session-login.mjs`
 
-注：此脚本直接操作浏览器，不适合纯单元测试；通过 `--dry-run` flag 验证配置读取逻辑。
+注：优先使用 `.env` 中存储的 Cookie 直接构建 storageState（无需打开浏览器），仅在 Cookie 未配置时回退到 UI 登录。
 
 - [ ] **Step 1: 创建登录脚本**
 
 ```javascript
 // session-login.mjs
 import { chromium } from '@playwright/test'
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { writeFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { loadQaEnv } from './load-qa-env.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(__dirname, '../../../../')
 const SESSION_PATH = resolve(projectRoot, '.auth/session.json')
 
-function loadEnv() {
-  try {
-    const envPath = resolve(projectRoot, '.env')
-    const lines = readFileSync(envPath, 'utf8').split('\n')
-    const env = {}
-    for (const line of lines) {
-      const match = line.match(/^([^#=]+)=(.*)$/)
-      if (match) env[match[1].trim()] = match[2].trim()
-    }
-    return env
-  } catch {
-    return {}
-  }
+/**
+ * 将 cookie 字符串（"k=v; k2=v2"）解析为 Playwright storageState 的 cookies 数组。
+ * @param {string} cookieStr
+ * @param {string} domain
+ * @returns {object[]}
+ */
+export function parseCookieString(cookieStr, domain) {
+  return cookieStr.split(';').map(pair => {
+    const eqIdx = pair.indexOf('=')
+    if (eqIdx === -1) return null
+    const name = pair.slice(0, eqIdx).trim()
+    const value = pair.slice(eqIdx + 1).trim()
+    return { name, value, domain, path: '/', expires: -1, httpOnly: false, secure: false, sameSite: 'Lax' }
+  }).filter(Boolean).filter(c => c.name)
 }
 
-async function login({ baseUrl, username, password }) {
-  if (!baseUrl || !username || !password) {
-    throw new Error('缺少必要参数：QA_BASE_URL、QA_USERNAME、QA_PASSWORD 均不能为空')
-  }
+/**
+ * 策略一：Cookie 注入（无需打开浏览器，毫秒级完成）
+ */
+export function loginWithCookie({ cookie, domain }) {
+  if (!cookie) throw new Error('cookie 为空')
+  const cookies = parseCookieString(cookie, domain)
+  const storageState = { cookies, origins: [] }
+  mkdirSync(resolve(projectRoot, '.auth'), { recursive: true })
+  writeFileSync(SESSION_PATH, JSON.stringify(storageState, null, 2), 'utf8')
+  console.log(`✅ Cookie 注入完成，Session 已保存到 ${SESSION_PATH}（共 ${cookies.length} 个 cookie）`)
+}
 
+/**
+ * 策略二：UI 登录（兜底，当 Cookie 未配置时使用）
+ */
+export async function loginWithBrowser({ baseUrl, username, password }) {
+  if (!baseUrl || !username || !password) throw new Error('缺少 baseUrl / username / password')
   const browser = await chromium.launch({ headless: false })
   const context = await browser.newContext()
   const page = await context.newPage()
-
   try {
     console.log(`正在导航到登录页：${baseUrl}`)
     await page.goto(baseUrl, { waitUntil: 'networkidle', timeout: 30000 })
-
-    // 尝试自动填写常见登录表单
-    const usernameSelectors = ['input[name="username"]', 'input[type="text"]', '#username', '.username-input input']
-    const passwordSelectors = ['input[name="password"]', 'input[type="password"]', '#password', '.password-input input']
-    const submitSelectors = ['button[type="submit"]', 'button.login-btn', '.login-button', 'button:has-text("登录")']
-
-    let loginFormFound = false
-    for (const sel of usernameSelectors) {
+    const userSels = ['input[name="username"]', 'input[type="text"]', '#username']
+    const passSels = ['input[name="password"]', 'input[type="password"]', '#password']
+    const submitSels = ['button[type="submit"]', 'button:has-text("登录")', '.login-button']
+    let found = false
+    for (const sel of userSels) {
       if (await page.locator(sel).count() > 0) {
-        await page.locator(sel).first().fill(username)
-        loginFormFound = true
-        break
+        await page.locator(sel).first().fill(username); found = true; break
       }
     }
-
-    if (loginFormFound) {
-      for (const sel of passwordSelectors) {
-        if (await page.locator(sel).count() > 0) {
-          await page.locator(sel).first().fill(password)
-          break
-        }
+    if (found) {
+      for (const sel of passSels) {
+        if (await page.locator(sel).count() > 0) { await page.locator(sel).first().fill(password); break }
       }
-      for (const sel of submitSelectors) {
-        if (await page.locator(sel).count() > 0) {
-          await page.locator(sel).first().click()
-          break
-        }
+      for (const sel of submitSels) {
+        if (await page.locator(sel).count() > 0) { await page.locator(sel).first().click(); break }
       }
       await page.waitForLoadState('networkidle', { timeout: 15000 })
-      console.log('自动登录完成，等待页面稳定...')
     } else {
-      console.log('未找到标准登录表单，请在浏览器中手动完成登录，完成后按 Enter 继续...')
-      await new Promise(resolve => process.stdin.once('data', resolve))
+      console.log('未找到标准登录表单，请手动完成登录后按 Enter 继续...')
+      await new Promise(r => process.stdin.once('data', r))
     }
-
     mkdirSync(resolve(projectRoot, '.auth'), { recursive: true })
     await context.storageState({ path: SESSION_PATH })
-    console.log(`✅ Session 已保存到 ${SESSION_PATH}`)
+    console.log(`✅ UI 登录完成，Session 已保存到 ${SESSION_PATH}`)
   } finally {
     await browser.close()
   }
@@ -489,29 +578,27 @@ async function login({ baseUrl, username, password }) {
 
 // CLI 接口
 if (process.argv[1].endsWith('session-login.mjs')) {
-  const env = loadEnv()
-  const baseUrl = process.env.QA_BASE_URL || env.QA_BASE_URL
-  const username = process.env.QA_USERNAME || env.QA_USERNAME
-  const password = process.env.QA_PASSWORD || env.QA_PASSWORD
-
   const isDryRun = process.argv.includes('--dry-run')
+  const cfg = loadQaEnv()
   if (isDryRun) {
-    console.log('--dry-run: 配置读取结果：')
-    console.log(`  QA_BASE_URL = ${baseUrl || '(未配置)'}`)
-    console.log(`  QA_USERNAME = ${username ? '(已配置)' : '(未配置)'}`)
-    console.log(`  QA_PASSWORD = ${password ? '(已配置)' : '(未配置)'}`)
+    console.log('--dry-run: 当前环境配置：')
+    console.log(`  activeEnv: ${cfg.activeEnv}`)
+    console.log(`  baseUrl  : ${cfg.baseUrl}`)
+    console.log(`  username : ${cfg.username}`)
+    console.log(`  cookie   : ${cfg.cookie ? `(已配置, ${cfg.cookie.length} chars)` : '(未配置，将使用 UI 登录)'}`)
     process.exit(0)
   }
-
   try {
-    await login({ baseUrl, username, password })
+    if (cfg.cookie) {
+      loginWithCookie({ cookie: cfg.cookie, domain: cfg.domain })
+    } else {
+      await loginWithBrowser({ baseUrl: cfg.baseUrl, username: cfg.username, password: cfg.password })
+    }
   } catch (error) {
-    console.error('登录失败:', error.message)
+    console.error('Session 初始化失败:', error.message)
     process.exit(1)
   }
 }
-
-export { login }
 ```
 
 - [ ] **Step 2: 验证 dry-run 模式**
@@ -520,18 +607,25 @@ export { login }
 node .claude/skills/ui-autotest/scripts/session-login.mjs --dry-run
 ```
 
-Expected: 输出三个配置项的状态（已配置/未配置），无浏览器打开，退出码 0
+Expected：
+```
+--dry-run: 当前环境配置：
+  activeEnv: ltqc
+  baseUrl  : http://shuzhan63-test-ltqc.k8s.dtstack.cn
+  username : admin@dtstack.com
+  cookie   : (已配置, xxx chars)
+```
 
 - [ ] **Step 3: 提交**
 
 ```bash
 git add .claude/skills/ui-autotest/scripts/session-login.mjs
-git commit -m "feat: add session-login.mjs for playwright auth"
+git commit -m "feat: add session-login.mjs with cookie injection (primary) and UI login (fallback)"
 ```
 
 ---
 
-## Task 5: merge-spec-blocks.mjs（TDD）
+## Task 6: merge-spec-blocks.mjs（TDD）
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/scripts/merge-spec-blocks.mjs`
@@ -710,7 +804,7 @@ git commit -m "feat: add merge-spec-blocks.mjs with unit tests"
 
 ---
 
-## Task 6: SKILL.md
+## Task 7: SKILL.md
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/SKILL.md`
@@ -839,7 +933,7 @@ git commit -m "feat: add ui-autotest SKILL.md"
 
 ---
 
-## Task 7: 00-orchestrator.md
+## Task 8: 00-orchestrator.md
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/prompts/00-orchestrator.md`
@@ -1100,7 +1194,7 @@ git commit -m "feat: add ui-autotest orchestrator prompt"
 
 ---
 
-## Task 8: 01-script-writer.md
+## Task 9: 01-script-writer.md
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/prompts/01-script-writer.md`
@@ -1265,7 +1359,7 @@ pageId-slug = pageId 中的 `::` 替换为 `-`，去掉特殊字符。
 ### 执行验证
 
 ```bash
-npx playwright test tests/e2e/.tmp/{slug}.spec.ts --headed
+bunx playwright test tests/e2e/.tmp/{slug}.spec.ts --headed
 ```
 
 ---
@@ -1345,7 +1439,7 @@ git commit -m "feat: add script-writer sub-agent prompt"
 
 ---
 
-## Task 9: 02-bug-reporter.md
+## Task 10: 02-bug-reporter.md
 
 **Files:**
 - Create: `.claude/skills/ui-autotest/prompts/02-bug-reporter.md`
@@ -1496,7 +1590,7 @@ git commit -m "feat: add bug-reporter sub-agent prompt"
 
 ---
 
-## Task 10: 更新配置文件
+## Task 11: 更新配置文件
 
 **Files:**
 - Modify: `.claude/rules/notification-hook.md`
