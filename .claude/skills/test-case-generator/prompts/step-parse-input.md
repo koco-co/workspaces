@@ -68,27 +68,34 @@
 
    5a. **截图持久化（按优先级尝试，取第一个成功的方式）**：
 
-   **方式 A（优先）— 复制文件路径**：
-   若 MCP 响应中包含截图的**本地文件路径**（如 `/tmp/lanhu_screenshot_xxx.png`），执行：
+   **方式 A（优先，lanhu-mcp 标准路径）**：
+   lanhu-mcp 在调用 `lanhu_get_ai_analyze_page_result` 后，会将截图保存到本地固定路径：
+   ```
+   tools/lanhu-mcp/data/axure_extract_{doc_id前8位}_screenshots/{页面名}.png
+   ```
+   `doc_id` 从蓝湖 URL 的 `docId` 参数提取（如 URL 中 `docId=fc0fee93-...`，前8位为 `fc0fee93`）。
+
+   执行以下命令将截图复制到 `assets/images/`：
    ```bash
    mkdir -p assets/images
-   cp "/tmp/lanhu_screenshot_xxx.png" "assets/images/{文档标题}-{页面名称}.png"
+   SCREENSHOT_DIR="tools/lanhu-mcp/data/axure_extract_{doc_id前8位}_screenshots"
+   cp "$SCREENSHOT_DIR/{原始页面文件名}.png" "assets/images/{文档标题}-{页面名称}.png"
    ```
 
-   **方式 B — base64 解码保存**：
-   若 MCP 响应中包含 base64 编码图片数据，执行：
+   **方式 B — base64 解码保存**（方式 A 失败时）：
+   若截图目录不存在，但 MCP 响应中包含 base64 图片数据，执行：
    ```bash
    mkdir -p assets/images
    echo "<base64_data>" | base64 -d > "assets/images/{文档标题}-{页面名称}.png"
    ```
 
    **方式 C（兜底）— 纯文本视觉分析**：
-   若以上两种方式均不可行（MCP 响应中无可提取的图片文件路径或 base64 数据），则：
-   - **不插入图片引用**，改为在该页面正文开头写入一个结构化的视觉分析块（见 5c 详细要求）
+   若以上两种方式均不可行，则：
+   - **不插入图片引用**，在该页面正文开头写入结构化视觉分析块（见 5c 详细要求）
    - 此兜底方案下 prd-enhancer 将处理文本，而非图片文件
 
-   **命名规则**（适用于方式 A / B）：`{文档标题}-{页面名称}.png`，去掉空格和特殊字符，例如：
-   - `JSON校验规则-导入配置页.png`、`JSON校验规则-列表页.png`
+   **命名规则**（适用于方式 A / B）：`{文档标题简称}-{页面名称}.png`，中文语义化命名，例如：
+   - `JSON校验规则-通用配置页.png`、`JSON校验规则-列表页.png`
    - 同名文件追加 `-2`、`-3` 后缀
 
    5b. **在 PRD Markdown 中嵌入图片引用**（方式 A / B 成功后执行）：
