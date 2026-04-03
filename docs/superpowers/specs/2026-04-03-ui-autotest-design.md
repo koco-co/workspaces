@@ -90,7 +90,7 @@ Sub-agent 按 L3 页面并行工作，各自输出 `test()` 代码块，由主 a
 
 ### 重跑策略
 
-已存在的 spec 文件默认**覆盖**（overwrite）。重跑时状态文件同步重置，所有任务恢复为 `pending`。
+已存在的 spec 文件默认**覆盖**（overwrite）。每个 L3 任务最多执行 **3 次**（首次 + 2 次修正重试），达到上限仍失败则上报 Bug-Reporter，不再重试。重跑整个 skill 时状态文件同步重置，`attempts` 计数清零。
 
 ---
 
@@ -194,7 +194,7 @@ interface SubAgentResult {
       "specFile": "tests/e2e/202604/【功能名】/",
       "cases": ["验证默认加载", "验证搜索筛选"],
       "status": "pending",        // pending|running|passed|failed|blocked|answered
-      "attempts": 0,
+      "attempts": 0,              // 最大 3 次，达到上限标记 failed
       "mdUpdated": false,
       "userQuestions": [],
       "userAnswers": []
@@ -240,7 +240,7 @@ test() 执行过程中
 
 ### 失败重试上限
 
-每个用例最多 2 次（首次 + selector 修正后重试），仍失败则上报 Bug-Reporter。
+每个 L3 任务最多 **3 次**（首次 + 2 次修正重试），仍失败则上报 Bug-Reporter。
 
 ### 分支确认（多仓库）
 
@@ -254,7 +254,7 @@ test() 执行过程中
 
 **策略二（兜底复现包，无法定位时）**：
 - 详细复现步骤（从登录到触发错误的完整操作）
-- 完整 curl 命令（含 Cookie、Authorization 等敏感 Header）
+- 完整 curl 命令（**必须包含 Cookie、Authorization 等全部 Header，不做脱敏**）
 - 请求 Body + 响应 Body（完整 JSON）
 - 错误截图
 
