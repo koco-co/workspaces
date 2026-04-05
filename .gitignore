@@ -8,3 +8,6 @@ workspace/
 .auth/
 .trash/
 .repos/
+
+.vscode/
+cases/
