@@ -11,6 +11,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
 
+import {
+  extractStepLabel,
+  buildPrintableHtml,
+  findCases,
+} from "../report-to-pdf.ts";
+
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const TMP_DIR = join(tmpdir(), `qa-flow-report-to-pdf-test-${process.pid}`);
 
@@ -54,7 +60,7 @@ function createMinimalReportJson(dir: string): string {
   ]);
   writeFileSync(join(attachmentsDir, "screenshot.png"), pngHeader);
 
-  // Create error markdown
+  // Create error markdown (should be ignored in new layout)
   writeFileSync(
     join(attachmentsDir, "error.md"),
     "# Error details\n```\nError: test failed\n```\n",
@@ -66,11 +72,11 @@ function createMinimalReportJson(dir: string): string {
     dateH: "2026/4/7 12:00:00",
     durationH: "5.0s",
     summary: {
-      tests: { name: "Tests", value: 1 },
+      tests: { name: "Tests", value: 2 },
       failed: { name: "Failed", value: 1, color: "#d00" },
       flaky: { name: "Flaky", value: 0, color: "orange" },
       skipped: { name: "Skipped", value: 0, color: "gray" },
-      passed: { name: "Passed", value: 0, color: "green" },
+      passed: { name: "Passed", value: 1, color: "green" },
     },
     rows: [
       {
@@ -105,6 +111,13 @@ function createMinimalReportJson(dir: string): string {
                       },
                     ],
                   },
+                  {
+                    title: "should pass test",
+                    type: "case",
+                    status: "passed",
+                    duration: 2000,
+                    attachments: [],
+                  },
                 ],
               },
             ],
@@ -132,6 +145,104 @@ after(() => {
   }
 });
 
+// ─── Unit tests for exported helpers ────────────────────────────────
+
+describe("extractStepLabel", () => {
+  it("strips emoji prefix from step name", () => {
+    assert.equal(
+      extractStepLabel("✅ 步骤-1 进入页面 预期-1 正常打开"),
+      "步骤-1 进入页面 预期-1 正常打开",
+    );
+  });
+
+  it("strips cross-mark emoji prefix", () => {
+    assert.equal(
+      extractStepLabel("❌ 步骤-2 查看菜单 预期-2 名称已修改"),
+      "步骤-2 查看菜单 预期-2 名称已修改",
+    );
+  });
+
+  it("handles names without emoji prefix", () => {
+    assert.equal(extractStepLabel("step-1 screenshot"), "step-1 screenshot");
+  });
+
+  it("handles empty string", () => {
+    assert.equal(extractStepLabel(""), "");
+  });
+
+  it("preserves Chinese brackets", () => {
+    assert.equal(
+      extractStepLabel("【P0】验证功能"),
+      "【P0】验证功能",
+    );
+  });
+});
+
+describe("findCases", () => {
+  it("extracts test cases from nested rows", () => {
+    const rows = [
+      {
+        title: "suite",
+        type: "suite",
+        subs: [
+          { title: "case-1", type: "case", status: "passed" },
+          { title: "case-2", type: "case", status: "failed" },
+        ],
+      },
+    ];
+    const cases = findCases(rows);
+    assert.equal(cases.length, 2);
+    assert.equal(cases[0].title, "case-1");
+    assert.equal(cases[1].title, "case-2");
+  });
+
+  it("returns empty array for no cases", () => {
+    const cases = findCases([{ title: "suite", type: "suite" }]);
+    assert.equal(cases.length, 0);
+  });
+});
+
+describe("buildPrintableHtml", () => {
+  it("generates HTML without error details or file paths", () => {
+    const jsonPath = createMinimalReportJson(join(TMP_DIR, "html-check"));
+    const reportDir = join(TMP_DIR, "html-check", "test-report");
+    const data = JSON.parse(readFileSync(jsonPath, "utf8"));
+
+    const html = buildPrintableHtml(data, reportDir);
+
+    // Should contain summary stats
+    assert.match(html, /总用例/);
+    assert.match(html, /通过率/);
+
+    // Should contain test case title
+    assert.match(html, /should work correctly/);
+
+    // Should NOT contain error details or file paths
+    assert.ok(!html.includes("Error: test failed"), "Should not include error text");
+    assert.ok(!html.includes("test-file.spec.ts"), "Should not include file paths");
+    assert.ok(!html.includes("error-context"), "Should not include error markdown name");
+
+    // Should contain base64 image
+    assert.match(html, /data:image\/png;base64,/);
+
+    // Should contain pass rate
+    assert.match(html, /50%/);
+  });
+
+  it("shows correct status labels in Chinese", () => {
+    const jsonPath = createMinimalReportJson(join(TMP_DIR, "status-check"));
+    const reportDir = join(TMP_DIR, "status-check", "test-report");
+    const data = JSON.parse(readFileSync(jsonPath, "utf8"));
+
+    const html = buildPrintableHtml(data, reportDir);
+
+    assert.match(html, /未通过/);
+    assert.match(html, /通过<\/div>/);
+  });
+});
+
+// ─── CLI integration tests ──────────────────────────────────────────
+
 describe("report-to-pdf --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["--help"]);
@@ -152,7 +263,7 @@ describe("report-to-pdf with missing file", () => {
 
 describe("report-to-pdf with minimal report", () => {
   it("generates PDF from JSON report data", () => {
-    const jsonPath = createMinimalReportJson(TMP_DIR);
+    const jsonPath = createMinimalReportJson(join(TMP_DIR, "pdf-gen"));
     const { stdout, code } = run([jsonPath]);
     assert.equal(code, 0, `Expected exit code 0, got ${code}`);
     assert.match(stdout, /PDF saved/);
@@ -183,7 +294,6 @@ describe("report-to-pdf with minimal report", () => {
     const jsonPath = createMinimalReportJson(
       join(TMP_DIR, "html-resolve"),
     );
-    // Create a dummy HTML file with same base name
     const htmlPath = jsonPath.replace(/\.json$/, ".html");
     writeFileSync(htmlPath, "<html></html>");
 

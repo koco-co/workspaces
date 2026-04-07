@@ -4,7 +4,9 @@
  *
  * Reads the JSON data file (generated alongside HTML by monocart-reporter),
  * builds a printable HTML page with embedded screenshots, then uses Playwright
- * to export it as PDF.
+ * to export it as PDF.  Designed for non-technical stakeholders — no error
+ * stack traces or file paths; clean visual layout with status badges and
+ * full-width screenshots.
  *
  * Usage:
  *   bun run .claude/scripts/report-to-pdf.ts <path-to-html-or-json>
@@ -74,7 +76,7 @@ interface ConvertResult {
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-function findCases(rows: readonly TestRow[]): readonly TestCase[] {
+export function findCases(rows: readonly TestRow[]): readonly TestCase[] {
   const cases: TestCase[] = [];
   for (const row of rows) {
     if (row.type === "case") {
@@ -87,66 +89,9 @@ function findCases(rows: readonly TestRow[]): readonly TestCase[] {
   return cases;
 }
 
-function findSuitePathForCase(
-  rows: readonly TestRow[],
-  targetTitle: string,
-  path: readonly string[] = [],
-): readonly string[] | null {
-  for (const row of rows) {
-    if (row.type === "case" && row.title === targetTitle) {
-      return path;
-    }
-    if (row.subs) {
-      const result = findSuitePathForCase(row.subs, targetTitle, [
-        ...path,
-        row.title,
-      ]);
-      if (result) return result;
-    }
-  }
-  return null;
-}
-
 function imageToBase64DataUri(imagePath: string): string {
   const data = readFileSync(imagePath);
   return `data:image/png;base64,${data.toString("base64")}`;
-}
-
-function readErrorMarkdown(mdPath: string): string {
-  const content = readFileSync(mdPath, "utf8");
-  // Extract the error details section
-  const errorMatch = content.match(/# Error details\s*```([\s\S]*?)```/);
-  return errorMatch ? errorMatch[1].trim() : content;
-}
-
-function statusIcon(status: string): string {
-  switch (status) {
-    case "passed":
-      return "&#x2705;";
-    case "failed":
-      return "&#x274C;";
-    case "skipped":
-      return "&#x23ED;";
-    case "flaky":
-      return "&#x26A0;&#xFE0F;";
-    default:
-      return "&#x2753;";
-  }
-}
-
-function statusColor(status: string): string {
-  switch (status) {
-    case "passed":
-      return "#4caf50";
-    case "failed":
-      return "#d00";
-    case "skipped":
-      return "#999";
-    case "flaky":
-      return "#ff9800";
-    default:
-      return "#666";
-  }
 }
 
 function escapeHtml(text: string): string {
@@ -163,9 +108,66 @@ function formatDuration(ms?: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    passed: "通过",
+    failed: "未通过",
+    skipped: "跳过",
+    flaky: "不稳定",
+  };
+  return map[status] ?? status;
+}
+
+function statusBadgeColor(status: string): { bg: string; fg: string } {
+  switch (status) {
+    case "passed":
+      return { bg: "#e8f5e9", fg: "#2e7d32" };
+    case "failed":
+      return { bg: "#ffebee", fg: "#c62828" };
+    case "skipped":
+      return { bg: "#f5f5f5", fg: "#757575" };
+    case "flaky":
+      return { bg: "#fff3e0", fg: "#e65100" };
+    default:
+      return { bg: "#f5f5f5", fg: "#666" };
+  }
+}
+
+/** Extract step label from attachment name, stripping emoji prefixes. */
+export function extractStepLabel(name: string): string {
+  return name.replace(/^[^\p{L}\p{N}【]*/u, "").trim();
+}
+
+// ─── Summary helpers ─────────────────────────────────────────────────
+
+function summaryCardColor(key: string): { bg: string; fg: string; accent: string } {
+  switch (key) {
+    case "tests":
+      return { bg: "#f0f4ff", fg: "#1a237e", accent: "#3f51b5" };
+    case "passed":
+      return { bg: "#e8f5e9", fg: "#1b5e20", accent: "#4caf50" };
+    case "failed":
+      return { bg: "#ffebee", fg: "#b71c1c", accent: "#ef5350" };
+    case "skipped":
+      return { bg: "#f5f5f5", fg: "#616161", accent: "#9e9e9e" };
+    default:
+      return { bg: "#f5f5f5", fg: "#333", accent: "#999" };
+  }
+}
+
+function summaryCardLabel(key: string): string {
+  const map: Record<string, string> = {
+    tests: "总用例",
+    passed: "通过",
+    failed: "未通过",
+    skipped: "跳过",
+  };
+  return map[key] ?? key;
+}
+
 // ─── HTML Builder ────────────────────────────────────────────────────
 
-function buildPrintableHtml(
+export function buildPrintableHtml(
   data: ReportData,
   reportDir: string,
 ): string {
@@ -173,101 +175,160 @@ function buildPrintableHtml(
   const { summary } = data;
   const dateStr = data.dateH ?? new Date(data.date).toLocaleString();
 
-  const caseSections = cases.map((tc, idx) => {
-    const suitePath = findSuitePathForCase(data.rows, tc.title) ?? [];
-    const suiteLabel = suitePath.filter((s) => s !== "chromium").join(" &gt; ");
-
-    // Separate screenshots and error markdown attachments
-    const screenshots = (tc.attachments ?? []).filter(
-      (a) => a.contentType.startsWith("image/"),
-    );
-    const errorMds = (tc.attachments ?? []).filter(
-      (a) => a.contentType === "text/markdown",
-    );
-
-    let errorHtml = "";
-    for (const md of errorMds) {
-      const mdPath = join(reportDir, md.path);
-      if (existsSync(mdPath)) {
-        const errorText = readErrorMarkdown(mdPath);
-        errorHtml += `<div class="error-block"><pre>${escapeHtml(errorText)}</pre></div>`;
-      }
-    }
-
-    let screenshotHtml = "";
-    for (const ss of screenshots) {
-      const imgPath = join(reportDir, ss.path);
-      if (existsSync(imgPath)) {
-        const dataUri = imageToBase64DataUri(imgPath);
-        screenshotHtml += `
-          <div class="screenshot">
-            <div class="screenshot-label">${escapeHtml(ss.name)}</div>
-            <img src="${dataUri}" />
-          </div>`;
-      }
-    }
-
-    return `
-      <div class="case-card">
-        <div class="case-header" style="border-left-color: ${statusColor(tc.status)}">
-          <span class="case-index">#${idx + 1}</span>
-          <span class="case-status">${statusIcon(tc.status)}</span>
-          <span class="case-title">${escapeHtml(tc.title)}</span>
-          <span class="case-duration">${formatDuration(tc.duration)}</span>
-        </div>
-        ${suiteLabel ? `<div class="case-suite">${suiteLabel}</div>` : ""}
-        ${errorHtml}
-        ${screenshotHtml ? `<div class="screenshots">${screenshotHtml}</div>` : ""}
-      </div>`;
-  });
-
-  const summaryItems = ["tests", "failed", "flaky", "skipped", "passed"]
+  // --- Summary cards ---
+  const summaryKeys = ["tests", "passed", "failed", "skipped"];
+  const summaryCards = summaryKeys
     .filter((k) => summary[k])
     .map((k) => {
       const item = summary[k];
-      const color = item.color ?? "#333";
-      return `<span class="summary-item" style="color: ${color}"><b>${item.value}</b> ${item.name}</span>`;
+      const c = summaryCardColor(k);
+      return `
+        <div class="stat-card" style="background:${c.bg}; border-left: 4px solid ${c.accent};">
+          <div class="stat-value" style="color:${c.fg}">${item.value}</div>
+          <div class="stat-label" style="color:${c.fg}">${summaryCardLabel(k)}</div>
+        </div>`;
     })
     .join("");
+
+  // --- Pass rate ---
+  const total = summary.tests?.value ?? 0;
+  const passed = summary.passed?.value ?? 0;
+  const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+  const rateColor = passRate >= 80 ? "#2e7d32" : passRate >= 50 ? "#e65100" : "#c62828";
+
+  // --- Test case cards ---
+  const caseSections = cases.map((tc, idx) => {
+    const badge = statusBadgeColor(tc.status);
+
+    // Only image attachments — no error markdowns
+    const screenshots = (tc.attachments ?? []).filter((a) =>
+      a.contentType.startsWith("image/"),
+    );
+
+    const screenshotHtml = screenshots
+      .map((ss) => {
+        const imgPath = join(reportDir, ss.path);
+        if (!existsSync(imgPath)) return "";
+        const dataUri = imageToBase64DataUri(imgPath);
+        const label = extractStepLabel(ss.name);
+        return `
+          <div class="screenshot-block">
+            <div class="step-label">${escapeHtml(label)}</div>
+            <img src="${dataUri}" />
+          </div>`;
+      })
+      .filter(Boolean)
+      .join("");
+
+    return `
+      <div class="case-card">
+        <div class="case-header">
+          <span class="case-index">${idx + 1}</span>
+          <span class="case-title">${escapeHtml(tc.title)}</span>
+          <span class="badge" style="background:${badge.bg}; color:${badge.fg}">${statusLabel(tc.status)}</span>
+          <span class="case-duration">${formatDuration(tc.duration)}</span>
+        </div>
+        ${screenshotHtml}
+      </div>`;
+  });
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <style>
+    @page { size: A4; margin: 15mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #333; line-height: 1.5; padding: 20px; }
-    .report-header { background: #1a1a2e; color: #fff; padding: 16px 20px; border-radius: 6px; margin-bottom: 20px; }
-    .report-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-    .report-meta { font-size: 12px; color: #aaa; }
-    .summary-bar { display: flex; gap: 16px; padding: 10px 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 20px; font-size: 14px; }
-    .summary-item { display: inline-flex; gap: 4px; align-items: center; }
-    .case-card { border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 16px; overflow: hidden; page-break-inside: avoid; }
-    .case-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fafafa; border-left: 4px solid; font-size: 14px; }
-    .case-index { color: #999; font-size: 12px; min-width: 24px; }
-    .case-title { flex: 1; font-weight: 500; }
-    .case-duration { color: #999; font-size: 12px; }
-    .case-suite { padding: 4px 14px 4px 18px; font-size: 11px; color: #888; background: #fafafa; border-top: 1px solid #f0f0f0; }
-    .error-block { padding: 10px 14px; background: #fff5f5; border-top: 1px solid #fdd; }
-    .error-block pre { font-size: 11px; color: #c00; white-space: pre-wrap; word-break: break-all; font-family: "SF Mono", Monaco, Consolas, monospace; }
-    .screenshots { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 12px; }
-    .screenshot { flex: 1; min-width: 280px; max-width: 100%; }
-    .screenshot-label { font-size: 11px; color: #666; margin-bottom: 4px; word-break: break-all; }
-    .screenshot img { width: 100%; border: 1px solid #e0e0e0; border-radius: 4px; }
-    @media print {
-      body { padding: 0; }
-      .case-card { page-break-inside: avoid; }
-      .screenshot img { max-height: 400px; object-fit: contain; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #333; line-height: 1.6; background: #f8fafc;
+      print-color-adjust: exact; -webkit-print-color-adjust: exact;
+    }
+
+    /* ── Header ── */
+    .report-header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff; padding: 24pt 20pt; border-radius: 8px;
+      margin-bottom: 16pt;
+    }
+    .report-title { font-size: 16pt; font-weight: 600; margin-bottom: 4pt; }
+    .report-meta { font-size: 9pt; color: #b0bec5; }
+
+    /* ── Summary ── */
+    .summary-row {
+      display: flex; gap: 10pt; margin-bottom: 16pt;
+    }
+    .stat-card {
+      flex: 1; padding: 12pt 14pt; border-radius: 6px;
+      text-align: center;
+    }
+    .stat-value { font-size: 22pt; font-weight: 700; line-height: 1.2; }
+    .stat-label { font-size: 9pt; margin-top: 2pt; opacity: 0.85; }
+
+    .pass-rate {
+      text-align: right; font-size: 9pt; color: #999;
+      margin-bottom: 14pt; padding-right: 2pt;
+    }
+    .pass-rate b { font-size: 13pt; }
+
+    /* ── Case cards ── */
+    .case-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      margin-bottom: 14pt; overflow: hidden;
+    }
+    .case-header {
+      display: flex; align-items: center; gap: 8pt;
+      padding: 10pt 14pt; border-bottom: 1px solid #f0f0f0;
+      break-after: avoid; page-break-after: avoid;
+    }
+    .case-index {
+      width: 22pt; height: 22pt; border-radius: 50%;
+      background: #f0f4ff; color: #3f51b5;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9pt; font-weight: 600; flex-shrink: 0;
+    }
+    .case-title { flex: 1; font-size: 11pt; font-weight: 500; }
+    .badge {
+      padding: 2pt 10pt; border-radius: 12pt;
+      font-size: 8pt; font-weight: 600; flex-shrink: 0;
+    }
+    .case-duration { color: #b0bec5; font-size: 8pt; flex-shrink: 0; }
+
+    /* ── Screenshots ── */
+    .screenshot-block {
+      padding: 10pt 14pt 0;
+      break-inside: avoid; page-break-inside: avoid;
+    }
+    .screenshot-block:last-child { padding-bottom: 14pt; }
+    .step-label {
+      font-size: 9pt; color: #546e7a; margin-bottom: 4pt;
+      padding-left: 2pt; font-weight: 500;
+    }
+    .screenshot-block img {
+      width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
+      display: block;
+    }
+
+    /* ── Footer ── */
+    .report-footer {
+      text-align: center; font-size: 7pt; color: #b0bec5;
+      margin-top: 20pt; padding-top: 10pt;
+      border-top: 1px solid #e2e8f0;
     }
   </style>
 </head>
 <body>
   <div class="report-header">
     <div class="report-title">${escapeHtml(data.name)}</div>
-    <div class="report-meta">${dateStr} &nbsp;|&nbsp; ${data.durationH ?? "-"}</div>
+    <div class="report-meta">${dateStr} &nbsp;&middot;&nbsp; ${data.durationH ?? "-"}</div>
   </div>
-  <div class="summary-bar">${summaryItems}</div>
+
+  <div class="summary-row">${summaryCards}</div>
+  <div class="pass-rate">通过率 <b style="color:${rateColor}">${passRate}%</b></div>
+
   ${caseSections.join("\n")}
+
+  <div class="report-footer">UI Autotest Report &middot; Generated by qa-flow</div>
 </body>
 </html>`;
 }
@@ -277,7 +338,6 @@ function buildPrintableHtml(
 function resolveJsonPath(sourcePath: string): string {
   const absPath = resolve(sourcePath);
   if (extname(absPath) === ".json") return absPath;
-  // HTML → JSON: same name, .json extension
   const dir = dirname(absPath);
   const name = basename(absPath, ".html");
   return join(dir, `${name}.json`);
@@ -324,7 +384,7 @@ export async function convertReportToPdf(
         path: pdfPath,
         format: "A4",
         printBackground: true,
-        margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
+        margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
       });
 
       return { pdfPath, success: true };
@@ -342,26 +402,31 @@ export async function convertReportToPdf(
 
 // ─── CLI ─────────────────────────────────────────────────────────────
 
-const program = new Command();
+if (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1]?.endsWith("report-to-pdf.ts")
+) {
+  const program = new Command();
 
-program
-  .name("report-to-pdf")
-  .description("Convert monocart HTML/JSON report to self-contained PDF")
-  .argument("<source-path>", "Path to the HTML or JSON report file")
-  .option("-o, --output <path>", "Custom output PDF path")
-  .helpOption("-h, --help", "Display help information")
-  .action(async (sourcePath: string, opts: { output?: string }) => {
-    const result = await convertReportToPdf({
-      sourcePath,
-      outputPath: opts.output,
+  program
+    .name("report-to-pdf")
+    .description("Convert monocart HTML/JSON report to self-contained PDF")
+    .argument("<source-path>", "Path to the HTML or JSON report file")
+    .option("-o, --output <path>", "Custom output PDF path")
+    .helpOption("-h, --help", "Display help information")
+    .action(async (sourcePath: string, opts: { output?: string }) => {
+      const result = await convertReportToPdf({
+        sourcePath,
+        outputPath: opts.output,
+      });
+
+      if (result.success) {
+        process.stdout.write(`PDF saved: ${result.pdfPath}\n`);
+      } else {
+        process.stderr.write(`Failed: ${result.error}\n`);
+        process.exit(1);
+      }
     });
 
-    if (result.success) {
-      process.stdout.write(`PDF saved: ${result.pdfPath}\n`);
-    } else {
-      process.stderr.write(`Failed: ${result.error}\n`);
-      process.exit(1);
-    }
-  });
-
-program.parse(process.argv);
+  program.parse(process.argv);
+}
