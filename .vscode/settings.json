@@ -1,6 +1,7 @@
 {
   "json.schemaDownload.enable": true,
   "cSpell.words": [
+    "anticon",
     "apng",
     "autotest",
     "Axure",
@@ -11,6 +12,7 @@
     "dassets",
     "DINGTALK",
     "dmetadata",
+    "domcontentloaded",
     "drpeco",
     "dtstack",
     "EREV",
@@ -19,6 +21,7 @@
     "FEISHU",
     "frontmatter",
     "fullpage",
+    "hdfs",
     "Inno",
     "insightci",
     "KHTML",
@@ -30,6 +33,7 @@
     "msgtype",
     "networkidle",
     "nodebuffer",
+    "Popconfirm",
     "prds",
     "prefs",
     "pycache",
