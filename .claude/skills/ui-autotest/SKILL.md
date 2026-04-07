@@ -227,17 +227,15 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 
 ```bash
 # 冒烟测试
-bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
-  --project=chromium \
-  --reporter=html \
-  --output-folder=workspace/reports/playwright/{{YYYYMMDD}}/
+QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
+  --project=chromium
 
 # 完整测试
-bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
-  --project=chromium \
-  --reporter=html \
-  --output-folder=workspace/reports/playwright/{{YYYYMMDD}}/
+QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
+  --project=chromium
 ```
+
+> `QA_SUITE_NAME` 用于动态生成报告路径和标题，报告输出至 `workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/`。
 
 记录执行开始时间，计算 `duration`。
 
@@ -248,7 +246,8 @@ bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
 **输出模板中的变量说明：**
 
 - `{{full_spec_path}}`：步骤 6 生成的 `full.spec.ts` 完整路径（如 `tests/e2e/202604/登录功能/full.spec.ts`）
-- `{{YYYYMMDD}}`：当天日期（如 `20260407`）
+- `{{YYYYMM}}`：当月年月（如 `202604`）
+- `{{suite_name}}`：需求名称（如 `登录功能`）
 
 **8.1 全部通过**
 
@@ -257,10 +256,10 @@ bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
 
 通过：{{passed}} / {{total}}
 耗时：{{duration}}
-报告：workspace/reports/playwright/{{YYYYMMDD}}/index.html
+报告：workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html
 
 验收命令（可直接复制运行）：
-bunx playwright test {{full_spec_path}} --project=chromium --reporter=html --output-folder=workspace/reports/playwright/{{YYYYMMDD}}/
+QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
 ```
 
 **8.2 存在失败**
@@ -269,10 +268,10 @@ bunx playwright test {{full_spec_path}} --project=chromium --reporter=html --out
 
 - 失败的测试用例数据
 - Playwright 错误信息
-- 截图路径（`workspace/reports/playwright/{{YYYYMMDD}}/` 下的截图）
+- 截图路径（`workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/` 下的截图）
 - Console 错误日志
 
-Bug 报告输出至：`workspace/reports/bugs/{{YYYYMMDD}}/ui-autotest-{{suite_name}}.html`
+Bug 报告输出至：`workspace/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html`
 
 ```
 ❌ {{需求名称}} UI 自动化测试完成（存在失败）
@@ -286,10 +285,10 @@ Bug 报告输出至：`workspace/reports/bugs/{{YYYYMMDD}}/ui-autotest-{{suite_n
 - {{title}}（{{error_summary}}）
 {{/each}}
 
-Bug 报告：workspace/reports/bugs/{{YYYYMMDD}}/ui-autotest-{{suite_name}}.html
+Bug 报告：workspace/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html
 
 验收命令（可直接复制运行）：
-bunx playwright test {{full_spec_path}} --project=chromium --reporter=html --output-folder=workspace/reports/playwright/{{YYYYMMDD}}/
+QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
 ```
 
 ---
@@ -303,7 +302,7 @@ bun run .claude/scripts/plugin-loader.ts notify \
     "passed": {{passed}},
     "failed": {{failed}},
     "specFiles": ["{{spec_file}}"],
-    "reportFile": "workspace/reports/playwright/{{YYYYMMDD}}/index.html",
+    "reportFile": "workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html",
     "duration": "{{duration}}"
   }'
 ```

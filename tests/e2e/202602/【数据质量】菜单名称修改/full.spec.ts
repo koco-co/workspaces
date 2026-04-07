@@ -3,7 +3,7 @@
 // 用例数量：2
 // 修复时间：2026-04-06T16:41:30.000Z - 修复 removedMenus 子串误判 & finally 清理异常处理
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../fixtures/step-screenshot";
 
 test.describe("【数据质量】菜单名称修改 - 项目信息", () => {
   type Page = import("@playwright/test").Page;
@@ -111,33 +111,34 @@ test.describe("【数据质量】菜单名称修改 - 项目信息", () => {
     expect(menuIndexes[2]).toBeLessThan(menuIndexes[3]);
     expect(menuIndexes[3]).toBeLessThan(menuIndexes[4]);
   }
-  test("【P1】验证新建项目菜单名称正确修改", async ({ page }) => {
-    // 前置：无
-    // 步骤1：进入「资产-数据质量」页面
-    await applyRuntimeCookies(page);
-    await page.goto(buildDataAssetsUrl("/dq/overview"));
-    await page.waitForLoadState("networkidle");
+  test("【P1】验证新建项目菜单名称正确修改", async ({ page, step }) => {
     let projectId: number | null = null;
-    await expect
-      .poll(
-        async () => {
-          const projectIds = await getAccessibleProjectIds(page);
-          projectId = projectIds[0] ?? null;
-          return projectId;
-        },
-        { timeout: 10000 },
-      )
-      .not.toBeNull();
-    if (projectId === null) {
-      throw new Error("未获取到可访问的数据质量项目");
-    }
-    await page.goto(buildDataAssetsUrl("/dq/overview", projectId));
-    await page.waitForLoadState("networkidle");
-    // 预期：页面正常打开
-    await expect(page).toHaveURL(/#\/dq\/overview\?pid=/);
-    // 步骤2：查看页面菜单
-    await expectRenamedMenus(page);
-    // 预期：1）「概览」名称改为「总览」 2）「规则任务配置」名称改为「规则任务管理」 3）「任务实例查询」名称改为「校验结果查询」 4）「质量报告」名称改为「数据质量报告」 5）新增一级菜单「规则集管理」
+
+    await step("步骤1: 进入资产-数据质量页面 → 页面正常打开", async () => {
+      await applyRuntimeCookies(page);
+      await page.goto(buildDataAssetsUrl("/dq/overview"));
+      await page.waitForLoadState("networkidle");
+      await expect
+        .poll(
+          async () => {
+            const projectIds = await getAccessibleProjectIds(page);
+            projectId = projectIds[0] ?? null;
+            return projectId;
+          },
+          { timeout: 10000 },
+        )
+        .not.toBeNull();
+      if (projectId === null) {
+        throw new Error("未获取到可访问的数据质量项目");
+      }
+      await page.goto(buildDataAssetsUrl("/dq/overview", projectId));
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(/#\/dq\/overview\?pid=/);
+    });
+
+    await step("步骤2: 查看页面菜单 → 菜单名称已正确修改", async () => {
+      await expectRenamedMenus(page);
+    }, page.locator(".ant-layout-sider").first());
   });
 });
 
@@ -247,32 +248,33 @@ test.describe("【数据质量】菜单名称修改 - 总览页", () => {
     expect(menuIndexes[2]).toBeLessThan(menuIndexes[3]);
     expect(menuIndexes[3]).toBeLessThan(menuIndexes[4]);
   }
-  test("【P0】验证历史项目菜单名称正确修改", async ({ page }) => {
-    // 前置：无
-    // 步骤1：进入「资产-数据质量」页面
-    await applyRuntimeCookies(page);
-    await page.goto(buildDataAssetsUrl("/dq/overview"));
-    await page.waitForLoadState("networkidle");
+  test("【P0】验证历史项目菜单名称正确修改", async ({ page, step }) => {
     let projectId: number | null = null;
-    await expect
-      .poll(
-        async () => {
-          const projectIds = await getAccessibleProjectIds(page);
-          projectId = projectIds[0] ?? null;
-          return projectId;
-        },
-        { timeout: 10000 },
-      )
-      .not.toBeNull();
-    if (projectId === null) {
-      throw new Error("未获取到可访问的数据质量项目");
-    }
-    await page.goto(buildDataAssetsUrl("/dq/overview", projectId));
-    await page.waitForLoadState("networkidle");
-    // 预期：页面正常打开
-    await expect(page).toHaveURL(/#\/dq\/overview\?pid=/);
-    // 步骤2：查看历史项目下的页面菜单
-    await expectRenamedMenus(page);
-    // 预期：1）「概览」名称改为「总览」 2）「规则任务配置」名称改为「规则任务管理」 3）「任务实例查询」名称改为「校验结果查询」 4）「质量报告」名称改为「数据质量报告」 5）新增一级菜单「规则集管理」
+
+    await step("步骤1: 进入资产-数据质量页面 → 页面正常打开", async () => {
+      await applyRuntimeCookies(page);
+      await page.goto(buildDataAssetsUrl("/dq/overview"));
+      await page.waitForLoadState("networkidle");
+      await expect
+        .poll(
+          async () => {
+            const projectIds = await getAccessibleProjectIds(page);
+            projectId = projectIds[0] ?? null;
+            return projectId;
+          },
+          { timeout: 10000 },
+        )
+        .not.toBeNull();
+      if (projectId === null) {
+        throw new Error("未获取到可访问的数据质量项目");
+      }
+      await page.goto(buildDataAssetsUrl("/dq/overview", projectId));
+      await page.waitForLoadState("networkidle");
+      await expect(page).toHaveURL(/#\/dq\/overview\?pid=/);
+    });
+
+    await step("步骤2: 查看历史项目菜单名称 → 菜单已正确修改", async () => {
+      await expectRenamedMenus(page);
+    }, page.locator(".ant-layout-sider").first());
   });
 });

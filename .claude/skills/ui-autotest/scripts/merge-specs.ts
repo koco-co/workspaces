@@ -8,13 +8,7 @@
  *     --output tests/e2e/202604/xxx/
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { Command } from "commander";
 
@@ -83,9 +77,7 @@ export function readCodeBlocks(inputDir: string): CodeBlock[] {
     const meta = parseBlockMeta(content);
 
     if (!meta) {
-      process.stderr.write(
-        `[merge-specs] 跳过无效代码块（缺少 META）：${file}\n`,
-      );
+      process.stderr.write(`[merge-specs] 跳过无效代码块（缺少 META）：${file}\n`);
       continue;
     }
 
@@ -101,7 +93,7 @@ export function readCodeBlocks(inputDir: string): CodeBlock[] {
  */
 export function buildSpecContent(blocks: CodeBlock[], label: string): string {
   if (blocks.length === 0) {
-    return `// ${label} — 无用例\nimport { test } from '@playwright/test';\n`;
+    return `// ${label} — 无用例\nimport { test } from '../../fixtures/step-screenshot';\n`;
   }
 
   const header = [
@@ -109,7 +101,7 @@ export function buildSpecContent(blocks: CodeBlock[], label: string): string {
     `// 生成时间：${new Date().toISOString()}`,
     `// 用例数量：${blocks.length}`,
     "",
-    "import { test, expect } from '@playwright/test';",
+    "import { test, expect } from '../../fixtures/step-screenshot';",
     "",
   ].join("\n");
 
@@ -117,10 +109,7 @@ export function buildSpecContent(blocks: CodeBlock[], label: string): string {
   const testBlocks = blocks.map((block) => {
     const lines = block.code.split("\n");
     const filtered = lines.filter(
-      (line) =>
-        !line.startsWith("// META:") &&
-        !line.startsWith("import ") &&
-        line !== "",
+      (line) => !line.startsWith("// META:") && !line.startsWith("import ") && line !== "",
     );
 
     // 确保块之间有空行分隔

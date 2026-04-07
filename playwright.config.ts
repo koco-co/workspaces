@@ -1,11 +1,10 @@
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 // 手动解析 .env，确保 worker 继承时变量已就绪
 function loadDotEnv() {
   try {
-    const content = readFileSync(process.cwd() + "/.env", "utf8");
+    const content = readFileSync(`${process.cwd()}/.env`, "utf8");
     for (const line of content.split("\n")) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
@@ -29,17 +28,27 @@ const baseUrl = process.env[`QA_BASE_URL_${activeEnv}`] ?? process.env.UI_AUTOTE
 process.env.UI_AUTOTEST_COOKIE = cookie;
 if (baseUrl) process.env.UI_AUTOTEST_BASE_URL = baseUrl;
 
-const date = new Date().toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD
+// 报告路径：workspace/reports/playwright/YYYYMM/{{需求名称}}/{{需求名称}}.html
+// 通过环境变量 QA_SUITE_NAME 传入需求名称，默认 report
+const yyyymm = new Date().toISOString().slice(0, 7).replace(/-/g, ""); // YYYYMM
+const suiteName = process.env.QA_SUITE_NAME ?? "report";
+const reportDir = `workspace/reports/playwright/${yyyymm}/${suiteName}`;
 
 export default defineConfig({
   testMatch: "tests/e2e/**/*.spec.ts",
   timeout: 60000,
   reporter: [
     ["line"],
-    ["html", { outputFolder: `workspace/reports/playwright/${date}`, open: "never" }],
+    [
+      "monocart-reporter",
+      {
+        name: `${suiteName} - UI自动化测试报告`,
+        outputFile: `${reportDir}/${suiteName}.html`,
+      },
+    ],
   ],
   use: {
-    headless: false,
+    headless: process.env.HEADLESS !== "false",
     viewport: { width: 1280, height: 720 },
   },
   projects: [

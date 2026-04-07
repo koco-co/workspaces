@@ -35,23 +35,68 @@
 
 ```typescript
 // META: {"id":"{{id}}","priority":"{{priority}}","title":"{{title}}"}
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../../fixtures/step-screenshot";
 
 test.use({ storageState: "{{session_path}}" });
 
 test.describe("{{suite_name}} - {{page}}", () => {
-  test("{{title}}", async ({ page }) => {
+  test("{{title}}", async ({ page, step }) => {
     // 步骤1：{{steps[0].step}}
-    await page.goto("{{url}}");
-    await expect(page).toHaveTitle(/.+/);
+    await step("步骤1: {{steps[0].step}}", async () => {
+      await page.goto("{{url}}");
+      await expect(page).toHaveTitle(/.+/);
+    });
 
     // 步骤N：对应步骤描述
-    // ...
-
-    // 预期结果验证
+    await step("步骤N: {{steps[N].step}} → {{steps[N].expected}}", async () => {
+      // 操作 + 断言
+    }, targetLocator); // 可选：传入要高亮的元素
   });
 });
 ```
+
+> **⚠️ 关键变更**：必须从 `../../fixtures/step-screenshot` 导入 `test` 和 `expect`，不要从 `@playwright/test` 导入。测试回调必须解构 `{ page, step }`，每个步骤用 `await step(name, body, highlight?)` 包裹，以实现每步自动截图。
+
+---
+
+## step 函数使用规范
+
+`step(name, body, highlight?)` 是一个自定义 fixture，会在每步执行后自动截图并附加到测试报告。
+
+### 参数说明
+
+- `name`：步骤名称，格式 `"步骤N: {{step描述}} → {{expected描述}}"`
+- `body`：异步函数，包含该步骤的操作和断言
+- `highlight`（可选）：一个 Locator，截图时会对该元素加红框高亮
+
+### 使用示例
+
+```typescript
+// 不需要高亮
+await step("步骤1: 进入数据质量页面", async () => {
+  await page.goto(url);
+  await page.waitForLoadState("networkidle");
+});
+
+// 带高亮：对断言的目标元素加红框
+const heading = page.getByRole("heading", { name: "质量问题台账" });
+await step("步骤2: 验证页面标题 → 显示质量问题台账", async () => {
+  await expect(heading).toBeVisible();
+}, heading);
+
+// 表格验证带高亮
+const tableRows = page.locator("table tbody tr");
+await step("步骤3: 查看列表数据 → 表格有数据", async () => {
+  await expect(tableRows.first()).toBeVisible();
+  await expect(tableRows).not.toHaveCount(0);
+}, tableRows.first());
+```
+
+### highlight 使用原则
+
+- 断言涉及**可见元素**时，传入该元素作为 `highlight`
+- 断言为 URL 校验、非可视化验证时，不传 `highlight`
+- 优先高亮断言的**主要目标元素**（如验证表格数据 → 高亮首行）
 
 ---
 
@@ -61,8 +106,10 @@ test.describe("{{suite_name}} - {{page}}", () => {
 
 - 使用 `test.describe()` 包裹测试组，描述为 `{{suite_name}} - {{page}}`
 - 使用 `test()` 定义单个测试，标题直接使用用例 `title`
+- 测试回调**必须**解构 `{ page, step }`
 - 使用 `test.use({ storageState: '{{session_path}}' })` 复用登录态
-- 每个步骤对应一个注释 + 操作代码
+- 每个步骤用 `await step(name, body, highlight?)` 包裹
+- 步骤名称格式：`"步骤N: {{step描述}} → {{expected描述}}"`
 
 ### 定位器规则
 
@@ -216,33 +263,31 @@ await page.keyboard.press("Enter");
 
 ```typescript
 // META: {"id":"t1","priority":"P0","title":"【P0】验证质量问题台账列表页默认加载"}
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../../fixtures/step-screenshot";
 
 test.use({ storageState: ".auth/session.json" });
 
 test.describe("质量问题台账 - 列表页", () => {
-  test("【P0】验证质量问题台账列表页默认加载", async ({ page }) => {
+  test("【P0】验证质量问题台账列表页默认加载", async ({ page, step }) => {
     // 前置：环境已部署，已有测试数据
 
-    // 步骤1：进入【数据质量 → 质量问题台账】页面
-    await page.goto("https://test.dtstack.cn");
-    await page.waitForLoadState("networkidle");
-    // 通过左侧菜单导航到目标页面
-    await page.getByText("数据质量").click();
-    await page.getByText("质量问题台账").click();
-    await page.waitForLoadState("networkidle");
+    await step("步骤1: 进入数据质量-质量问题台账页面 → 页面正常加载", async () => {
+      await page.goto("https://test.dtstack.cn");
+      await page.waitForLoadState("networkidle");
+      await page.getByText("数据质量").click();
+      await page.getByText("质量问题台账").click();
+      await page.waitForLoadState("networkidle");
 
-    // 预期：页面正常加载
-    await expect(
-      page.getByRole("heading", { name: "质量问题台账" }),
-    ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "质量问题台账" }),
+      ).toBeVisible();
+    }, page.getByRole("heading", { name: "质量问题台账" }));
 
-    // 步骤2：查看列表默认数据
     const tableRows = page.locator("table tbody tr");
-    await expect(tableRows.first()).toBeVisible();
-
-    // 预期：显示最近创建的问题记录
-    await expect(tableRows).not.toHaveCount(0);
+    await step("步骤2: 查看列表默认数据 → 显示最近创建的问题记录", async () => {
+      await expect(tableRows.first()).toBeVisible();
+      await expect(tableRows).not.toHaveCount(0);
+    }, tableRows.first());
   });
 });
 ```

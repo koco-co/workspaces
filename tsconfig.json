@@ -12,13 +12,18 @@
     "allowImportingTsExtensions": true,
     "declaration": false,
     "noEmit": true,
+    "baseUrl": ".",
     "rootDir": ".",
+    "paths": {
+      "@e2e/*": ["tests/e2e/*"]
+    },
     "types": ["node"]
   },
   "include": [
     ".claude/scripts/**/*.ts",
     ".claude/skills/**/*.ts",
-    "plugins/**/*.ts"
+    "plugins/**/*.ts",
+    "tests/**/*.ts"
   ],
   "exclude": ["node_modules", "workspace"]
 }
