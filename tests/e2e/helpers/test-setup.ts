@@ -216,54 +216,30 @@ export async function selectBatchProject(
   page: Page,
   projectName: string,
 ): Promise<void> {
-  const baseUrl = getRawBaseUrl();
   await applyRuntimeCookies(page, "batch");
 
-  await page.goto(`${baseUrl}/batch/`);
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(3000);
+  await page.goto(buildOfflineUrl("/projects"));
+  await page.waitForURL(/#\/projects$/, { timeout: 30000 });
 
-  // 尝试搜索项目
-  const searchInput = page
-    .locator('input[placeholder*="搜索"], input[placeholder*="项目"], .ant-input-search input')
-    .first();
-  if (await searchInput.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await searchInput.clear();
-    await searchInput.fill(projectName);
-    await page.keyboard.press("Enter");
-    await page.waitForTimeout(2000);
-  }
+  const projectTable = page.locator(".projects-table").first();
+  await projectTable.waitFor({ state: "visible", timeout: 30000 });
 
-  // 优先按名称匹配项目卡片
-  const targetCard = page
-    .locator(".left-card__proj-item")
+  const targetRow = projectTable
+    .locator(".ant-table-row")
     .filter({ hasText: projectName })
     .first();
-  if (await targetCard.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await targetCard.click();
-  } else {
-    // fallback: 尝试在所有卡片中找到匹配项
-    const allCards = page.locator(
-      ".left-card__proj-item, [class*='proj-item'], .ant-card",
-    );
-    const cardCount = await allCards.count();
-    let found = false;
-    for (let i = 0; i < cardCount; i++) {
-      const text = await allCards.nth(i).innerText().catch(() => "");
-      if (text.includes(projectName)) {
-        await allCards.nth(i).click();
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      // 最终 fallback: 点击第一个卡片
-      await allCards.first().click();
-    }
-  }
+  await targetRow.waitFor({ state: "visible", timeout: 30000 });
 
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(3000);
+  const projectLink = targetRow.getByText(projectName, { exact: true }).first();
+  await projectLink.click();
+
+  await page.waitForURL(/#\/offline\/task/, { timeout: 30000 });
+  await page
+    .locator(".org-tree-select-wrap, .ant-select-selection-item")
+    .filter({ hasText: projectName })
+    .first()
+    .waitFor({ state: "visible", timeout: 30000 });
+  await page.waitForTimeout(2000);
 }
 
 // ── 离线开发：执行 SQL 任务 ──────────────────────────────
@@ -287,7 +263,7 @@ export async function executeSqlViaBatchDoris(
   sqlContent: string,
   taskName?: string,
   projectName = "env_rebuild_test",
-): Promise<void> {
+): Promise<{ resultText: string }> {
   const name = taskName ?? `auto_sql_${Date.now().toString(36)}`;
 
   // 1. 进入指定项目
@@ -295,42 +271,37 @@ export async function executeSqlViaBatchDoris(
 
   // 2. 点击左侧"临时查询"垂直 tab
   const tempQueryTab = page
-    .locator(".ant-tabs-tab, [class*='menu-item'], [class*='tab']")
+    .locator(".ant-tabs-tab")
     .filter({ hasText: "临时查询" })
     .first();
+  await tempQueryTab.waitFor({ state: "visible", timeout: 10000 });
   await tempQueryTab.click();
-  await page.waitForTimeout(2000);
+  await page
+    .locator(".ant-tabs-tab-active")
+    .filter({ hasText: "临时查询" })
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(3000);
 
-  // 3. 展开"临时查询"树节点 (点击 switcher)
-  const treeNode = page.locator(".ant-tree-title").filter({ hasText: "临时查询" }).first();
-  if (await treeNode.isVisible({ timeout: 5000 }).catch(() => false)) {
-    const treeNodeRow = treeNode.locator(
-      "xpath=ancestor::*[contains(@class,'ant-tree-treenode')]",
-    ).first();
-    const switcher = treeNodeRow.locator(
-      "span[class*='ant-tree-switcher']",
-    ).first();
-    if (await switcher.isVisible({ timeout: 3000 }).catch(() => false)) {
-      const isClosed = await switcher.evaluate(
-        (el) => el.classList.contains("ant-tree-switcher_close"),
-      ).catch(() => false);
-      if (isClosed) {
-        await switcher.click();
-        await page.waitForTimeout(1000);
-      }
-    }
+  // 3. 右键"临时查询"树节点
+  const treeNode = page
+    .locator(".folder-item.folderTreeNodeItem")
+    .filter({ hasText: "临时查询" })
+    .first();
+  await treeNode.waitFor({ state: "visible", timeout: 10000 });
+  await treeNode.click({ button: "right" });
+  await page.waitForTimeout(500);
 
-    // 4. 右键"临时查询"树节点标题
-    await treeNode.click({ button: "right" });
-    await page.waitForTimeout(500);
-  }
-
-  // 5. 点击"新建临时查询"上下文菜单
-  const newQueryMenu = page.getByText("新建临时查询").first();
+  // 4. 点击"新建临时查询"上下文菜单
+  const newQueryMenu = page
+    .locator(".ant-dropdown-menu-item, [role='menuitem']")
+    .filter({ hasText: "新建临时查询" })
+    .first();
+  await newQueryMenu.waitFor({ state: "visible", timeout: 10000 });
   await newQueryMenu.click();
   await page.waitForTimeout(1500);
 
-  // 6. 处理新建临时查询弹窗
+  // 5. 处理新建临时查询弹窗
   const modal = page.locator(".ant-modal:visible").first();
   await modal.waitFor({ state: "visible", timeout: 10000 });
 
@@ -339,39 +310,56 @@ export async function executeSqlViaBatchDoris(
   await nameInput.clear();
   await nameInput.fill(name);
 
-  // 选择"Doris SQL"类型 — 遍历所有 select 找到包含 Doris SQL 的选项
-  const selects = modal.locator(".ant-select");
-  const selectCount = await selects.count();
-  for (let i = 0; i < selectCount; i++) {
-    const sel = selects.nth(i);
-    await sel.locator(".ant-select-selector").click();
+  const typeSelect = modal
+    .locator(".ant-form-item")
+    .filter({ hasText: "临时查询类型" })
+    .locator(".ant-select")
+    .first();
+  await typeSelect.locator(".ant-select-selector").click();
+  await page.waitForTimeout(500);
+  await page
+    .locator(".ant-select-dropdown:visible .ant-select-item-option")
+    .filter({ hasText: /Doris\s*SQL/i })
+    .first()
+    .click();
+  await page.waitForTimeout(800);
+
+  const clusterSelect = modal
+    .locator(".ant-form-item")
+    .filter({ hasText: "集群名称" })
+    .locator(".ant-select")
+    .first();
+  if (await clusterSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await clusterSelect.locator(".ant-select-selector").click();
     await page.waitForTimeout(500);
-    const dorisOption = page
+    const clusterOption = page
       .locator(".ant-select-dropdown:visible .ant-select-item-option")
-      .filter({ hasText: /Doris\s*SQL/i })
+      .filter({ hasText: /doris/i })
       .first();
-    if (await dorisOption.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await dorisOption.click();
-      await page.waitForTimeout(500);
-      break;
+    if (await clusterOption.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await clusterOption.click();
+    } else {
+      await page
+        .locator(".ant-select-dropdown:visible .ant-select-item-option")
+        .first()
+        .click();
     }
-    // 如果不是类型选择器，关闭下拉
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
   }
 
-  // 点击确认按钮
+  // 点击确认按钮，并确保真正进入编辑器
   const okBtn = modal.locator(".ant-btn-primary").first();
   await okBtn.click();
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(3000);
+  await modal.waitFor({ state: "hidden", timeout: 15000 });
+  await page.waitForTimeout(2000);
 
   // 7. 编辑器中输入 SQL
-  const editorArea = page.locator(".view-lines, .monaco-editor .overflow-guard").first();
-  if (await editorArea.isVisible({ timeout: 10000 }).catch(() => false)) {
-    await editorArea.click();
-    await page.waitForTimeout(300);
-  }
+  const editorArea = page
+    .locator(".view-lines, .monaco-editor .overflow-guard")
+    .first();
+  await editorArea.waitFor({ state: "visible", timeout: 20000 });
+  await editorArea.click();
+  await page.waitForTimeout(300);
 
   // Ctrl+A 全选 → Delete 清空 → 输入新 SQL
   const modifier = process.platform === "darwin" ? "Meta" : "Control";
@@ -399,16 +387,13 @@ export async function executeSqlViaBatchDoris(
   // 9. 等待执行结果 (最多等 120 秒)
   await page.waitForLoadState("networkidle");
 
-  const resultArea = page
-    .locator('[class*="result"], [class*="console"], [class*="log"], .bottom-panel')
-    .first();
+  let resultText = "";
+  const resultArea = page.locator(".ide-console.batch-ide-console").first();
   if (await resultArea.isVisible({ timeout: 15000 }).catch(() => false)) {
     try {
       await page.waitForFunction(
         () => {
-          const el = document.querySelector(
-            '[class*="result"], [class*="console"], [class*="log"], .bottom-panel',
-          );
+          const el = document.querySelector(".ide-console.batch-ide-console");
           return el && !/运行中|executing/i.test(el.textContent ?? "");
         },
         { timeout: 120000 },
@@ -416,8 +401,14 @@ export async function executeSqlViaBatchDoris(
     } catch {
       // timeout acceptable for DDL
     }
+    resultText = await resultArea.innerText().catch(() => "");
+    if (/执行失败|运行失败|语法错误|exception|error/i.test(resultText)) {
+      throw new Error(`SQL execution failed: ${resultText.slice(0, 500)}`);
+    }
   }
   await page.waitForTimeout(2000);
+
+  return { resultText };
 }
 
 // ── 元数据同步 ──────────────────────────────────────────
@@ -438,6 +429,11 @@ export async function syncMetadata(
   database?: string,
   tableName?: string,
 ): Promise<void> {
+  const readSyncErrorText = async (): Promise<string> => {
+    const bodyText = await page.locator("body").innerText().catch(() => "");
+    return bodyText.replace(/\s+/g, " ").trim();
+  };
+
   // 导航到元数据同步
   await applyRuntimeCookies(page);
   await page.goto(buildDataAssetsUrl("/metaDataSync"));
@@ -453,7 +449,7 @@ export async function syncMetadata(
   await page.waitForTimeout(2000);
 
   // 等待弹窗出现
-  const modal = page.locator('.ant-modal:visible, dialog:visible').first();
+  const modal = page.locator(".ant-modal:visible, dialog:visible").first();
   await modal.waitFor({ state: "visible", timeout: 10000 });
 
   // 选择数据源（弹窗中的第一个 combobox: "* 数据源"）
@@ -484,55 +480,63 @@ export async function syncMetadata(
   }
 
   // 选择数据库（表格行中的第一个 combobox）
-  const dbCombobox = modal
-    .locator(".ant-table-row .ant-select")
-    .first();
+  const dbCombobox = modal.locator(".ant-table-row .ant-select").first();
   if (await dbCombobox.isVisible({ timeout: 5000 }).catch(() => false)) {
     await dbCombobox.locator(".ant-select-selector").click();
     await page.waitForTimeout(500);
+    const dbOptions = page.locator(
+      ".ant-select-dropdown:visible .ant-select-item-option",
+    );
     if (database) {
-      const dbOption = page
-        .locator(".ant-select-dropdown:visible .ant-select-item-option")
+      const dbOption = dbOptions
         .filter({ hasText: database })
         .first();
-      if (await dbOption.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await dbOption.click();
+      if (!(await dbOption.isVisible({ timeout: 5000 }).catch(() => false))) {
+        throw new Error(
+          `Failed to load metadata databases for ${datasourceName ?? "datasource"}: ${await readSyncErrorText()}`,
+        );
       }
+      await dbOption.click();
     } else {
       // 选第一个可用数据库
-      const firstDb = page
-        .locator(".ant-select-dropdown:visible .ant-select-item-option")
-        .first();
-      if (await firstDb.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await firstDb.click();
+      const firstDb = dbOptions.first();
+      if (!(await firstDb.isVisible({ timeout: 5000 }).catch(() => false))) {
+        throw new Error(
+          `No metadata database options are available: ${await readSyncErrorText()}`,
+        );
       }
+      await firstDb.click();
     }
     await page.waitForTimeout(1000);
   }
 
   // 选择数据表（表格行中的第二个 combobox）
-  const tableCombobox = modal
-    .locator(".ant-table-row .ant-select")
-    .nth(1);
+  const tableCombobox = modal.locator(".ant-table-row .ant-select").nth(1);
   if (await tableCombobox.isVisible({ timeout: 5000 }).catch(() => false)) {
     await tableCombobox.locator(".ant-select-selector").click();
     await page.waitForTimeout(500);
+    const tableOptions = page.locator(
+      ".ant-select-dropdown:visible .ant-select-item-option",
+    );
     if (tableName) {
-      const tblOption = page
-        .locator(".ant-select-dropdown:visible .ant-select-item-option")
+      const tblOption = tableOptions
         .filter({ hasText: tableName })
         .first();
-      if (await tblOption.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await tblOption.click();
+      if (!(await tblOption.isVisible({ timeout: 5000 }).catch(() => false))) {
+        throw new Error(
+          `Failed to load metadata tables for ${database ?? "database"}: ${await readSyncErrorText()}`,
+        );
       }
+      await tblOption.click();
     } else {
       // 选第一个可用数据表
-      const firstTbl = page
-        .locator(".ant-select-dropdown:visible .ant-select-item-option")
-        .first();
-      if (await firstTbl.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await firstTbl.click();
+      const firstTbl = tableOptions.first();
+      if (!(await firstTbl.isVisible({ timeout: 5000 }).catch(() => false))) {
+        throw new Error(
+          `No metadata table options are available: ${await readSyncErrorText()}`,
+        );
       }
+      await firstTbl.click();
     }
     await page.waitForTimeout(1000);
   }
@@ -547,6 +551,10 @@ export async function syncMetadata(
     await page.waitForTimeout(3000);
   }
 
+  if (await modal.isVisible().catch(() => false)) {
+    throw new Error(`Metadata sync dialog did not submit: ${await readSyncErrorText()}`);
+  }
+
   // 等待同步完成（最多120秒）
   await page.waitForLoadState("networkidle");
   try {
@@ -556,7 +564,8 @@ export async function syncMetadata(
           '[class*="status"], .ant-tag, .ant-badge-status-text',
         );
         for (let i = 0; i < statusEls.length; i++) {
-          if (/运行中|同步中|进行中/.test(statusEls[i].textContent ?? "")) return false;
+          if (/运行中|同步中|进行中/.test(statusEls[i].textContent ?? ""))
+            return false;
         }
         return true;
       },
@@ -592,10 +601,14 @@ export async function getQualityProjectId(
       },
     });
     const json = (await response.json()) as {
-      data?: Array<{ id?: number | string; name?: string; projectName?: string }>;
+      data?: Array<{
+        id?: number | string;
+        name?: string;
+        projectName?: string;
+      }>;
     };
-    const project = (json.data ?? []).find(
-      (p) => (p.name ?? p.projectName ?? "").includes(name),
+    const project = (json.data ?? []).find((p) =>
+      (p.name ?? p.projectName ?? "").includes(name),
     );
     return project ? Number(project.id) : null;
   }, projectName);

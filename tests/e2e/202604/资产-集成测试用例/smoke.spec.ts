@@ -32,28 +32,60 @@
  *   分级数据         → /dataClassify/rankData
  */
 
-import { readFileSync } from 'fs'
-import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
+import { readFileSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { test, expect } from '../../fixtures/step-screenshot'
 import {
   applyRuntimeCookies,
   buildDataAssetsUrl,
-  getQualityProjectId,
-  normalizeBaseUrl,
-  uniqueName,
-  waitForAntModal,
+  executeSqlViaBatchDoris,
   expectAntMessage,
+  getQualityProjectId,
+  normalizeDataAssetsBaseUrl,
+  syncMetadata,
+  uniqueName,
 } from '../../helpers/test-setup'
-import { setupPreconditions } from '../../helpers/preconditions'
 
 // ─── Types ───────────────────────────────────────────
 type Page = import('@playwright/test').Page
 type Locator = import('@playwright/test').Locator
 
+type ApiResponse<T> = {
+  code?: number
+  success?: boolean
+  message?: string | null
+  data?: T
+}
+
+type CatalogNode = {
+  id: string
+  name?: string
+  children?: CatalogNode[] | null
+}
+
+type PagedListData<T> = {
+  total?: number
+  contentList?: T[]
+}
+
+type DatabaseCollectionRecord = {
+  id: number | string
+  collectType?: number | null
+  collectFrom?: string | null
+  collectCondition?: number | string | null
+  collectStatus?: number | null
+  collectCount?: number | null
+  createAt?: string | null
+  finishDate?: string | null
+}
+
 // ─── Constants ───────────────────────────────────────
 const DATASOURCE_TYPE = 'Doris'
 const BATCH_PROJECT = 'env_rebuild_test'
+const DATASOURCE_NAME = `${BATCH_PROJECT}_DORIS_doris`
+const STANDARD_CATALOG_NAME = '自动化回归标准目录'
+const DORIS_COLLECTION_SOURCE = /Doris2\.x|Doris/i
 const TS = Date.now().toString(36)
 
 // ─── SQL from files ──────────────────────────────────
@@ -77,6 +109,224 @@ async function goToDataAssets(page: Page, hashPath: string): Promise<void> {
 
 async function isVisible(locator: Locator, timeout = 5000): Promise<boolean> {
   return locator.isVisible({ timeout }).catch(() => false)
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function buildRuntimeTableSql(tableName: string): string {
+  return SQL_BASE.replace(/\btest_table\b/g, tableName)
+}
+
+function buildExecutableCreateSql(
+  sourceSql: string,
+  sourceTableName: string,
+  targetTableName: string,
+): string {
+  const tableRegex = new RegExp(`\\b${escapeRegExp(sourceTableName)}\\b`, 'g')
+  const rewrittenSql = sourceSql.replace(tableRegex, targetTableName)
+  return `DROP TABLE IF EXISTS ${targetTableName};\n${rewrittenSql}`
+}
+
+function getAssetCard(page: Page, assetName: string): Locator {
+  const namePattern = new RegExp(`^${escapeRegExp(assetName)}$`)
+  return page.locator('.assets-card').filter({
+    has: page.locator('.assets-card__meta--name').filter({ hasText: namePattern }).first(),
+  }).first()
+}
+
+function findCatalogByName(
+  nodes: readonly CatalogNode[] | null | undefined,
+  targetName: string,
+): CatalogNode | null {
+  if (!nodes) return null
+  for (const node of nodes) {
+    if (node.name === targetName) return node
+    const child = findCatalogByName(node.children, targetName)
+    if (child) return child
+  }
+  return null
+}
+
+function expectApiData<T>(action: string, response: ApiResponse<T>): T {
+  if (response.code !== 1 || response.success === false) {
+    throw new Error(`${action} failed: ${response.message ?? 'unknown error'}`)
+  }
+  return response.data as T
+}
+
+async function postJsonFromPage<T>(page: Page, url: string, body: unknown): Promise<T> {
+  const baseOrigin = new URL(normalizeDataAssetsBaseUrl()).origin
+  const requestUrl = /^https?:\/\//i.test(url)
+    ? url
+    : new URL(url.startsWith('/') ? url : `/${url}`, baseOrigin).toString()
+  return page.evaluate(
+    async ({ requestUrl, payload }) => {
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'content-type': 'application/json;charset=UTF-8',
+        },
+        body: JSON.stringify(payload ?? {}),
+      })
+      return response.json()
+    },
+    { requestUrl, payload: body },
+  ) as Promise<T>
+}
+
+async function ensureStandardCatalog(page: Page, catalogName: string): Promise<CatalogNode> {
+  const listCatalog = async () =>
+    expectApiData(
+      'list standard catalogs',
+      await postJsonFromPage<ApiResponse<CatalogNode[]>>(
+        page,
+        '/dmetadata/v1/standardCatalog/listCatalog',
+        {},
+      ),
+    ) ?? []
+
+  let catalog = findCatalogByName(await listCatalog(), catalogName)
+  if (catalog) return catalog
+
+  expectApiData(
+    'create standard catalog',
+    await postJsonFromPage<ApiResponse<string>>(page, '/dmetadata/v1/standardCatalog/addNode', {
+      catalogName,
+    }),
+  )
+
+  catalog = findCatalogByName(await listCatalog(), catalogName)
+  if (!catalog) {
+    throw new Error(`Standard catalog "${catalogName}" was not created successfully`)
+  }
+  return catalog
+}
+
+async function selectStandardCatalog(page: Page, catalogName: string): Promise<Locator> {
+  const catalogField = page.locator('.ant-form-item').filter({ hasText: /标准目录/ }).first()
+  const selector = catalogField.locator('.ant-select-selector').first()
+  const option = page
+    .locator('.ant-select-tree-title')
+    .filter({ hasText: new RegExp(`^${escapeRegExp(catalogName)}$`) })
+    .first()
+
+  await selector.click()
+  await expect(option).toBeVisible({ timeout: 10000 })
+  await option.click()
+  await expect(catalogField).toContainText(catalogName)
+
+  return catalogField
+}
+
+async function getAssetCardCount(page: Page, assetName: string): Promise<number> {
+  const card = getAssetCard(page, assetName)
+  await expect(card).toBeVisible({ timeout: 10000 })
+  const rawValue = await card.locator('.ant-statistic-content-value').first().innerText()
+  const parsed = Number.parseInt(rawValue.replace(/[^\d-]/g, ''), 10)
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Unable to parse asset count for ${assetName}: ${rawValue}`)
+  }
+  return parsed
+}
+
+async function waitForAssetCardCount(
+  page: Page,
+  assetName: string,
+  expectedCount: number,
+): Promise<Locator> {
+  await expect
+    .poll(
+      async () => {
+        await goToDataAssets(page, '/metaDataCenter')
+        return getAssetCardCount(page, assetName)
+      },
+      {
+        timeout: 120_000,
+      },
+    )
+    .toBe(expectedCount)
+  return getAssetCard(page, assetName)
+}
+
+async function searchMetadataTable(page: Page, tableName: string): Promise<Locator> {
+  await goToDataAssets(page, '/metaDataCenter')
+  const searchInput = page
+    .locator('input[placeholder*="请输入表名"], input[placeholder*="表名"]')
+    .first()
+  const searchButton = page.locator('button.search_btn').first()
+  const resultTitle = page
+    .locator('.title__name')
+    .filter({ hasText: new RegExp(`^${escapeRegExp(tableName)}$`) })
+    .first()
+
+  await expect(searchInput).toBeVisible({ timeout: 10000 })
+  await searchInput.fill(tableName)
+  await searchButton.click()
+  await page.waitForLoadState('networkidle')
+  await expect(page).toHaveURL(/metaDataSearch/i)
+  await expect(resultTitle).toBeVisible({ timeout: 10000 })
+
+  return resultTitle
+}
+
+async function openMetadataTableDetails(page: Page, tableName: string): Promise<Locator> {
+  const resultTitle = await searchMetadataTable(page, tableName)
+  await resultTitle.click()
+  await page.waitForLoadState('networkidle')
+  await expect(page).toHaveURL(/metaDataDetails/i)
+
+  const title = page.locator('.meta__name').filter({
+    hasText: new RegExp(`^${escapeRegExp(tableName)}$`),
+  }).first()
+  await expect(title).toBeVisible({ timeout: 10000 })
+  return title
+}
+
+async function openCreateTableSqlTab(page: Page): Promise<Locator> {
+  const ddlTab = page.locator('.table-structure__header').getByText('建表语句', { exact: true })
+  const container = page.locator('.table-structure__body').first()
+
+  await ddlTab.click()
+  await expect(container).toBeVisible({ timeout: 10000 })
+  return container
+}
+
+async function readCreateTableSql(page: Page): Promise<string> {
+  const sqlText = await page.evaluate(() => {
+    const monacoValue = (window as unknown as {
+      monaco?: { editor?: { getModels?: () => Array<{ getValue?: () => string }> } }
+    }).monaco?.editor?.getModels?.()?.[0]?.getValue?.()
+
+    return (
+      monacoValue ??
+      document.querySelector('.table-structure__body .monaco-editor .view-lines')?.textContent ??
+      document.querySelector('.table-structure__body .monaco-editor')?.textContent ??
+      document.querySelector('.table-structure__body')?.textContent ??
+      ''
+    )
+  })
+
+  const normalizedSql = sqlText.replace(/\u00a0/g, ' ').trim()
+  if (/CREATE TABLE/i.test(normalizedSql)) {
+    return normalizedSql
+  }
+
+  const ddlBodyText = (await page.locator('.table-structure__body').first().innerText().catch(() => ''))
+    .replace(/\s+/g, ' ')
+    .trim()
+  const pageText = (await page.locator('body').innerText().catch(() => ''))
+    .replace(/\s+/g, ' ')
+    .trim()
+  const detail = `${ddlBodyText} ${pageText}`.trim()
+
+  if (/暂无数据|接口调用异常|NoClassDefFoundError|Could not initialize class/i.test(detail)) {
+    throw new Error(`Create table SQL is unavailable: ${detail.slice(0, 500)}`)
+  }
+
+  throw new Error(`Unexpected create table SQL content: ${(normalizedSql || detail).slice(0, 200)}`)
 }
 
 async function pickAntSelect(
@@ -118,46 +368,174 @@ async function goToQuality(page: Page, path: string): Promise<void> {
   }
 }
 
+async function listDatabaseCollections(page: Page): Promise<DatabaseCollectionRecord[]> {
+  const data = expectApiData(
+    'list database collections',
+    await postJsonFromPage<ApiResponse<PagedListData<DatabaseCollectionRecord>>>(
+      page,
+      '/dmetadata/v1/databaseCollection/pageQueryCollection',
+      {
+        asc: false,
+        current: 1,
+        size: 50,
+      },
+    ),
+  )
+
+  return data.contentList ?? []
+}
+
+async function openDatabaseCollectModal(page: Page): Promise<Locator> {
+  const addBtn = page.getByRole('button', { name: /新建拾取/ }).first()
+  await expect(addBtn).toBeVisible({ timeout: 10000 })
+  await addBtn.click()
+
+  const modal = page.locator('.ant-modal:visible').first()
+  await expect(modal).toBeVisible({ timeout: 10000 })
+  await expect(modal).toContainText('新建拾取')
+  return modal
+}
+
+async function openDatabaseCollectSourceDropdown(page: Page, modal: Locator): Promise<Locator> {
+  const sourceField = modal.locator('.ant-form-item').filter({ hasText: /拾取来源/ }).first()
+  const sourceSelect = sourceField.locator('.ant-select').first()
+  await expect(sourceSelect).toBeVisible({ timeout: 10000 })
+  await sourceSelect.locator('.ant-select-selector').click()
+
+  const option = page
+    .locator('.ant-select-dropdown:visible .ant-select-item-option')
+    .filter({ hasText: DORIS_COLLECTION_SOURCE })
+    .first()
+  await expect(option).toBeVisible({ timeout: 10000 })
+  return option
+}
+
+async function fillDatabaseCollectModal(
+  page: Page,
+  modal: Locator,
+  typeLabel: '词根管理' | '数据标准',
+): Promise<void> {
+  const typeRadio = modal
+    .locator('.ant-radio-wrapper')
+    .filter({ hasText: new RegExp(`^${escapeRegExp(typeLabel)}$`) })
+    .first()
+  await expect(typeRadio).toBeVisible({ timeout: 10000 })
+  await typeRadio.click()
+
+  const sourceOption = await openDatabaseCollectSourceDropdown(page, modal)
+  await sourceOption.click()
+  await modal.locator('.ant-modal-title').first().click()
+  await expect(page.locator('.ant-select-dropdown:visible')).toHaveCount(0)
+
+  const sourceField = modal.locator('.ant-form-item').filter({ hasText: /拾取来源/ }).first()
+  await expect(sourceField).toContainText(DORIS_COLLECTION_SOURCE)
+
+  const conditionField = modal.locator('.ant-form-item').filter({ hasText: /拾取条件/ }).first()
+  const conditionInput = conditionField
+    .locator('input[role="spinbutton"], input.ant-input-number-input')
+    .first()
+  await expect(conditionInput).toBeVisible({ timeout: 10000 })
+  await conditionInput.fill('1')
+  await expect(conditionInput).toHaveValue('1')
+}
+
+async function waitForDatabaseCollection(
+  page: Page,
+  matcher: (record: DatabaseCollectionRecord) => boolean,
+  action: string,
+): Promise<DatabaseCollectionRecord> {
+  let matchedRecord: DatabaseCollectionRecord | null = null
+  await expect
+    .poll(
+      async () => {
+        matchedRecord = (await listDatabaseCollections(page)).find(matcher) ?? null
+        return matchedRecord ? String(matchedRecord.id) : ''
+      },
+      {
+        timeout: 60000,
+        message: action,
+      },
+    )
+    .not.toBe('')
+
+  return matchedRecord as DatabaseCollectionRecord
+}
+
+async function waitForDatabaseCollectionComplete(
+  page: Page,
+  collectionId: number | string,
+): Promise<DatabaseCollectionRecord> {
+  let matchedRecord: DatabaseCollectionRecord | null = null
+  try {
+    await expect
+      .poll(
+        async () => {
+          matchedRecord =
+            (await listDatabaseCollections(page)).find(
+              (record) => String(record.id) === String(collectionId),
+            ) ?? null
+          return matchedRecord?.collectStatus ?? -1
+        },
+        {
+          timeout: 120000,
+          message: `database collection ${collectionId} to complete`,
+        },
+      )
+      .toBe(1)
+  } catch {
+    const latestState = matchedRecord
+      ? [
+          `type=${matchedRecord.collectType ?? 'unknown'}`,
+          `source=${matchedRecord.collectFrom ?? 'unknown'}`,
+          `condition=${matchedRecord.collectCondition ?? 'unknown'}`,
+          `status=${Number(matchedRecord.collectStatus) === 1 ? '拾取完成' : '拾取中'}`,
+          `count=${matchedRecord.collectCount ?? 'unknown'}`,
+          `createdAt=${matchedRecord.createAt ?? 'unknown'}`,
+          `finishDate=${matchedRecord.finishDate ?? '--'}`,
+        ].join(', ')
+      : 'record not found in collection list'
+    throw new Error(
+      `Database collection ${collectionId} did not complete within 120s: ${latestState}`,
+    )
+  }
+
+  return matchedRecord as DatabaseCollectionRecord
+}
+
+async function expectDatabaseCollectionRow(
+  page: Page,
+  record: DatabaseCollectionRecord,
+  typeLabel: '词根管理' | '数据标准',
+): Promise<Locator> {
+  await goToDataAssets(page, '/databaseCollect')
+
+  const rowByKey = page
+    .locator(`.ant-table-tbody tr[data-row-key="${String(record.id)}"]`)
+    .first()
+  const row = (await isVisible(rowByKey, 3000))
+    ? rowByKey
+    : page
+        .locator('.ant-table-tbody tr')
+        .filter({
+          hasText: new RegExp(
+            `${escapeRegExp(typeLabel)}.*${escapeRegExp(String(record.collectCondition ?? 1))}`,
+          ),
+        })
+        .first()
+
+  await expect(row).toBeVisible({ timeout: 10000 })
+  await expect(row).toContainText(typeLabel)
+  await expect(row).toContainText(DORIS_COLLECTION_SOURCE)
+  await expect(row).toContainText(String(record.collectCondition ?? 1))
+  await expect(row).toContainText('拾取完成')
+  await expect(row.getByRole('button', { name: /查看拾取/ }).first()).toBeVisible()
+  return row
+}
+
 // ─── Test Suite ──────────────────────────────────────
 
 test.describe('资产-集成测试', () => {
   test.setTimeout(180_000)
-
-  // ================================================================
-  // 前置条件：通过 API 一键完成建表 + 数据源引入 + 元数据同步
-  // 注意：前置条件失败不阻塞后续测试，测试将基于已有数据运行
-  // ================================================================
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage()
-    try {
-      await applyRuntimeCookies(page, 'batch')
-      await page.goto(`${normalizeBaseUrl('batch')}/batch/`, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000,
-      })
-
-      await setupPreconditions(page, {
-        datasourceType: DATASOURCE_TYPE,
-        tables: [
-          { name: 'test_table', sql: SQL_BASE },
-          { name: 'doris_test', sql: SQL_QUALITY },
-          { name: 'doris_demo_data_types_source', sql: SQL_QUALITY },
-          { name: 'doris_demo1_data_types_source', sql: SQL_QUALITY },
-          { name: 'active_users', sql: SQL_ACTIVE_USERS },
-          { name: 'wwz_001', sql: SQL_LINEAGE },
-          { name: 'wwz_002', sql: SQL_LINEAGE },
-          { name: 'wwz_003', sql: SQL_LINEAGE },
-        ],
-        projectName: BATCH_PROJECT,
-        syncTimeout: 180,
-      })
-    } catch (err) {
-      // 前置条件失败不阻塞，后续测试基于已有数据运行
-      process.stderr.write(`[beforeAll] 前置条件执行失败，测试将基于已有数据运行: ${err}\n`)
-    } finally {
-      await page.close()
-    }
-  })
 
   // ================================================================
   // 模块一：资产盘点 (#10373)
@@ -201,23 +579,66 @@ test.describe('资产-集成测试', () => {
   test.describe('元数据-数据地图', () => {
     // TC-02 【P0】验证【数据表】表数量统计正确
     test('【P0】验证【数据表】表数量统计正确', async ({ page, step }) => {
-      await step('步骤1: 新增元数据同步任务并临时同步 → 任务创建成功', async () => {
-        await goToDataAssets(page, '/metaDataCenter')
-      })
+      const runtimeTableName = `asset_count_${Date.now().toString(36)}`
+      const runtimeSql = buildRuntimeTableSql(runtimeTableName)
+      const dataTableCard = getAssetCard(page, '数据表')
+      let beforeCount = 0
 
-      await step('步骤2: 任务运行完成后，【数据表】统计数量+1 → 数据表统计可见', async () => {
-        const dataTableCard = page.getByText(/数据表/, { exact: false }).first()
-        await expect(dataTableCard).toBeVisible({ timeout: 10000 })
+      await step(
+        '步骤1: 新增元数据同步任务并临时同步 → 任务创建成功',
+        async () => {
+          await goToDataAssets(page, '/metaDataCenter')
+          beforeCount = await getAssetCardCount(page, '数据表')
 
-        const bodyText = await page.locator('body').innerText()
-        expect(bodyText).toContain('数据表')
-      })
+          const { resultText } = await executeSqlViaBatchDoris(
+            page,
+            runtimeSql,
+            `meta_sync_${runtimeTableName}`,
+            BATCH_PROJECT,
+          )
+          expect(resultText).not.toMatch(/执行失败|运行失败|语法错误|exception|error/i)
 
-      await step('步骤3: 数据地图选择table1删除元表 → 【数据表】统计数量-1', async () => {
-        // 验证页面正常加载（删除操作在 UI 自动化中通过验证入口存在来代替完整流程）
-        const body = await page.locator('body').innerText()
-        expect(body.length).toBeGreaterThan(100)
-      })
+          await syncMetadata(page, DATASOURCE_NAME, BATCH_PROJECT, runtimeTableName)
+        },
+        page.locator('.ant-modal:visible, .metadata-sync').first(),
+      )
+
+      await step(
+        '步骤2: 任务运行完成后，【数据表】统计数量+1 → 数据表统计可见',
+        async () => {
+          await waitForAssetCardCount(page, '数据表', beforeCount + 1)
+          const afterSyncCount = await getAssetCardCount(page, '数据表')
+          expect(afterSyncCount).toBe(beforeCount + 1)
+          await expect(dataTableCard.locator('.ant-statistic-content-value').first()).toHaveText(
+            String(afterSyncCount),
+          )
+        },
+        dataTableCard,
+      )
+
+      await step(
+        '步骤3: 数据地图选择table1删除元表 → 【数据表】统计数量-1',
+        async () => {
+          await openMetadataTableDetails(page, runtimeTableName)
+
+          const deleteBtn = page.getByRole('button', { name: /^删\s*除$/ }).first()
+          await expect(deleteBtn).toBeVisible({ timeout: 10000 })
+          await deleteBtn.click()
+
+          const modal = page.locator('.ant-modal:visible').first()
+          await expect(modal).toBeVisible({ timeout: 10000 })
+          await modal.locator('input:not(.ant-select-selection-search-input)').first().fill(
+            runtimeTableName,
+          )
+          await modal.locator('.ant-btn-dangerous, .ant-btn-primary').last().click()
+          await expectAntMessage(page, /成功/)
+
+          await waitForAssetCardCount(page, '数据表', beforeCount)
+          const finalCount = await getAssetCardCount(page, '数据表')
+          expect(finalCount).toBe(beforeCount)
+        },
+        dataTableCard,
+      )
     })
 
     // TC-03 【P0】验证【离线任务】任务数量统计正确
@@ -346,59 +767,53 @@ test.describe('资产-集成测试', () => {
 
     // TC-05 【P1】验证【表结构】-【建表语句】功能正常
     test('【P1】验证【表结构】-【建表语句】模块功能正常', async ({ page, step }) => {
-      await step('步骤1: 点击【建表语句】按钮 → 建表语句显示正确', async () => {
-        await goToDataAssets(page, '/metaDataCenter')
-        const searchInput = page
-          .locator(
-            'input[placeholder*="搜索"], input[placeholder*="表名"], .ant-input-search input',
+      const ddlViewer = page.locator('.table-structure__body').first()
+      const batchResult = page.locator('.ide-console.batch-ide-console').first()
+      const ddlCloneTable = `ddl_copy_${Date.now().toString(36)}`
+      let createTableSql = ''
+
+      await step(
+        '步骤1: 点击【建表语句】按钮 → 建表语句显示正确',
+        async () => {
+          await openMetadataTableDetails(page, 'test_table')
+          await openCreateTableSqlTab(page)
+
+          createTableSql = await readCreateTableSql(page)
+          expect(createTableSql).toContain('CREATE TABLE')
+          expect(createTableSql).toContain('test_table')
+          expect(createTableSql).toContain('id')
+          expect(createTableSql).toContain('name')
+          expect(createTableSql).toContain('info')
+        },
+        ddlViewer,
+      )
+
+      await step(
+        '步骤2: 复制建表语句，去离线执行SQL → 执行成功',
+        async () => {
+          const executableSql = buildExecutableCreateSql(
+            createTableSql,
+            'test_table',
+            ddlCloneTable,
           )
-          .first()
-        if (await isVisible(searchInput)) {
-          await searchInput.fill('test_table')
-          await page.keyboard.press('Enter')
-          await page.waitForLoadState('networkidle')
-          await page.waitForTimeout(2000)
-        }
+          const createResult = await executeSqlViaBatchDoris(
+            page,
+            executableSql,
+            `ddl_create_${ddlCloneTable}`,
+            BATCH_PROJECT,
+          )
+          expect(createResult.resultText).not.toMatch(/执行失败|运行失败|语法错误|exception|error/i)
 
-        const tableLink = page
-          .locator('a, span, [class*="link"]')
-          .filter({ hasText: 'test_table' })
-          .first()
-        if (await isVisible(tableLink)) {
-          await tableLink.click()
-          await page.waitForLoadState('networkidle')
-          await page.waitForTimeout(2000)
-        }
-
-        const ddlBtn = page
-          .locator('.ant-tabs-tab, .ant-btn, a, span')
-          .filter({ hasText: '建表语句' })
-          .first()
-        if (await isVisible(ddlBtn)) {
-          await ddlBtn.click()
-          await page.waitForTimeout(2000)
-          const body = await page.locator('body').innerText()
-          const hasDDL =
-            body.includes('CREATE TABLE') ||
-            body.includes('create table') ||
-            body.includes('CREATE')
-          expect(hasDDL).toBeTruthy()
-        }
-      })
-
-      await step('步骤2: 复制建表语句，去离线执行SQL → 执行成功', async () => {
-        const copyBtn = page
-          .locator('button, .anticon-copy, [class*="copy"]')
-          .filter({ hasText: /复制/ })
-          .first()
-        if (await isVisible(copyBtn, 3000)) {
-          await copyBtn.click()
-          await page.waitForTimeout(500)
-        }
-        // 验证页面依然正常
-        const body = await page.locator('body').innerText()
-        expect(body.length).toBeGreaterThan(100)
-      })
+          const verifyResult = await executeSqlViaBatchDoris(
+            page,
+            `SHOW TABLES LIKE '${ddlCloneTable}';`,
+            `ddl_verify_${ddlCloneTable}`,
+            BATCH_PROJECT,
+          )
+          expect(verifyResult.resultText).toContain(ddlCloneTable)
+        },
+        batchResult,
+      )
     })
 
     // TC-06 【P0】验证【血缘关系】功能正常
@@ -694,12 +1109,12 @@ test.describe('资产-集成测试', () => {
         expect(body.length).toBeGreaterThan(100)
       })
     })
-  })
+    })
 
-  // ================================================================
-  // 模块三：元数据同步
-  // ================================================================
-  test.describe('元数据同步', () => {
+    // ================================================================
+    // 模块三：元数据同步
+    // ================================================================
+    test.describe('元数据同步', () => {
     // TC-07 【P2】元数据同步
     test('【P2】验证元数据同步任务创建流程正常', async ({ page, step }) => {
       await step(
@@ -801,12 +1216,12 @@ test.describe('资产-集成测试', () => {
         }
       })
     })
-  })
+    })
 
-  // ================================================================
-  // 模块四：元模型管理
-  // ================================================================
-  test.describe('元数据-元模型管理', () => {
+    // ================================================================
+    // 模块四：元模型管理
+    // ================================================================
+    test.describe('元数据-元模型管理', () => {
     const enumAttrName = uniqueName('auto_enum')
     const stringAttrName = uniqueName('auto_str')
     const bigintAttrName = uniqueName('auto_bigint')
@@ -1018,8 +1433,13 @@ test.describe('资产-集成测试', () => {
     test('【P1】验证通用业务属性-删除功能-逻辑正常', async ({ page, step }) => {
       await step('步骤1: 进入元模型管理页面 → 页面加载成功，列表可见', async () => {
         await goToDataAssets(page, '/metaModelManage')
-        const content = page.locator('.ant-table, .ant-card, .ant-list').first()
-        await expect(content).toBeVisible({ timeout: 10000 })
+        const searchInput = page
+          .locator('input[placeholder*="元模型名称"], input[placeholder*="搜索"]')
+          .first()
+        await expect(searchInput).toBeVisible({ timeout: 10000 })
+
+        const modelCard = page.locator('main').getByText(/元模型/).first()
+        await expect(modelCard).toBeVisible({ timeout: 10000 })
       })
 
       await step('步骤2: 点击业务属性行的"删除"按钮 → 弹出二次确认弹窗', async () => {
@@ -1057,12 +1477,12 @@ test.describe('资产-集成测试', () => {
         },
       )
     })
-  })
+    })
 
-  // ================================================================
-  // 模块五：元数据管理
-  // ================================================================
-  test.describe('元数据-元数据管理', () => {
+    // ================================================================
+    // 模块五：元数据管理
+    // ================================================================
+    test.describe('元数据-元数据管理', () => {
     // TC-10 【P0】验证数据表列表-数据展示正确
     test('【P0】验证数据表列表-数据展示正确', async ({ page, step }) => {
       await step(
@@ -1124,7 +1544,7 @@ test.describe('资产-集成测试', () => {
         },
       )
     })
-  })
+    })
 
   // ================================================================
   // 模块六：数据标准 - 标准定义 (#10412)
@@ -1136,10 +1556,12 @@ test.describe('资产-集成测试', () => {
 
     // TC-12 【P0】验证数据标准-新建标准
     test('【P0】验证数据标准-新建标准并保存', async ({ page, step }) => {
+      const createdStandardRow = page.locator('.ant-table-row').filter({ hasText: standardCnName }).first()
       await step(
         '步骤1: 点击新建标准，输入所有业务属性值和技术属性值，点击【保存】 → 页面跳转至列表页，列表展示新标准，状态为"待上线"',
         async () => {
           await goToDataAssets(page, '/dataStandard')
+          await ensureStandardCatalog(page, STANDARD_CATALOG_NAME)
 
           const createBtn = page
             .getByRole('button', { name: /新建标准/ })
@@ -1149,47 +1571,23 @@ test.describe('资产-集成测试', () => {
           await page.waitForLoadState('networkidle')
           await page.waitForTimeout(1000)
 
-          const cnNameInput = page
-            .locator('input[id*="standardNameCn"], input[id*="cnName"]')
-            .or(page.locator('input[placeholder*="中文"]'))
-            .first()
-          if (await isVisible(cnNameInput)) {
-            await cnNameInput.fill(standardCnName)
-          }
-
-          const enNameInput = page
-            .locator('input[id*="standardName"], input[id*="enName"]')
-            .or(page.locator('input[placeholder*="英文字母"]'))
-            .first()
-          if (await isVisible(enNameInput, 3000)) {
-            await enNameInput.fill(standardEnName)
-          }
-
-          const abbrInput = page
-            .locator('input[id*="Abbreviation"], input[id*="abbr"]')
-            .or(page.locator('input[placeholder*="小写英文"]'))
-            .first()
-          if (await isVisible(abbrInput, 3000)) {
-            await abbrInput.fill(standardAbbr)
-          }
+          await expect(page.locator('.dt-addOrUpdateStandard-form')).toBeVisible({ timeout: 10000 })
+          await page.locator('#standardNameCn').fill(standardCnName)
+          await page.locator('#standardName').fill(standardEnName)
+          await page.locator('#standardNameAbbreviation').fill(standardAbbr)
+          await selectStandardCatalog(page, STANDARD_CATALOG_NAME)
 
           const saveBtn = page
             .locator('button')
             .filter({ hasText: /保\s*存/ })
             .first()
           await saveBtn.click()
-          await page.waitForLoadState('networkidle')
-          await page.waitForTimeout(2000)
 
-          const successMsg = page
-            .locator('.ant-message-notice')
-            .filter({ hasText: /成功/ })
-          const tableList = page.locator('.ant-table')
-          const isSuccess =
-            (await isVisible(successMsg.first(), 3000)) ||
-            (await isVisible(tableList.first(), 5000))
-          expect(isSuccess).toBeTruthy()
+          await expect(page).toHaveURL(/\/dataStandard(?:[?#]|$)/)
+          await expect(createdStandardRow).toBeVisible({ timeout: 10000 })
+          await expect(createdStandardRow).toContainText('待上线')
         },
+        createdStandardRow,
       )
     })
 
@@ -1536,76 +1934,108 @@ test.describe('资产-集成测试', () => {
   test.describe('数据标准-数据库拾取', () => {
     // TC-19 【P1】验证数据库拾取-拾取流程
     test('【P1】验证数据库拾取-拾取流程', async ({ page, step }) => {
+      const existingCollectionIds = new Set<string>()
+      let rootCollection: DatabaseCollectionRecord | null = null
+      let standardCollection: DatabaseCollectionRecord | null = null
+
       await step('步骤1: 点击数据库拾取页面的新建拾取icon → 弹出新建拾取弹窗', async () => {
         await goToDataAssets(page, '/databaseCollect')
-
-        const addBtn = page
-          .getByRole('button', { name: /新建拾取|新建|新增/ })
-          .or(page.locator('[class*="icon"], .anticon').filter({ hasText: /新建/ }))
-          .first()
-        if (await isVisible(addBtn)) {
-          await addBtn.click()
-          await page.waitForTimeout(1000)
+        for (const record of await listDatabaseCollections(page)) {
+          existingCollectionIds.add(String(record.id))
         }
+
+        const modal = await openDatabaseCollectModal(page)
+        await expect(modal).toContainText('拾取类型')
+        await expect(modal).toContainText('拾取来源')
       })
 
-      await step('步骤2: 点击拾取来源下拉框 → 新增数据源类型下拉项', async () => {
-        const modal = page.locator('.ant-modal:visible, .ant-drawer:visible')
-        if (await isVisible(modal.first(), 5000)) {
-          const sourceSelect = modal
-            .first()
-            .locator('.ant-select')
-            .filter({ hasText: /拾取来源/ })
-            .first()
-          if (await isVisible(sourceSelect, 3000)) {
-            await sourceSelect.locator('.ant-select-selector').click()
-            await page.waitForTimeout(500)
-            const dropdown = page.locator('.ant-select-dropdown:visible')
-            if (await isVisible(dropdown.first(), 3000)) {
-              await expect(dropdown.first()).toBeVisible()
-            }
-            await page.keyboard.press('Escape')
+      await step(
+        '步骤2: 点击拾取来源下拉框 → 新增数据源类型下拉项',
+        async () => {
+          const modal = page.locator('.ant-modal:visible, .ant-drawer:visible')
+          if (await isVisible(modal.first(), 5000)) {
+            const sourceOption = await openDatabaseCollectSourceDropdown(page, modal.first())
+            await expect(sourceOption).toContainText(DORIS_COLLECTION_SOURCE)
+            await modal.locator('.ant-modal-title').first().click()
+            await expect(page.locator('.ant-select-dropdown:visible')).toHaveCount(0)
           }
-        }
-      })
+        },
+        page.locator('.ant-modal:visible .ant-form-item').filter({ hasText: /拾取来源/ }).first(),
+      )
 
       await step(
         '步骤3: 拾取类型选择词根管理，拾取来源选择Doris数据源，填写拾取条件，点击确定 → 新建拾取成功；拾取列表新增该拾取',
         async () => {
           const modal = page.locator('.ant-modal:visible, .ant-drawer:visible')
           if (await isVisible(modal.first(), 5000)) {
-            const bodyText = await modal.first().innerText()
-            const hasForm =
-              bodyText.includes('拾取类型') ||
-              bodyText.includes('拾取来源') ||
-              bodyText.includes('词根') ||
-              bodyText.includes('数据标准')
-            expect(hasForm).toBeTruthy()
+            await fillDatabaseCollectModal(page, modal.first(), '词根管理')
+            await modal.first().locator('.ant-modal-footer .ant-btn-primary').click()
+            await expectAntMessage(page, /新建拾取成功/)
 
-            const cancelBtn = modal
-              .first()
-              .locator('.ant-btn')
-              .filter({ hasText: /取消/ })
-              .first()
-            if (await isVisible(cancelBtn, 3000)) {
-              await cancelBtn.click()
-              await page.waitForTimeout(500)
-            }
+            rootCollection = await waitForDatabaseCollection(
+              page,
+              (record) =>
+                !existingCollectionIds.has(String(record.id)) &&
+                Number(record.collectType) === 0 &&
+                DORIS_COLLECTION_SOURCE.test(String(record.collectFrom ?? '')) &&
+                /1/.test(String(record.collectCondition ?? '')),
+              'root database collection to be created',
+            )
+            existingCollectionIds.add(String(rootCollection.id))
           }
         },
+        page.locator('.ant-table').first(),
       )
 
       await step(
         '步骤4: 拾取类型选择数据标准，配置拾取来源和条件，点击确定 → 新建拾取成功；拾取列表新增该拾取',
         async () => {
-          const body = await page.locator('body').innerText()
-          expect(body.length).toBeGreaterThan(100)
+          const modal = await openDatabaseCollectModal(page)
+          await fillDatabaseCollectModal(page, modal, '数据标准')
+          await modal.locator('.ant-modal-footer .ant-btn-primary').click()
+          await expectAntMessage(page, /新建拾取成功/)
+
+          standardCollection = await waitForDatabaseCollection(
+            page,
+            (record) =>
+              !existingCollectionIds.has(String(record.id)) &&
+              Number(record.collectType) === 1 &&
+              DORIS_COLLECTION_SOURCE.test(String(record.collectFrom ?? '')) &&
+              /1/.test(String(record.collectCondition ?? '')),
+            'standard database collection to be created',
+          )
+          existingCollectionIds.add(String(standardCollection.id))
         },
+        page.locator('.ant-table').first(),
       )
 
       await step('步骤5: 等待拾取完成，查看拾取 → 拾取成功，拾取列表数据正确', async () => {
-        const content = page.locator('.ant-table, .ant-card, .ant-btn').first()
-        await expect(content).toBeVisible({ timeout: 10000 })
+        if (!rootCollection || !standardCollection) {
+          throw new Error('Database collect records were not created successfully')
+        }
+
+        rootCollection = await waitForDatabaseCollectionComplete(page, rootCollection.id)
+        standardCollection = await waitForDatabaseCollectionComplete(page, standardCollection.id)
+
+        const rootRow = await expectDatabaseCollectionRow(page, rootCollection, '词根管理')
+        await rootRow.getByRole('button', { name: /查看拾取/ }).first().click()
+
+        const rootDrawer = page.locator('.ant-drawer:visible').first()
+        await expect(rootDrawer).toBeVisible({ timeout: 10000 })
+        await expect(rootDrawer).toContainText('词根简称')
+        await expect(rootDrawer).toContainText('词根中文名')
+        await expect(rootDrawer).toContainText(/待引用|已引用/)
+        await rootDrawer.locator('.ant-drawer-close').first().click()
+        await expect(rootDrawer).toBeHidden({ timeout: 10000 })
+
+        const standardRow = await expectDatabaseCollectionRow(page, standardCollection, '数据标准')
+        await standardRow.getByRole('button', { name: /查看拾取/ }).first().click()
+
+        const standardDrawer = page.locator('.ant-drawer:visible').first()
+        await expect(standardDrawer).toBeVisible({ timeout: 10000 })
+        await expect(standardDrawer).toContainText('字段名')
+        await expect(standardDrawer).toContainText('标准中文名')
+        await expect(standardDrawer).toContainText(/待引用|已引用/)
       })
     })
 

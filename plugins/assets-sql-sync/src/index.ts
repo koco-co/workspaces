@@ -1,9 +1,7 @@
 import type { Page } from "@playwright/test";
-import { DtStackClient, extractCookieFromPage } from "./client";
-import { BatchApi } from "./api/batch";
-import { AssetsApi } from "./api/assets";
+import type { DtStackClientLike } from "./client";
+import { BrowserDtStackClient, extractCookieFromPage } from "./client";
 import { metaFlow } from "./flows/meta-flow";
-import type { MetaFlowOptions, MetaFlowResult } from "./flows/meta-flow";
 
 export interface PreconditionOptions {
   readonly type?: "meta" | "non-meta";
@@ -31,13 +29,31 @@ function resolveBaseUrl(): string {
   );
 }
 
-export async function createClient(
-  page: Page,
-  baseUrl?: string,
-): Promise<DtStackClient> {
+export async function createClient(page: Page, baseUrl?: string): Promise<DtStackClientLike> {
+  const resolvedBaseUrl = baseUrl ?? resolveBaseUrl();
+  const targetOrigin = new URL(resolvedBaseUrl).origin;
+  const currentUrl = page.url();
+  const shouldBootstrap =
+    currentUrl === "about:blank" ||
+    (() => {
+      try {
+        return new URL(currentUrl).origin !== targetOrigin;
+      } catch {
+        return true;
+      }
+    })();
+
+  if (shouldBootstrap) {
+    const bootstrapUrl = new URL("/dataAssets/#/dataStandard", resolvedBaseUrl).toString();
+    await page.goto(bootstrapUrl, {
+      waitUntil: "domcontentloaded",
+      timeout: 30_000,
+    });
+  }
+
   const cookie = await extractCookieFromPage(page);
-  return new DtStackClient({
-    baseUrl: baseUrl ?? resolveBaseUrl(),
+  return new BrowserDtStackClient(page, {
+    baseUrl: resolvedBaseUrl,
     cookie,
   });
 }
@@ -67,9 +83,14 @@ export async function setupPreconditions(
   throw new Error('Non-meta flow not yet implemented. Use type: "meta".');
 }
 
+export { AssetsApi } from "./api/assets";
 // Re-export step APIs for fine-grained control
 export { BatchApi } from "./api/batch";
-export { AssetsApi } from "./api/assets";
-export { DtStackClient, extractCookieFromPage } from "./client";
-export { metaFlow } from "./flows/meta-flow";
+export type { DtStackClientLike } from "./client";
+export {
+  BrowserDtStackClient,
+  DtStackClient,
+  extractCookieFromPage,
+} from "./client";
 export type { MetaFlowOptions, MetaFlowResult } from "./flows/meta-flow";
+export { metaFlow } from "./flows/meta-flow";

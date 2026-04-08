@@ -121,6 +121,13 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 
 将报告数据写入 `workspace/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
 
+可用模板（位于 `templates/` 目录）：
+- `bug-report-zentao.html.hbs` — **默认**，禅道富文本编辑器兼容（全 inline style，table 布局，可直接粘贴到禅道）
+- `bug-report-full.html.hbs` — 完整样式版，独立 HTML 查看，含 CSS 变量、渐变、flexbox 等高级样式
+- `bug-report.html.hbs` — 旧版模板（保留兼容）
+
+默认使用禅道兼容模板。用户可通过 `--template full` 参数切换为完整样式版。
+
 若目录不存在则先创建：
 
 ```bash

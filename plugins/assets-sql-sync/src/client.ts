@@ -1,16 +1,31 @@
+import type { Page } from "@playwright/test";
+
 export interface DtStackClientOptions {
   readonly baseUrl: string;
   readonly cookie: string;
 }
 
-interface DtStackResponse<T = unknown> {
+export interface DtStackResponse<T = unknown> {
   readonly code: number;
   readonly data: T;
   readonly message?: string;
   readonly success?: boolean;
 }
 
-export class DtStackClient {
+export interface DtStackClientLike {
+  post<T = unknown>(
+    path: string,
+    data?: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<DtStackResponse<T>>;
+  postWithProjectId<T = unknown>(
+    path: string,
+    data: unknown,
+    projectId: number,
+  ): Promise<DtStackResponse<T>>;
+}
+
+export class DtStackClient implements DtStackClientLike {
   private readonly baseUrl: string;
   private readonly cookie: string;
 
@@ -42,12 +57,69 @@ export class DtStackClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(
-        `HTTP ${response.status} ${response.statusText}: ${text}`,
-      );
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${text}`);
     }
 
     return response.json() as Promise<DtStackResponse<T>>;
+  }
+
+  async postWithProjectId<T = unknown>(
+    path: string,
+    data: unknown,
+    projectId: number,
+  ): Promise<DtStackResponse<T>> {
+    return this.post<T>(path, data, { "X-Project-Id": String(projectId) });
+  }
+}
+
+export class BrowserDtStackClient implements DtStackClientLike {
+  private readonly baseUrl: string;
+
+  constructor(
+    private readonly page: Page,
+    options: DtStackClientOptions,
+  ) {
+    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
+  }
+
+  async post<T = unknown>(
+    path: string,
+    data?: unknown,
+    extraHeaders?: Record<string, string>,
+  ): Promise<DtStackResponse<T>> {
+    const url = `${this.baseUrl}${path}`;
+    const response = await this.page.evaluate(
+      async ({ requestUrl, requestBody, requestHeaders }) => {
+        const result = await fetch(requestUrl, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "content-type": "application/json;charset=UTF-8",
+            "Accept-Language": "zh-CN",
+            ...requestHeaders,
+          },
+          body: requestBody === undefined ? undefined : JSON.stringify(requestBody),
+        });
+        const text = await result.text();
+        return {
+          ok: result.ok,
+          status: result.status,
+          statusText: result.statusText,
+          text,
+        };
+      },
+      {
+        requestUrl: url,
+        requestBody: data,
+        requestHeaders: extraHeaders ?? {},
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}: ${response.text}`);
+    }
+
+    return JSON.parse(response.text) as DtStackResponse<T>;
   }
 
   async postWithProjectId<T = unknown>(

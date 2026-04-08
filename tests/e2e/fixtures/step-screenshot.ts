@@ -23,7 +23,7 @@
  *   });
  */
 
-import { test as base, type Locator } from "@playwright/test";
+import { test as base, expect as baseExpect, type Locator, type Page } from "@playwright/test";
 
 export type StepFn = (
   name: string,
@@ -32,6 +32,76 @@ export type StepFn = (
 ) => Promise<void>;
 
 const HIGHLIGHT_STYLE = "outline: 3px solid red !important; outline-offset: 2px !important;";
+const STEP_BADGE_ID = "__qa_step_badge__";
+
+type StepCaptureState = {
+  lastLocator?: Locator;
+};
+
+let currentStepCapture: StepCaptureState | null = null;
+
+function isLocatorLike(value: unknown): value is Locator {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "evaluate" in value &&
+    typeof value.evaluate === "function" &&
+    "scrollIntoViewIfNeeded" in value &&
+    typeof value.scrollIntoViewIfNeeded === "function"
+  );
+}
+
+async function settleForScreenshot(page: Page): Promise<void> {
+  await page
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    )
+    .catch(() => {});
+}
+
+async function renderStepBadge(page: Page, label: string): Promise<void> {
+  await page
+    .evaluate(
+      ({ id, text }) => {
+        document.getElementById(id)?.remove();
+        const badge = document.createElement("div");
+        badge.id = id;
+        badge.textContent = text;
+        Object.assign(badge.style, {
+          position: "fixed",
+          top: "12px",
+          right: "12px",
+          zIndex: "2147483647",
+          maxWidth: "320px",
+          padding: "6px 10px",
+          borderRadius: "6px",
+          border: "2px solid #ff0000",
+          background: "rgba(255,255,255,0.96)",
+          color: "#c40000",
+          fontSize: "12px",
+          fontWeight: "600",
+          lineHeight: "1.4",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          pointerEvents: "none",
+          whiteSpace: "normal",
+        });
+        document.body.appendChild(badge);
+      },
+      { id: STEP_BADGE_ID, text: label },
+    )
+    .catch(() => {});
+}
+
+async function clearStepBadge(page: Page): Promise<void> {
+  await page
+    .evaluate((id) => {
+      document.getElementById(id)?.remove();
+    }, STEP_BADGE_ID)
+    .catch(() => {});
+}
 
 export const test = base.extend<{ step: StepFn }>({
   step: async ({ page }, use, testInfo) => {
@@ -45,6 +115,9 @@ export const test = base.extend<{ step: StepFn }>({
       const expected = arrowIdx > 0 ? name.slice(arrowIdx + 1).trim() : "";
 
       let stepError: unknown = null;
+      const captureState: StepCaptureState = {};
+      const previousCapture = currentStepCapture;
+      currentStepCapture = captureState;
 
       await base.step(name, async () => {
         try {
@@ -53,32 +126,42 @@ export const test = base.extend<{ step: StepFn }>({
           stepError = err;
           throw err;
         } finally {
+          currentStepCapture = previousCapture;
           stepIndex++;
           const idx = stepIndex;
           const passed = stepError === null;
           const icon = passed ? "✅" : "❌";
+          const highlightTarget = highlight ?? captureState.lastLocator;
+          const badgeLabel = expected
+            ? `步骤-${idx} ${stepDesc} → ${expected}`
+            : `步骤-${idx} ${stepDesc}`;
 
           // 高亮目标元素（可选，元素不存在时静默跳过）
-          if (highlight) {
-            await highlight
+          if (highlightTarget) {
+            await highlightTarget.scrollIntoViewIfNeeded().catch(() => {});
+            await highlightTarget
               .evaluate((el, style) => {
                 (el as HTMLElement).style.cssText += style;
               }, HIGHLIGHT_STYLE)
               .catch(() => {});
           }
 
+          await renderStepBadge(page, badgeLabel);
+          await settleForScreenshot(page);
+
           // 无论成功或失败都截图
           const screenshot = await page.screenshot({ fullPage: false }).catch(() => null);
 
           // 移除高亮
-          if (highlight) {
-            await highlight
+          if (highlightTarget) {
+            await highlightTarget
               .evaluate((el) => {
                 (el as HTMLElement).style.outline = "";
                 (el as HTMLElement).style.outlineOffset = "";
               })
               .catch(() => {});
           }
+          await clearStepBadge(page);
 
           if (screenshot) {
             const label = expected
@@ -97,4 +180,12 @@ export const test = base.extend<{ step: StepFn }>({
   },
 });
 
-export { expect } from "@playwright/test";
+export const expect = new Proxy(baseExpect, {
+  apply(target, thisArg, argArray: unknown[]) {
+    const [actual] = argArray;
+    if (currentStepCapture && isLocatorLike(actual)) {
+      currentStepCapture.lastLocator = actual;
+    }
+    return Reflect.apply(target, thisArg, argArray);
+  },
+}) as typeof baseExpect;
