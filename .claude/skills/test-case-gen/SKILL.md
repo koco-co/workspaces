@@ -26,7 +26,7 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 | 模式       | 触发条件                               | 行为差异                                          |
 | ---------- | -------------------------------------- | ------------------------------------------------- |
 | 普通       | 默认                                   | 全 7 节点 + 全部交互点                            |
-| 快速       | `--quick`                              | 跳过交互点 B/C，analyze 简化，review 仅 1 轮      |
+| 快速       | `--quick`                              | 跳过交互点 B/C，analyze 简化，review 仅 1 轮，format-check 最多 2 轮      |
 | 续传       | 自动检测 `.temp/.qa-state-*.json` 存在 | 从断点节点继续                                    |
 | 模块重跑   | `重新生成 xxx 的「yyy」模块`           | 仅执行 write → review → output（replace 模式）    |
 | 标准化归档 | 用户提供 `.xmind` 或 `.csv` 文件       | 走独立流程：parse → standardize → review → output |
@@ -469,6 +469,94 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node review --data
 
 ---
 
+## 节点 6.5: format-check — 格式合规检查闭环
+
+**目标**：确保 Writer 产出的用例在格式层面严格符合 R01-R11 编写规范，零偏差才放行。
+
+### 6.5.1 生成临时 Archive MD
+
+```bash
+bun run .claude/scripts/archive-gen.ts convert \
+  --input {{review_json}} \
+  --output workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
+```
+
+### 6.5.2 格式合规检查（AI 任务）
+
+读取 `${CLAUDE_SKILL_DIR}/prompts/format-checker.md` 作为 Format Checker 提示词。
+
+输入：
+- 临时 Archive MD 文件内容
+- 当前轮次信息：`第 {{round}} 轮 / 最大 {{max_rounds}} 轮`
+- 上一轮偏差报告（第 2 轮起）
+
+Format Checker 输出结构化 JSON 偏差报告。
+
+### 6.5.3 行号定位
+
+```bash
+bun run .claude/scripts/format-report-locator.ts locate \
+  --report {{format_checker_json}} \
+  --archive workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md \
+  --output workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-enriched.json
+```
+
+可选：终端可读报告
+
+```bash
+bun run .claude/scripts/format-report-locator.ts print \
+  --report {{format_checker_json}} \
+  --archive workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
+```
+
+### 6.5.4 Verdict 判定
+
+- `verdict === "pass"` → 进入节点 7（output）
+- `verdict === "fail"` 且 `round < max_rounds` → 进入修正循环（6.5.5）
+- `verdict === "fail"` 且 `round >= max_rounds` → 交互点 D2（超限决策）
+
+### 6.5.5 修正循环
+
+1. 将偏差报告转为 `## FORMAT_ISSUES` 块
+2. 派发 Writer Sub-Agent 修正报告中列出的用例（仅修正偏差用例，其余原样保留）
+3. Writer 输出修正后的 JSON
+4. 读取 `${CLAUDE_SKILL_DIR}/prompts/reviewer.md` 对修正后的 JSON 执行 F07-F15 设计逻辑复审
+5. 回到 6.5.1 重新生成临时 Archive MD → 6.5.2 再检
+
+### 6.5.6 更新状态
+
+每轮循环后更新状态：
+
+```bash
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node format-check --data '{{json}}'
+```
+
+数据结构：
+
+```json
+{
+  "format_check": {
+    "current_round": 2,
+    "max_rounds": 5,
+    "issues_history": [8, 3],
+    "verdict": "fail"
+  }
+}
+```
+
+### 交互点 D2 — 格式检查超限决策（使用 AskUserQuestion 工具）
+
+当 format-check 循环达到最大轮次但仍有偏差时触发：
+
+使用 AskUserQuestion 工具向用户展示：
+
+- 问题：`格式检查已执行 {{max_rounds}} 轮，仍有 {{n}} 处偏差未修正。如何处理？`
+- 选项 1：强制输出（忽略剩余偏差）
+- 选项 2：查看未修正项详情
+- 选项 3：人工修正后继续
+
+---
+
 ## 节点 7: output — 产物生成与通知
 
 **目标**：生成 XMind + Archive MD，发送通知，清理状态。
@@ -556,12 +644,13 @@ bun run .claude/scripts/state.ts clean --prd-slug {{slug}}
 {
   "prd_slug": "xxx",
   "mode": "normal|quick",
-  "current_node": "transform|enhance|analyze|write|review|output",
+  "current_node": "transform|enhance|analyze|write|review|format-check|output",
   "transform": { "confidence": 0, "clarify_count": 0 },
   "enhance": { "health_warnings": [], "image_count": 0 },
   "analyze": { "checklist": {} },
   "write": { "modules": {}, "blocked": [] },
   "review": { "issue_rate": 0, "fixed_count": 0 },
+  "format_check": { "current_round": 0, "max_rounds": 5, "issues_history": [], "verdict": "" },
   "source_context": { "branch": "", "commit": "" }
 }
 ```
