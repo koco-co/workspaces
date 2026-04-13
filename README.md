@@ -70,8 +70,10 @@
 | 特性              | 说明                                                                                        |
 | ----------------- | ------------------------------------------------------------------------------------------- |
 | **7 节点流水线**  | PRD &rarr; Transform &rarr; Enhance &rarr; Analyze &rarr; Write &rarr; Review &rarr; Output |
+| **13 Agent 架构** | 独立 Agent 定义（frontmatter 声明 model/tools），按模型能力匹配任务复杂度（haiku/sonnet/opus）|
 | **多 Agent 并行** | Writer Sub-Agents 按模块并行生成用例，大型需求效率显著提升                                  |
 | **插件化集成**    | 蓝湖 PRD 导入、禅道 Bug 集成、IM 通知，按需启用，不侵入核心流程                             |
+| **安全加固**      | Shell 命令注入防护（shellEscape）、路径穿越防护（validateFilePath）                          |
 | **交互式流程**    | 每个关键节点提供推荐选项 + 自由输入，支持 `--quick` 快速模式和断点续传                      |
 | **偏好学习**      | 用户反馈自动沉淀到 `preferences/` 目录，持续修正生成风格                                    |
 | **全链路覆盖**    | 测试用例生成 + Bug 分析 + XMind 编辑 + Playwright UI 自动化                                 |
@@ -85,10 +87,11 @@
 <details>
 <summary><b>架构说明</b></summary>
 
-qa-flow 采用 **Skill 路由 + 插件钩子** 架构：
+qa-flow 采用 **Skill 路由 + Agent 派发 + 插件钩子** 架构：
 
 - **qa-flow Router** — 入口路由层，根据用户输入的关键词或编号分发到对应 Skill
 - **5 个核心 Skill** — `setup` / `test-case-gen` / `code-analysis` / `xmind-editor` / `ui-autotest`
+- **13 个独立 Agent** — 每个 Agent 通过 frontmatter 声明 model/tools，Skill 作为编排器派发 Agent
 - **Plugin System** — 通过生命周期 Hook（`*:init` / `*:output`）无侵入接入
 - **Cross-cutting** — 状态管理（断点续传）、偏好学习、IM 通知贯穿全流程
 - **Output** — 统一输出到 `workspace/` 目录，支持 XMind / Archive MD / HTML 报告
@@ -386,31 +389,50 @@ RS1: 确认 XMind → RS2: 解析 → RS3: 定位 Archive MD → RS4: 转换 →
 ```text
 qa-flow/
 ├── .claude/
+│   ├── agents/                   # 13 个独立 Agent 定义（frontmatter: model/tools）
+│   │   ├── transform-agent.md    #   PRD 结构化（sonnet）
+│   │   ├── enhance-agent.md      #   图片识别 / 增强（sonnet）
+│   │   ├── analyze-agent.md      #   测试点分析（opus）
+│   │   ├── writer-agent.md       #   用例编写（sonnet）
+│   │   ├── reviewer-agent.md     #   质量审查（opus）
+│   │   ├── format-checker-agent.md #  格式检查（haiku）
+│   │   ├── standardize-agent.md  #   历史用例标准化（sonnet）
+│   │   ├── backend-bug-agent.md  #   后端 Bug 分析（sonnet）
+│   │   ├── frontend-bug-agent.md #   前端 Bug 分析（sonnet）
+│   │   ├── conflict-agent.md     #   合并冲突分析（sonnet）
+│   │   ├── hotfix-case-agent.md  #   Hotfix 用例生成（sonnet）
+│   │   ├── script-writer-agent.md #  Playwright 脚本生成（sonnet）
+│   │   └── bug-reporter-agent.md #   Bug 报告生成（haiku）
 │   ├── scripts/                  # 核心 TypeScript CLI 脚本
-│   │   ├── state.ts              # 断点续传状态管理
+│   │   ├── state.ts              # 断点续传状态管理（含文件锁）
 │   │   ├── xmind-gen.ts          # XMind 文件生成
 │   │   ├── xmind-edit.ts         # XMind 增删改查
 │   │   ├── archive-gen.ts        # Archive MD 生成 + 搜索
-│   │   ├── plugin-loader.ts      # 插件加载与调度
+│   │   ├── plugin-loader.ts      # 插件加载与调度（含 shellEscape）
 │   │   ├── repo-sync.ts          # 源码仓库同步
 │   │   ├── repo-profile.ts       # 仓库 Profile 匹配
 │   │   ├── image-compress.ts     # 图片压缩（>2000px 自动缩放）
 │   │   ├── prd-frontmatter.ts    # PRD frontmatter 标准化
 │   │   ├── config.ts             # 环境配置读取
+│   │   ├── lib/                  # 共享模块
+│   │   │   ├── types.ts          #   共享类型定义
+│   │   │   ├── paths.ts          #   路径工具（含 validateFilePath）
+│   │   │   ├── plugin-utils.ts   #   插件加载工具
+│   │   │   ├── preferences.ts    #   偏好读取工具
+│   │   │   ├── model-tiers.ts    #   Agent 模型层级策略
+│   │   │   ├── quality-layers.ts #   L1-L5 质量检查层
+│   │   │   └── logger.ts         #   统一日志
 │   │   └── __tests__/            # 单元测试（80%+ 覆盖率）
 │   └── skills/
 │       ├── qa-flow/              # 入口菜单路由
 │       ├── setup/                # 5 步初始化向导
-│       ├── test-case-gen/        # 测试用例生成（核心流水线）
-│       │   ├── prompts/          # 每节点 AI Prompt
+│       ├── test-case-gen/        # 测试用例生成（编排器，派发 Agent）
 │       │   └── references/       # 格式规范与协议
-│       ├── code-analysis/        # 报错 / 冲突分析
-│       │   ├── prompts/          # 模式专用 Prompt
+│       ├── code-analysis/        # 报错 / 冲突分析（编排器，派发 Agent）
 │       │   └── references/       # 环境 vs 代码指南
 │       ├── xmind-editor/         # XMind 局部编辑
-│       ├── ui-autotest/          # Playwright UI 自动化
-│       │   ├── scripts/          # parse-cases / merge-specs / session-login
-│       │   └── prompts/          # script-writer & bug-reporter Prompt
+│       ├── ui-autotest/          # Playwright UI 自动化（编排器，派发 Agent）
+│       │   └── scripts/          # parse-cases / merge-specs / session-login
 │       └── playwright-cli/       # Playwright CLI 集成
 ├── plugins/
 │   ├── lanhu/                    # 蓝湖 PRD 导入插件
