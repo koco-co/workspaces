@@ -404,5 +404,228 @@ describe("history-convert --no-split XMind", () => {
       2,
       "default should produce 2 files (one per L1)",
     );
+
+    const outputs = out.files.map((entry) => entry.output).sort();
+    assert.ok(
+      outputs[0].endsWith("/需求A.md"),
+      `first output should strip full-width case_id suffix, got: ${outputs[0]}`,
+    );
+    assert.ok(
+      outputs[1].endsWith("/需求B.md"),
+      `second output should strip full-width case_id suffix, got: ${outputs[1]}`,
+    );
+
+    const firstContent = readFileSync(outputs[0], "utf8");
+    const secondContent = readFileSync(outputs[1], "utf8");
+
+    assert.match(
+      firstContent,
+      /suite_name: "需求A（#1001）"/,
+      "suite_name should preserve the full L1 title",
+    );
+    assert.match(
+      firstContent,
+      /case_id: 1001/,
+      "case_id should be extracted from full-width suffix",
+    );
+    assert.match(
+      secondContent,
+      /suite_name: "需求B（#1002）"/,
+      "suite_name should preserve the full L1 title",
+    );
+    assert.match(
+      secondContent,
+      /case_id: 1002/,
+      "case_id should be extracted from full-width suffix",
+    );
+  });
+
+  it("merges duplicate L1 titles into one requirement file when splitting", async () => {
+    const { default: JSZip } = await import("jszip");
+    const xmindFile = join(TMP_DIR, "duplicate-l1-split.xmind");
+    const content = [
+      {
+        rootTopic: {
+          title: "Root",
+          children: {
+            attached: [
+              {
+                title: "重复需求（#2001）",
+                children: {
+                  attached: [
+                    {
+                      title: "模块A",
+                      children: {
+                        attached: [
+                          {
+                            title: "验证A功能",
+                            markers: [{ markerId: "priority-1" }],
+                            children: {
+                              attached: [
+                                {
+                                  title: "步骤A-1",
+                                  children: {
+                                    attached: [{ title: "预期A-1" }],
+                                  },
+                                },
+                                {
+                                  title: "步骤A-2",
+                                  children: {
+                                    attached: [{ title: "预期A-2" }],
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+              {
+                title: "重复需求（#2001）",
+                children: {
+                  attached: [
+                    {
+                      title: "模块B",
+                      children: {
+                        attached: [
+                          {
+                            title: "验证B功能",
+                            markers: [{ markerId: "priority-2" }],
+                            children: {
+                              attached: [
+                                {
+                                  title: "步骤B-1",
+                                  children: {
+                                    attached: [{ title: "预期B-1" }],
+                                  },
+                                },
+                                {
+                                  title: "步骤B-2",
+                                  children: {
+                                    attached: [{ title: "预期B-2" }],
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+    const zip = new JSZip();
+    zip.file("content.json", JSON.stringify(content));
+    writeFileSync(
+      xmindFile,
+      await zip.generateAsync({ type: "nodebuffer" }),
+    );
+
+    const { code, stdout } = run(["--path", xmindFile, "--force"]);
+    assert.equal(code, 0);
+
+    const out = JSON.parse(stdout) as {
+      converted: number;
+      files: { output: string; caseCount?: number; status: string }[];
+    };
+    assert.equal(
+      out.converted,
+      1,
+      "duplicate requirement titles should merge into one output file",
+    );
+    assert.equal(out.files[0].caseCount, 2, "merged file should include both cases");
+    assert.ok(
+      out.files[0].output.endsWith("/重复需求.md"),
+      `merged output should use the requirement title as file name, got: ${out.files[0].output}`,
+    );
+
+    const contentText = readFileSync(out.files[0].output, "utf8");
+    assert.match(contentText, /suite_name: "重复需求（#2001）"/);
+    assert.match(contentText, /case_count: 2/);
+    assert.match(contentText, /## 模块A/);
+    assert.match(contentText, /## 模块B/);
+    assert.match(contentText, /验证A功能/);
+    assert.match(contentText, /验证B功能/);
+  });
+
+  it("extracts case_id when the ticket token is followed by extra title markers", async () => {
+    const { default: JSZip } = await import("jszip");
+    const xmindFile = join(TMP_DIR, "case-id-before-marker.xmind");
+    const content = [
+      {
+        rootTopic: {
+          title: "Root",
+          children: {
+            attached: [
+              {
+                title: "需求A（#3001）【需求变更】",
+                children: {
+                  attached: [
+                    {
+                      title: "模块A",
+                      children: {
+                        attached: [
+                          {
+                            title: "验证A功能",
+                            markers: [{ markerId: "priority-1" }],
+                            children: {
+                              attached: [
+                                {
+                                  title: "步骤A-1",
+                                  children: {
+                                    attached: [{ title: "预期A-1" }],
+                                  },
+                                },
+                                {
+                                  title: "步骤A-2",
+                                  children: {
+                                    attached: [{ title: "预期A-2" }],
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      },
+    ];
+    const zip = new JSZip();
+    zip.file("content.json", JSON.stringify(content));
+    writeFileSync(
+      xmindFile,
+      await zip.generateAsync({ type: "nodebuffer" }),
+    );
+
+    const { code, stdout } = run(["--path", xmindFile, "--force"]);
+    assert.equal(code, 0);
+
+    const out = JSON.parse(stdout) as {
+      converted: number;
+      files: { output: string; status: string }[];
+    };
+    assert.equal(out.converted, 1);
+    assert.ok(
+      out.files[0].output.endsWith("/需求A【需求变更】.md"),
+      `output should strip the embedded ticket token, got: ${out.files[0].output}`,
+    );
+
+    const contentText = readFileSync(out.files[0].output, "utf8");
+    assert.match(contentText, /suite_name: "需求A（#3001）【需求变更】"/);
+    assert.match(contentText, /case_id: 3001/);
   });
 });

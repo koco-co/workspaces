@@ -291,6 +291,25 @@ function cleanRichText(text: string): string {
 }
 
 /** Parse module path like /版本迭代测试用例/v6.4.8/【需求名】(#10220) */
+const CASE_ID_TOKEN_RE = /[（(]#(\d+)[)）]/g;
+
+function parseTitleAndCaseId(title: string): { name: string; caseId?: string } {
+  const matches = [...title.matchAll(CASE_ID_TOKEN_RE)];
+  if (matches.length === 0) {
+    return { name: title.trim() };
+  }
+
+  const lastMatch = matches[matches.length - 1];
+  const matchedText = lastMatch[0];
+  const startIndex = lastMatch.index ?? title.lastIndexOf(matchedText);
+  const endIndex = startIndex + matchedText.length;
+  const name = `${title.slice(0, startIndex)}${title.slice(endIndex)}`
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return { name, caseId: lastMatch[1] };
+}
+
 function parseModulePath(modulePath: string): {
   version: string;
   l1Name: string;
@@ -309,10 +328,10 @@ function parseModulePath(modulePath: string): {
       continue;
     }
     // L1 requirement segment with possible (#caseId)
-    const cidMatch = seg.match(/\(#(\d+)\)\s*$/);
-    if (cidMatch) {
-      l1Name = seg.slice(0, cidMatch.index).trim();
-      caseId = cidMatch[1];
+    const parsedTitle = parseTitleAndCaseId(seg);
+    if (parsedTitle.caseId) {
+      l1Name = parsedTitle.name;
+      caseId = parsedTitle.caseId;
     } else if (seg !== "版本迭代测试用例") {
       l1Name = seg;
     }
@@ -760,6 +779,108 @@ interface ParsedCase {
   steps: { step: string; expected: string }[];
 }
 
+function cloneParsedCase(c: ParsedCase): ParsedCase {
+  return {
+    title: c.title,
+    priority: c.priority,
+    preconditions: c.preconditions,
+    steps: c.steps.map((step) => ({ ...step })),
+  };
+}
+
+function cloneParsedSubGroup(sg: ParsedSubGroup): ParsedSubGroup {
+  return {
+    name: sg.name,
+    cases: sg.cases.map(cloneParsedCase),
+  };
+}
+
+function cloneParsedPage(page: ParsedPage): ParsedPage {
+  return {
+    name: page.name,
+    subGroups: page.subGroups.map(cloneParsedSubGroup),
+    cases: page.cases.map(cloneParsedCase),
+  };
+}
+
+function cloneParsedModule(mod: ParsedModule): ParsedModule {
+  return {
+    name: mod.name,
+    pages: mod.pages.map(cloneParsedPage),
+  };
+}
+
+function countParsedCasesInModules(modules: ParsedModule[]): number {
+  let total = 0;
+  for (const mod of modules) {
+    for (const page of mod.pages) {
+      total += page.cases.length;
+      for (const sg of page.subGroups) {
+        total += sg.cases.length;
+      }
+    }
+  }
+  return total;
+}
+
+function mergeParsedPages(target: ParsedPage[], incoming: ParsedPage[]): void {
+  for (const page of incoming) {
+    const existingPage = target.find((entry) => entry.name === page.name);
+    if (!existingPage) {
+      target.push(cloneParsedPage(page));
+      continue;
+    }
+
+    existingPage.cases.push(...page.cases.map(cloneParsedCase));
+
+    for (const sg of page.subGroups) {
+      const existingSubGroup = existingPage.subGroups.find(
+        (entry) => entry.name === sg.name,
+      );
+      if (!existingSubGroup) {
+        existingPage.subGroups.push(cloneParsedSubGroup(sg));
+        continue;
+      }
+      existingSubGroup.cases.push(...sg.cases.map(cloneParsedCase));
+    }
+  }
+}
+
+function mergeParsedModules(
+  target: ParsedModule[],
+  incoming: ParsedModule[],
+): void {
+  for (const mod of incoming) {
+    const existingModule = target.find((entry) => entry.name === mod.name);
+    if (!existingModule) {
+      target.push(cloneParsedModule(mod));
+      continue;
+    }
+    mergeParsedPages(existingModule.pages, mod.pages);
+  }
+}
+
+function mergeParsedL1s(l1s: ParsedL1[]): ParsedL1[] {
+  const merged: ParsedL1[] = [];
+
+  for (const l1 of l1s) {
+    const existing = merged.find((entry) => entry.title === l1.title);
+    if (!existing) {
+      merged.push({
+        title: l1.title,
+        modules: l1.modules.map(cloneParsedModule),
+        totalCases: l1.totalCases,
+      });
+      continue;
+    }
+
+    mergeParsedModules(existing.modules, l1.modules);
+    existing.totalCases = countParsedCasesInModules(existing.modules);
+  }
+
+  return merged;
+}
+
 /** Parse an L2 (module) node and all its descendants */
 function parseL2Module(l2: XMindTopicNode): ParsedModule {
   const pages: ParsedPage[] = [];
@@ -1028,11 +1149,9 @@ function l1ToMarkdown(l1: ParsedL1, prdVersion?: string): string {
 
   const { name: cleanName, caseId } = parseL1Title(l1.title);
 
-  const suiteLabel = cleanName;
-
   const fm: Record<string, string | number | boolean | string[]> = {
-    suite_name: suiteLabel,
-    description: `${suiteLabel}用例归档`,
+    suite_name: l1.title,
+    description: `${cleanName}用例归档`,
     tags,
     prd_version: prdVersion ?? "",
     dev_version: extractDevVersions([l1.title]),
@@ -1042,7 +1161,7 @@ function l1ToMarkdown(l1: ParsedL1, prdVersion?: string): string {
     case_count: l1.totalCases,
   };
   if (caseId) {
-    fm.case_id = caseId;
+    fm.case_id = Number(caseId);
   }
 
   const bodyParts: string[] = [];
@@ -1102,16 +1221,9 @@ function computeOutputDir(): string {
   return join(root, wsDir, "archive", yyyymm);
 }
 
-/** Extract case_id from L1 title like "xxx(#10305)" → "10305", and the clean name without the ticket suffix */
+/** Extract case_id from L1 title like "xxx(#10305)" → "10305", and the clean name without the ticket token */
 function parseL1Title(title: string): { name: string; caseId?: string } {
-  const m = title.match(/\(#(\d+)\)\s*$/);
-  if (m) {
-    return {
-      name: title.slice(0, m.index).trim(),
-      caseId: m[1],
-    };
-  }
-  return { name: title };
+  return parseTitleAndCaseId(title);
 }
 
 /** Sanitize L1 title for use as filename — preserve【】, remove ticket suffix, strip unsafe chars */
@@ -1125,6 +1237,36 @@ function sanitizeFilename(title: string): string {
       .replace(/^-|-$/g, "")
       .trim() || "未命名"
   );
+}
+
+function buildUniqueOutputPath(
+  outDir: string,
+  title: string,
+  usedPaths: Set<string>,
+): string {
+  const { caseId } = parseL1Title(title);
+  const baseName = sanitizeFilename(title);
+  const candidates = [`${baseName}.md`];
+
+  if (caseId) {
+    candidates.push(`${baseName}-${caseId}.md`);
+  }
+
+  let suffix = 2;
+  while (candidates.length < 50) {
+    candidates.push(`${baseName}-${suffix}.md`);
+    suffix++;
+  }
+
+  for (const candidate of candidates) {
+    const outputPath = join(outDir, candidate);
+    if (!usedPaths.has(outputPath)) {
+      usedPaths.add(outputPath);
+      return outputPath;
+    }
+  }
+
+  throw new Error(`failed to allocate unique output path for L1 title: ${title}`);
 }
 
 // ─── Conversion ───────────────────────────────────────────────────────────────
@@ -1192,7 +1334,7 @@ async function convertFile(
 
     if (ext === ".xmind") {
       const sheets = await readXmindContentJson(inputPath);
-      const l1s = parseXmindToL1s(sheets);
+      const l1s = mergeParsedL1s(parseXmindToL1s(sheets));
 
       if (l1s.length === 0) {
         return [
@@ -1238,9 +1380,10 @@ async function convertFile(
         return results;
       }
 
+      const usedPaths = new Set<string>();
+
       for (const l1 of l1s) {
-        const fileName = `${sanitizeFilename(l1.title)}.md`;
-        const outputPath = join(outDir, fileName);
+        const outputPath = buildUniqueOutputPath(outDir, l1.title, usedPaths);
 
         if (existsSync(outputPath) && !force) {
           results.push({
