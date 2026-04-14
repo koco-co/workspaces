@@ -13,7 +13,7 @@ const DETECT_TS = resolve(__dirname, "../detect-events.ts");
 
 describe("matchEvents", () => {
   it("detects case-generated from xmind files", () => {
-    const files = ["workspace/xmind/202604/data-quality.xmind"];
+    const files = ["workspace/dataAssets/xmind/202604/data-quality.xmind"];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "case-generated");
@@ -23,8 +23,8 @@ describe("matchEvents", () => {
 
   it("detects multiple xmind files as single event with count", () => {
     const files = [
-      "workspace/xmind/202604/a.xmind",
-      "workspace/xmind/202604/b.xmind",
+      "workspace/dataAssets/xmind/202604/a.xmind",
+      "workspace/dataAssets/xmind/202604/b.xmind",
     ];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
@@ -32,7 +32,7 @@ describe("matchEvents", () => {
   });
 
   it("detects bug-report from reports/bugs html files", () => {
-    const files = ["workspace/reports/bugs/20260407/login-error.html"];
+    const files = ["workspace/dataAssets/reports/bugs/20260407/login-error.html"];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "bug-report");
@@ -40,7 +40,7 @@ describe("matchEvents", () => {
   });
 
   it("detects conflict-analyzed from reports/conflicts html files", () => {
-    const files = ["workspace/reports/conflicts/20260407/merge-conflict.html"];
+    const files = ["workspace/dataAssets/reports/conflicts/20260407/merge-conflict.html"];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "conflict-analyzed");
@@ -48,14 +48,14 @@ describe("matchEvents", () => {
   });
 
   it("detects ui-test-completed from reports/playwright files", () => {
-    const files = ["workspace/reports/playwright/20260407/index.html"];
+    const files = ["workspace/dataAssets/reports/playwright/20260407/index.html"];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "ui-test-completed");
   });
 
   it("detects archive-converted from archive md files", () => {
-    const files = ["workspace/archive/202604/data-quality.md"];
+    const files = ["workspace/dataAssets/archive/202604/data-quality.md"];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "archive-converted");
@@ -63,7 +63,7 @@ describe("matchEvents", () => {
   });
 
   it("ignores archive tmp/ files", () => {
-    const files = ["workspace/archive/202604/tmp/data-quality.md"];
+    const files = ["workspace/dataAssets/archive/202604/tmp/data-quality.md"];
     const events = matchEvents(files);
     const archiveEvents = events.filter((e) => e.event === "archive-converted");
     assert.equal(archiveEvents.length, 0);
@@ -71,8 +71,8 @@ describe("matchEvents", () => {
 
   it("merges xmind + archive into single case-generated event", () => {
     const files = [
-      "workspace/xmind/202604/feature.xmind",
-      "workspace/archive/202604/feature.md",
+      "workspace/dataAssets/xmind/202604/feature.xmind",
+      "workspace/dataAssets/archive/202604/feature.md",
     ];
     const events = matchEvents(files);
     assert.equal(events.length, 1);
@@ -82,9 +82,9 @@ describe("matchEvents", () => {
 
   it("detects multiple event types from mixed files (xmind+archive merged)", () => {
     const files = [
-      "workspace/xmind/202604/feature.xmind",
-      "workspace/reports/bugs/20260407/crash.html",
-      "workspace/archive/202604/feature.md",
+      "workspace/dataAssets/xmind/202604/feature.xmind",
+      "workspace/dataAssets/reports/bugs/20260407/crash.html",
+      "workspace/dataAssets/archive/202604/feature.md",
       "README.md", // should be ignored
     ];
     const events = matchEvents(files);
@@ -97,7 +97,7 @@ describe("matchEvents", () => {
 
   it("keeps archive-converted when no xmind files present", () => {
     const files = [
-      "workspace/archive/202604/standalone.md",
+      "workspace/dataAssets/archive/202604/standalone.md",
     ];
     const events = matchEvents(files);
     assert.equal(events.length, 1);

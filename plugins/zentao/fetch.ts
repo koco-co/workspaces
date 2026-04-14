@@ -3,8 +3,8 @@
  * plugins/zentao/fetch.ts — 禅道 Bug 信息 + 修复分支抓取器
  *
  * Usage:
- *   bun run plugins/zentao/fetch.ts --bug-id 138845 --output workspace/.temp/zentao
- *   bun run plugins/zentao/fetch.ts --url "http://zenpms.dtstack.cn/zentao/bug-view-138845.html" --output workspace/.temp/zentao
+ *   bun run plugins/zentao/fetch.ts --bug-id 138845 --output workspace/dataAssets/.temp/zentao --project dataAssets
+ *   bun run plugins/zentao/fetch.ts --url "http://zenpms.dtstack.cn/zentao/bug-view-138845.html" --output workspace/dataAssets/.temp/zentao
  *   bun run plugins/zentao/fetch.ts --help
  */
 
@@ -455,8 +455,9 @@ if (isMain) {
       "--url <url>",
       '禅道 Bug 页面 URL，例如 "http://zenpms.dtstack.cn/zentao/bug-view-138845.html"',
     )
-    .requiredOption("--output <dir>", "输出目录路径，例如 workspace/.temp/zentao")
-    .action(async (opts: { bugId?: string; url?: string; output: string }) => {
+    .requiredOption("--output <dir>", "输出目录路径，例如 workspace/<project>/.temp/zentao")
+    .option("--project <name>", "项目名称")
+    .action(async (opts: { bugId?: string; url?: string; output: string; project?: string }) => {
       let parsedBugId: number | undefined;
       if (opts.bugId !== undefined) {
         parsedBugId = Number.parseInt(opts.bugId, 10);

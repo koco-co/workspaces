@@ -42,7 +42,7 @@ interface PatternRule {
 
 const PATTERN_RULES: readonly PatternRule[] = [
   {
-    pattern: /^workspace\/xmind\/\d{6}\/.*\.xmind$/,
+    pattern: /^workspace\/[^/]+\/xmind\/\d{6}\/.*\.xmind$/,
     event: "case-generated",
     extract: (files) => ({
       count: files.length,
@@ -50,7 +50,7 @@ const PATTERN_RULES: readonly PatternRule[] = [
     }),
   },
   {
-    pattern: /^workspace\/reports\/bugs\/\d{8}\/.*\.html$/,
+    pattern: /^workspace\/[^/]+\/reports\/bugs\/\d{8}\/.*\.html$/,
     event: "bug-report",
     extract: (files) => ({
       reportFile: files.join(", "),
@@ -58,7 +58,7 @@ const PATTERN_RULES: readonly PatternRule[] = [
     }),
   },
   {
-    pattern: /^workspace\/reports\/conflicts\/\d{8}\/.*\.html$/,
+    pattern: /^workspace\/[^/]+\/reports\/conflicts\/\d{8}\/.*\.html$/,
     event: "conflict-analyzed",
     extract: (files) => ({
       reportFile: files.join(", "),
@@ -66,14 +66,14 @@ const PATTERN_RULES: readonly PatternRule[] = [
     }),
   },
   {
-    pattern: /^workspace\/reports\/playwright\/\d{8}\//,
+    pattern: /^workspace\/[^/]+\/reports\/playwright\/\d{8}\//,
     event: "ui-test-completed",
     extract: (files) => ({
       reportFile: files[0],
     }),
   },
   {
-    pattern: /^workspace\/archive\/\d{6}\/(?!tmp\/).*\.md$/,
+    pattern: /^workspace\/[^/]+\/archive\/\d{6}\/(?!tmp\/).*\.md$/,
     event: "archive-converted",
     extract: (files) => ({
       fileCount: files.length,

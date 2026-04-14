@@ -874,10 +874,12 @@ if (isMain) {
       "--url <url>",
       '蓝湖页面 URL，例如 "https://lanhuapp.com/web/#/item/project/product?tid=xxx&pid=xxx&docId=xxx"',
     )
-    .option("--base-dir <dir>", "PRD 输出基目录", "workspace/prds")
+    .option("--project <name>", "项目名称")
+    .option("--base-dir <dir>", "PRD 输出基目录（覆盖项目默认）")
     .option("--pages <ids>", "要获取的需求 ID（逗号分隔），不指定则获取全部")
-    .action(async (opts: { url: string; baseDir: string; pages?: string }) => {
-      await run(opts.url, opts.baseDir, opts.pages);
+    .action(async (opts: { url: string; project?: string; baseDir?: string; pages?: string }) => {
+      const baseDir = opts.baseDir ?? (opts.project ? `workspace/${opts.project}/prds` : "workspace/prds");
+      await run(opts.url, baseDir, opts.pages);
     });
 
   program.parse(process.argv);
