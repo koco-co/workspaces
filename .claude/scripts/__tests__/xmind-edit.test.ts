@@ -354,6 +354,7 @@ describe("xmind-edit patch", () => {
 
   it("dry-run previews patch without mutating the file", async () => {
     const xmindPath = createTestXmind("patch-dry-run");
+    const beforeFile = readFileSync(xmindPath);
     const beforeContent = await readContentJson(xmindPath);
     const patch = JSON.stringify({
       title: "验证默认加载列表页（预览）",
@@ -385,7 +386,9 @@ describe("xmind-edit patch", () => {
     assert.equal(result.after.priority, "P2");
     assert.equal(result.file, xmindPath);
 
+    const afterFile = readFileSync(xmindPath);
     const afterContent = await readContentJson(xmindPath);
+    assert.deepEqual(afterFile, beforeFile);
     assert.deepEqual(afterContent, beforeContent);
   });
 });
@@ -518,6 +521,7 @@ describe("xmind-edit add", () => {
 
   it("dry-run previews add without mutating the file", async () => {
     const xmindPath = createTestXmind("add-dry-run");
+    const beforeFile = readFileSync(xmindPath);
     const beforeContent = await readContentJson(xmindPath);
     const newCase = JSON.stringify({
       title: "验证仅预览新增用例",
@@ -550,7 +554,9 @@ describe("xmind-edit add", () => {
     assert.equal(result.parent.at(-1), "搜索筛选");
     assert.equal(result.file, xmindPath);
 
+    const afterFile = readFileSync(xmindPath);
     const afterContent = await readContentJson(xmindPath);
+    assert.deepEqual(afterFile, beforeFile);
     assert.deepEqual(afterContent, beforeContent);
 
     const { code: showCode } = runEdit([
