@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -14,6 +15,15 @@ import { after, before, describe, it } from "node:test";
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const FIXTURE_CSV = join(import.meta.dirname, "fixtures/sample-history.csv");
 const TMP_DIR = join(tmpdir(), `qa-flow-history-convert-test-${process.pid}`);
+
+/** Compute the archive directory the script writes to (mirrors computeOutputDir in history-convert.ts) */
+function getArchiveDir(): string {
+  const yyyymm = new Date().toISOString().slice(0, 7).replace("-", "");
+  return join(REPO_ROOT, "workspace", "archive", yyyymm);
+}
+
+/** Snapshot file names in the archive directory before tests */
+let archiveFilesBefore: Set<string> = new Set();
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
@@ -39,6 +49,13 @@ function run(args: string[]): { stdout: string; stderr: string; code: number } {
 
 before(() => {
   mkdirSync(TMP_DIR, { recursive: true });
+  // Snapshot existing files in archive dir so we can clean up test-generated ones
+  const archiveDir = getArchiveDir();
+  try {
+    archiveFilesBefore = new Set(readdirSync(archiveDir));
+  } catch {
+    archiveFilesBefore = new Set();
+  }
 });
 
 after(() => {
@@ -46,6 +63,18 @@ after(() => {
     rmSync(TMP_DIR, { recursive: true, force: true });
   } catch {
     // ignore
+  }
+  // Remove files created by tests in the real archive directory
+  const archiveDir = getArchiveDir();
+  try {
+    const currentFiles = readdirSync(archiveDir);
+    for (const file of currentFiles) {
+      if (!archiveFilesBefore.has(file)) {
+        rmSync(join(archiveDir, file), { recursive: true, force: true });
+      }
+    }
+  } catch {
+    // ignore if directory doesn't exist
   }
 });
 
