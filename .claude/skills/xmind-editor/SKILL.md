@@ -11,6 +11,7 @@ argument-hint: "[操作] [用例标题或关键词]"
 ### 项目选择
 
 扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+
 - 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
 - 若有 **多个项目**，列出供用户选择：
   ```
@@ -26,6 +27,7 @@ argument-hint: "[操作] [用例标题或关键词]"
 ### 偏好上下文
 
 按读取顺序加载偏好（后者覆盖前者）：
+
 1. 全局 `preferences/` 目录下所有 `.md` 文件
 2. 项目级 `workspace/{{project}}/preferences/` 目录下所有 `.md` 文件
 
@@ -34,13 +36,13 @@ argument-hint: "[操作] [用例标题或关键词]"
 </precedence>
 
 <artifact_contract>
-  <xmind_intermediate contract="A">
-    <title>验证xxx</title>
-    <priority>P1</priority>
-  </xmind_intermediate>
-  <archive_md contract="B">
-    <display_title>【P1】验证xxx</display_title>
-  </archive_md>
+<xmind_intermediate contract="A">
+<title>验证xxx</title>
+<priority>P1</priority>
+</xmind_intermediate>
+<archive_md contract="B">
+<display_title>【P1】验证xxx</display_title>
+</archive_md>
 </artifact_contract>
 
 > 本 Skill 写入 XMind 时必须使用 Contract A：`case-json.title` 保持裸标题 `验证xxx`，`priority` 单独存储。

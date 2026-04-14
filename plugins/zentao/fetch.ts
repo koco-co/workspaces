@@ -67,7 +67,9 @@ const BRANCH_PATTERN = /(?:branch|分支)[:\s]*([^\s,;，；]+)/gi;
  * Attempts to find a fix branch name from various bug fields.
  * Prioritises hotfix_ patterns, then falls back to branch mentions.
  */
-export function detectFixBranch(candidates: Array<string | null | undefined>): string | null {
+export function detectFixBranch(
+  candidates: Array<string | null | undefined>,
+): string | null {
   for (const candidate of candidates) {
     if (!candidate) continue;
     const hotfixMatches = candidate.match(HOTFIX_PATTERN);
@@ -153,12 +155,16 @@ function parsePriority(raw: unknown): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-function extractBugFields(data: RawBugData): Omit<BugOutput, "bug_id" | "output_path"> {
+function extractBugFields(
+  data: RawBugData,
+): Omit<BugOutput, "bug_id" | "output_path"> {
   const title = typeof data.title === "string" ? data.title : null;
   const severity = parseSeverity(data.severity);
   const priority = parsePriority(data.pri ?? data.priority);
-  const status = typeof data.status === "string" ? data.status.toLowerCase() : null;
-  const assignedTo = typeof data.assignedTo === "string" ? data.assignedTo : null;
+  const status =
+    typeof data.status === "string" ? data.status.toLowerCase() : null;
+  const assignedTo =
+    typeof data.assignedTo === "string" ? data.assignedTo : null;
   const moduleName =
     typeof data.moduleName === "string"
       ? data.moduleName
@@ -192,7 +198,15 @@ function extractBugFields(data: RawBugData): Omit<BugOutput, "bug_id" | "output_
     ...commentTexts,
   ]);
 
-  return { title, severity, priority, status, fix_branch, assigned_to: assignedTo, module: moduleName };
+  return {
+    title,
+    severity,
+    priority,
+    status,
+    fix_branch,
+    assigned_to: assignedTo,
+    module: moduleName,
+  };
 }
 
 // ─── Zentao HTTP Helpers ──────────────────────────────────────────────────────
@@ -201,7 +215,11 @@ interface LoginResult {
   cookie: string;
 }
 
-async function zentaoLogin(baseUrl: string, account: string, password: string): Promise<LoginResult> {
+async function zentaoLogin(
+  baseUrl: string,
+  account: string,
+  password: string,
+): Promise<LoginResult> {
   const loginUrl = `${baseUrl}/zentao/user-login.json`;
   const body = `account=${encodeURIComponent(account)}&password=${encodeURIComponent(password)}`;
 
@@ -217,14 +235,15 @@ async function zentaoLogin(baseUrl: string, account: string, password: string): 
       body,
     });
   } catch (err) {
-    throw Object.assign(new Error(`网络连接失败: ${(err as Error).message}`), { code: "NETWORK_ERROR" });
+    throw Object.assign(new Error(`网络连接失败: ${(err as Error).message}`), {
+      code: "NETWORK_ERROR",
+    });
   }
 
   if (!response.ok) {
-    throw Object.assign(
-      new Error(`禅道登录失败，HTTP ${response.status}`),
-      { code: "LOGIN_FAILED" },
-    );
+    throw Object.assign(new Error(`禅道登录失败，HTTP ${response.status}`), {
+      code: "LOGIN_FAILED",
+    });
   }
 
   // Extract Set-Cookie header for session
@@ -242,10 +261,9 @@ async function zentaoLogin(baseUrl: string, account: string, password: string): 
       const sessionId = String(b.sessionID ?? b.token ?? b.sid);
       return { cookie: `zentaosid=${sessionId}` };
     }
-    throw Object.assign(
-      new Error("禅道登录失败：响应中没有 Set-Cookie 头"),
-      { code: "LOGIN_FAILED" },
-    );
+    throw Object.assign(new Error("禅道登录失败：响应中没有 Set-Cookie 头"), {
+      code: "LOGIN_FAILED",
+    });
   }
 
   // Parse the session cookie value (zentaosid=xxx or PHPSESSID=xxx)
@@ -255,14 +273,14 @@ async function zentaoLogin(baseUrl: string, account: string, password: string): 
     .filter((s) => s.includes("="));
 
   const sessionCookie =
-    cookieParts.find((s) => s.startsWith("zentaosid=") || s.startsWith("PHPSESSID=")) ??
-    cookieParts[0];
+    cookieParts.find(
+      (s) => s.startsWith("zentaosid=") || s.startsWith("PHPSESSID="),
+    ) ?? cookieParts[0];
 
   if (!sessionCookie) {
-    throw Object.assign(
-      new Error("禅道登录失败：无法解析 Session Cookie"),
-      { code: "LOGIN_FAILED" },
-    );
+    throw Object.assign(new Error("禅道登录失败：无法解析 Session Cookie"), {
+      code: "LOGIN_FAILED",
+    });
   }
 
   return { cookie: sessionCookie };
@@ -285,18 +303,21 @@ async function zentaoFetchBug(
       },
     });
   } catch (err) {
-    throw Object.assign(new Error(`网络连接失败: ${(err as Error).message}`), { code: "NETWORK_ERROR" });
+    throw Object.assign(new Error(`网络连接失败: ${(err as Error).message}`), {
+      code: "NETWORK_ERROR",
+    });
   }
 
   if (response.status === 404) {
-    throw Object.assign(new Error(`Bug #${bugId} 不存在`), { code: "BUG_NOT_FOUND" });
+    throw Object.assign(new Error(`Bug #${bugId} 不存在`), {
+      code: "BUG_NOT_FOUND",
+    });
   }
 
   if (!response.ok) {
-    throw Object.assign(
-      new Error(`获取 Bug 失败，HTTP ${response.status}`),
-      { code: "FETCH_FAILED" },
-    );
+    throw Object.assign(new Error(`获取 Bug 失败，HTTP ${response.status}`), {
+      code: "FETCH_FAILED",
+    });
   }
 
   const responseText = await response.text();
@@ -311,12 +332,18 @@ async function zentaoFetchBug(
     return { title: rawTitle ?? undefined };
   }
 
-  throw Object.assign(new Error("禅道 API 返回了非 JSON 响应"), { code: "PARSE_ERROR" });
+  throw Object.assign(new Error("禅道 API 返回了非 JSON 响应"), {
+    code: "PARSE_ERROR",
+  });
 }
 
 // ─── Main Logic ───────────────────────────────────────────────────────────────
 
-async function run(options: { bugId?: number; url?: string; output: string }): Promise<void> {
+async function run(options: {
+  bugId?: number;
+  url?: string;
+  output: string;
+}): Promise<void> {
   const projectRoot = resolve(__dirname, "../../");
   initEnv(resolve(projectRoot, ".env"));
 
@@ -327,7 +354,9 @@ async function run(options: { bugId?: number; url?: string; output: string }): P
   } else if (options.url) {
     const extracted = extractBugIdFromUrl(options.url);
     if (extracted === null) {
-      const err: ErrorOutput = { error: `无法从 URL 提取 Bug ID，预期格式：bug-view-{数字}.html` };
+      const err: ErrorOutput = {
+        error: `无法从 URL 提取 Bug ID，预期格式：bug-view-{数字}.html`,
+      };
       process.stdout.write(`${JSON.stringify(err, null, 2)}\n`);
       process.exit(1);
     }
@@ -365,7 +394,11 @@ async function run(options: { bugId?: number; url?: string; output: string }): P
   // If API is unreachable but URL was provided, graceful degradation
   let sessionCookie: string;
   try {
-    const loginResult = await zentaoLogin(baseUrl as string, account as string, password as string);
+    const loginResult = await zentaoLogin(
+      baseUrl as string,
+      account as string,
+      password as string,
+    );
     sessionCookie = loginResult.cookie;
   } catch (err) {
     const e = err as Error & { code?: string };
@@ -391,7 +424,10 @@ async function run(options: { bugId?: number; url?: string; output: string }): P
       process.exit(1);
     }
 
-    const out: ErrorOutput = { error: `网络连接失败: ${e.message}`, partial: true };
+    const out: ErrorOutput = {
+      error: `网络连接失败: ${e.message}`,
+      partial: true,
+    };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
     process.exit(1);
   }
@@ -422,7 +458,10 @@ async function run(options: { bugId?: number; url?: string; output: string }): P
       return;
     }
 
-    const out: ErrorOutput = { error: `网络连接失败: ${e.message}`, partial: true };
+    const out: ErrorOutput = {
+      error: `网络连接失败: ${e.message}`,
+      partial: true,
+    };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
     process.exit(1);
   }
@@ -444,7 +483,8 @@ async function run(options: { bugId?: number; url?: string; output: string }): P
 
 // ─── CLI ─────────────────────────────────────────────────────────────────────
 
-const isMain = process.argv[1] === __filename || process.argv[1]?.endsWith("fetch.ts");
+const isMain =
+  process.argv[1] === __filename || process.argv[1]?.endsWith("fetch.ts");
 
 if (isMain) {
   const program = new Command("zentao-fetch");
@@ -455,27 +495,39 @@ if (isMain) {
       "--url <url>",
       '禅道 Bug 页面 URL，例如 "http://zenpms.dtstack.cn/zentao/bug-view-138845.html"',
     )
-    .requiredOption("--output <dir>", "输出目录路径，例如 workspace/<project>/.temp/zentao")
+    .requiredOption(
+      "--output <dir>",
+      "输出目录路径，例如 workspace/<project>/.temp/zentao",
+    )
     .option("--project <name>", "项目名称")
-    .action(async (opts: { bugId?: string; url?: string; output: string; project?: string }) => {
-      let parsedBugId: number | undefined;
-      if (opts.bugId !== undefined) {
-        parsedBugId = Number.parseInt(opts.bugId, 10);
-        if (Number.isNaN(parsedBugId)) {
-          const err: ErrorOutput = { error: `无效的 Bug ID 格式："${opts.bugId}"，必须为正整数` };
+    .action(
+      async (opts: {
+        bugId?: string;
+        url?: string;
+        output: string;
+        project?: string;
+      }) => {
+        let parsedBugId: number | undefined;
+        if (opts.bugId !== undefined) {
+          parsedBugId = Number.parseInt(opts.bugId, 10);
+          if (Number.isNaN(parsedBugId)) {
+            const err: ErrorOutput = {
+              error: `无效的 Bug ID 格式："${opts.bugId}"，必须为正整数`,
+            };
+            process.stdout.write(`${JSON.stringify(err, null, 2)}\n`);
+            process.exit(1);
+          }
+        }
+
+        if (parsedBugId === undefined && !opts.url) {
+          const err: ErrorOutput = { error: "必须提供 --bug-id 或 --url 参数" };
           process.stdout.write(`${JSON.stringify(err, null, 2)}\n`);
           process.exit(1);
         }
-      }
 
-      if (parsedBugId === undefined && !opts.url) {
-        const err: ErrorOutput = { error: "必须提供 --bug-id 或 --url 参数" };
-        process.stdout.write(`${JSON.stringify(err, null, 2)}\n`);
-        process.exit(1);
-      }
-
-      await run({ bugId: parsedBugId, url: opts.url, output: opts.output });
-    });
+        await run({ bugId: parsedBugId, url: opts.url, output: opts.output });
+      },
+    );
 
   program.parse(process.argv);
 }

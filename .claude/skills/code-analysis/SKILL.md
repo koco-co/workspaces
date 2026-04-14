@@ -23,22 +23,22 @@ argument-hint: "[报错日志 | 禅道链接 | 冲突代码]"
 </modes>
 
 <confirmation_policy>
-  <rule id="status_only">模式识别、分析摘要、报告生成完成仅作状态展示，不要求确认。</rule>
-  <rule id="reference_sync">引用源码或执行 repo sync 前，先展示 repo/branch/path 摘要并请求允许；Hotfix 模式若已给出 fix_branch，可自动 sync 作为 reference，但不自动写回配置。</rule>
-  <rule id="writeback">写回 `.env`、repo branch mapping 或其他配置前，必须单独展示变更预览并再次确认；拒绝写回时可继续本次分析。</rule>
+<rule id="status_only">模式识别、分析摘要、报告生成完成仅作状态展示，不要求确认。</rule>
+<rule id="reference_sync">引用源码或执行 repo sync 前，先展示 repo/branch/path 摘要并请求允许；Hotfix 模式若已给出 fix_branch，可自动 sync 作为 reference，但不自动写回配置。</rule>
+<rule id="writeback">写回 `.env`、repo branch mapping 或其他配置前，必须单独展示变更预览并再次确认；拒绝写回时可继续本次分析。</rule>
 </confirmation_policy>
 
 <output_contract>
-  <backend_bug_json>{"title":"...","summary":"...","classification":"environment|code|mixed|unknown","root_cause":"...","evidence":[],"fix_suggestions":[],"uncertainty":[]}</backend_bug_json>
-  <frontend_bug_json>{"title":"...","summary":"...","classification":"environment|code|mixed|unknown","root_cause":"...","evidence":[],"fix_suggestions":[],"uncertainty":[]}</frontend_bug_json>
-  <conflict_json>{"summary":"...","conflict_type":"logic|format|dependency","manual_decisions":[],"recommendations":[]}</conflict_json>
-  <hotfix_artifact>Hotfix 场景输出 Archive Markdown，用于后续验证与归档。</hotfix_artifact>
+<backend_bug_json>{"title":"...","summary":"...","classification":"environment|code|mixed|unknown","root_cause":"...","evidence":[],"fix_suggestions":[],"uncertainty":[]}</backend_bug_json>
+<frontend_bug_json>{"title":"...","summary":"...","classification":"environment|code|mixed|unknown","root_cause":"...","evidence":[],"fix_suggestions":[],"uncertainty":[]}</frontend_bug_json>
+<conflict_json>{"summary":"...","conflict_type":"logic|format|dependency","manual_decisions":[],"recommendations":[]}</conflict_json>
+<hotfix_artifact>Hotfix 场景输出 Archive Markdown，用于后续验证与归档。</hotfix_artifact>
 </output_contract>
 
 <error_handling>
-  <defaultable_unknown>缺少辅助环境信息但主日志完整时，继续分析并给出补充检查项。</defaultable_unknown>
-  <blocking_unknown>缺少完整堆栈、关键冲突块、repo/branch 等核心上下文时，返回补料请求或等待用户决策。</blocking_unknown>
-  <invalid_input>输入为空、链接损坏、内容与识别模式不匹配时，立即返回输入无效。</invalid_input>
+<defaultable_unknown>缺少辅助环境信息但主日志完整时，继续分析并给出补充检查项。</defaultable_unknown>
+<blocking_unknown>缺少完整堆栈、关键冲突块、repo/branch 等核心上下文时，返回补料请求或等待用户决策。</blocking_unknown>
+<invalid_input>输入为空、链接损坏、内容与识别模式不匹配时，立即返回输入无效。</invalid_input>
 </error_handling>
 
 <examples>
@@ -51,6 +51,7 @@ argument-hint: "[报错日志 | 禅道链接 | 冲突代码]"
 ### 项目选择
 
 扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+
 - 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
 - 若有 **多个项目**，列出供用户选择：
   ```
@@ -77,16 +78,16 @@ argument-hint: "[报错日志 | 禅道链接 | 冲突代码]"
 
 模板固定位置可使用以下符号作为视觉标记：
 
-| 符号 | 用途 |
-| --- | --- |
-| ⚠️ | 警告、注意事项 |
-| ⚙️ | 配置、环境相关 |
-| ☑️ | 已完成、已验证 |
-| ♻️ | 重构、可重试 |
-| ✅ | 通过、正常 |
-| ❌ | 失败、异常 |
-| ☐ | 待办、未完成 |
-| ⇒ | 指向、导致 |
+| 符号 | 用途           |
+| ---- | -------------- |
+| ⚠️   | 警告、注意事项 |
+| ⚙️   | 配置、环境相关 |
+| ☑️   | 已完成、已验证 |
+| ♻️   | 重构、可重试   |
+| ✅   | 通过、正常     |
+| ❌   | 失败、异常     |
+| ☐    | 待办、未完成   |
+| ⇒    | 指向、导致     |
 
 ### 禁止使用的符号（U+1Fxxx 范围，禅道无法保存）
 
@@ -157,7 +158,6 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 ```
 
 4. 若用户提供了新的仓库 URL 或纠正了分支信息，先展示写回预览，再单独确认是否持久化：
-
    - `.env` 将追加的 `SOURCE_REPOS`：`{{repo_url}}`
    - 分支映射文件：`{{repo_name}} -> {{branch}}`
 
@@ -177,6 +177,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 将报告数据写入 `workspace/{{project}}/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
 
 可用模板（位于 `templates/` 目录）：
+
 - `bug-report-zentao.html.hbs` — **默认**，禅道富文本编辑器兼容（全 inline style，table 布局，可直接粘贴到禅道）
 - `bug-report-full.html.hbs` — 完整样式版，独立 HTML 查看，含 CSS 变量、渐变、flexbox 等高级样式
 - `bug-report.html.hbs` — 旧版模板（保留兼容）

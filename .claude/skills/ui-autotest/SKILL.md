@@ -30,21 +30,21 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 </workflow>
 
 <confirmation_policy>
-  <rule id="status_only">步骤完成统计、通过/失败摘要、报告路径展示仅作状态展示，不要求确认。</rule>
-  <rule id="scope_selection">仅在 URL、执行范围或登录方式不明确时使用 AskUserQuestion。</rule>
-  <rule id="reference_permission">允许用实际 DOM、playwright-cli snapshot 与只读源码来修正脚本；此许可不包含 Archive MD 写回。</rule>
-  <rule id="archive_writeback">若拟回写 Archive MD，必须先展示差异预览，再单独确认；默认只记录建议，不写回。</rule>
+<rule id="status_only">步骤完成统计、通过/失败摘要、报告路径展示仅作状态展示，不要求确认。</rule>
+<rule id="scope_selection">仅在 URL、执行范围或登录方式不明确时使用 AskUserQuestion。</rule>
+<rule id="reference_permission">允许用实际 DOM、playwright-cli snapshot 与只读源码来修正脚本；此许可不包含 Archive MD 写回。</rule>
+<rule id="archive_writeback">若拟回写 Archive MD，必须先展示差异预览，再单独确认；默认只记录建议，不写回。</rule>
 </confirmation_policy>
 
 <output_contract>
-  <archive_contract>保留 Task 2 的 Archive MD 标题契约、`suite_name` 语义与 `parse-cases.ts` 解析约定。</archive_contract>
-  <artifacts>产物包括 UI blocks、合并 spec、Playwright HTML 报告、可选的 Archive MD 校正建议。</artifacts>
+<archive_contract>保留 Task 2 的 Archive MD 标题契约、`suite_name` 语义与 `parse-cases.ts` 解析约定。</archive_contract>
+<artifacts>产物包括 UI blocks、合并 spec、Playwright HTML 报告、可选的 Archive MD 校正建议。</artifacts>
 </output_contract>
 
 <error_handling>
-  <defaultable_unknown>范围或环境细节缺失但不影响执行时，按默认值继续并在摘要中提示。</defaultable_unknown>
-  <blocking_unknown>登录、环境或页面结构缺口导致脚本无法继续时，终止该用例并在结果中说明。</blocking_unknown>
-  <invalid_input>Archive MD 路径、URL 或解析结果无效时，立即停止并要求修正输入。</invalid_input>
+<defaultable_unknown>范围或环境细节缺失但不影响执行时，按默认值继续并在摘要中提示。</defaultable_unknown>
+<blocking_unknown>登录、环境或页面结构缺口导致脚本无法继续时，终止该用例并在结果中说明。</blocking_unknown>
+<invalid_input>Archive MD 路径、URL 或解析结果无效时，立即停止并要求修正输入。</invalid_input>
 </error_handling>
 
 <examples>
@@ -60,29 +60,32 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 
 workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建 9 个任务，按顺序设置 `addBlockedBy` 依赖：
 
-| 任务 subject | activeForm |
-|---|---|
-| `步骤 1 — 解析输入` | `解析用例文件` |
-| `步骤 2 — 执行范围` | `确认执行范围` |
-| `步骤 3 — 登录态准备` | `准备登录 session` |
-| `步骤 4 — 脚本生成` | `生成 Playwright 脚本` |
-| `步骤 5 — 逐条自测` | `执行自测验证` |
-| `步骤 6 — 合并脚本` | `合并验证通过的脚本` |
-| `步骤 7 — 执行测试` | `执行全量回归` |
-| `步骤 8 — 处理结果` | `处理测试结果` |
-| `步骤 9 — 发送通知` | `发送完成通知` |
+| 任务 subject          | activeForm             |
+| --------------------- | ---------------------- |
+| `步骤 1 — 解析输入`   | `解析用例文件`         |
+| `步骤 2 — 执行范围`   | `确认执行范围`         |
+| `步骤 3 — 登录态准备` | `准备登录 session`     |
+| `步骤 4 — 脚本生成`   | `生成 Playwright 脚本` |
+| `步骤 5 — 逐条自测`   | `执行自测验证`         |
+| `步骤 6 — 合并脚本`   | `合并验证通过的脚本`   |
+| `步骤 7 — 执行测试`   | `执行全量回归`         |
+| `步骤 8 — 处理结果`   | `处理测试结果`         |
+| `步骤 9 — 发送通知`   | `发送完成通知`         |
 
 **状态推进规则**：
+
 - 进入步骤时 → `TaskUpdate status: in_progress`
 - 步骤完成时 → `TaskUpdate status: completed`，在 `subject` 末尾追加关键指标
 
 ### 步骤 5 逐条自测子任务
 
 进入步骤 5 后，为每条待验证用例创建独立子任务：
+
 - subject: `[自测] {{title}}`
 - activeForm: `执行「{{title}}」`
 
 每条用例状态更新：
+
 - 开始执行 → `in_progress`（activeForm: `执行「{{title}}」— 第 {{n}} 轮`）
 - 修复重试 → 更新 subject 为 `[自测] {{title}} — 第 {{n}} 轮修复中`
 - 验证通过 → `completed`（subject: `[自测] {{title}} — 通过`）
@@ -91,6 +94,7 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 ### 步骤 4 脚本生成子任务
 
 进入步骤 4 后，为每条用例创建子任务：
+
 - subject: `[脚本] {{title}}`
 - Sub-Agent 完成时标记 `completed`
 
@@ -99,13 +103,14 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 ## 前置说明
 
 <artifact_contract>
-  <xmind_intermediate contract="A">
-    <title>验证xxx</title>
-    <priority>P1</priority>
-  </xmind_intermediate>
-  <archive_md contract="B">
-    <display_title>【P1】验证xxx</display_title>
-  </archive_md>
+<xmind_intermediate contract="A">
+
+<title>验证xxx</title>
+<priority>P1</priority>
+</xmind_intermediate>
+<archive_md contract="B">
+<display_title>【P1】验证xxx</display_title>
+</archive_md>
 </artifact_contract>
 
 > 本 Skill 消费的是 Archive MD（Contract B）。
@@ -116,6 +121,7 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 ### 项目选择
 
 扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+
 - 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
 - 若有 **多个项目**，列出供用户选择：
   ```
@@ -338,7 +344,6 @@ QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-block
    ```
 
 3. **展示预览后，使用 AskUserQuestion 单独确认写回权限**：
-
    - 选项 1：仅引用实际行为修正脚本，不写回 Archive MD（默认）
    - 选项 2：允许按上述预览写回 Archive MD
    - 选项 3：跳过该用例的写回建议
@@ -521,10 +526,10 @@ bun run .claude/scripts/plugin-loader.ts notify \
 
 ## 输出目录约定
 
-| 类型                 | 路径                                                    |
-| -------------------- | ------------------------------------------------------- |
-| 临时代码块           | `workspace/{{project}}/.temp/ui-blocks/`                |
-| E2E spec 文件        | `workspace/{{project}}/tests/YYYYMM/{{suite_name}}/`    |
-| Playwright HTML 报告 | `workspace/{{project}}/reports/playwright/YYYYMMDD/`    |
-| Bug 报告             | `workspace/{{project}}/reports/bugs/YYYYMMDD/`          |
-| Session 文件         | `.auth/session.json`                                    |
+| 类型                 | 路径                                                 |
+| -------------------- | ---------------------------------------------------- |
+| 临时代码块           | `workspace/{{project}}/.temp/ui-blocks/`             |
+| E2E spec 文件        | `workspace/{{project}}/tests/YYYYMM/{{suite_name}}/` |
+| Playwright HTML 报告 | `workspace/{{project}}/reports/playwright/YYYYMMDD/` |
+| Bug 报告             | `workspace/{{project}}/reports/bugs/YYYYMMDD/`       |
+| Session 文件         | `.auth/session.json`                                 |
