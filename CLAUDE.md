@@ -15,11 +15,36 @@
 | `/xmind-editor`  | 编辑 XMind 用例 |
 | `/ui-autotest`   | UI 自动化测试   |
 
+## 多项目工作区
+
+`workspace/` 按项目名称组织，每个项目有独立子目录：
+
+```
+workspace/
+├── dataAssets/          # 数据资产项目
+│   ├── prds/            # PRD 需求文档
+│   ├── xmind/           # XMind 测试用例
+│   ├── archive/         # Archive Markdown 归档
+│   ├── issues/          # Hotfix 用例
+│   ├── reports/         # 分析报告
+│   ├── historys/        # 历史数据
+│   ├── tests/           # Playwright 自动化脚本
+│   ├── preferences/     # 项目级偏好（覆盖全局）
+│   ├── .repos/          # 源码仓库（只读）
+│   └── .temp/           # 状态文件
+├── xyzh/                # 信永中和项目
+│   └── ...              # 同上结构
+```
+
+- 脚本通过 `--project` 参数指定项目，路径函数见 `paths.ts`
+- `config.json` 按 `projects.{name}` 组织配置
+- 偏好加载顺序：全局 `preferences/` → 项目级 `workspace/{project}/preferences/`（后者覆盖前者）
+
 ## 核心约束
 
-- `workspace/.repos/` 下的源码仓库为只读，禁止 push/commit
-- 用户偏好规则见 `preferences/` 目录，优先级高于 skill 内置规则
-- 所有输出产物写入 `workspace/` 目录，不污染框架代码
+- `workspace/{project}/.repos/` 下的源码仓库为只读，禁止 push/commit
+- 用户偏好规则见 `preferences/` 目录（全局）和 `workspace/{project}/preferences/`（项目级），优先级高于 skill 内置规则
+- 所有输出产物写入 `workspace/{project}/` 目录，不污染框架代码
 
 ## 脚本变更规则
 
