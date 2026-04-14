@@ -21,6 +21,15 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 ---
 
+## 项目选择
+
+1. 扫描 `workspace/` 下的项目目录
+2. 若只有 1 个项目，自动选中
+3. 若有多个项目，提示用户选择
+4. 将选中项目记为 `{{project}}`
+
+---
+
 ## 运行模式
 
 | 模式       | 触发条件                               | 行为差异                                          |
@@ -147,17 +156,17 @@ bun run .claude/scripts/history-convert.ts --path {{input_file}} --detect
 
 > **路径规则**：标准化产物（含 `-standardized` 后缀的 MD 和 XMind）属于中间产物，必须输出到 archive 下的 `tmp/` 子目录，不得直接放在 archive 或 xmind 根目录下。
 >
-> - Archive MD → `workspace/archive/{{YYYYMM}}/tmp/{{name}}-standardized.md`
-> - XMind → `workspace/archive/{{YYYYMM}}/tmp/{{name}}-standardized.xmind`
+> - Archive MD → `workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-standardized.md`
+> - XMind → `workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-standardized.xmind`
 > - 中间 JSON 也保留在同一 `tmp/` 目录
 > - 禁止输出到 `workspace/cases/` 目录（该目录不存在且不应被创建）
 
 ```bash
 # 生成标准化 Archive MD（输出到 tmp/ 子目录）
-bun run .claude/scripts/archive-gen.ts convert --input {{final_json}} --output {{archive_tmp_path}}
+bun run .claude/scripts/archive-gen.ts convert --input {{final_json}} --project {{project}} --output {{archive_tmp_path}}
 
 # 从标准化 JSON 生成 XMind（输出到 tmp/ 子目录）
-bun run .claude/scripts/xmind-gen.ts --input {{final_json}} --output {{xmind_tmp_path}} --mode create
+bun run .claude/scripts/xmind-gen.ts --input {{final_json}} --project {{project}} --output {{xmind_tmp_path}} --mode create
 
 # 通知
 bun run .claude/scripts/plugin-loader.ts notify --event archive-converted --data '{"fileCount":1,"caseCount":{{count}}}'
@@ -183,7 +192,7 @@ bun run .claude/scripts/plugin-loader.ts notify --event archive-converted --data
 ### 触发条件
 
 用户输入包含触发词：同步 xmind、同步 XMind 文件、反向同步。
-或指定了具体 XMind 文件路径（如 `同步 workspace/xmind/202604/数据质量.xmind`）。
+或指定了具体 XMind 文件路径（如 `同步 workspace/{{project}}/xmind/202604/数据质量.xmind`）。
 
 ### RS1: 确认 XMind 文件
 
@@ -193,7 +202,7 @@ bun run .claude/scripts/plugin-loader.ts notify --event archive-converted --data
 - 选项 1：从最近生成的 XMind 中选择
 - 选项 2：手动输入文件路径
 
-若选择"从最近生成的 XMind 中选择"，列出 `workspace/xmind/` 下最近修改的文件供选择。
+若选择"从最近生成的 XMind 中选择"，列出 `workspace/{{project}}/xmind/` 下最近修改的文件供选择。
 
 ### RS2: 解析 XMind 文件
 
@@ -212,7 +221,7 @@ bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --detect
 
 按以下优先级查找对应的 Archive MD 文件：
 
-1. XMind 文件名匹配：`workspace/archive/{{YYYYMM}}/{{same_name}}.md`
+1. XMind 文件名匹配：`workspace/{{project}}/archive/{{YYYYMM}}/{{same_name}}.md`
 2. 同月份目录下搜索 frontmatter 中 `suite_name` 匹配的文件
 3. 未找到 → 使用 AskUserQuestion 询问用户指定目标路径或创建新文件
 
@@ -244,7 +253,7 @@ bun run .claude/scripts/history-convert.ts --path {{xmind_file}}
 ### 1.1 断点续传检测
 
 ```bash
-bun run .claude/scripts/state.ts resume --prd-slug {{prd_slug}}
+bun run .claude/scripts/state.ts resume --prd-slug {{prd_slug}} --project {{project}}
 ```
 
 若返回有效状态 → 跳转到断点所在节点继续执行。
@@ -260,7 +269,7 @@ bun run .claude/scripts/plugin-loader.ts check --input "{{user_input}}"
 ### 1.3 初始化状态
 
 ```bash
-bun run .claude/scripts/state.ts init --prd {{prd_path}} --mode {{mode}}
+bun run .claude/scripts/state.ts init --prd {{prd_path}} --project {{project}} --mode {{mode}}
 ```
 
 ### 交互点 A — 确认参数（使用 AskUserQuestion 工具）
@@ -360,7 +369,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 ### 2.6 更新状态
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node transform --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node transform --data '{{json}}'
 ```
 
 数据结构：
@@ -406,7 +415,7 @@ bun run .claude/scripts/prd-frontmatter.ts normalize --file {{prd_path}}
 ### 3.3 更新状态
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node enhance --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node enhance --data '{{json}}'
 ```
 
 **✅ Task**：将 `enhance` 任务标记为 `completed`（subject 更新为 `enhance — {{n}} 张图片，{{m}} 个要点`）。
@@ -431,10 +440,10 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node enhance --dat
 ### 4.1 历史用例检索
 
 ```bash
-bun run .claude/scripts/archive-gen.ts search --query "{{keywords}}" --dir workspace/archive
+bun run .claude/scripts/archive-gen.ts search --query "{{keywords}}" --dir workspace/{{project}}/archive --project {{project}}
 ```
 
-> 注：`workspace/archive` 中的 `workspace` 对应 `.env` 中 `WORKSPACE_DIR` 的值（默认 `workspace`）。
+> 注：`workspace/{{project}}/archive` 中的 `workspace` 对应 `.env` 中 `WORKSPACE_DIR` 的值（默认 `workspace`），`{{project}}` 为当前选中的项目名称。
 
 ### 4.2 测试点清单生成（AI 任务）
 
@@ -445,7 +454,7 @@ bun run .claude/scripts/archive-gen.ts search --query "{{keywords}}" --dir works
 ### 4.3 更新状态
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node analyze --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node analyze --data '{{json}}'
 ```
 
 **✅ Task**：将 `analyze` 任务标记为 `completed`（subject 更新为 `analyze — {{n}} 个模块，{{m}} 条测试点`）。
@@ -506,7 +515,7 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node analyze --dat
 每个 Writer 完成后更新状态：
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node write --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node write --data '{{json}}'
 ```
 
 ---
@@ -540,7 +549,7 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node write --data 
 ### 6.3 更新状态
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node review --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node review --data '{{json}}'
 ```
 
 **✅ Task**：将 `review` 任务标记为 `completed`（subject 更新为 `review — {{n}} 条用例，问题率 {{rate}}%`）。
@@ -567,7 +576,8 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node review --data
 ```bash
 bun run .claude/scripts/archive-gen.ts convert \
   --input {{review_json}} \
-  --output workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
+  --project {{project}} \
+  --output workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
 ```
 
 ### 6.5.2 格式合规检查（AI 任务）
@@ -586,8 +596,8 @@ Format Checker 输出结构化 JSON 偏差报告。
 ```bash
 bun run .claude/scripts/format-report-locator.ts locate \
   --report {{format_checker_json}} \
-  --archive workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md \
-  --output workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-enriched.json
+  --archive workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md \
+  --output workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-format-enriched.json
 ```
 
 可选：终端可读报告
@@ -595,7 +605,7 @@ bun run .claude/scripts/format-report-locator.ts locate \
 ```bash
 bun run .claude/scripts/format-report-locator.ts print \
   --report {{format_checker_json}} \
-  --archive workspace/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
+  --archive workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-format-check.md
 ```
 
 ### 6.5.4 Verdict 判定
@@ -619,7 +629,7 @@ bun run .claude/scripts/format-report-locator.ts print \
 每轮循环后更新状态：
 
 ```bash
-bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node format-check --data '{{json}}'
+bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node format-check --data '{{json}}'
 ```
 
 数据结构：
@@ -656,22 +666,22 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --node format-check 
 
 > **产物路径规则**（严格遵守）：
 >
-> - XMind → `workspace/xmind/{{YYYYMM}}/{{需求名称}}.xmind`
-> - Archive MD → `workspace/archive/{{YYYYMM}}/{{需求名称}}.md`
-> - **中间 JSON** → `workspace/archive/{{YYYYMM}}/tmp/{{需求名称}}.json`（中间产物必须放在 `tmp/` 子目录）
+> - XMind → `workspace/{{project}}/xmind/{{YYYYMM}}/{{需求名称}}.xmind`
+> - Archive MD → `workspace/{{project}}/archive/{{YYYYMM}}/{{需求名称}}.md`
+> - **中间 JSON** → `workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{需求名称}}.json`（中间产物必须放在 `tmp/` 子目录）
 > - 禁止输出到 `workspace/cases/` 目录（该目录不存在且不应被创建）
 > - 禁止将中间 JSON 放在 `archive/YYYYMM/` 根目录下
 
 ### 7.1 生成 XMind
 
 ```bash
-bun run .claude/scripts/xmind-gen.ts --input {{final_json}} --output workspace/xmind/{{YYYYMM}}/{{需求名称}}.xmind --mode create
+bun run .claude/scripts/xmind-gen.ts --input {{final_json}} --project {{project}} --output workspace/{{project}}/xmind/{{YYYYMM}}/{{需求名称}}.xmind --mode create
 ```
 
 ### 7.2 生成 Archive MD
 
 ```bash
-bun run .claude/scripts/archive-gen.ts convert --input {{final_json}} --output workspace/archive/{{YYYYMM}}/{{需求名称}}.md
+bun run .claude/scripts/archive-gen.ts convert --input {{final_json}} --project {{project}} --output workspace/{{project}}/archive/{{YYYYMM}}/{{需求名称}}.md
 ```
 
 ### 7.3 发送通知
@@ -685,7 +695,7 @@ notify_data 必需字段：`count`、`file`、`duration`。
 ### 7.4 清理状态
 
 ```bash
-bun run .claude/scripts/state.ts clean --prd-slug {{slug}}
+bun run .claude/scripts/state.ts clean --prd-slug {{slug}} --project {{project}}
 ```
 
 **✅ Task**：将 `output` 任务标记为 `completed`（subject 更新为 `output — {{n}} 条用例，XMind + Archive MD 已生成`）。
@@ -738,6 +748,7 @@ bun run .claude/scripts/state.ts clean --prd-slug {{slug}}
 ```json
 {
   "prd_slug": "xxx",
+  "project": "{{project}}",
   "mode": "normal|quick",
   "current_node": "transform|enhance|analyze|write|review|format-check|output",
   "transform": { "confidence": 0, "clarify_count": 0 },

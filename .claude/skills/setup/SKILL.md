@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "qa-flow 环境初始化向导。5 步交互式引导完成工作区创建、依赖安装、源码仓库配置、插件配置和环境验证。触发词：初始化、init、环境配置、setup。也由 /using-qa-flow init 路由调用。"
+description: "qa-flow 环境初始化向导。6 步交互式引导完成项目管理、工作区创建、依赖安装、源码仓库配置、插件配置和环境验证。触发词：初始化、init、环境配置、setup。也由 /using-qa-flow init 路由调用。"
 argument-hint: "[step-number]"
 ---
 
@@ -16,7 +16,7 @@ argument-hint: "[step-number]"
 
 | 模式       | 触发条件        | 行为差异                                |
 | ---------- | --------------- | --------------------------------------- |
-| 完整初始化 | 默认 / `init`   | 全 5 步 + 全部交互点                    |
+| 完整初始化 | 默认 / `init`   | 全 6 步 + 全部交互点                    |
 | 单步跳转   | `[step-number]` | 仅执行指定步骤，如 `setup 3` 重跑步骤 3 |
 | 状态查询   | `仅查看状态`    | 执行步骤 1 扫描后直接退出               |
 
@@ -65,48 +65,75 @@ bun run .claude/skills/setup/scripts/init-wizard.ts scan
 
 ---
 
-## 步骤 2: 配置工作区
+## 步骤 2: 项目管理
 
-**目标**：创建标准工作区目录结构，支持自定义目录名。
+**目标**：选择已有项目或创建新项目，确定当前工作项目。
 
-### 2.1 询问工作区目录名
+### 2.1 扫描已有项目
+
+扫描 `workspace/` 下的已有项目目录（排除隐藏目录）。
 
 ### 交互点 B
 
 ```
-工作区目录名？
+已有项目：
+{{project_list}}
 
-1. ✓ workspace（推荐）
-2. 自定义名称（请输入）
+选项：
+1. 选择已有项目
+2. 创建新项目
 ```
 
-### 2.2 创建目录结构
+### 2.2 创建新项目（若选择创建）
+
+- 输入项目名称（英文短名，如 `dataAssets`、`xyzh`）
+- 创建目录结构：
 
 ```bash
-mkdir -p {{workspace_dir}}/{prds,xmind,archive,issues,history,reports,.repos,.temp}
+mkdir -p workspace/{{project}}/{prds,xmind,archive,issues,historys,reports,tests,preferences,.repos,.temp}
+```
+
+- 将项目注册到 `config.json` 的 `projects.{{project}}` 下
+
+### 2.3 记录当前项目
+
+将选中的项目名称记为 `{{project}}`，后续步骤使用。
+
+---
+
+## 步骤 3: 配置工作区
+
+**目标**：创建标准工作区目录结构。
+
+### 3.1 创建目录结构
+
+```bash
+mkdir -p workspace/{{project}}/{prds,xmind,archive,issues,historys,reports,tests,preferences,.repos,.temp}
 ```
 
 创建成功后展示目录树：
 
 ```
-{{workspace_dir}}/
+workspace/{{project}}/
 ├── prds/          # PRD / Story 文档
 ├── xmind/         # XMind 输出
 ├── archive/       # 归档 Markdown
 ├── issues/        # 线上问题用例
-├── history/       # 历史 CSV 原始资料
+├── historys/      # 历史 CSV 原始资料
 ├── reports/       # 代码分析报告
+├── tests/         # 测试产物
+├── preferences/   # 用户偏好规则
 ├── .repos/        # 源码仓库（只读）
 └── .temp/         # 临时状态文件
 ```
 
-### 2.3 写入工作区路径到 .env
+### 3.2 写入工作区路径到 .env
 
 将 `WORKSPACE_DIR` 写入 `.env` 文件。
 
 ---
 
-## 步骤 3: 配置源码仓库（可选）
+## 步骤 4: 配置源码仓库（可选）
 
 **目标**：clone 一个或多个源码仓库到工作区 `.repos/` 目录，供代码分析使用。
 
@@ -123,13 +150,13 @@ mkdir -p {{workspace_dir}}/{prds,xmind,archive,issues,history,reports,.repos,.te
 
 ### 3.1 添加仓库
 
-用户提供 Git URL → 解析 `{{group_name}}/{{repo_name}}` → clone 到 `{{workspace_dir}}/.repos/{{group_name}}/{{repo_name}}/`：
+用户提供 Git URL → 解析 `{{group_name}}/{{repo_name}}` → clone 到 `workspace/{{project}}/.repos/{{group_name}}/{{repo_name}}/`：
 
 ```bash
 bun run .claude/skills/setup/scripts/init-wizard.ts clone \
   --url {{repo_url}} \
   --branch {{branch}} \
-  --base-dir {{workspace_dir}}/.repos
+  --base-dir workspace/{{project}}/.repos
 ```
 
 URL 格式示例：`http://gitlab.example.com/{{group_name}}/{{repo_name}}.git`
@@ -145,7 +172,7 @@ URL 格式示例：`http://gitlab.example.com/{{group_name}}/{{repo_name}}.git`
 
 继续添加？
 1. 添加下一个仓库
-2. 完成，进入步骤 4
+2. 完成，进入步骤 5
 ```
 
 ### 3.3 更新 .env
@@ -154,15 +181,15 @@ URL 格式示例：`http://gitlab.example.com/{{group_name}}/{{repo_name}}.git`
 
 ---
 
-## 步骤 4: 配置插件（可选）
+## 步骤 5: 配置插件（可选）
 
 **目标**：逐个检查未激活插件，引导用户在 `.env` 文件中填写所需凭证。
 
-### 4.1 读取插件清单
+### 5.1 读取插件清单
 
 从 `plugins/` 目录下各子目录的 `plugin.json` 文件读取所有已知插件。
 
-### 4.2 检查激活状态
+### 5.2 检查激活状态
 
 逐个检查 `.env` 中对应的环境变量是否已配置。
 
@@ -181,11 +208,11 @@ URL 格式示例：`http://gitlab.example.com/{{group_name}}/{{repo_name}}.git`
 
 ---
 
-## 步骤 5: 验证汇总
+## 步骤 6: 验证汇总
 
 **目标**：全面校验初始化结果，输出最终状态表。
 
-### 5.1 执行验证
+### 6.1 执行验证
 
 ```bash
 bun run .claude/skills/setup/scripts/init-wizard.ts verify
@@ -202,7 +229,7 @@ bun run .claude/skills/setup/scripts/init-wizard.ts verify
 | 脚本可执行 | init-wizard.ts 等核心脚本可被 `bun run` 调用 |
 | 硬编码检查 | 脚本和测试中无硬编码绝对路径或凭证（详见 CLAUDE.md「禁止硬编码规则」） |
 
-### 5.2 展示汇总表
+### 6.2 展示汇总表
 
 ```
 qa-flow v2.0 初始化完成
@@ -211,7 +238,7 @@ qa-flow v2.0 初始化完成
 │ 项目             │ 状态     │ 详情                       │
 ├──────────────────┼──────────┼────────────────────────────┤
 │ Node.js          │ ✓ 通过   │ v{{version}}               │
-│ 工作区目录       │ ✓ 通过   │ {{workspace_dir}}/         │
+│ 工作区目录       │ ✓ 通过   │ workspace/{{project}}/     │
 │ .env             │ ✓ 通过   │ WORKSPACE_DIR=workspace    │
 │ 源码仓库         │ {{status}}│ {{repo_count}} 个仓库      │
 │ 钉钉通知         │ {{status}}│ {{detail}}                 │
