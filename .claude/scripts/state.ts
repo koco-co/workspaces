@@ -5,10 +5,10 @@
  * Node lifecycle: init → transform → enhance → analyze → write → review → output
  *
  * Usage:
- *   bun run .claude/scripts/state.ts init --prd workspace/prds/202604/xxx.md --mode normal
- *   bun run .claude/scripts/state.ts update --prd-slug xxx --node transform --data '{"confidence":0.85}'
- *   bun run .claude/scripts/state.ts resume --prd-slug xxx
- *   bun run .claude/scripts/state.ts clean --prd-slug xxx
+ *   bun run .claude/scripts/state.ts init --project dataAssets --prd workspace/dataAssets/prds/202604/xxx.md --mode normal
+ *   bun run .claude/scripts/state.ts update --project dataAssets --prd-slug xxx --node transform --data '{"confidence":0.85}'
+ *   bun run .claude/scripts/state.ts resume --project dataAssets --prd-slug xxx
+ *   bun run .claude/scripts/state.ts clean --project dataAssets --prd-slug xxx
  *   bun run .claude/scripts/state.ts --help
  */
 
@@ -22,11 +22,12 @@ import {
 import { basename, dirname } from "node:path";
 import { Command } from "commander";
 import { initEnv } from "./lib/env.ts";
-import { workspacePath } from "./lib/paths.ts";
+import { projectPath } from "./lib/paths.ts";
 
 type RunMode = "normal" | "quick";
 
 interface QaState {
+  project: string;
   prd: string;
   mode: RunMode;
   current_node: string;
@@ -37,16 +38,16 @@ interface QaState {
   updated_at: string;
 }
 
-function stateFilePath(prdSlug: string): string {
-  return workspacePath(".temp", `.qa-state-${prdSlug}.json`);
+function stateFilePath(project: string, prdSlug: string): string {
+  return projectPath(project, ".temp", `.qa-state-${prdSlug}.json`);
 }
 
 function slugFromPrd(prdPath: string): string {
   return basename(prdPath, ".md");
 }
 
-function readState(prdSlug: string): QaState | null {
-  const filePath = stateFilePath(prdSlug);
+function readState(project: string, prdSlug: string): QaState | null {
+  const filePath = stateFilePath(project, prdSlug);
   if (!existsSync(filePath)) return null;
   try {
     return JSON.parse(readFileSync(filePath, "utf8")) as QaState;
@@ -55,8 +56,8 @@ function readState(prdSlug: string): QaState | null {
   }
 }
 
-function writeState(prdSlug: string, state: QaState): void {
-  const filePath = stateFilePath(prdSlug);
+function writeState(project: string, prdSlug: string, state: QaState): void {
+  const filePath = stateFilePath(project, prdSlug);
   const lockPath = `${filePath}.lock`;
 
   if (!acquireLock(lockPath)) {
@@ -114,10 +115,11 @@ program
   .description("Create a new state file for a PRD")
   .requiredOption(
     "--prd <path>",
-    "PRD file path (e.g. workspace/prds/202604/xxx.md)",
+    "PRD file path (e.g. workspace/dataAssets/prds/202604/xxx.md)",
   )
+  .requiredOption("--project <name>", "Project name (e.g. dataAssets)")
   .option("--mode <mode>", "Run mode: normal | quick", "normal")
-  .action((opts: { prd: string; mode: string }) => {
+  .action((opts: { prd: string; project: string; mode: string }) => {
     initEnv();
 
     const prdSlug = slugFromPrd(opts.prd);
@@ -125,6 +127,7 @@ program
     const now = nowIso();
 
     const state: QaState = {
+      project: opts.project,
       prd: opts.prd,
       mode,
       current_node: "init",
@@ -136,7 +139,7 @@ program
     };
 
     try {
-      writeState(prdSlug, state);
+      writeState(opts.project, prdSlug, state);
       process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
     } catch (err) {
       process.stderr.write(`[state:init] error: ${err}\n`);
@@ -149,13 +152,14 @@ program
 program
   .command("update")
   .description("Advance state to a new node and optionally merge output data")
+  .requiredOption("--project <name>", "Project name")
   .requiredOption("--prd-slug <slug>", "PRD slug (filename without .md)")
   .requiredOption("--node <node>", "Node name to set as current_node")
   .option("--data <json>", "JSON object to merge into node_outputs[node]", "{}")
-  .action((opts: { prdSlug: string; node: string; data: string }) => {
+  .action((opts: { project: string; prdSlug: string; node: string; data: string }) => {
     initEnv();
 
-    const state = readState(opts.prdSlug);
+    const state = readState(opts.project, opts.prdSlug);
     if (!state) {
       process.stderr.write(
         `[state:update] state file not found for slug "${opts.prdSlug}"\n`,
@@ -191,7 +195,7 @@ program
     };
 
     try {
-      writeState(opts.prdSlug, updated);
+      writeState(opts.project, opts.prdSlug, updated);
       process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
     } catch (err) {
       process.stderr.write(`[state:update] error: ${err}\n`);
@@ -204,11 +208,12 @@ program
 program
   .command("resume")
   .description("Read and output current state for a PRD slug")
+  .requiredOption("--project <name>", "Project name")
   .requiredOption("--prd-slug <slug>", "PRD slug (filename without .md)")
-  .action((opts: { prdSlug: string }) => {
+  .action((opts: { project: string; prdSlug: string }) => {
     initEnv();
 
-    const state = readState(opts.prdSlug);
+    const state = readState(opts.project, opts.prdSlug);
     if (!state) {
       process.stdout.write(
         `${JSON.stringify({ error: "State file not found" }, null, 2)}\n`,
@@ -224,11 +229,12 @@ program
 program
   .command("clean")
   .description("Delete state file for a PRD slug")
+  .requiredOption("--project <name>", "Project name")
   .requiredOption("--prd-slug <slug>", "PRD slug (filename without .md)")
-  .action((opts: { prdSlug: string }) => {
+  .action((opts: { project: string; prdSlug: string }) => {
     initEnv();
 
-    const filePath = stateFilePath(opts.prdSlug);
+    const filePath = stateFilePath(opts.project, opts.prdSlug);
 
     try {
       if (existsSync(filePath)) {
