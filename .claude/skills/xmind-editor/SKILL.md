@@ -25,7 +25,9 @@ argument-hint: "[操作] [用例标题或关键词]"
 
 ### 偏好上下文
 
-读取 `preferences/` 目录下所有 `.md` 文件，作为本次编辑的偏好上下文。
+按优先级加载偏好（后者覆盖前者）：
+1. 全局 `preferences/` 目录下所有 `.md` 文件
+2. 项目级 `workspace/{{project}}/preferences/` 目录下所有 `.md` 文件
 
 ---
 
@@ -105,15 +107,24 @@ bun run .claude/scripts/xmind-edit.ts delete \
 
 修改或新增用例完成、用户验收通过后触发：
 
-```
-AI 提炼本次修改中的可复用规则，向用户确认：
+1. AI 提炼本次修改中的可复用规则
+2. AI 判断该规则的归属：
+   - **项目特定**（如特定产品的菜单结构、字段命名、业务术语）→ 写入 `workspace/{{project}}/preferences/` 下对应文件
+   - **跨项目通用**（如用例编写格式规范、通用步骤模板）→ 写入全局 `preferences/` 下对应文件
+3. AI 判断写入哪个偏好文件（如 `case-writing.md`、`xmind-structure.md`、`hotfix-frontmatter.md`，或新建文件）
+4. 使用 AskUser 向用户确认判断结果：
 
-  📝 检测到可复用的偏好规则：
-  「导出按钮的预期结果应包含文件命名规则」
-
-  写入到：preferences/case-writing.md
-  选项：[✓ 写入] [调整后写入] [跳过]
 ```
+📝 检测到可复用的偏好规则：
+「导出按钮的预期结果应包含文件命名规则」
+
+判断归属：项目级偏好（数据资产特定的按钮命名规范）
+写入目标：workspace/dataAssets/preferences/case-writing.md
+
+选项：[确认写入] [更换目标文件] [调整规则内容] [跳过]
+```
+
+5. 用户确认后执行写入，追加到目标文件末尾
 
 ---
 
