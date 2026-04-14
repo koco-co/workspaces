@@ -14,8 +14,11 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 <!-- 前置加载 -->
 
-执行前读取 `preferences/` 目录下所有 `.md` 文件（如存在）。
-偏好优先级：用户当前指令 > preferences/ 规则 > 本 skill 内置规则（references/）。
+执行前按优先级加载偏好（后者覆盖前者）：
+1. 全局 `preferences/` 目录下所有 `.md` 文件
+2. 项目级 `workspace/{{project}}/preferences/` 目录下所有 `.md` 文件
+
+偏好优先级：用户当前指令 > 项目级偏好 > 全局偏好 > 本 skill 内置规则（references/）。
 读取项目配置：执行 `bun run .claude/scripts/config.ts`（从 `.env` 读取模块、仓库、路径配置）。
 全程遵守 `.claude/rules/test-case-writing.md` 用例编写规范。
 
