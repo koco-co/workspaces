@@ -54,6 +54,7 @@ interface ScanResult {
   env_configured: boolean;
   plugins: PluginStatus[];
   repos: RepoEntry[];
+  projects: string[];
   issues: string[];
 }
 
@@ -210,7 +211,18 @@ function runScan(): ScanResult {
   const nodeOk = nodeMajor >= 22;
 
   const depsInstalled = existsSync(join(root, "node_modules"));
-  const workspaceExists = existsSync(join(root, "workspace"));
+  const wsDir = join(root, "workspace");
+  const workspaceExists = existsSync(wsDir);
+  const projects = workspaceExists
+    ? readdirSync(wsDir).filter((name) => {
+        if (name.startsWith(".")) return false;
+        try {
+          return statSync(join(wsDir, name)).isDirectory();
+        } catch {
+          return false;
+        }
+      })
+    : [];
   const envConfigured = isEnvConfigured(root);
 
   const plugins = scanPlugins(root);
@@ -240,6 +252,7 @@ function runScan(): ScanResult {
     env_configured: envConfigured,
     plugins,
     repos,
+    projects,
     issues,
   };
 }
@@ -304,7 +317,7 @@ function runVerify(): VerifyResult {
     checks.push({
       name: "源码仓库",
       status: "skip",
-      detail: "workspace/.repos/ 下无仓库（可选）",
+      detail: "workspace/{project}/.repos/ 下无仓库（可选）",
     });
   }
 

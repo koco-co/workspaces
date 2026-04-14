@@ -57,6 +57,7 @@ describe("init-wizard scan", () => {
     assert.ok("env_configured" in result, "missing env_configured");
     assert.ok("plugins" in result, "missing plugins");
     assert.ok("repos" in result, "missing repos");
+    assert.ok("projects" in result, "missing projects");
     assert.ok("issues" in result, "missing issues");
   });
 
@@ -112,6 +113,15 @@ describe("init-wizard scan", () => {
       assert.equal(typeof r.group, "string", "repo.group should be a string");
       assert.equal(typeof r.repo, "string", "repo.repo should be a string");
       assert.equal(typeof r.path, "string", "repo.path should be a string");
+    }
+  });
+
+  it("projects is an array of strings", () => {
+    const { stdout } = run(["scan"]);
+    const result = JSON.parse(stdout) as { projects: unknown[] };
+    assert.ok(Array.isArray(result.projects), "projects should be an array");
+    for (const p of result.projects) {
+      assert.equal(typeof p, "string", "each project should be a string");
     }
   });
 
