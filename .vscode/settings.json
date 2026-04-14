@@ -34,9 +34,11 @@
     "myapp",
     "networkidle",
     "nodebuffer",
+    "PHPSESSID",
     "Popconfirm",
     "prds",
     "prefs",
+    "Prioritises",
     "pycache",
     "rdos",
     "rgba",
@@ -52,7 +54,8 @@
     "xmind",
     "zdxx",
     "zenpms",
-    "ZENTAO"
+    "ZENTAO",
+    "zentaosid"
   ],
   "python.analysis.extraPaths": ["./tools/lanhu/lanhu-mcp"]
 }
