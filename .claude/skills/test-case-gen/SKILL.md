@@ -15,6 +15,7 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 <!-- 前置加载 -->
 
 执行前收集偏好上下文（读取顺序如下；冲突时按 precedence 裁决）：
+
 1. 全局 `preferences/` 目录下所有 `.md` 文件
 2. 项目级 `workspace/{{project}}/preferences/` 目录下所有 `.md` 文件
 
@@ -23,13 +24,13 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 </precedence>
 
 <artifact_contract>
-  <xmind_intermediate contract="A">
-    <title>验证xxx</title>
-    <priority>P1</priority>
-  </xmind_intermediate>
-  <archive_md contract="B">
-    <display_title>【P1】验证xxx</display_title>
-  </archive_md>
+<xmind_intermediate contract="A">
+<title>验证xxx</title>
+<priority>P1</priority>
+</xmind_intermediate>
+<archive_md contract="B">
+<display_title>【P1】验证xxx</display_title>
+</archive_md>
 </artifact_contract>
 
 > 本文件引用的 `references/` 属于本 skill 的内置规则，一并受上述 precedence 约束。
@@ -56,22 +57,22 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 </workflow>
 
 <confirmation_policy>
-  <rule id="status_only">纯状态展示、任务进度、完成摘要不要求确认；直接继续下一节点。</rule>
-  <rule id="scope_or_ambiguity">仅在输入存在歧义、范围可变、或用户明确要求人工审阅时使用 AskUserQuestion。</rule>
-  <rule id="stateful_write">覆盖已有文件、保存 repo 映射、反向同步 Archive MD、持久化 profile / config 前，先展示预览或写入摘要，再确认。</rule>
-  <rule id="reference_vs_writeback">允许引用源码/历史/已有产物用于分析，不等于允许写回配置或归档；写回必须单独授权。</rule>
+<rule id="status_only">纯状态展示、任务进度、完成摘要不要求确认；直接继续下一节点。</rule>
+<rule id="scope_or_ambiguity">仅在输入存在歧义、范围可变、或用户明确要求人工审阅时使用 AskUserQuestion。</rule>
+<rule id="stateful_write">覆盖已有文件、保存 repo 映射、反向同步 Archive MD、持久化 profile / config 前，先展示预览或写入摘要，再确认。</rule>
+<rule id="reference_vs_writeback">允许引用源码/历史/已有产物用于分析，不等于允许写回配置或归档；写回必须单独授权。</rule>
 </confirmation_policy>
 
 <output_contract>
-  <artifact_contract>保留 Task 2 已批准的 A/B 产物契约与文案，不改写 Writer 中间 JSON、Archive MD、XMind 的职责边界。</artifact_contract>
-  <transform_handoff>transform 通过 `<clarify_envelope>` / `<confirmed_context>` 交接，不再依赖旧式 Markdown 协议块。</transform_handoff>
-  <writer_handoff>writer 通过 `<blocked_envelope>` / `<confirmed_context>` 交接；阻断时也必须保持机器可读。</writer_handoff>
+<artifact_contract>保留 Task 2 已批准的 A/B 产物契约与文案，不改写 Writer 中间 JSON、Archive MD、XMind 的职责边界。</artifact_contract>
+<transform_handoff>transform 通过 `<clarify_envelope>` / `<confirmed_context>` 交接，不再依赖旧式 Markdown 协议块。</transform_handoff>
+<writer_handoff>writer 通过 `<blocked_envelope>` / `<confirmed_context>` 交接；阻断时也必须保持机器可读。</writer_handoff>
 </output_contract>
 
 <error_handling>
-  <defaultable_unknown>能安全默认的缺口记录为默认项并继续。</defaultable_unknown>
-  <blocking_unknown>影响 PRD、测试点或用例正确性的未知项转交澄清/阻断协议。</blocking_unknown>
-  <invalid_input>输入损坏、缺失或路径不合法时立即停止当前分支并提示修正。</invalid_input>
+<defaultable_unknown>能安全默认的缺口记录为默认项并继续。</defaultable_unknown>
+<blocking_unknown>影响 PRD、测试点或用例正确性的未知项转交澄清/阻断协议。</blocking_unknown>
+<invalid_input>输入损坏、缺失或路径不合法时立即停止当前分支并提示修正。</invalid_input>
 </error_handling>
 
 <examples>
@@ -92,14 +93,14 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 ## 运行模式
 
-| 模式       | 触发条件                               | 行为差异                                          |
-| ---------- | -------------------------------------- | ------------------------------------------------- |
-| 普通       | 默认                                   | 全 7 节点 + 全部交互点                            |
-| 快速       | `--quick`                              | 跳过交互点 B/C，analyze 简化，review 仅 1 轮，format-check 最多 2 轮      |
-| 续传       | 自动检测 `.temp/.qa-state-*.json` 存在 | 从断点节点继续                                    |
-| 模块重跑   | `重新生成 xxx 的「yyy」模块`           | 仅执行 write → review → output（replace 模式）    |
-| 标准化归档 | 用户提供 `.xmind` 或 `.csv` 文件       | 走独立流程：parse → standardize → review → output |
-| 反向同步   | `同步 xmind`、`反向同步`               | XMind → Archive MD，走独立 5 步流程              |
+| 模式       | 触发条件                               | 行为差异                                                             |
+| ---------- | -------------------------------------- | -------------------------------------------------------------------- |
+| 普通       | 默认                                   | 全 7 节点 + 全部交互点                                               |
+| 快速       | `--quick`                              | 跳过交互点 B/C，analyze 简化，review 仅 1 轮，format-check 最多 2 轮 |
+| 续传       | 自动检测 `.temp/.qa-state-*.json` 存在 | 从断点节点继续                                                       |
+| 模块重跑   | `重新生成 xxx 的「yyy」模块`           | 仅执行 write → review → output（replace 模式）                       |
+| 标准化归档 | 用户提供 `.xmind` 或 `.csv` 文件       | 走独立流程：parse → standardize → review → output                    |
+| 反向同步   | `同步 xmind`、`反向同步`               | XMind → Archive MD，走独立 5 步流程                                  |
 
 ---
 
@@ -111,18 +112,19 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 workflow 启动时（节点 1 开始前），使用 `TaskCreate` 一次性创建 8 个任务（含 format-check），按顺序设置 `addBlockedBy` 依赖：
 
-| 任务 subject | activeForm |
-|---|---|
-| `init — 输入解析与环境准备` | `解析输入与检测断点` |
-| `transform — 源码分析与 PRD 结构化` | `分析源码与结构化 PRD` |
-| `enhance — PRD 增强` | `增强 PRD（图片识别、要点提取）` |
-| `analyze — 测试点规划` | `生成测试点清单` |
-| `write — 并行生成用例` | `派发 Writer 生成用例` |
-| `review — 质量审查` | `执行质量审查与修正` |
-| `format-check — 格式合规检查` | `检查格式合规性` |
-| `output — 产物生成` | `生成 XMind + Archive MD` |
+| 任务 subject                        | activeForm                       |
+| ----------------------------------- | -------------------------------- |
+| `init — 输入解析与环境准备`         | `解析输入与检测断点`             |
+| `transform — 源码分析与 PRD 结构化` | `分析源码与结构化 PRD`           |
+| `enhance — PRD 增强`                | `增强 PRD（图片识别、要点提取）` |
+| `analyze — 测试点规划`              | `生成测试点清单`                 |
+| `write — 并行生成用例`              | `派发 Writer 生成用例`           |
+| `review — 质量审查`                 | `执行质量审查与修正`             |
+| `format-check — 格式合规检查`       | `检查格式合规性`                 |
+| `output — 产物生成`                 | `生成 XMind + Archive MD`        |
 
 **状态推进规则**：
+
 - 进入节点时 → `TaskUpdate status: in_progress`
 - 节点完成时 → `TaskUpdate status: completed`，在 `subject` 末尾追加关键指标（如 `init — 已识别 PRD，普通模式`）
 - 节点失败时 → 保持 `in_progress`，不标记 `completed`
@@ -130,6 +132,7 @@ workflow 启动时（节点 1 开始前），使用 `TaskCreate` 一次性创建
 ### write 节点子任务
 
 进入 write 节点后，为每个模块额外创建子任务：
+
 - subject: `[write] {{模块名}}`
 - activeForm: `生成「{{模块名}}」用例`
 - 设置 `addBlockedBy` 指向 write 主任务
@@ -139,6 +142,7 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 ### format-check 循环子任务
 
 进入 format-check 节点后，为第 1 轮创建子任务：
+
 - subject: `[format-check] 第 1 轮`
 - activeForm: `执行第 1 轮格式检查`
 
@@ -678,6 +682,7 @@ bun run .claude/scripts/archive-gen.ts convert \
 派发 `format-checker-agent`（model: haiku）执行格式检查。
 
 输入：
+
 - 临时 Archive MD 文件内容
 - 当前轮次信息：`第 {{round}} 轮 / 最大 {{max_rounds}} 轮`
 - 上一轮偏差报告（第 2 轮起）
@@ -864,7 +869,12 @@ bun run .claude/scripts/state.ts clean --prd-slug {{slug}} --project {{project}}
   "analyze": { "checklist": {} },
   "write": { "modules": {}, "blocked": [] },
   "review": { "issue_rate": 0, "fixed_count": 0 },
-  "format_check": { "current_round": 0, "max_rounds": 5, "issues_history": [], "verdict": "" },
+  "format_check": {
+    "current_round": 0,
+    "max_rounds": 5,
+    "issues_history": [],
+    "verdict": ""
+  },
   "source_context": { "branch": "", "commit": "" }
 }
 ```
