@@ -54,6 +54,23 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 本 Skill 依赖外部 `playwright-cli` skill（单独安装）。执行前检查是否已安装：若未安装，提示用户执行 `/playwright-cli` 安装后再继续。
 
+### 项目选择
+
+扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+- 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
+- 若有 **多个项目**，列出供用户选择：
+  ```
+  检测到多个项目，请选择：
+  1. project-a
+  2. project-b
+  请输入编号（默认 1）：
+  ```
+- 若 **无项目**，提示用户先执行 `/qa-flow init` 初始化
+
+选定的项目名称记为 `{{project}}`，后续所有路径均使用该变量。
+
+### 读取配置
+
 读取项目配置：执行 `bun run .claude/scripts/config.ts`（从 `.env` 读取模块路径配置）。
 
 ---
@@ -66,10 +83,10 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 从用户输入中提取：
 
-- `md_path`：Archive MD 文件路径（支持功能名模糊匹配 → 在 `workspace/archive/` 下搜索）
+- `md_path`：Archive MD 文件路径（支持功能名模糊匹配 → 在 `workspace/{{project}}/archive/` 下搜索）
 - `url`：目标测试 URL（如 `https://www.bing.com/`）
 
-若 `md_path` 为功能名而非完整路径，在 `workspace/archive/` 中递归搜索匹配的 `.md` 文件。
+若 `md_path` 为功能名而非完整路径，在 `workspace/{{project}}/archive/` 中递归搜索匹配的 `.md` 文件。
 
 若 `url` 未提供，向用户询问：
 
@@ -87,7 +104,7 @@ bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}
 
 ```json
 {
-  "source": "workspace/archive/{{YYYYMM}}/xxx.md",
+  "source": "workspace/{{project}}/archive/{{YYYYMM}}/xxx.md",
   "suite_name": "功能名称",
   "tasks": [
     {
@@ -180,14 +197,14 @@ bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --outp
 
 当用例的 `preconditions` 包含 SQL 建表/数据准备时，sub-agent 必须在生成的脚本中使用 `setupPreconditions` API（来自 `assets-sql-sync` 插件），而非添加注释跳过。具体用法参见 `script-writer-agent` 的「前置条件处理」章节。
 
-若用例同时包含多张表的 SQL，可将 SQL 文件放在 `tests/e2e/{{YYYYMM}}/{{suite_name}}/sql/` 目录下，脚本中通过 `readFileSync` 读取。
+若用例同时包含多张表的 SQL，可将 SQL 文件放在 `workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/sql/` 目录下，脚本中通过 `readFileSync` 读取。
 
 **4.3 输出格式**
 
 每个 sub-agent 输出代码块，保存到：
 
 ```
-workspace/.temp/ui-blocks/{{id}}.ts
+workspace/{{project}}/.temp/ui-blocks/{{id}}.ts
 ```
 
 代码块格式：
@@ -210,10 +227,10 @@ import { test, expect } from "@playwright/test";
 
 **5.1 逐条执行验证**
 
-对 `workspace/.temp/ui-blocks/` 中的每个代码块，逐条执行 Playwright 测试：
+对 `workspace/{{project}}/.temp/ui-blocks/` 中的每个代码块，逐条执行 Playwright 测试：
 
 ```bash
-bunx playwright test workspace/.temp/ui-blocks/{{id}}.ts --project=chromium --timeout=30000
+QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-blocks/{{id}}.ts --project=chromium --timeout=30000
 ```
 
 **5.2 失败处理（最多重试 3 轮）**
@@ -269,8 +286,8 @@ bunx playwright test workspace/.temp/ui-blocks/{{id}}.ts --project=chromium --ti
 
 ```bash
 bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
-  --input workspace/.temp/ui-blocks/ \
-  --output tests/e2e/{{YYYYMM}}/{{suite_name}}/
+  --input workspace/{{project}}/.temp/ui-blocks/ \
+  --output workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/
 ```
 
 生成：
@@ -282,8 +299,8 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 
 ```json
 {
-  "smoke_spec": "tests/e2e/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts",
-  "full_spec": "tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts",
+  "smoke_spec": "workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts",
+  "full_spec": "workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts",
   "case_count": { "smoke": 5, "full": 20 },
   "skipped": ["{{跳过的用例 id 列表}}"]
 }
@@ -303,15 +320,15 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 
 ```bash
 # 冒烟测试
-QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
+QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
   --project=chromium
 
 # 完整测试
-QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
+QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
   --project=chromium
 ```
 
-> `QA_SUITE_NAME` 用于动态生成报告路径和标题，报告输出至 `workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/`。
+> `QA_SUITE_NAME` 用于动态生成报告路径和标题，报告输出至 `workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/`。
 
 记录执行开始时间，计算 `duration`。
 
@@ -325,7 +342,7 @@ QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite
 
 **输出模板中的变量说明：**
 
-- `{{full_spec_path}}`：步骤 6 生成的 `full.spec.ts` 完整路径（如 `tests/e2e/202604/登录功能/full.spec.ts`）
+- `{{full_spec_path}}`：步骤 6 生成的 `full.spec.ts` 完整路径（如 `workspace/{{project}}/tests/202604/登录功能/full.spec.ts`）
 - `{{YYYYMM}}`：当月年月（如 `202604`）
 - `{{suite_name}}`：需求名称（如 `登录功能`）
 
@@ -336,7 +353,7 @@ QA_SUITE_NAME="{{suite_name}}" bunx playwright test tests/e2e/{{YYYYMM}}/{{suite
 
 通过：{{passed}} / {{total}}
 耗时：{{duration}}
-报告：workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html
+报告：workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html
 
 验收命令（可直接复制运行）：
 QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
@@ -348,10 +365,10 @@ QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project
 
 - 失败的测试用例数据
 - Playwright 错误信息
-- 截图路径（`workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/` 下的截图）
+- 截图路径（`workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/` 下的截图）
 - Console 错误日志
 
-Bug 报告输出至：`workspace/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html`
+Bug 报告输出至：`workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html`
 
 ```
 ❌ {{需求名称}} UI 自动化测试完成（存在失败）
@@ -365,7 +382,7 @@ Bug 报告输出至：`workspace/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_nam
 - {{title}}（{{error_summary}}）
 {{/each}}
 
-Bug 报告：workspace/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html
+Bug 报告：workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html
 
 验收命令（可直接复制运行）：
 QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
@@ -386,7 +403,7 @@ bun run .claude/scripts/plugin-loader.ts notify \
     "passed": {{passed}},
     "failed": {{failed}},
     "specFiles": ["{{spec_file}}"],
-    "reportFile": "workspace/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html",
+    "reportFile": "workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html",
     "duration": "{{duration}}"
   }'
 ```
@@ -414,10 +431,10 @@ bun run .claude/scripts/plugin-loader.ts notify \
 
 ## 输出目录约定
 
-| 类型                 | 路径                                     |
-| -------------------- | ---------------------------------------- |
-| 临时代码块           | `workspace/.temp/ui-blocks/`             |
-| E2E spec 文件        | `tests/e2e/YYYYMM/{{suite_name}}/`       |
-| Playwright HTML 报告 | `workspace/reports/playwright/YYYYMMDD/` |
-| Bug 报告             | `workspace/reports/bugs/YYYYMMDD/`       |
-| Session 文件         | `.auth/session.json`                     |
+| 类型                 | 路径                                                    |
+| -------------------- | ------------------------------------------------------- |
+| 临时代码块           | `workspace/{{project}}/.temp/ui-blocks/`                |
+| E2E spec 文件        | `workspace/{{project}}/tests/YYYYMM/{{suite_name}}/`    |
+| Playwright HTML 报告 | `workspace/{{project}}/reports/playwright/YYYYMMDD/`    |
+| Bug 报告             | `workspace/{{project}}/reports/bugs/YYYYMMDD/`          |
+| Session 文件         | `.auth/session.json`                                    |

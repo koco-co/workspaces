@@ -8,6 +8,23 @@ argument-hint: "[操作] [用例标题或关键词]"
 
 ## 前置加载
 
+### 项目选择
+
+扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+- 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
+- 若有 **多个项目**，列出供用户选择：
+  ```
+  检测到多个项目，请选择：
+  1. project-a
+  2. project-b
+  请输入编号（默认 1）：
+  ```
+- 若 **无项目**，提示用户先执行 `/qa-flow init` 初始化
+
+选定的项目名称记为 `{{project}}`，后续所有路径均使用该变量。
+
+### 偏好上下文
+
 读取 `preferences/` 目录下所有 `.md` 文件，作为本次编辑的偏好上下文。
 
 ---
@@ -15,7 +32,7 @@ argument-hint: "[操作] [用例标题或关键词]"
 ## 场景一：搜索用例
 
 ```bash
-bun run .claude/scripts/xmind-edit.ts search "{{keyword}}" --dir workspace/xmind
+bun run .claude/scripts/xmind-edit.ts search "{{keyword}}" --project {{project}}
 ```
 
 展示所有匹配的用例列表（文件名 + 用例标题），用户选择后进入查看。

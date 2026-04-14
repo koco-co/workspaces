@@ -6,6 +6,23 @@ argument-hint: "[报错日志 | 禅道链接 | 冲突代码]"
 
 ## 执行前准备
 
+### 项目选择
+
+扫描 `workspace/` 目录下的子目录（排除以 `.` 开头的隐藏目录和通用目录如 `.repos`）：
+- 若只有 **1 个项目**，自动选择，输出：`当前项目：{{project}}`
+- 若有 **多个项目**，列出供用户选择：
+  ```
+  检测到多个项目，请选择：
+  1. project-a
+  2. project-b
+  请输入编号（默认 1）：
+  ```
+- 若 **无项目**，提示用户先执行 `/qa-flow init` 初始化
+
+选定的项目名称记为 `{{project}}`，后续所有路径均使用该变量。
+
+### 读取配置
+
 读取项目配置：执行 `bun run .claude/scripts/config.ts`（从 `.env` 读取模块、仓库、路径配置）。
 
 ---
@@ -119,7 +136,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 
 **A4. 输出 HTML 报告**
 
-将报告数据写入 `workspace/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
+将报告数据写入 `workspace/{{project}}/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
 
 可用模板（位于 `templates/` 目录）：
 - `bug-report-zentao.html.hbs` — **默认**，禅道富文本编辑器兼容（全 inline style，table 布局，可直接粘贴到禅道）
@@ -131,7 +148,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 若目录不存在则先创建：
 
 ```bash
-mkdir -p workspace/reports/bugs/{{YYYYMMDD}}
+mkdir -p workspace/{{project}}/reports/bugs/{{YYYYMMDD}}
 ```
 
 **A5. 发送通知**
@@ -180,10 +197,10 @@ Bug 分析完成
 
 **B4. 输出 HTML 报告**
 
-将报告数据写入 `workspace/reports/conflicts/{{YYYYMMDD}}/{{冲突描述}}.html`。
+将报告数据写入 `workspace/{{project}}/reports/conflicts/{{YYYYMMDD}}/{{冲突描述}}.html`。
 
 ```bash
-mkdir -p workspace/reports/conflicts/{{YYYYMMDD}}
+mkdir -p workspace/{{project}}/reports/conflicts/{{YYYYMMDD}}
 ```
 
 **B5. 发送通知**
@@ -225,7 +242,7 @@ bun run .claude/scripts/plugin-loader.ts notify --event conflict-analyzed --data
 
 **C4. 输出 HTML 报告**
 
-将报告数据写入 `workspace/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
+将报告数据写入 `workspace/{{project}}/reports/bugs/{{YYYYMMDD}}/{{Bug标题}}.html`。
 
 **C5. 发送通知**
 
@@ -265,7 +282,7 @@ bun run .claude/scripts/plugin-loader.ts notify --event bug-report --data '{"rep
 **E1. 抓取禅道 Bug 信息**
 
 ```bash
-bun run plugins/zentao/fetch.ts --url "{{ZENTAO_BASE_URL}}/zentao/bug-view-{{bug_id}}.html" --output workspace/.temp/zentao
+bun run plugins/zentao/fetch.ts --bug-id {{bug_id}} --project {{project}} --output workspace/{{project}}/.temp/zentao
 ```
 
 读取输出 JSON，提取：`bug_id`、`title`、`severity`、`fix_branch`、`status`。
@@ -309,7 +326,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{fix_branch}}
 
 **E4. 输出用例文件**
 
-文件路径：`workspace/issues/{{YYYYMM}}/hotfix_{{version}}_{{bugId}}-{{summary}}.md`
+文件路径：`workspace/{{project}}/issues/{{YYYYMM}}/hotfix_{{version}}_{{bugId}}-{{summary}}.md`
 
 其中：
 
@@ -319,7 +336,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{fix_branch}}
 - `{{summary}}`：Bug 标题前 20 字（去除特殊字符）
 
 ```bash
-mkdir -p workspace/issues/{{YYYYMM}}
+mkdir -p workspace/{{project}}/issues/{{YYYYMM}}
 ```
 
 **E5. 发送通知**
@@ -362,9 +379,9 @@ bun run .claude/scripts/plugin-loader.ts notify --event workflow-failed --data '
 
 ## 报告输出目录约定
 
-| 类型                  | 目录                                    |
-| --------------------- | --------------------------------------- |
-| Bug 报告（后端/前端） | `workspace/reports/bugs/YYYYMMDD/`      |
-| 冲突分析报告          | `workspace/reports/conflicts/YYYYMMDD/` |
-| Hotfix 用例           | `workspace/issues/YYYYMM/`              |
-| 临时文件              | `workspace/.temp/`                      |
+| 类型                  | 目录                                                |
+| --------------------- | --------------------------------------------------- |
+| Bug 报告（后端/前端） | `workspace/{{project}}/reports/bugs/YYYYMMDD/`      |
+| 冲突分析报告          | `workspace/{{project}}/reports/conflicts/YYYYMMDD/` |
+| Hotfix 用例           | `workspace/{{project}}/issues/YYYYMM/`              |
+| 临时文件              | `workspace/{{project}}/.temp/`                      |
