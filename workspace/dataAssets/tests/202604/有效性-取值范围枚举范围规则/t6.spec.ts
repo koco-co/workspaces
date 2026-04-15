@@ -66,13 +66,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         }
 
         await saveRuleSet(page);
-
-        const successMsg = page.locator(
-          ".ant-message-notice, .ant-notification-notice, .ant-message",
-        );
-        await expect(successMsg.filter({ hasText: /成功/ }).first()).toBeVisible({
-          timeout: 5000,
-        });
+        await gotoRuleSetList(page);
 
         await expect(getRuleSetListRow(page, "ruleset_15695_enum_orig")).toBeVisible({
           timeout: 10000,

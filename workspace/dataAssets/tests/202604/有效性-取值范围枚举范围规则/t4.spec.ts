@@ -3,6 +3,7 @@ import { expect, test } from "../../fixtures/step-screenshot";
 import {
   addRuleToPackage,
   configureRangeEnumRule,
+  getRulePackage,
   getRuleSetListRow,
   getSelectOptions,
   gotoRuleSetList,
@@ -53,20 +54,26 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
     );
 
     await step(
-      "步骤3: 保存规则 → 规则保存成功，枚举值列显示 in '1,2,3'，取值范围列显示 --",
+      "步骤3: 保存规则后重新进入编辑页 → 新增规则成功落库，回显枚举值 in 1、2、3",
       async () => {
         await saveRuleSet(page);
-
-        const successMsg = page.locator(
-          ".ant-message-notice, .ant-notification-notice, .ant-message",
-        );
-        await expect(successMsg.filter({ hasText: /成功/ }).first()).toBeVisible({
-          timeout: 5000,
-        });
+        await gotoRuleSetList(page);
 
         await expect(getRuleSetListRow(page, "ruleset_15695_enum")).toBeVisible({ timeout: 10000 });
+
+        await openRuleSetEditor(page, "ruleset_15695_enum", ["仅枚举值包"]);
+        const packageSection = await getRulePackage(page, "仅枚举值包");
+        const savedRuleForm = packageSection.locator(".ruleForm").last();
+        const savedFunctionRow = savedRuleForm.locator(".rule__function-list__item").first();
+
+        await expect(savedRuleForm).toContainText("category");
+        await expect(savedFunctionRow.locator(".ant-select").nth(3)).toContainText("in");
+        const enumTags = savedRuleForm.locator(".ant-tag, .ant-select-selection-item");
+        await expect(enumTags.filter({ hasText: "1" }).first()).toBeVisible();
+        await expect(enumTags.filter({ hasText: "2" }).first()).toBeVisible();
+        await expect(enumTags.filter({ hasText: "3" }).first()).toBeVisible();
       },
-      getRuleSetListRow(page, "ruleset_15695_enum"),
+      page.locator(".ruleForm").last(),
     );
   });
 });

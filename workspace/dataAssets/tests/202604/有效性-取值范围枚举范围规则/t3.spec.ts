@@ -3,6 +3,7 @@ import { expect, test } from "../../fixtures/step-screenshot";
 import {
   addRuleToPackage,
   configureRangeEnumRule,
+  getRulePackage,
   getRuleSetListRow,
   gotoRuleSetList,
   openRuleSetEditor,
@@ -49,22 +50,23 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
     );
 
     await step(
-      "步骤3: 保存规则 → 规则保存成功，取值范围列显示 >=0，枚举值列显示 --",
+      "步骤3: 保存规则后重新进入编辑页 → 新增规则成功落库，回显取值范围 >=0 且字段为 score",
       async () => {
         await saveRuleSet(page);
-
-        const successMsg = page.locator(
-          ".ant-message-notice, .ant-notification-notice, .ant-message",
-        );
-        await expect(successMsg.filter({ hasText: /成功/ }).first()).toBeVisible({
-          timeout: 5000,
-        });
+        await gotoRuleSetList(page);
 
         await expect(getRuleSetListRow(page, "ruleset_15695_range")).toBeVisible({
           timeout: 10000,
         });
+
+        await openRuleSetEditor(page, "ruleset_15695_range", ["仅取值范围包"]);
+        const packageSection = await getRulePackage(page, "仅取值范围包");
+        const savedRuleForm = packageSection.locator(".ruleForm").last();
+        await expect(savedRuleForm).toContainText("score");
+        await expect(savedRuleForm).toContainText(">=");
+        await expect(savedRuleForm).toContainText("0");
       },
-      getRuleSetListRow(page, "ruleset_15695_range"),
+      page.locator(".ruleForm").last(),
     );
   });
 });

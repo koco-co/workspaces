@@ -52,13 +52,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤3: 保存规则集后重新进入编辑页 → 枚举值列显示 not in '4,5'，回显操作符为 not in，枚举值回显 4、5",
       async () => {
         await saveRuleSet(page);
-
-        const successMsg = page.locator(
-          ".ant-message-notice, .ant-notification-notice, .ant-message",
-        );
-        await expect(successMsg.filter({ hasText: /成功/ }).first()).toBeVisible({
-          timeout: 5000,
-        });
+        await gotoRuleSetList(page);
 
         await expect(getRuleSetListRow(page, "ruleset_15695_notin")).toBeVisible({
           timeout: 10000,
