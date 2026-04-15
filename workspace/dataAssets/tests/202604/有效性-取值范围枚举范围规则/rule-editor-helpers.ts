@@ -81,7 +81,7 @@ async function ensurePackageNamesInBaseInfo(
   );
 
   for (const packageName of missingPackageNames) {
-    await page.getByRole("button", { name: /^新增$/ }).click();
+    await page.getByRole("button", { name: /新增/ }).click();
     await page.waitForTimeout(300);
     await packageNameInputs.last().fill(packageName);
     await page.waitForTimeout(200);
