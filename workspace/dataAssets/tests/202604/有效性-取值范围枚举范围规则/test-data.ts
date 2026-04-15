@@ -98,7 +98,7 @@ export async function runPreconditions(page: Page): Promise<void> {
   await setupPreconditions(page, {
     datasourceType: "Doris",
     tables: ALL_TABLES.map((t) => ({ name: t.name, sql: t.sql })),
-    projectName: "env_rebuild_test",
+    projectName: "story_15648",
     syncTimeout: 180,
   });
 
