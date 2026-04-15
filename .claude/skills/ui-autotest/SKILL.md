@@ -185,6 +185,57 @@ bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}
 
 **✅ Task**：将 `步骤 1` 标记为 `completed`（subject: `步骤 1 — 解析完成，{{total}} 条用例`）。
 
+## 步骤 1.5：断点续传检查
+
+**⏳ 自动检查**：在步骤 2 之前，检查是否存在未完成的进度：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite_name}}"
+```
+
+**情况 A — 无进度文件**（命令 exit 1）：正常继续步骤 2。
+
+**情况 B — 有进度文件且 `merge_status === "completed"`**：
+
+```
+上次执行已全部完成。是否重新开始？
+1. 重新开始（清空进度）
+2. 取消
+```
+
+若选 1，执行 `bun run .claude/scripts/ui-autotest-progress.ts reset --project {{project}} --suite "{{suite_name}}"` 后继续步骤 2。
+
+**情况 C — 有进度文件且未完成**：
+
+先执行 resume 清理中断状态：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}"
+```
+
+然后读取 summary，向用户展示：
+
+```
+检测到上次未完成的执行进度：
+
+套件：{{suite_name}}
+中断于：步骤 {{current_step}}
+进度：{{passed}} 通过, {{failed}} 失败, {{pending}} 待执行
+上次更新：{{updated_at}}
+{{#if expired}}⚠️ 上次进度已超过 7 天，环境可能已变化。建议选择「全部重新开始」。{{/if}}
+
+请选择：
+1. 继续执行（跳过已通过，从待执行的继续）
+2. 重试失败项（重跑失败用例，再继续待执行的）
+3. 全部重新开始（清空进度，从头来）
+```
+
+- 选 1：直接跳到 `current_step` 对应的步骤（4/5/6），已 passed 的用例自动跳过
+- 选 2：执行 `bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --retry-failed`，然后跳到 `current_step`
+- 选 3：执行 `reset`，正常从步骤 2 继续
+
+> **恢复跳转规则**：恢复时直接跳到 `current_step` 对应的步骤。步骤 1~3（解析、范围、登录态）始终重新执行（它们很快且登录态需刷新），但从进度文件中恢复 `url`、`selected_priorities` 等参数，无需重新询问用户。
+
 ## 步骤 2：执行范围确认（仅在范围未明确时提问）
 
 **⏳ Task**：将 `步骤 2` 标记为 `in_progress`。
@@ -250,6 +301,23 @@ bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --outp
 
 **⏳ Task**：将 `步骤 4` 标记为 `in_progress`。为每条用例创建脚本生成子任务（见「任务可视化」章节）。
 
+**💾 进度持久化 — 初始化**：
+
+若不是从断点恢复（即步骤 1.5 未检测到进度文件），创建进度文件：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts create \
+  --project {{project}} \
+  --suite "{{suite_name}}" \
+  --archive "{{md_path}}" \
+  --url "{{url}}" \
+  --priorities "{{selected_priorities | join(',')}}" \
+  --output-dir "workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/" \
+  --cases '{{tasks_json}}'
+```
+
+其中 `tasks_json` 为 `{id: {title, priority}}` 格式的 JSON，从步骤 1 解析结果构造。
+
 **4.0 源码分析（每次生成脚本前必做）**
 
 在生成任何脚本之前，先阅读 `workspace/{{project}}/.repos/` 下的相关前端源码，梳理：
@@ -310,7 +378,24 @@ import { test, expect } from "../../fixtures/step-screenshot";
 
 ---
 
+**💾 进度持久化 — 脚本生成完成**：
+
+每条用例的 sub-agent 完成后，更新进度：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field generated --value true
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field script_path --value "workspace/{{project}}/.temp/ui-blocks/{{id}}.ts"
+```
+
+断点恢复时，跳过 `generated === true` 的用例，只生成剩余的。
+
 **✅ Task**：所有 Sub-Agent 完成后，将 `步骤 4` 标记为 `completed`（subject: `步骤 4 — {{n}} 条脚本已生成`）。
+
+**💾 进度持久化 — 步骤 4 完成**：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field current_step --value 5
+```
 
 ## 步骤 5：逐条自测与修复（强制，不可跳过）
 
@@ -320,11 +405,44 @@ import { test, expect } from "../../fixtures/step-screenshot";
 
 **5.1 逐条执行验证**
 
+**💾 进度持久化 — 前置条件就绪**：
+
+前置条件（建表/引入/同步/质量项目授权）完成后：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field preconditions_ready --value true
+```
+
+断点恢复时，若 `preconditions_ready === true`，跳过前置条件准备。
+
 对 `workspace/{{project}}/.temp/ui-blocks/` 中的每个代码块，逐条执行 Playwright 测试：
 
 ```bash
 QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-blocks/{{id}}.ts --project=chromium --timeout=30000
 ```
+
+**💾 进度持久化 — 自测状态**：
+
+每条用例执行前：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value running
+```
+
+执行结果（通过）：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value passed
+```
+
+执行结果（失败）：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value failed
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field last_error --value "{{error_summary}}"
+```
+
+断点恢复时，跳过 `test_status === "passed"` 的用例。对于 `test_status === "failed"` 且 `attempts >= 3` 的用例，也跳过（除非用户选择「重试失败项」）。
 
 **5.2 失败处理（最多重试 3 轮）**
 
@@ -392,6 +510,12 @@ QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-block
 
 **✅ Task**：所有用例自测完成后，将 `步骤 5` 标记为 `completed`（subject: `步骤 5 — {{passed}}/{{total}} 通过`）。
 
+**💾 进度持久化 — 步骤 5 完成**：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field current_step --value 6
+```
+
 ## 步骤 6：合并脚本
 
 **⏳ Task**：将 `步骤 6` 标记为 `in_progress`。
@@ -423,6 +547,12 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 ---
 
 **✅ Task**：将 `步骤 6` 标记为 `completed`（subject: `步骤 6 — 合并 {{n}} 条脚本`）。
+
+**💾 进度持久化 — 合并完成**：
+
+```bash
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field merge_status --value completed
+```
 
 ## 步骤 7：执行测试（全量回归）
 
