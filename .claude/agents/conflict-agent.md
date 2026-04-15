@@ -116,52 +116,17 @@ tools: Read, Grep, Glob, Bash
 
 ## 输出结构
 
-分析完成后，将以下 JSON 数据返回给调用方渲染 HTML 报告：
+分析完成后，将结构化 JSON 数据返回给调用方渲染 HTML 报告。
 
-```json
-{
-  "title": "报告标题（如：feature/xxx 合入 main 冲突分析）",
-  "analysis_time": "YYYY-MM-DD HH:mm",
-  "branches": {
-    "head": "当前分支名（如 main）",
-    "incoming": "合入分支名（如 feature/xxx）"
-  },
-  "summary": {
-    "total_conflicts": 5,
-    "auto_resolvable": 2,
-    "manual_required": 3,
-    "files_affected": ["src/service/UserService.java", "package.json"]
-  },
-  "conflicts": [
-    {
-      "id": 1,
-      "file": "src/service/UserService.java",
-      "line_range": "100-120",
-      "type": "逻辑冲突 | 格式冲突 | 依赖冲突",
-      "resolution": "auto | manual",
-      "head_intent": "HEAD 侧改动意图",
-      "incoming_intent": "合入侧改动意图",
-      "suggestion": "合并建议（文字描述）",
-      "merged_code": "合并后代码（auto 类型时提供）",
-      "decision_basis": "人工决策依据（manual 类型时提供）",
-      "recommended_side": "head | incoming | merge | null"
-    }
-  ],
-  "manual_decision_list": [
-    {
-      "conflict_id": 3,
-      "file": "...",
-      "description": "需要决策的内容描述",
-      "options": ["选项 A", "选项 B"],
-      "recommended": "推荐选项（若有）"
-    }
-  ]
-}
-```
+JSON 结构参见 `.claude/references/output-schemas.json` 中的 `conflict_json`。若某字段信息不足，填 `null`，不要留空字符串占位。
 
-若某字段信息不足，填 `null`，不要留空字符串占位。
+符号使用遵循 `.claude/references/unicode-symbols.md`。
 
-**符号约束**：所有 JSON 字段值必须使用纯文本，不得包含任何 emoji 符号（U+1Fxxx 范围绝对禁止；U+26xx 范围仅允许在 HTML 模板固定位置使用，不允许出现在 AI 填充的数据字段中）。
+---
+
+## 错误处理
+
+遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ---
 

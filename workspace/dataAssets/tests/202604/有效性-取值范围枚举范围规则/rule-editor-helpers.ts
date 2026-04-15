@@ -117,8 +117,9 @@ async function gotoBaseInfoStep(page: Page): Promise<void> {
 
 async function gotoMonitorRulesStep(page: Page): Promise<void> {
   const newPackageBtn = page.getByRole("button", { name: /新增规则包/ }).first();
+  const firstPackage = page.locator(".ruleSetMonitor__package").first();
   if (
-    (await page.locator(".ruleSetMonitor__package").count()) > 0 ||
+    (await firstPackage.isVisible().catch(() => false)) ||
     (await newPackageBtn.isVisible().catch(() => false))
   ) {
     return;
@@ -127,9 +128,14 @@ async function gotoMonitorRulesStep(page: Page): Promise<void> {
   await page.getByRole("button", { name: "下一步" }).click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
-  await expect(newPackageBtn.or(page.locator(".ruleSetMonitor__package").first())).toBeVisible({
-    timeout: 10000,
-  });
+  await expect
+    .poll(
+      async () =>
+        (await firstPackage.isVisible().catch(() => false)) ||
+        (await newPackageBtn.isVisible().catch(() => false)),
+      { timeout: 10000 },
+    )
+    .toBe(true);
 }
 
 async function addPackageSlot(page: Page, packageName: string): Promise<void> {
@@ -153,9 +159,15 @@ async function ensureRuleSetPackagesVisible(
   requiredPackageNames: string[],
 ): Promise<void> {
   const newPackageBtn = page.getByRole("button", { name: /新增规则包/ }).first();
-  await expect(newPackageBtn.or(page.locator(".ruleSetMonitor__package").first())).toBeVisible({
-    timeout: 10000,
-  });
+  const firstPackage = page.locator(".ruleSetMonitor__package").first();
+  await expect
+    .poll(
+      async () =>
+        (await firstPackage.isVisible().catch(() => false)) ||
+        (await newPackageBtn.isVisible().catch(() => false)),
+      { timeout: 10000 },
+    )
+    .toBe(true);
 
   for (const packageName of requiredPackageNames) {
     const packageSection = page

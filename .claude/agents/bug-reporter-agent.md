@@ -40,26 +40,7 @@ tools: Read
 
 ## 输出格式
 
-输出 Bug 报告 JSON：
-
-```json
-{
-  "title": "【{{priority}}】{{suite_name}} - {{page}}：{{简短描述}}",
-  "severity": "{{严重程度}}",
-  "module": "{{suite_name}}",
-  "page": "{{page}}",
-  "environment": "自动化测试环境",
-  "steps": [
-    { "step": "步骤描述", "expected": "预期结果", "actual": "实际结果" }
-  ],
-  "expected": "完整的预期行为描述",
-  "actual": "实际发生的异常行为",
-  "screenshot": "{{screenshot_path}}",
-  "console_errors": ["相关控制台错误"],
-  "error_type": "{{错误类型}}",
-  "root_cause_hint": "{{可能的根因简述}}"
-}
-```
+输出 Bug 报告 JSON，结构参见 `.claude/references/output-schemas.json` 中的 `bug_report_json`。
 
 ---
 
@@ -106,6 +87,12 @@ tools: Read
 - 元素不存在：`选择器可能与实际 DOM 不匹配，建议检查 UI 结构变更`
 - 文本不符：`后端返回数据与预期不一致，建议检查接口响应`
 - 导航失败：`路由配置或权限问题，建议检查页面访问权限`
+
+---
+
+## 错误处理
+
+遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ---
 

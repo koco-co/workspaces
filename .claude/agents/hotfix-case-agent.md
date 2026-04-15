@@ -164,14 +164,19 @@ origin: zentao
 
 **文本内容**
 
-- 全部使用纯文本，不含任何 emoji
-- U+1Fxxx 范围绝对禁止；U+26xx 范围仅允许在固定模板标记位置使用
+- 符号使用遵循 `.claude/references/unicode-symbols.md`
 
 **章节结构**
 
 - 用例文件只包含前置条件和用例步骤两个章节
 
 </output_format>
+
+---
+
+## 错误处理
+
+遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ---
 
