@@ -60,11 +60,11 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 > 本 Skill 消费的是 Archive MD（Contract B）。
 > `parse-cases.ts` 会保留原始 H5 标题到 `title`（如 `【P1】验证xxx`），并单独提取 `priority=P1`；示例与任务命名必须按此契约书写。
 
-## 任务可视化（Task 工具）
+## 约定
+
+### Task Schema
 
 > 全流程使用 `TaskCreate` / `TaskUpdate` 工具展示实时进度。
-
-### 主流程（9 步）
 
 workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建 9 个任务，按顺序设置 `addBlockedBy` 依赖：
 
@@ -82,29 +82,33 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 **状态推进规则**：
 
-- 进入步骤时 → `TaskUpdate status: in_progress`
-- 步骤完成时 → `TaskUpdate status: completed`，在 `subject` 末尾追加关键指标
+| 时机 | 操作 | subject 格式 |
+|------|------|-------------|
+| 步骤开始 | `TaskUpdate status=in_progress` | `步骤 N — 开始` |
+| 步骤完成 | `TaskUpdate status=completed` | `步骤 N — {{结果摘要}}` |
+| 步骤 5 子任务 | 每条用例创建子任务 | `自测 {{case_id}} — {{title}}` |
 
-### 步骤 5 逐条自测子任务
+各步骤遵循此 schema，不再单独说明。
 
-进入步骤 5 后，为每条待验证用例创建独立子任务：
+步骤 4 进入后，为每条用例创建子任务（subject: `[脚本] {{title}}`），Sub-Agent 完成时标记 `completed`。
 
-- subject: `[自测] {{title}}`
-- activeForm: `执行「{{title}}」`
+步骤 5 进入后，为每条待验证用例创建独立子任务（subject: `[自测] {{title}}`，activeForm: `执行「{{title}}」`）。每条用例：开始执行 → `in_progress`；修复重试 → subject 追加 `— 第 {{n}} 轮修复中`；通过 → `completed`（subject: `[自测] {{title}} — 通过`）；3 轮失败 → `completed`（subject: `[自测] {{title}} — 失败（{{原因}}）`）。
 
-每条用例状态更新：
+### 命令别名
 
-- 开始执行 → `in_progress`（activeForm: `执行「{{title}}」— 第 {{n}} 轮`）
-- 修复重试 → 更新 subject 为 `[自测] {{title}} — 第 {{n}} 轮修复中`
-- 验证通过 → `completed`（subject: `[自测] {{title}} — 通过`）
-- 3 轮仍失败 → `completed`（subject: `[自测] {{title}} — 失败（{{原因}}）`）
+| 别名 | 完整命令 |
+|------|----------|
+| `@progress:create` | `bun run .claude/scripts/ui-autotest-progress.ts create --project {{project}} --suite "{{suite}}" ...` |
+| `@progress:update` | `bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite}}" ...` |
+| `@progress:summary` | `bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite}}"` |
+| `@progress:reset` | `bun run .claude/scripts/ui-autotest-progress.ts reset --project {{project}} --suite "{{suite}}"` |
+| `@progress:resume` | `bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite}}"` |
+| `@parse-cases` | `bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}` |
+| `@merge-specs` | `bun run .claude/skills/ui-autotest/scripts/merge-specs.ts ...` |
 
-### 步骤 4 脚本生成子任务
+### 脚本编码规范
 
-进入步骤 4 后，为每条用例创建子任务：
-
-- subject: `[脚本] {{title}}`
-- Sub-Agent 完成时标记 `completed`
+参见 `.claude/references/playwright-patterns.md`，包含 step() 函数、Meta 注释、定位器优先级、表单填写和表格验证模式。
 
 ---
 
@@ -136,7 +140,7 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 ## 步骤 1：解析输入
 
-**⏳ Task**：创建 9 个主流程任务（见「任务可视化」章节），将 `步骤 1` 标记为 `in_progress`。
+按 Task Schema 更新：创建 9 个主流程任务，将 `步骤 1` 标记为 `in_progress`。
 
 **1.1 参数提取**
 
@@ -183,7 +187,7 @@ bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}
 
 ---
 
-**✅ Task**：将 `步骤 1` 标记为 `completed`（subject: `步骤 1 — 解析完成，{{total}} 条用例`）。
+按 Task Schema 更新：将 `步骤 1` 标记为 `completed`（subject: `步骤 1 — 解析完成，{{total}} 条用例`）。
 
 ## 步骤 1.5：断点续传检查
 
@@ -238,7 +242,7 @@ bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --s
 
 ## 步骤 2：执行范围确认（仅在范围未明确时提问）
 
-**⏳ Task**：将 `步骤 2` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 2` 标记为 `in_progress`。
 
 默认行为：
 
@@ -268,11 +272,11 @@ bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --s
 
 ---
 
-**✅ Task**：将 `步骤 2` 标记为 `completed`（subject: `步骤 2 — {{scope}} 模式，{{n}} 条用例`）。
+按 Task Schema 更新：将 `步骤 2` 标记为 `completed`（subject: `步骤 2 — {{scope}} 模式，{{n}} 条用例`）。
 
 ## 步骤 3：登录态准备
 
-**⏳ Task**：将 `步骤 3` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 3` 标记为 `in_progress`。
 
 **3.1 检查已有 session**
 
@@ -295,11 +299,11 @@ bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --outp
 
 ---
 
-**✅ Task**：将 `步骤 3` 标记为 `completed`（subject: `步骤 3 — 登录态就绪`）。
+按 Task Schema 更新：将 `步骤 3` 标记为 `completed`（subject: `步骤 3 — 登录态就绪`）。
 
 ## 步骤 4：脚本生成（Sub-Agent 并发）
 
-**⏳ Task**：将 `步骤 4` 标记为 `in_progress`。为每条用例创建脚本生成子任务（见「任务可视化」章节）。
+按 Task Schema 更新：将 `步骤 4` 标记为 `in_progress`，并为每条用例创建脚本生成子任务。
 
 **💾 进度持久化 — 初始化**：
 
@@ -389,7 +393,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 断点恢复时，跳过 `generated === true` 的用例，只生成剩余的。
 
-**✅ Task**：所有 Sub-Agent 完成后，将 `步骤 4` 标记为 `completed`（subject: `步骤 4 — {{n}} 条脚本已生成`）。
+按 Task Schema 更新：所有 Sub-Agent 完成后，将 `步骤 4` 标记为 `completed`（subject: `步骤 4 — {{n}} 条脚本已生成`）。
 
 **💾 进度持久化 — 步骤 4 完成**：
 

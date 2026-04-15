@@ -56,13 +56,9 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
   <reverse_sync>confirm_xmind → parse → locate_archive → preview_or_write → report</reverse_sync>
 </workflow>
 
-<confirmation_policy>
-<rule id="status_only">纯状态展示、任务进度、完成摘要不要求确认；直接继续下一节点。</rule>
-<rule id="default_continue">普通模式默认连续推进；只有歧义输入、阻断未知或写回动作才触发确认。</rule>
-<rule id="scope_or_ambiguity">仅在输入存在歧义、范围可变、或用户明确要求人工审阅时使用 AskUserQuestion。</rule>
-<rule id="stateful_write">覆盖已有文件、保存 repo 映射、反向同步 Archive MD、持久化 profile / config 前，先展示预览或写入摘要，再确认。</rule>
-<rule id="reference_vs_writeback">允许引用源码/历史/已有产物用于分析，不等于允许写回配置或归档；写回必须单独授权。</rule>
-</confirmation_policy>
+### 确认策略
+
+参见 `.claude/references/confirmation-policy.json`。核心原则：只在影响产物结构的决策点确认，数据填充类决策自动处理。
 
 <output_contract>
 <contract_preservation>保留 Task 2 已批准的 A/B 产物契约与文案，不改写 Writer 中间 JSON、Archive MD、XMind 的职责边界。</contract_preservation>
@@ -87,16 +83,12 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 ---
 
-## 运行模式
+### 运行模式
 
-| 模式       | 触发条件                               | 行为差异                                                             |
-| ---------- | -------------------------------------- | -------------------------------------------------------------------- |
-| 普通       | 默认                                   | 全 7 节点 + 全部交互点                                               |
-| 快速       | `--quick`                              | 跳过交互点 B/C，analyze 简化，review 仅 1 轮，format-check 最多 2 轮 |
-| 续传       | 自动检测 `.temp/.qa-state-*.json` 存在 | 从断点节点继续                                                       |
-| 模块重跑   | `重新生成 xxx 的「yyy」模块`           | 仅执行 write → review → output（replace 模式）                       |
-| 标准化归档 | 用户提供 `.xmind` 或 `.csv` 文件       | 走独立流程：parse → standardize → review → output                    |
-| 反向同步   | `同步 xmind`、`反向同步`               | XMind → Archive MD，走独立 5 步流程                                  |
+| 模式 | 触发 | 差异 |
+|------|------|------|
+| normal | 默认 | 完整 7 节点 + 复审 |
+| quick | `--quick` | 跳过复审，format-check 仅 1 轮 |
 
 ---
 
@@ -193,11 +185,11 @@ bun run .claude/scripts/history-convert.ts --path {{input_file}} --detect
 - 补充等待条件
 - 预期结果可断言化
 - 前置条件操作化
-- 标题与优先级遵循 Contract A：`title=验证xxx`，`priority` 独立存放
+- 标题与优先级遵循 Contract A（见 Contract A/B 定义）：`title=验证xxx`，`priority` 独立存放
 - 模糊步骤具体化、占位数据替换为真实业务数据
 - 合并符合条件的正向用例
 
-输出中间 JSON 格式（与 writer 输出一致，使用 Contract A；如需 `【P1】验证xxx`，仅在 Archive MD / 展示面按 Contract B 组装）。
+输出中间 JSON 格式（见 Contract A/B 定义）：与 writer 输出一致，使用 Contract A；如需 `【P1】验证xxx`，仅在 Archive MD / 展示面按 Contract B 组装。
 
 **✅ Task**：将 `S2` 标记为 `completed`（subject: `S2 标准化重写 — 完成`）。
 
@@ -590,7 +582,7 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}
 
 ### 5.2 结构化阻断中转（强制检查）
 
-> **⚠️ Writer subagent 在阻断时必须输出 `<blocked_envelope>`；若无阻断则直接输出 Contract A JSON。若主 agent 无法确认 subagent 已完成 5 维度自检，须要求其补充执行。**
+> **⚠️ Writer subagent 在阻断时必须输出 `<blocked_envelope>`；若无阻断则直接输出 Contract A JSON（见 Contract A/B 定义）。若主 agent 无法确认 subagent 已完成 5 维度自检，须要求其补充执行。**
 
 - Writer 直接输出 Contract A JSON → 视为无阻断，正常继续
 - Writer 输出 `<blocked_envelope status="needs_confirmation">` → 执行下文的 Writer 阻断中转协议
