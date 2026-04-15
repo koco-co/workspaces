@@ -405,7 +405,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 > **⚠️ 强制规则：每条脚本必须单独执行验证通过后才能进入合并阶段。仅编译通过不代表验证通过，未经实际执行验证的脚本禁止交付。**
 
-**⏳ Task**：将 `步骤 5` 标记为 `in_progress`。为每条待验证用例创建自测子任务（见「任务可视化」章节的步骤 5 逐条自测子任务规则）。
+按 Task Schema 更新：将 `步骤 5` 标记为 `in_progress`，并为每条待验证用例创建自测子任务。
 
 **5.1 逐条执行验证**
 
@@ -450,42 +450,9 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 **5.2 失败处理（派发 Sub-Agent，最多重试 3 轮）**
 
-> **⚠️ 主 agent 上下文保护规则：主 agent 绝不自行调试脚本。** 所有失败分析、DOM 获取、源码校对、选择器修复、重新验证**必须派发给 sub-agent** 执行。主 agent 仅负责：派发 → 收结果 → 更新进度状态 → 决定继续或放弃。
+> **⚠️ 主 agent 上下文保护规则：主 agent 绝不自行调试脚本。** 失败时派发 `script-fixer-agent`，仅传递 `{ error_type, failed_locator, line_number, stderr_last_20_lines }`。详细修复流程见 script-fixer-agent 自身定义。
 
-**5.2.1 派发调试 Sub-Agent**
-
-脚本执行失败时，派发 `script-fixer-agent`（model: sonnet），传入：
-
-- **失败的脚本路径**：`workspace/{{project}}/.temp/ui-blocks/{{id}}.ts`
-- **Playwright 错误信息**：从执行结果中提取的完整错误文本
-- **当前轮次**：第 N 轮（1~3）
-- **目标 URL**：`{{url}}`
-- **源码目录**：`workspace/{{project}}/.repos/`
-- **Archive MD 中该用例的原始步骤**
-
-Sub-Agent 的职责（完整包含在派发 prompt 中，不依赖主 agent 上下文）：
-
-1. 分析 Playwright 错误信息（超时、元素不存在、断言失败等）
-2. 使用 playwright-cli 的 snapshot 工具获取实际 DOM 结构
-3. 结合前端源码校对路由、组件、选择器、API 路径
-4. 修复脚本中的选择器、导航方式、等待策略
-5. 重新执行验证：`QA_PROJECT={{project}} bunx playwright test {{script_path}} --project=chromium --timeout=30000`
-6. 报告结果：`FIXED`（通过）或 `STILL_FAILING`（仍失败 + 错误信息）
-
-**5.2.2 主 agent 处理 Sub-Agent 结果**
-
-- `FIXED` → 更新进度 `test_status = "passed"`，继续下一条
-- `STILL_FAILING` → 更新进度 `test_status = "failed"` + `last_error`，判断 `attempts < 3` 则再派发一轮，否则标记放弃
-
-**5.2.3 主 agent 在步骤 5 中的行为边界**
-
-| 主 agent 可以做 | 主 agent 不可以做 |
-|----------------|-----------------|
-| 执行 `bunx playwright test` 首次运行 | 读 Playwright 错误详情去分析根因 |
-| 读取执行结果判断通过/失败 | 使用 playwright-cli snapshot |
-| 派发 sub-agent 并传入错误信息 | 直接修改脚本文件 |
-| 更新进度状态（running/passed/failed） | 读前端源码对比选择器 |
-| 决定重试或放弃 | 多轮调试循环 |
+Sub-Agent 返回 `FIXED` → 更新进度 `test_status = "passed"`；返回 `STILL_FAILING` → 更新 `test_status = "failed"` + `last_error`，`attempts < 3` 则再派发一轮，否则标记放弃。
 
 **5.3 Archive MD 写回门禁**
 
@@ -525,7 +492,7 @@ Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一
 
 ---
 
-**✅ Task**：所有用例自测完成后，将 `步骤 5` 标记为 `completed`（subject: `步骤 5 — {{passed}}/{{total}} 通过`）。
+按 Task Schema 更新：所有用例自测完成后，将 `步骤 5` 标记为 `completed`（subject: `步骤 5 — {{passed}}/{{total}} 通过`）。
 
 **💾 进度持久化 — 步骤 5 完成**：
 
@@ -535,7 +502,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 ## 步骤 6：合并脚本
 
-**⏳ Task**：将 `步骤 6` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 6` 标记为 `in_progress`。
 
 > 仅合并步骤 5 中**验证通过**的脚本。
 
@@ -563,7 +530,7 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 
 ---
 
-**✅ Task**：将 `步骤 6` 标记为 `completed`（subject: `步骤 6 — 合并 {{n}} 条脚本`）。
+按 Task Schema 更新：将 `步骤 6` 标记为 `completed`（subject: `步骤 6 — 合并 {{n}} 条脚本`）。
 
 **💾 进度持久化 — 合并完成**：
 
@@ -573,7 +540,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 ## 步骤 7：执行测试（全量回归）
 
-**⏳ Task**：将 `步骤 7` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 7` 标记为 `in_progress`。
 
 > 此步骤为合并后的全量回归验证，因步骤 5 已逐条验证通过，此处预期全部通过。
 
@@ -595,11 +562,11 @@ QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test works
 
 ---
 
-**✅ Task**：将 `步骤 7` 标记为 `completed`（subject: `步骤 7 — 回归完成，{{passed}}/{{total}} 通过`）。
+按 Task Schema 更新：将 `步骤 7` 标记为 `completed`（subject: `步骤 7 — 回归完成，{{passed}}/{{total}} 通过`）。
 
 ## 步骤 8：处理结果
 
-**⏳ Task**：将 `步骤 8` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 8` 标记为 `in_progress`。
 
 **输出模板中的变量说明：**
 
@@ -651,11 +618,11 @@ QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project
 
 ---
 
-**✅ Task**：将 `步骤 8` 标记为 `completed`（subject: `步骤 8 — 结果已处理`）。
+按 Task Schema 更新：将 `步骤 8` 标记为 `completed`（subject: `步骤 8 — 结果已处理`）。
 
 ## 步骤 9：发送通知
 
-**⏳ Task**：将 `步骤 9` 标记为 `in_progress`。
+按 Task Schema 更新：将 `步骤 9` 标记为 `in_progress`。
 
 ```bash
 bun run .claude/scripts/plugin-loader.ts notify \
@@ -669,7 +636,7 @@ bun run .claude/scripts/plugin-loader.ts notify \
   }'
 ```
 
-**✅ Task**：将 `步骤 9` 标记为 `completed`（subject: `步骤 9 — 通知已发送`）。
+按 Task Schema 更新：将 `步骤 9` 标记为 `completed`（subject: `步骤 9 — 通知已发送`）。
 
 ---
 

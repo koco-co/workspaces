@@ -284,6 +284,45 @@
     }
   },
 
+  "state_transform_data": {
+    "_description": "节点 2 transform 更新 state.ts 时的 --data 字段结构",
+    "confidence": "number — 置信度（0-1）",
+    "page_count": "number — PRD 页面数",
+    "field_count": "number — 字段数",
+    "source_hit": "string — 源码命中级别（A/B/none）",
+    "clarify_count": "number — 需澄清项数量"
+  },
+
+  "state_format_check_data": {
+    "_description": "节点 6.5 format-check 更新 state.ts 时的 --data 字段结构",
+    "format_check": {
+      "current_round": "number — 当前轮次",
+      "max_rounds": "number — 最大轮次",
+      "issues_history": "number[] — 每轮偏差数列表",
+      "verdict": "string — pass/fail"
+    }
+  },
+
+  "qa_state_file": {
+    "_description": "断点续传状态文件（.qa-state-{prd-slug}.json）完整结构",
+    "prd_slug": "string",
+    "project": "string",
+    "mode": "string — normal|quick",
+    "current_node": "string — transform|enhance|analyze|write|review|format-check|output",
+    "transform": { "confidence": "number", "clarify_count": "number" },
+    "enhance": { "health_warnings": "string[]", "image_count": "number" },
+    "analyze": { "checklist": "object" },
+    "write": { "modules": "object", "blocked": "string[]" },
+    "review": { "issue_rate": "number", "fixed_count": "number" },
+    "format_check": {
+      "current_round": "number",
+      "max_rounds": "number",
+      "issues_history": "number[]",
+      "verdict": "string"
+    },
+    "source_context": { "branch": "string", "commit": "string" }
+  },
+
   "frontend_bug_json": {
     "_description": "frontend-bug-agent 输出：前端 Bug 结构化报告数据（用于渲染 HTML 报告）",
     "title": "string — 报告标题",

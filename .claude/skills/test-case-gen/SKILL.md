@@ -14,10 +14,13 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 
 <!-- 前置加载 -->
 
-执行前收集偏好上下文（读取顺序如下；冲突时按 precedence 裁决）：
+### 偏好预加载
 
-1. 全局 `preferences/` 目录下所有 `.md` 文件
-2. 项目级 `workspace/{{project}}/preferences/` 目录下所有 `.md` 文件
+工作流启动时一次性加载偏好：
+```bash
+bun run .claude/scripts/preference-loader.ts load --project {{project}} > workspace/{{project}}/.temp/preferences-merged.json
+```
+后续节点通过此 JSON 传递偏好给 sub-agent，不再各自读 preferences/ 目录。
 
 <precedence>
 用户当前指令 > 项目级 preferences > 全局 preferences > 本文件
@@ -450,17 +453,7 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node transform --data '{{json}}'
 ```
 
-数据结构：
-
-```json
-{
-  "confidence": 0.85,
-  "page_count": 14,
-  "field_count": 42,
-  "source_hit": "B",
-  "clarify_count": 3
-}
-```
+数据结构：参见 `.claude/references/output-schemas.json` 中的 `state_transform_data`。
 
 **✅ Task**：将 `transform` 任务标记为 `completed`（subject 更新为 `transform — 置信度 {{confidence}}，{{clarify_count}} 项待确认`）。
 
@@ -575,7 +568,7 @@ bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}
 
 - 增强后 PRD 对应模块内容
 - 该模块已确认的测试点清单
-- preferences/ 目录下的偏好规则（若存在）
+- 合并后偏好 JSON（来自 `workspace/{{project}}/.temp/preferences-merged.json`）
 - 历史归档用例参考（来自 analyze 步骤）
 - 已确认上下文（来自 `<confirmed_context>`）
 - 源码上下文（来自 transform 步骤的源码分析结果，包括按钮名称、表单结构、字段定义、导航路径等 🔵 标注信息。若 transform 阶段完成了 B 级分析，须将关键 UI 结构摘要传给 Writer）
@@ -720,18 +713,7 @@ bun run .claude/scripts/format-report-locator.ts print \
 bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node format-check --data '{{json}}'
 ```
 
-数据结构：
-
-```json
-{
-  "format_check": {
-    "current_round": 2,
-    "max_rounds": 5,
-    "issues_history": [8, 3],
-    "verdict": "fail"
-  }
-}
-```
+数据结构：参见 `.claude/references/output-schemas.json` 中的 `state_format_check_data`。
 
 ### 交互点 D2 — 格式检查超限决策（使用 AskUserQuestion 工具）
 
@@ -846,28 +828,7 @@ bun run .claude/scripts/state.ts clean --prd-slug {{slug}} --project {{project}}
 - **自动检测**：节点 1 的 `state.ts resume` 命令自动发现并恢复
 - **节点更新**：每个节点完成时通过 `state.ts update` 写入进度
 - **最终清理**：output 节点成功后执行 `state.ts clean` 删除状态文件
-- **状态结构**：
-
-```json
-{
-  "prd_slug": "xxx",
-  "project": "{{project}}",
-  "mode": "normal|quick",
-  "current_node": "transform|enhance|analyze|write|review|format-check|output",
-  "transform": { "confidence": 0, "clarify_count": 0 },
-  "enhance": { "health_warnings": [], "image_count": 0 },
-  "analyze": { "checklist": {} },
-  "write": { "modules": {}, "blocked": [] },
-  "review": { "issue_rate": 0, "fixed_count": 0 },
-  "format_check": {
-    "current_round": 0,
-    "max_rounds": 5,
-    "issues_history": [],
-    "verdict": ""
-  },
-  "source_context": { "branch": "", "commit": "" }
-}
-```
+- **状态结构**：参见 `.claude/references/output-schemas.json` 中的 `qa_state_file`。
 
 ---
 
