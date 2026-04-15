@@ -10,16 +10,13 @@ type ProjectListResponse = { data?: Array<{ id?: number | string }> };
 // ── 环境变量 ────────────────────────────────────────────
 
 export function getEnv(name: string): string | undefined {
-  return (globalThis as typeof globalThis & { process?: { env?: RuntimeEnv } })
-    .process?.env?.[name];
+  return (globalThis as typeof globalThis & { process?: { env?: RuntimeEnv } }).process?.env?.[
+    name
+  ];
 }
 
 function getRawBaseUrl(): string {
-  return (
-    getEnv("UI_AUTOTEST_BASE_URL") ??
-    getEnv("E2E_BASE_URL") ??
-    "http://172.16.122.52"
-  );
+  return getEnv("UI_AUTOTEST_BASE_URL") ?? getEnv("E2E_BASE_URL") ?? "http://172.16.122.52";
 }
 
 // ── URL 构建 ────────────────────────────────────────────
@@ -44,15 +41,10 @@ export function normalizeOfflineBaseUrl(): string {
   return normalizeBaseUrl("batch");
 }
 
-export function buildDataAssetsUrl(
-  path: string,
-  pid?: number | string,
-): string {
+export function buildDataAssetsUrl(path: string, pid?: number | string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const separator = normalizedPath.includes("?") ? "&" : "?";
-  const hashPath = pid
-    ? `${normalizedPath}${separator}pid=${pid}`
-    : normalizedPath;
+  const hashPath = pid ? `${normalizedPath}${separator}pid=${pid}` : normalizedPath;
   return `${normalizeDataAssetsBaseUrl()}/#${hashPath}`;
 }
 
@@ -63,10 +55,7 @@ export function buildOfflineUrl(path: string): string {
 
 // ── Cookie 注入 ─────────────────────────────────────────
 
-export async function applyRuntimeCookies(
-  page: Page,
-  product = "dataAssets",
-): Promise<void> {
+export async function applyRuntimeCookies(page: Page, product = "dataAssets"): Promise<void> {
   const runtimeCookie = getEnv("UI_AUTOTEST_COOKIE")?.trim();
   if (!runtimeCookie) return;
 
@@ -127,10 +116,7 @@ export async function getAccessibleProjectIds(page: Page): Promise<number[]> {
  * 通过侧边栏菜单导航到指定模块
  * @param menuPath 菜单路径数组，如 ['元数据', '数据地图']
  */
-export async function navigateViaMenu(
-  page: Page,
-  menuPath: string[],
-): Promise<void> {
+export async function navigateViaMenu(page: Page, menuPath: string[]): Promise<void> {
   const sideMenu = page.locator(".ant-layout-sider").first();
   await sideMenu.waitFor({ state: "visible", timeout: 10000 });
 
@@ -139,9 +125,7 @@ export async function navigateViaMenu(
     const isVisible = await menuItem.isVisible().catch(() => false);
     if (!isVisible) {
       // 尝试展开父菜单
-      const parentMenu = sideMenu
-        .locator(".ant-menu-submenu-title")
-        .filter({ hasText: menuName });
+      const parentMenu = sideMenu.locator(".ant-menu-submenu-title").filter({ hasText: menuName });
       if (await parentMenu.isVisible().catch(() => false)) {
         await parentMenu.click();
         await page.waitForTimeout(300);
@@ -161,14 +145,80 @@ export async function navigateViaMenu(
 export async function selectAntOption(
   page: Page,
   triggerLocator: import("@playwright/test").Locator,
-  optionText: string,
+  optionText: string | RegExp,
 ): Promise<void> {
   await triggerLocator.click();
   await page.waitForTimeout(300);
-  const dropdown = page.locator(".ant-select-dropdown:visible");
+  const dropdown = page.locator(".ant-select-dropdown:visible").last();
   await dropdown.waitFor({ state: "visible", timeout: 5000 });
-  await dropdown.getByText(optionText, { exact: false }).first().click();
-  await page.waitForTimeout(300);
+
+  const options = dropdown.locator(".ant-select-item-option");
+
+  const optionLocator = async () => {
+    if (typeof optionText === "string") {
+      const exactMatchIndex = await options.evaluateAll(
+        (els, expected) => els.findIndex((el) => el.textContent?.trim() === expected),
+        optionText,
+      );
+      if (exactMatchIndex >= 0) {
+        return options.nth(exactMatchIndex);
+      }
+    }
+
+    return options.filter({ hasText: optionText }).first();
+  };
+
+  const clickVisibleOption = async (): Promise<boolean> => {
+    const option = await optionLocator();
+    if (!(await option.count())) return false;
+    if (!(await option.isVisible().catch(() => false))) return false;
+    await option.click();
+    await page.waitForTimeout(300);
+    return true;
+  };
+
+  if (await clickVisibleOption()) return;
+
+  if (typeof optionText === "string") {
+    const searchInput = triggerLocator
+      .locator("input.ant-select-selection-search-input")
+      .or(
+        page.locator(
+          ".ant-select-open input.ant-select-selection-search-input, .ant-select-focused input.ant-select-selection-search-input",
+        ),
+      )
+      .first();
+    if (await searchInput.count()) {
+      await searchInput.fill(optionText);
+      await page.waitForTimeout(300);
+      if (await clickVisibleOption()) return;
+    }
+  }
+
+  const virtualHolder = dropdown.locator(".rc-virtual-list-holder").first();
+  if (await virtualHolder.count()) {
+    const metrics = await virtualHolder.evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+    }));
+    const step = Math.max(Math.floor(metrics.clientHeight / 2), 120);
+    for (let top = 0; top <= metrics.scrollHeight; top += step) {
+      await virtualHolder.evaluate((el, nextTop) => {
+        el.scrollTop = nextTop;
+      }, top);
+      await page.waitForTimeout(200);
+      if (await clickVisibleOption()) return;
+    }
+  }
+
+  const visibleOptions = await dropdown
+    .locator(".ant-select-item-option")
+    .evaluateAll((els) =>
+      els.map((el) => el.textContent?.trim()).filter((text): text is string => Boolean(text)),
+    );
+  throw new Error(
+    `Ant Select option not found: ${String(optionText)}. Visible options: ${visibleOptions.join(", ")}`,
+  );
 }
 
 /**
@@ -212,10 +262,7 @@ export async function waitForAntModal(
  *   2. 在搜索框中搜索项目名称
  *   3. 点击匹配的项目卡片进入
  */
-export async function selectBatchProject(
-  page: Page,
-  projectName: string,
-): Promise<void> {
+export async function selectBatchProject(page: Page, projectName: string): Promise<void> {
   await applyRuntimeCookies(page, "batch");
 
   await page.goto(buildOfflineUrl("/projects"));
@@ -224,10 +271,7 @@ export async function selectBatchProject(
   const projectTable = page.locator(".projects-table").first();
   await projectTable.waitFor({ state: "visible", timeout: 30000 });
 
-  const targetRow = projectTable
-    .locator(".ant-table-row")
-    .filter({ hasText: projectName })
-    .first();
+  const targetRow = projectTable.locator(".ant-table-row").filter({ hasText: projectName }).first();
   await targetRow.waitFor({ state: "visible", timeout: 30000 });
 
   const projectLink = targetRow.getByText(projectName, { exact: true }).first();
@@ -270,10 +314,7 @@ export async function executeSqlViaBatchDoris(
   await selectBatchProject(page, projectName);
 
   // 2. 点击左侧"临时查询"垂直 tab
-  const tempQueryTab = page
-    .locator(".ant-tabs-tab")
-    .filter({ hasText: "临时查询" })
-    .first();
+  const tempQueryTab = page.locator(".ant-tabs-tab").filter({ hasText: "临时查询" }).first();
   await tempQueryTab.waitFor({ state: "visible", timeout: 10000 });
   await tempQueryTab.click();
   await page
@@ -339,10 +380,7 @@ export async function executeSqlViaBatchDoris(
     if (await clusterOption.isVisible({ timeout: 3000 }).catch(() => false)) {
       await clusterOption.click();
     } else {
-      await page
-        .locator(".ant-select-dropdown:visible .ant-select-item-option")
-        .first()
-        .click();
+      await page.locator(".ant-select-dropdown:visible .ant-select-item-option").first().click();
     }
     await page.waitForTimeout(500);
   }
@@ -354,9 +392,7 @@ export async function executeSqlViaBatchDoris(
   await page.waitForTimeout(2000);
 
   // 7. 编辑器中输入 SQL
-  const editorArea = page
-    .locator(".view-lines, .monaco-editor .overflow-guard")
-    .first();
+  const editorArea = page.locator(".view-lines, .monaco-editor .overflow-guard").first();
   await editorArea.waitFor({ state: "visible", timeout: 20000 });
   await editorArea.click();
   await page.waitForTimeout(300);
@@ -430,7 +466,10 @@ export async function syncMetadata(
   tableName?: string,
 ): Promise<void> {
   const readSyncErrorText = async (): Promise<string> => {
-    const bodyText = await page.locator("body").innerText().catch(() => "");
+    const bodyText = await page
+      .locator("body")
+      .innerText()
+      .catch(() => "");
     return bodyText.replace(/\s+/g, " ").trim();
   };
 
@@ -484,13 +523,9 @@ export async function syncMetadata(
   if (await dbCombobox.isVisible({ timeout: 5000 }).catch(() => false)) {
     await dbCombobox.locator(".ant-select-selector").click();
     await page.waitForTimeout(500);
-    const dbOptions = page.locator(
-      ".ant-select-dropdown:visible .ant-select-item-option",
-    );
+    const dbOptions = page.locator(".ant-select-dropdown:visible .ant-select-item-option");
     if (database) {
-      const dbOption = dbOptions
-        .filter({ hasText: database })
-        .first();
+      const dbOption = dbOptions.filter({ hasText: database }).first();
       if (!(await dbOption.isVisible({ timeout: 5000 }).catch(() => false))) {
         throw new Error(
           `Failed to load metadata databases for ${datasourceName ?? "datasource"}: ${await readSyncErrorText()}`,
@@ -501,9 +536,7 @@ export async function syncMetadata(
       // 选第一个可用数据库
       const firstDb = dbOptions.first();
       if (!(await firstDb.isVisible({ timeout: 5000 }).catch(() => false))) {
-        throw new Error(
-          `No metadata database options are available: ${await readSyncErrorText()}`,
-        );
+        throw new Error(`No metadata database options are available: ${await readSyncErrorText()}`);
       }
       await firstDb.click();
     }
@@ -515,13 +548,9 @@ export async function syncMetadata(
   if (await tableCombobox.isVisible({ timeout: 5000 }).catch(() => false)) {
     await tableCombobox.locator(".ant-select-selector").click();
     await page.waitForTimeout(500);
-    const tableOptions = page.locator(
-      ".ant-select-dropdown:visible .ant-select-item-option",
-    );
+    const tableOptions = page.locator(".ant-select-dropdown:visible .ant-select-item-option");
     if (tableName) {
-      const tblOption = tableOptions
-        .filter({ hasText: tableName })
-        .first();
+      const tblOption = tableOptions.filter({ hasText: tableName }).first();
       if (!(await tblOption.isVisible({ timeout: 5000 }).catch(() => false))) {
         throw new Error(
           `Failed to load metadata tables for ${database ?? "database"}: ${await readSyncErrorText()}`,
@@ -532,9 +561,7 @@ export async function syncMetadata(
       // 选第一个可用数据表
       const firstTbl = tableOptions.first();
       if (!(await firstTbl.isVisible({ timeout: 5000 }).catch(() => false))) {
-        throw new Error(
-          `No metadata table options are available: ${await readSyncErrorText()}`,
-        );
+        throw new Error(`No metadata table options are available: ${await readSyncErrorText()}`);
       }
       await firstTbl.click();
     }
@@ -564,8 +591,7 @@ export async function syncMetadata(
           '[class*="status"], .ant-tag, .ant-badge-status-text',
         );
         for (let i = 0; i < statusEls.length; i++) {
-          if (/运行中|同步中|进行中/.test(statusEls[i].textContent ?? ""))
-            return false;
+          if (/运行中|同步中|进行中/.test(statusEls[i].textContent ?? "")) return false;
         }
         return true;
       },
@@ -607,9 +633,7 @@ export async function getQualityProjectId(
         projectName?: string;
       }>;
     };
-    const project = (json.data ?? []).find((p) =>
-      (p.name ?? p.projectName ?? "").includes(name),
-    );
+    const project = (json.data ?? []).find((p) => (p.name ?? p.projectName ?? "").includes(name));
     return project ? Number(project.id) : null;
   }, projectName);
 

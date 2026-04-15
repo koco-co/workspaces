@@ -1,36 +1,49 @@
 // META: {"id":"t25","priority":"P1","title":"验证仅配置枚举值in校验通过时质量报告详情说明使用枚举值独立说明模板"}
-import { test, expect } from "../../fixtures/step-screenshot";
+import { expect, test } from "../../fixtures/step-screenshot";
 import { applyRuntimeCookies, buildDataAssetsUrl, navigateViaMenu } from "../../helpers/test-setup";
 
 test.use({ storageState: ".auth/session.json" });
 
 test.describe("【内置规则丰富】有效性，支持设置字段多规则的且或关系(#15695) - 数据质量报告", () => {
-  test("验证仅配置枚举值in校验通过时质量报告详情说明使用枚举值独立说明模板", async ({ page, step }) => {
+  test("验证仅配置枚举值in校验通过时质量报告详情说明使用枚举值独立说明模板", async ({
+    page,
+    step,
+  }) => {
     // 前置：任务 task_15695_enum_pass 已执行完成，校验结果为通过
     // 前置：枚举值规则配置：category in '1,2,3'，所有记录均满足
 
     // 步骤1：进入数据质量报告页面
-    await step("步骤1: 进入【数据质量 → 数据质量报告】页面 → 质量报告页面打开，报告列表加载完成", async () => {
-      await applyRuntimeCookies(page);
-      await page.goto(buildDataAssetsUrl("/dq/rule"));
-      await page.waitForLoadState("networkidle");
-      await navigateViaMenu(page, ["数据质量", "数据质量报告"]);
-      const tableRows = page.locator(".ant-table-row");
-      await expect(tableRows.first()).toBeVisible({ timeout: 10000 });
-    });
+    await step(
+      "步骤1: 进入【数据质量 → 数据质量报告】页面 → 质量报告页面打开，报告列表加载完成",
+      async () => {
+        await applyRuntimeCookies(page);
+        await page.goto(buildDataAssetsUrl("/dq/rule"));
+        await page.waitForLoadState("networkidle");
+        await navigateViaMenu(page, ["数据质量", "数据质量报告"]);
+        const tableRows = page.locator(".ant-table-row");
+        await expect(tableRows.first()).toBeVisible({ timeout: 10000 });
+      },
+    );
 
     // 步骤2：找到 task_15695_enum_pass 对应枚举值规则行，查看详情说明列
-    await step("步骤2: 找到任务 task_15695_enum_pass 对应的枚举值规则行，查看详情说明列内容 → 详情说明显示枚举值独立说明模板，不含取值范围说明", async () => {
-      const taskRow = page.locator(".ant-table-row").filter({ hasText: "task_15695_enum_pass" }).first();
-      await expect(taskRow).toBeVisible({ timeout: 10000 });
+    await step(
+      "步骤2: 找到任务 task_15695_enum_pass 对应的枚举值规则行，查看详情说明列内容 → 详情说明显示枚举值独立说明模板，不含取值范围说明",
+      async () => {
+        const taskRow = page
+          .locator(".ant-table-row")
+          .filter({ hasText: "task_15695_enum_pass" })
+          .first();
+        await expect(taskRow).toBeVisible({ timeout: 10000 });
 
-      // 验证详情说明列显示枚举值通过的独立说明模板
-      await expect(taskRow).toContainText("字段枚举值不存在约定范围外的值", { timeout: 5000 });
-      await expect(taskRow).toContainText("枚举值in '1,2,3'", { timeout: 5000 });
+        // 验证详情说明列显示枚举值通过的独立说明模板
+        await expect(taskRow).toContainText("字段枚举值不存在约定范围外的值", { timeout: 5000 });
+        await expect(taskRow).toContainText("枚举值in '1,2,3'", { timeout: 5000 });
 
-      // 验证不显示取值范围相关说明
-      const rowText = await taskRow.innerText();
-      expect(rowText).not.toContain("取值范围");
-    }, page.locator(".ant-table-row").filter({ hasText: "task_15695_enum_pass" }).first());
+        // 验证不显示取值范围相关说明
+        const rowText = await taskRow.innerText();
+        expect(rowText).not.toContain("取值范围");
+      },
+      page.locator(".ant-table-row").filter({ hasText: "task_15695_enum_pass" }).first(),
+    );
   });
 });

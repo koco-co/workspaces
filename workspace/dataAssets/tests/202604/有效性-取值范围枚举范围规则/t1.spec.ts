@@ -1,10 +1,6 @@
 // META: {"id":"t1","priority":"P0","title":"验证在规则集中按完整顺序新建取值范围&枚举范围且关系规则（数值类型字段）"}
-import { test, expect } from "../../fixtures/step-screenshot";
-import {
-  applyRuntimeCookies,
-  buildDataAssetsUrl,
-  selectAntOption,
-} from "../../helpers/test-setup";
+import { expect, test } from "../../fixtures/step-screenshot";
+import { applyRuntimeCookies, buildDataAssetsUrl, selectAntOption } from "../../helpers/test-setup";
 import {
   DORIS_DATABASE,
   injectProjectContext,
@@ -14,8 +10,7 @@ import {
 
 test.use({ storageState: ".auth/session.json" });
 
-const SUITE_NAME =
-  "【内置规则丰富】有效性，支持设置字段多规则的且或关系(#15695)";
+const SUITE_NAME = "【内置规则丰富】有效性，支持设置字段多规则的且或关系(#15695)";
 const PAGE_NAME = "规则集管理";
 
 test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
@@ -47,9 +42,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await page.reload();
         await page.waitForLoadState("networkidle");
         await page.waitForTimeout(1000);
-        const tableBody = page.locator(
-          ".ant-table-tbody, .ant-empty, [class*='empty']",
-        );
+        const tableBody = page.locator(".ant-table-tbody, .ant-empty, [class*='empty']");
         await expect(tableBody.first()).toBeVisible({ timeout: 15000 });
       },
       page.locator(".ant-table-tbody"),
@@ -112,9 +105,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await page.waitForTimeout(500);
 
         // 填写规则包名称
-        const packageNameInput = page
-          .locator("input[placeholder*='规则包名称']")
-          .first();
+        const packageNameInput = page.locator("input[placeholder*='规则包名称']").first();
         await packageNameInput.waitFor({ state: "visible", timeout: 5000 });
         await packageNameInput.clear();
         await packageNameInput.fill("且关系校验包");
@@ -125,9 +116,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await page.waitForLoadState("networkidle");
         await page.waitForTimeout(1500);
 
-        await expect(
-          page.getByText("监控规则", { exact: false }).first(),
-        ).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText("监控规则", { exact: false }).first()).toBeVisible({
+          timeout: 10000,
+        });
       },
       page.getByText("监控规则").first(),
     );
@@ -165,97 +156,56 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await addRuleBtn.click();
         await page.waitForTimeout(500);
         // 从 Dropdown 菜单选择规则类型
-        const ruleTypeMenu = page.locator(
-          ".ant-dropdown:visible, .ant-dropdown-menu:visible",
-        );
+        const ruleTypeMenu = page.locator(".ant-dropdown:visible, .ant-dropdown-menu:visible");
         await ruleTypeMenu.first().waitFor({ state: "visible", timeout: 10000 });
-        await ruleTypeMenu
-          .getByText("有效性校验", { exact: false })
-          .first()
-          .click();
+        await ruleTypeMenu.getByText("有效性校验", { exact: false }).first().click();
         await page.waitForTimeout(1500);
 
         // 先选字段: score（选字段后统计函数选项才会更新）
-        const fieldFormItem = page
-          .locator(".ant-form-item")
-          .filter({ hasText: /^字段/ })
-          .first();
+        const fieldFormItem = page.locator(".ant-form-item").filter({ hasText: /^字段/ }).first();
         const fieldSelect = fieldFormItem.locator(".ant-select").first();
-        await fieldSelect.locator(".ant-select-selector").click();
-        await page.waitForTimeout(500);
-        const fieldDropdown = page.locator(".ant-select-dropdown:visible").last();
-        await fieldDropdown.waitFor({ state: "visible", timeout: 5000 });
-        await fieldDropdown
-          .locator(".ant-select-item-option")
-          .filter({ hasText: "score" })
-          .first()
-          .click();
+        await selectAntOption(page, fieldSelect, "score");
         await page.waitForTimeout(1000);
 
-        // 统计函数: 取值范围&枚举范围（在 .rule__function-list__item 内，选字段后才出现此选项）
+        // 统计函数: 取值范围&枚举范围（Ant Select 使用虚拟滚动，需通过 helper 搜索/滚动）
         const funcListItem = page.locator(".rule__function-list__item").first();
         await funcListItem.waitFor({ state: "visible", timeout: 10000 });
         const statFuncSelect = funcListItem.locator(".ant-select").first();
-        await statFuncSelect.locator(".ant-select-selector").click();
-        await page.waitForTimeout(1000);
-        const funcDropdown = page.locator(".ant-select-dropdown:visible").last();
-        await funcDropdown.waitFor({ state: "visible", timeout: 5000 });
-        await funcDropdown
-          .locator(".ant-select-item-option")
-          .filter({ hasText: /取值范围.*枚举范围|枚举范围.*取值范围/ })
-          .first()
-          .click();
+        await selectAntOption(page, statFuncSelect, "取值范围&枚举范围");
         await page.waitForTimeout(1000);
 
         // 取值范围设置: > 1 且 < 10
-        const rangeFormItem = page
-          .locator(".ant-form-item")
-          .filter({ hasText: /取值范围/ })
-          .first();
-
         // 操作符1: >
-        const rangeOp1 = rangeFormItem.locator(".ant-select").first();
-        await rangeOp1.locator(".ant-select-selector").click();
-        await page.waitForTimeout(300);
-        await page
-          .locator(".ant-select-dropdown:visible")
-          .getByText(">", { exact: true })
-          .first()
-          .click();
+        const rangeOp1 = funcListItem.locator(".ant-select").nth(1);
+        await selectAntOption(page, rangeOp1, ">");
         await page.waitForTimeout(300);
 
         // 期望值1: 1
-        await rangeFormItem.locator("input").first().fill("1");
+        await page.getByPlaceholder("请输入数值").first().fill("1");
         await page.waitForTimeout(300);
 
         // 选择"且"（双条件）
-        const rangeRadioGroup = rangeFormItem.locator(".ant-radio-wrapper, .ant-radio-button-wrapper");
-        await rangeRadioGroup.filter({ hasText: "且" }).first().click();
+        const rangeRadioGroup = funcListItem.locator(
+          ".ant-radio-wrapper, .ant-radio-button-wrapper",
+        );
+        await rangeRadioGroup.filter({ hasText: /^且$/ }).first().click();
         await page.waitForTimeout(300);
 
         // 操作符2: <
-        const rangeOp2 = rangeFormItem.locator(".ant-select").nth(1);
-        await rangeOp2.locator(".ant-select-selector").click();
-        await page.waitForTimeout(300);
-        await page
-          .locator(".ant-select-dropdown:visible")
-          .getByText("<", { exact: true })
-          .first()
-          .click();
+        const rangeOp2 = funcListItem.locator(".ant-select").nth(2);
+        await selectAntOption(page, rangeOp2, "<");
         await page.waitForTimeout(300);
 
         // 期望值2: 10
-        await rangeFormItem.locator("input").nth(1).fill("10");
+        await page.getByPlaceholder("请输入数值").nth(1).fill("10");
         await page.waitForTimeout(300);
 
         // 枚举值设置: in 1、2、3
-        const enumFormItem = page
-          .locator(".ant-form-item")
-          .filter({ hasText: /枚举值/ })
-          .first();
+        const enumOpSelect = funcListItem.locator(".ant-select").nth(3);
+        await selectAntOption(page, enumOpSelect, "in");
+        await page.waitForTimeout(300);
 
-        // 操作符默认为 in，直接输入枚举值
-        const enumInput = enumFormItem.locator("input").last();
+        const enumInput = funcListItem.locator(".ant-select").nth(4).locator("input").last();
         for (const val of ["1", "2", "3"]) {
           await enumInput.fill(val);
           await page.keyboard.press("Enter");
@@ -265,45 +215,59 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await page.waitForTimeout(200);
 
         // 取值范围和枚举值关系: 且
-        const relationFormItem = page
+        await rangeRadioGroup.filter({ hasText: /^且$/ }).nth(1).click();
+        await page.waitForTimeout(300);
+
+        // 强弱规则: 强规则
+        const ruleStrengthSelect = page
           .locator(".ant-form-item")
-          .filter({ hasText: /关系/ });
-        await relationFormItem
-          .locator(".ant-radio-wrapper, .ant-radio-button-wrapper")
-          .filter({ hasText: "且" })
+          .filter({ hasText: /强弱规则/ })
+          .locator(".ant-select")
+          .first();
+        await selectAntOption(page, ruleStrengthSelect, "强规则");
+        await page.waitForTimeout(300);
+
+        // 规则描述
+        await page
+          .getByPlaceholder("请填写规则描述")
           .first()
-          .click();
+          .fill("score取值范围1到10且枚举值in 1,2,3");
         await page.waitForTimeout(300);
 
         // 验证枚举值操作符支持 in/not in
-        const enumOpSelect = enumFormItem.locator(".ant-select").first();
-        await enumOpSelect.locator(".ant-select-selector").click();
+        await enumOpSelect.click();
         await page.waitForTimeout(300);
-        const enumDropdown = page.locator(".ant-select-dropdown:visible");
-        await expect(enumDropdown.getByText("in", { exact: true }).first()).toBeVisible();
-        await expect(enumDropdown.getByText("not in", { exact: false }).first()).toBeVisible();
+        const enumDropdown = page.locator(".ant-select-dropdown:visible").last();
+        const enumOptions = await enumDropdown
+          .locator(".ant-select-item-option")
+          .evaluateAll((els) =>
+            els.map((el) => el.textContent?.trim()).filter((text): text is string => Boolean(text)),
+          );
+        expect(enumOptions).toContain("in");
+        expect(enumOptions).toContain("not in");
         await page.keyboard.press("Escape");
         await page.waitForTimeout(200);
       },
-      page.locator(".ant-form-item").filter({ hasText: /枚举值/ }).first(),
+      page
+        .locator(".ant-form-item")
+        .filter({ hasText: /枚举值/ })
+        .first(),
     );
 
     // 步骤4：保存规则并完成规则集创建
     await step(
       "步骤4: 保存规则并完成规则集创建 → 规则集保存成功，规则列表显示正确信息",
       async () => {
-        await page.getByRole("button", { name: "保存" }).first().click();
-        await page.waitForTimeout(1000);
-        await page.getByRole("button", { name: "保存" }).last().click();
+        await page.getByRole("button", { name: /保\s*存/ }).click();
         await page.waitForLoadState("networkidle");
         await page.waitForTimeout(1500);
 
         const successMsg = page.locator(
           ".ant-message-notice, .ant-notification-notice, .ant-message",
         );
-        await expect(
-          successMsg.filter({ hasText: /成功/ }).first(),
-        ).toBeVisible({ timeout: 10000 });
+        await expect(successMsg.filter({ hasText: /成功/ }).first()).toBeVisible({
+          timeout: 10000,
+        });
       },
       page.locator(".ant-message-notice, .ant-notification-notice").first(),
     );

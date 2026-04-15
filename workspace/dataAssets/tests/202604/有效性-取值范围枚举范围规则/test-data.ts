@@ -120,10 +120,7 @@ export const DORIS_DATABASE = "pw"; // 建表所在的 Doris 数据库
 /**
  * 注入质量项目 ID 到 sessionStorage，确保后续 API 请求携带正确的 X-Valid-Project-ID 头。
  */
-export async function injectProjectContext(
-  page: Page,
-  projectId: number,
-): Promise<void> {
+export async function injectProjectContext(page: Page, projectId: number): Promise<void> {
   await page.evaluate((pid) => {
     sessionStorage.setItem("X-Valid-Project-ID", String(pid));
   }, projectId);
