@@ -450,7 +450,31 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 **5.2 失败处理（派发 Sub-Agent，最多重试 3 轮）**
 
-> **⚠️ 主 agent 上下文保护规则：主 agent 绝不自行调试脚本。** 失败时派发 `script-fixer-agent`，仅传递 `{ error_type, failed_locator, line_number, stderr_last_20_lines }`。详细修复流程见 script-fixer-agent 自身定义。
+> **⚠️ 主 agent 上下文保护规则：主 agent 绝不自行调试脚本。** 失败时派发 `script-fixer-agent`，仅传递精简错误信息（见下文错误分类）。详细修复流程见 script-fixer-agent 自身定义。
+
+**错误分类提取**
+
+主 agent 从 Playwright stderr 用正则提取错误类型，不读完整输出：
+
+| 正则模式 | error_type |
+|----------|------------|
+| `Timeout \d+ms exceeded` | timeout |
+| `locator\..*resolved to \d+ elements?\|waiting for locator` | locator |
+| `expect\(.*\)\.(toHave\|toBe\|toContain\|toMatch)` | assertion |
+| 以上均不匹配 | unknown |
+
+派发给 script-fixer-agent 的精简信息：
+
+```json
+{
+  "error_type": "timeout | locator | assertion | unknown",
+  "script_path": "workspace/{{project}}/.temp/ui-blocks/{{id}}.ts",
+  "stderr_last_20_lines": "...",
+  "attempt": 1,
+  "url": "{{url}}",
+  "repos_dir": "workspace/{{project}}/.repos/"
+}
+```
 
 Sub-Agent 返回 `FIXED` → 更新进度 `test_status = "passed"`；返回 `STILL_FAILING` → 更新 `test_status = "failed"` + `last_error`，`attempts < 3` 则再派发一轮，否则标记放弃。
 
