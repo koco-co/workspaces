@@ -38,7 +38,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         const ruleForm = await addRuleToPackage(page, "notin校验包");
         const functionRow = await selectRuleFieldAndFunction(page, ruleForm, "category", "枚举值");
         await selectAntOption(page, functionRow.locator(".ant-select").nth(1), "not in");
-        const enumInput = functionRow.locator("input").last();
+        const enumInput = functionRow.locator(".ant-select").nth(2).locator("input").last();
         for (const value of ["4", "5"]) {
           await enumInput.fill(value);
           await page.keyboard.press("Enter");

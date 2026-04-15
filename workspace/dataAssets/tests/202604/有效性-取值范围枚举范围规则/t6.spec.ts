@@ -58,7 +58,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         await selectAntOption(page, functionRow.locator(".ant-select").nth(1), "not in");
         await expect(functionRow.locator(".ant-select").nth(1)).toContainText("not in");
 
-        const enumInput = functionRow.locator("input").last();
+        const enumInput = functionRow.locator(".ant-select").nth(2).locator("input").last();
         for (const value of ["4", "5"]) {
           await enumInput.fill(value);
           await page.keyboard.press("Enter");

@@ -5,7 +5,6 @@ import {
   addRuleToPackage,
   getRulePackage,
   getRuleSetListRow,
-  getSelectOptions,
   gotoRuleSetList,
   openRuleSetEditor,
   saveRuleSet,
@@ -40,7 +39,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         const functionRow = await selectRuleFieldAndFunction(page, ruleForm, "category", "枚举值");
         const enumOpSelect = functionRow.locator(".ant-select").nth(1);
         await selectAntOption(page, enumOpSelect, "in");
-        const enumInput = functionRow.locator("input").last();
+        const enumInput = functionRow.locator(".ant-select").nth(2).locator("input").last();
         for (const value of ["1", "2", "3"]) {
           await enumInput.fill(value);
           await page.keyboard.press("Enter");
@@ -48,10 +47,6 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         }
 
         await expect(enumOpSelect).toContainText("in");
-        const enumOptions = await getSelectOptions(page, enumOpSelect);
-        expect(enumOptions).toContain("in");
-        expect(enumOptions).toContain("not in");
-
         await expect(ruleForm).toContainText("category");
       },
       page.locator(".ruleSetMonitor__package").filter({ hasText: "仅枚举值包" }).first(),

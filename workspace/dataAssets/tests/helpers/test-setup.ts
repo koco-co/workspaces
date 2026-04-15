@@ -188,7 +188,7 @@ export async function selectAntOption(
         ),
       )
       .first();
-    if (await searchInput.count()) {
+    if ((await searchInput.count()) && (await searchInput.isEditable().catch(() => false))) {
       await searchInput.fill(optionText);
       await page.waitForTimeout(300);
       if (await clickVisibleOption()) return;

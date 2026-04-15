@@ -67,7 +67,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         const packageSection = await getRulePackage(page, "仅取值范围包");
         await expect(packageSection).toContainText("score");
         await expect(packageSection).toContainText(">=");
-        await expect(packageSection).toContainText("0");
+        await expect(packageSection.getByPlaceholder("请输入数值").first()).toHaveValue("0");
       },
       page.locator(".ruleSetMonitor__package").filter({ hasText: "仅取值范围包" }).first(),
     );
