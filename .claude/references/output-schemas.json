@@ -1,0 +1,365 @@
+{
+  "test_points_json": {
+    "_description": "analyze-agent 输出：结构化测试点清单",
+    "prd_title": "string — PRD 标题",
+    "prd_path": "string — 增强后 PRD 文件路径",
+    "modules": [
+      {
+        "name": "string — 模块名称",
+        "writer_id": "string — 分配给该模块的 writer 标识符",
+        "pages": [
+          {
+            "name": "string — 页面名称",
+            "test_points": [
+              {
+                "point": "string — 测试点标题",
+                "dimension": "string — 测试维度（功能正向/功能逆向/边界值/兼容性/性能/安全/用户体验）",
+                "priority": "string — P0/P1/P2",
+                "description": "string — 可指导 Writer 编写用例的详细说明"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "total_points": "number — 测试点总数",
+    "suggested_writers": "number — 建议的 Writer 数量",
+    "writer_assignment": [
+      {
+        "writer_id": "string — writer 标识符",
+        "modules": "string[] — 负责的模块列表",
+        "point_count": "number — 该 writer 负责的测试点数量"
+      }
+    ],
+    "historical_coverage": "string[] — 历史用例覆盖说明列表",
+    "dimension_summary": {
+      "功能正向": "number",
+      "功能逆向": "number",
+      "边界值": "number",
+      "兼容性": "number",
+      "性能": "number",
+      "安全": "number",
+      "用户体验": "number"
+    }
+  },
+
+  "writer_json": {
+    "_description": "writer-agent 输出：结构化测试用例中间 JSON（Contract A）",
+    "writer_id": "string — writer 标识符（如 module-a）",
+    "module_name": "string — 模块名称",
+    "pages": [
+      {
+        "name": "string — 页面名称",
+        "sub_groups": [
+          {
+            "name": "string — 功能组名称（如 搜索筛选、新增用例）",
+            "test_cases": [
+              {
+                "title": "string — 裸标题（Contract A：仅写「验证xxx」，不含优先级前缀）",
+                "priority": "string — P0/P1/P2（单独字段，不内嵌到 title）",
+                "type": "string — positive/negative/boundary",
+                "preconditions": "string[] — 前置条件列表（每条描述如何达到该状态）",
+                "steps": [
+                  {
+                    "step_number": "number — 步骤编号",
+                    "action": "string — 操作描述（包含位置、对象、动作三要素）",
+                    "expected": "string — 可断言化的预期结果"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "total_cases": "number — 用例总数",
+      "priority_distribution": {
+        "P0": "number",
+        "P1": "number",
+        "P2": "number"
+      },
+      "type_distribution": {
+        "positive": "number",
+        "negative": "number",
+        "boundary": "number"
+      }
+    }
+  },
+
+  "review_json": {
+    "_description": "reviewer-agent 输出：审查修正结果（含修正后用例数据和审查报告）",
+    "reviewed_data": {
+      "modules": [
+        {
+          "writer_id": "string — writer 标识符",
+          "module_name": "string — 模块名称",
+          "pages": "array — 与 writer_json 的 pages 结构相同"
+        }
+      ],
+      "metadata": {
+        "total_cases": "number",
+        "priority_distribution": { "P0": "number", "P1": "number", "P2": "number" },
+        "type_distribution": { "positive": "number", "negative": "number", "boundary": "number" }
+      }
+    },
+    "report": {
+      "total_cases": "number — 审查用例总数",
+      "issues_found": "number — 发现问题数",
+      "issues_fixed": "number — 自动修正数",
+      "issues_manual": "number — 需人工处理数",
+      "issue_rate": "string — 问题率百分比（如 11.9%）",
+      "verdict": "string — pass/pass_with_warnings/blocked/invalid_input",
+      "rounds": "number — 审查轮次",
+      "details": [
+        {
+          "case_title": "string — 用例标题（含优先级前缀）",
+          "module": "string — 所属模块",
+          "page": "string — 所属页面",
+          "issues": [
+            {
+              "code": "string — 规则编号（F07-F15）",
+              "description": "string — 问题描述",
+              "severity": "string — auto_fixed/manual",
+              "original": "string — 修正前内容",
+              "fixed": "string — 修正说明"
+            }
+          ]
+        }
+      ],
+      "manual_items": [
+        {
+          "case_title": "string — 用例标题",
+          "code": "string — 规则编号",
+          "description": "string — 问题描述",
+          "suggestion": "string — 人工处理建议"
+        }
+      ],
+      "summary": "string — 审查摘要文本"
+    }
+  },
+
+  "format_check_json": {
+    "_description": "format-checker-agent 输出：格式合规检查偏差报告",
+    "verdict": "string — pass/fail/invalid_input",
+    "round": "number — 当前检查轮次",
+    "max_rounds": "number — 最大轮次",
+    "total_cases": "number — 检查用例总数",
+    "issues_count": "number — 偏差总数",
+    "issues": [
+      {
+        "rule": "string — 规则编号（FC01-FC11）",
+        "rule_name": "string — 规则中文名",
+        "case_title": "string — 完整用例标题（含优先级前缀）",
+        "location": {
+          "module": "string — 所属模块",
+          "page": "string — 所属页面",
+          "group": "string — 所属功能组"
+        },
+        "field": "string — 偏差所在字段（title/step/expected/precondition）",
+        "step_number": "number | null — 步骤编号（偏差在步骤/预期时）",
+        "current": "string — 当前内容原文",
+        "problem": "string — 问题描述",
+        "expected_pattern": "string — 期望的格式或内容",
+        "severity": "string — 固定为 hard_violation"
+      }
+    ],
+    "summary": "string — 检查摘要文本"
+  },
+
+  "standardize_json": {
+    "_description": "standardize-agent 输出：历史用例标准化中间 JSON（Contract A，顶层键为 meta + modules）",
+    "meta": {
+      "project_name": "string — 项目名称",
+      "requirement_name": "string — 需求名称",
+      "source_file": "string — 原始文件路径",
+      "standardized": "boolean — 固定为 true"
+    },
+    "modules": [
+      {
+        "name": "string — 模块名称",
+        "pages": [
+          {
+            "name": "string — 页面名称",
+            "test_cases": [
+              {
+                "title": "string — 裸标题（Contract A：仅写「验证xxx」）",
+                "priority": "string — P0/P1/P2",
+                "preconditions": "string — 前置条件（多条用 1、2、编号换行）",
+                "steps": [
+                  {
+                    "step": "string — 操作描述（含三要素）",
+                    "expected": "string — 可断言化的预期结果"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  "bug_report_json": {
+    "_description": "bug-reporter-agent 输出：Playwright 失败测试的标准 Bug 报告",
+    "title": "string — 标题（格式：【Pn】套件名 - 页面：失败简述）",
+    "severity": "string — 严重（Critical）/一般（Major）/次要（Minor）",
+    "module": "string — 所属套件名",
+    "page": "string — 所属页面",
+    "environment": "string — 测试环境描述",
+    "steps": [
+      {
+        "step": "string — 步骤描述",
+        "expected": "string — 预期结果",
+        "actual": "string — 实际结果（失败步骤填错误描述，成功步骤填「正常」）"
+      }
+    ],
+    "expected": "string — 完整预期行为描述",
+    "actual": "string — 实际异常行为",
+    "screenshot": "string | null — 截图路径",
+    "console_errors": "string[] — 相关控制台错误列表",
+    "error_type": "string — 中文错误类型描述",
+    "root_cause_hint": "string — 可能的根因简述（不超过50字）"
+  },
+
+  "script_fixer_json": {
+    "_description": "script-fixer-agent 输出：Playwright 脚本修复结果",
+    "status": "string — FIXED/STILL_FAILING",
+    "script_path": "string — 修复的脚本文件路径",
+    "changes_summary": "string | null — 修复内容摘要（FIXED 时提供）",
+    "error_summary": "string | null — 仍然失败的错误摘要（STILL_FAILING 时提供）",
+    "attempted_fixes": "string[] | null — 已尝试的修复方案列表（STILL_FAILING 时提供）",
+    "corrections": [
+      {
+        "case_title": "string — 用例标题",
+        "field": "string — 不一致的字段（如 step）",
+        "current": "string — Archive MD 中的当前描述",
+        "proposed": "string — 建议修正为的描述",
+        "evidence": "string — 修正依据（源码路由配置 / DOM snapshot 等）"
+      }
+    ]
+  },
+
+  "backend_bug_json": {
+    "_description": "backend-bug-agent 输出：后端 Bug 结构化报告数据（用于渲染 HTML 报告）",
+    "title": "string — 报告标题（一句话概括 Bug）",
+    "analysis_time": "string — 分析时间（YYYY-MM-DD HH:mm）",
+    "problem_type": "string — 代码问题/环境问题/混合",
+    "severity": "string — 严重/一般/低",
+    "severityClass": "string — critical/major/normal/low",
+    "summary": "string — 根因概述（不超过80字）",
+    "request_info": {
+      "method": "string | null — HTTP 方法",
+      "url": "string | null — 请求 URL",
+      "params": "string | null — 关键参数摘要",
+      "status_code": "number | null — 响应状态码",
+      "response_preview": "string | null — 响应体前200字"
+    },
+    "stack_trace": {
+      "exception_type": "string | null — 异常类型（如 java.lang.NullPointerException）",
+      "exception_message": "string | null — 异常消息",
+      "entry_frame": "string | null — 业务代码入口帧",
+      "root_cause_frame": "string | null — 根因帧",
+      "caused_by_chain": "string[] | null — Caused by 链"
+    },
+    "code_location": {
+      "file": "string | null — 相对文件路径",
+      "line": "number | null — 行号",
+      "snippet": "string | null — 相关代码片段",
+      "analysis": "string | null — 代码问题描述"
+    },
+    "root_cause": "string — 根因详细描述（2-5句话）",
+    "fix_suggestions": [
+      {
+        "priority": "number — 建议优先级（从1开始）",
+        "location": "string — 在哪里改",
+        "action": "string — 改什么",
+        "reason": "string — 为什么"
+      }
+    ],
+    "environment": {
+      "java_version": "string | null",
+      "framework": "string | null",
+      "deploy_env": "string | null"
+    }
+  },
+
+  "frontend_bug_json": {
+    "_description": "frontend-bug-agent 输出：前端 Bug 结构化报告数据（用于渲染 HTML 报告）",
+    "title": "string — 报告标题",
+    "analysis_time": "string — 分析时间（YYYY-MM-DD HH:mm）",
+    "problem_type": "string — 代码问题/环境问题/混合",
+    "severity": "string — 严重/一般/低",
+    "summary": "string — 根因概述（不超过80字）",
+    "error_type": "string — TypeError/ReferenceError/ChunkLoadError/React error/Vue warn/NetworkError/Other",
+    "error_message": "string — 原始报错消息",
+    "error_location": {
+      "file": "string | null — 报错文件路径",
+      "line": "number | null — 行号",
+      "column": "number | null — 列号",
+      "component_stack": "string | null — 组件调用链（React/Vue 特有）"
+    },
+    "layer_analysis": {
+      "component_layer": "string | null — 组件层分析结论",
+      "data_layer": "string | null — 数据层分析结论",
+      "environment_layer": "string | null — 环境层分析结论",
+      "framework_layer": "string | null — 框架层分析结论"
+    },
+    "code_location": {
+      "file": "string | null — 相对文件路径",
+      "line": "number | null — 行号",
+      "snippet": "string | null — 相关代码片段",
+      "analysis": "string | null — 代码问题描述"
+    },
+    "affected_pages": "string[] | null — 受影响的页面路径列表",
+    "root_cause": "string — 根因详细描述",
+    "fix_suggestions": [
+      {
+        "priority": "number — 建议优先级（从1开始）",
+        "location": "string — 在哪里改",
+        "action": "string — 改什么",
+        "reason": "string — 为什么"
+      }
+    ]
+  },
+
+  "conflict_json": {
+    "_description": "conflict-agent 输出：git 合并冲突结构化报告数据（用于渲染 HTML 报告）",
+    "title": "string — 报告标题（如：feature/xxx 合入 main 冲突分析）",
+    "analysis_time": "string — 分析时间（YYYY-MM-DD HH:mm）",
+    "branches": {
+      "head": "string | null — 当前分支名",
+      "incoming": "string | null — 合入分支名"
+    },
+    "summary": {
+      "total_conflicts": "number — 冲突总数",
+      "auto_resolvable": "number — 可自动解决的冲突数",
+      "manual_required": "number — 需人工决策的冲突数",
+      "files_affected": "string[] — 涉及的文件路径列表"
+    },
+    "conflicts": [
+      {
+        "id": "number — 冲突编号",
+        "file": "string — 冲突文件路径",
+        "line_range": "string | null — 冲突行范围（如 100-120）",
+        "type": "string — 逻辑冲突/格式冲突/依赖冲突",
+        "resolution": "string — auto/manual",
+        "head_intent": "string — HEAD 侧改动意图",
+        "incoming_intent": "string — 合入侧改动意图",
+        "suggestion": "string — 合并建议文字描述",
+        "merged_code": "string | null — 合并后代码（auto 类型时提供）",
+        "decision_basis": "string | null — 人工决策依据（manual 类型时提供）",
+        "recommended_side": "string | null — head/incoming/merge/null"
+      }
+    ],
+    "manual_decision_list": [
+      {
+        "conflict_id": "number — 关联的冲突编号",
+        "file": "string — 文件路径",
+        "description": "string — 需要决策的内容描述",
+        "options": "string[] — 可选方案列表",
+        "recommended": "string | null — 推荐选项（若有）"
+      }
+    ]
+  }
+}
