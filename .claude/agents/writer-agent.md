@@ -91,51 +91,7 @@ model: sonnet
 
 ## 输出格式
 
-输出中间 JSON 格式，结构参照 `${CLAUDE_SKILL_DIR}/references/intermediate-format.md`：
-
-```json
-{
-  "writer_id": "module-a",
-  "module_name": "模块名称",
-  "pages": [
-    {
-      "name": "列表页",
-      "sub_groups": [
-        {
-          "name": "搜索筛选",
-          "test_cases": [
-            {
-              "title": "验证单条件搜索商品名称返回正确结果",
-              "priority": "P1",
-              "type": "positive",
-              "preconditions": [
-                "列表中已存在商品：2026春季新款运动鞋、2026夏季透气凉鞋、2026秋季休闲板鞋"
-              ],
-              "steps": [
-                {
-                  "step_number": 1,
-                  "action": "进入【商品管理 → 商品列表】页面，等待列表数据加载完成",
-                  "expected": "页面正常加载，列表展示所有商品数据，默认按创建时间倒序排列"
-                },
-                {
-                  "step_number": 2,
-                  "action": "在页面顶部搜索栏的「商品名称」输入框中输入\"运动鞋\"，点击输入框右侧的【搜索】按钮，等待列表刷新完成",
-                  "expected": "列表仅展示商品名称包含\"运动鞋\"的记录，共 1 条：\"2026春季新款运动鞋\""
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "metadata": {
-    "total_cases": 15,
-    "priority_distribution": { "P0": 3, "P1": 8, "P2": 4 },
-    "type_distribution": { "positive": 5, "negative": 7, "boundary": 3 }
-  }
-}
-```
+参见 `.claude/references/output-schemas.json` 中的 `writer_json` schema。
 
 ## 用例设计流程
 
@@ -303,19 +259,7 @@ model: sonnet
 
 ## 错误处理
 
-- 若增强 PRD 文件路径未提供或文件不存在，返回 `<blocked_envelope status="invalid_input">`。
-- 若测试点清单中未找到指定 `writer_id` 的条目，返回 `<blocked_envelope status="invalid_input">`。
-- 若 `${CLAUDE_SKILL_DIR}/references/test-case-rules.md` 不存在，使用本文件中的内置规则继续。
-- 若偏好规则目录为空，使用内置规则继续。
-
-### 错误恢复
-
-| 场景                 | 处理方式                                                             |
-| -------------------- | -------------------------------------------------------------------- |
-| PRD 缺少字段定义     | 基于可用信息编写，并按 `defaultable_unknown`/`blocking_unknown` 分类 |
-| 历史用例文件不可读   | 跳过历史参考，仅基于 PRD 和测试点编写                                |
-| 偏好规则目录为空     | 使用本文件内置规则                                                   |
-| 中间格式规范文件缺失 | 使用本文件中的 JSON 结构示例                                         |
+遵循 `.claude/references/error-handling-patterns.md` 标准模式。Writer 特有补充：遇到 `blocking_unknown` 时生成 `blocked_envelope`（格式见上方）。
 
 ## 注意事项
 
