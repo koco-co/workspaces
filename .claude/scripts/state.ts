@@ -17,6 +17,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { basename, dirname } from "node:path";
@@ -36,6 +37,8 @@ interface QaState {
   writers: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  cached_parse_result?: unknown;
+  source_mtime?: string;
 }
 
 function stateFilePath(project: string, prdSlug: string): string {
@@ -221,7 +224,22 @@ program
       process.exit(1);
     }
 
-    process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
+    // If source_mtime is set, compare with actual PRD file mtime.
+    // If different, the PRD has changed — clear cached_parse_result.
+    let resolved: QaState = state;
+    if (state.source_mtime && state.prd) {
+      try {
+        const actualMtime = statSync(state.prd).mtime.toISOString();
+        if (actualMtime !== state.source_mtime) {
+          resolved = { ...state, cached_parse_result: undefined };
+          writeState(opts.project, opts.prdSlug, resolved);
+        }
+      } catch {
+        // PRD file not accessible — leave cache as-is
+      }
+    }
+
+    process.stdout.write(`${JSON.stringify(resolved, null, 2)}\n`);
   });
 
 // ── clean ─────────────────────────────────────────────────────────────────────

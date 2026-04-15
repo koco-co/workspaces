@@ -10,7 +10,7 @@
  *   bun run .claude/scripts/ui-autotest-progress.ts reset --project dataAssets --suite "套件名"
  */
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { Command } from "commander";
 import { initEnv } from "./lib/env.ts";
@@ -44,6 +44,8 @@ interface Progress {
   readonly preconditions_ready: boolean;
   readonly cases: Readonly<Record<string, CaseState>>;
   readonly merge_status: MergeStatus;
+  readonly cached_parse_result?: unknown;
+  readonly source_mtime?: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -360,8 +362,22 @@ program
       process.exit(1);
     }
 
+    // If source_mtime is set, compare with actual archive file mtime.
+    // If different, the archive has changed — clear cached_parse_result.
+    let baseProgress: Progress = progress;
+    if (progress.source_mtime && progress.archive_md) {
+      try {
+        const actualMtime = statSync(progress.archive_md).mtime.toISOString();
+        if (actualMtime !== progress.source_mtime) {
+          baseProgress = { ...progress, cached_parse_result: undefined };
+        }
+      } catch {
+        // Archive file not accessible — leave cache as-is
+      }
+    }
+
     const sanitizedCases: Record<string, CaseState> = Object.fromEntries(
-      Object.entries(progress.cases).map(([id, c]) => {
+      Object.entries(baseProgress.cases).map(([id, c]) => {
         let updated: CaseState = c;
 
         // 1. Reset running → pending
@@ -388,7 +404,7 @@ program
     );
 
     const sanitized: Progress = {
-      ...progress,
+      ...baseProgress,
       cases: sanitizedCases,
       updated_at: nowIso(),
     };

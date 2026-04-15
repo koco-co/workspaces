@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -504,5 +504,119 @@ describe("resume", () => {
       "resume", "--project", "dataAssets", "--suite", "nonexistent-resume-suite",
     ]);
     assert.equal(code, 1);
+  });
+});
+
+// ── cached_parse_result and source_mtime ──────────────────────────────────────
+
+describe("cached_parse_result and source_mtime", () => {
+  it("update top-level field source_mtime is stored and returned by read", () => {
+    createTestSuite("cache-mtime-store-suite");
+    const { stdout, code } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "cache-mtime-store-suite",
+      "--field", "source_mtime",
+      "--value", "2024-06-01T00:00:00.000Z",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.equal(progress.source_mtime, "2024-06-01T00:00:00.000Z");
+  });
+
+  it("resume clears cached_parse_result when source_mtime differs from archive file mtime", () => {
+    // Create a real archive file so statSync works
+    const archiveDir = join(TMP_DIR, "workspace", "dataAssets", "archive");
+    mkdirSync(archiveDir, { recursive: true });
+    const archivePath = join(archiveDir, "test-cache-clear.md");
+    writeFileSync(archivePath, "# Archive\n", "utf8");
+
+    run([
+      "create",
+      "--project", "dataAssets",
+      "--suite", "cache-clear-suite",
+      "--archive", archivePath,
+      "--url", "http://localhost",
+      "--priorities", "P0",
+      "--output-dir", "tests/",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    // Set a stale source_mtime (different from actual file mtime)
+    run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "cache-clear-suite",
+      "--field", "source_mtime",
+      "--value", "2000-01-01T00:00:00.000Z",
+    ]);
+
+    // Touch the archive file to get a newer mtime (ensure mismatch)
+    const newTime = new Date(Date.now() + 5000);
+    utimesSync(archivePath, newTime, newTime);
+
+    // Resume should detect mtime mismatch and clear cached_parse_result
+    const { stdout, code } = run([
+      "resume",
+      "--project", "dataAssets",
+      "--suite", "cache-clear-suite",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    // cached_parse_result should be cleared (undefined/absent)
+    assert.equal(progress.cached_parse_result, undefined);
+  });
+
+  it("resume preserves cached_parse_result when source_mtime matches archive file mtime", () => {
+    // Create a real archive file
+    const archiveDir = join(TMP_DIR, "workspace", "dataAssets", "archive");
+    mkdirSync(archiveDir, { recursive: true });
+    const archivePath = join(archiveDir, "test-cache-preserve.md");
+    writeFileSync(archivePath, "# Archive\n", "utf8");
+
+    // Capture the actual mtime
+    const { statSync: nodeStat } = require("node:fs");
+    const { mtime } = nodeStat(archivePath);
+    const actualMtime = mtime.toISOString();
+
+    run([
+      "create",
+      "--project", "dataAssets",
+      "--suite", "cache-preserve-suite",
+      "--archive", archivePath,
+      "--url", "http://localhost",
+      "--priorities", "P0",
+      "--output-dir", "tests/",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    // Set source_mtime to match the actual file mtime, and set cached_parse_result
+    run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "cache-preserve-suite",
+      "--field", "source_mtime",
+      "--value", actualMtime,
+    ]);
+
+    // Directly write cached_parse_result by reading and rewriting the file
+    const progressFilePath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      "ui-autotest-progress-cache-preserve-suite.json",
+    );
+    const existing = JSON.parse(require("node:fs").readFileSync(progressFilePath, "utf8"));
+    const withCache = { ...existing, cached_parse_result: { tasks: ["t1"] } };
+    writeFileSync(progressFilePath, `${JSON.stringify(withCache, null, 2)}\n`, "utf8");
+
+    // Resume should see matching mtime and preserve cached_parse_result
+    const { stdout, code } = run([
+      "resume",
+      "--project", "dataAssets",
+      "--suite", "cache-preserve-suite",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    // cached_parse_result should still be present
+    assert.deepEqual(progress.cached_parse_result, { tasks: ["t1"] });
   });
 });
