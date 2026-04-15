@@ -43,11 +43,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
           ruleStrength: "强规则",
         });
 
-        await expect(page.getByText("test_db.quality_test_num", { exact: false })).toBeVisible({
-          timeout: 5000,
-        });
+        await expect(ruleForm).toContainText("score");
       },
-      page.getByText("仅取值范围包"),
+      page.locator(".ruleSetMonitor__package").filter({ hasText: "仅取值范围包" }).first(),
     );
 
     await step(

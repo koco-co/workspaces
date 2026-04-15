@@ -49,7 +49,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         expect(enumOptions).toContain("in");
         expect(enumOptions).toContain("not in");
       },
-      page.getByText("原枚举值包"),
+      page.locator(".ruleSetMonitor__package").filter({ hasText: "原枚举值包" }).first(),
     );
 
     await step(

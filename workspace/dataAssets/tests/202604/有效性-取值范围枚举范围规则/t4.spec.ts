@@ -47,11 +47,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         expect(enumOptions).toContain("in");
         expect(enumOptions).toContain("not in");
 
-        await expect(page.getByText("test_db.quality_test_num", { exact: false })).toBeVisible({
-          timeout: 5000,
-        });
+        await expect(ruleForm).toContainText("category");
       },
-      page.getByText("仅枚举值包"),
+      page.locator(".ruleSetMonitor__package").filter({ hasText: "仅枚举值包" }).first(),
     );
 
     await step(

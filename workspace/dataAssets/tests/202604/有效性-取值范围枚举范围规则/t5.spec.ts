@@ -43,11 +43,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         });
 
         await expect(functionRow.locator(".ant-select").nth(3)).toContainText("not in");
-        await expect(page.getByText("test_db.quality_test_num", { exact: false })).toBeVisible({
-          timeout: 5000,
-        });
+        await expect(ruleForm).toContainText("category");
       },
-      page.getByText("notin校验包"),
+      page.locator(".ruleSetMonitor__package").filter({ hasText: "notin校验包" }).first(),
     );
 
     await step(
