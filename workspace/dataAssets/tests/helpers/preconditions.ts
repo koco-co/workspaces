@@ -9,7 +9,7 @@ export type {
   MetaFlowResult,
   PreconditionOptions,
   PreconditionResult,
-} from "../../../plugins/assets-sql-sync/src/index";
+} from "../../../../plugins/assets-sql-sync/src/index";
 export {
   AssetsApi,
   BatchApi,
@@ -19,4 +19,4 @@ export {
   extractCookieFromPage,
   metaFlow,
   setupPreconditions,
-} from "../../../plugins/assets-sql-sync/src/index";
+} from "../../../../plugins/assets-sql-sync/src/index";

@@ -1,0 +1,76 @@
+// META: {"id":"t21","priority":"P1","title":"验证规则库中新增取值范围&枚举范围内置规则展示正确"}
+import { test, expect } from "../../fixtures/step-screenshot";
+import { applyRuntimeCookies, buildDataAssetsUrl } from "../../helpers/test-setup";
+
+test.use({ storageState: ".auth/session.json" });
+
+test.describe(
+  "【内置规则丰富】有效性，支持设置字段多规则的且或关系(#15695) - 规则库配置",
+  () => {
+    test(
+      "验证规则库中新增取值范围&枚举范围内置规则展示正确",
+      async ({ page, step }) => {
+        // 步骤1：进入规则库配置页面
+        await step(
+          "步骤1: 进入【数据质量 → 规则库配置】页面 → 规则库配置页面打开，列表显示规则数据",
+          async () => {
+            await applyRuntimeCookies(page);
+            await page.goto(buildDataAssetsUrl("/dq/ruleBase"));
+            await page.waitForLoadState("networkidle");
+            await expect(page.locator(".ant-table-row").first()).toBeVisible({
+              timeout: 15000,
+            });
+          },
+        );
+
+        // 步骤2：确认在内置规则 Tab 下，使用搜索定位目标规则
+        await step(
+          "步骤2: 确认【内置规则】Tab 激活，搜索取值范围&枚举范围 → 列表筛选完成",
+          async () => {
+            // 确认内置规则 Tab 激活
+            const builtinTab = page.getByRole("tab", { name: "内置规则" });
+            await expect(builtinTab).toHaveAttribute("aria-selected", "true");
+
+            // 使用搜索框快速定位
+            const searchBox = page.getByPlaceholder("请输入规则名称进行搜索");
+            await searchBox.fill("取值范围");
+            await page.getByRole("button", { name: "search" }).click();
+            await page.waitForLoadState("networkidle");
+            await page.waitForTimeout(500);
+          },
+        );
+
+        // 步骤3：查找【取值范围&枚举范围】规则条目并验证
+        const ruleRow = page
+          .locator(".ant-table-row")
+          .filter({ hasText: "取值范围&枚举范围" })
+          .first();
+
+        await step(
+          "步骤3: 验证【取值范围&枚举范围】规则各列内容正确 → 规则解释/分类/关联范围/描述均正确",
+          async () => {
+            await expect(ruleRow).toBeVisible({ timeout: 10000 });
+            await expect(ruleRow).toContainText("取值范围和枚举范围的联合校验");
+            await expect(ruleRow).toContainText("有效性校验");
+            await expect(ruleRow).toContainText("字段");
+            await expect(ruleRow).toContainText(
+              "校验字段值取值范围和枚举范围是否符合要求，支持配置规则且或关系",
+            );
+          },
+          ruleRow,
+        );
+
+        // 步骤4：导出规则库
+        await step(
+          "步骤4: 导出规则库 → 文件下载成功",
+          async () => {
+            const downloadPromise = page.waitForEvent("download", { timeout: 15000 });
+            await page.getByRole("button", { name: "导出规则库" }).click();
+            const download = await downloadPromise;
+            expect(download.suggestedFilename()).toMatch(/.+/);
+          },
+        );
+      },
+    );
+  },
+);
