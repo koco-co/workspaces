@@ -30,7 +30,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤2: 找到 ruleset_15695_notin 点击编辑，新增规则配置枚举值 not in 4,5 → Step2 打开，枚举值操作符支持 in/not in 切换，当前显示 not in",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_notin", ["notin校验包"]);
-        await expect(page.getByText("notin校验包")).toBeVisible({ timeout: 10000 });
+        await expect(
+          page.locator(".ruleSetMonitor__package").filter({ hasText: "notin校验包" }).first(),
+        ).toBeVisible({ timeout: 10000 });
 
         const ruleForm = await addRuleToPackage(page, "notin校验包");
         const functionRow = await configureRangeEnumRule(page, ruleForm, {

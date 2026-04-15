@@ -29,7 +29,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤2: 找到 ruleset_15695_or 点击编辑，新增规则并配置或关系 → Step2 打开，规则包显示或关系校验包",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_or", ["或关系校验包"]);
-        await expect(page.getByText("或关系校验包")).toBeVisible({ timeout: 10000 });
+        await expect(
+          page.locator(".ruleSetMonitor__package").filter({ hasText: "或关系校验包" }).first(),
+        ).toBeVisible({ timeout: 10000 });
 
         const ruleForm = await addRuleToPackage(page, "或关系校验包");
         await configureRangeEnumRule(page, ruleForm, {

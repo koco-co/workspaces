@@ -30,7 +30,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤2: 找到 ruleset_15695_enum 点击编辑，新增规则仅填写枚举值 in 1,2,3 → Step2 打开，枚举值操作符默认回显 in，展开可见 in 和 not in",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_enum", ["仅枚举值包"]);
-        await expect(page.getByText("仅枚举值包")).toBeVisible({ timeout: 10000 });
+        await expect(
+          page.locator(".ruleSetMonitor__package").filter({ hasText: "仅枚举值包" }).first(),
+        ).toBeVisible({ timeout: 10000 });
 
         const ruleForm = await addRuleToPackage(page, "仅枚举值包");
         const functionRow = await configureRangeEnumRule(page, ruleForm, {

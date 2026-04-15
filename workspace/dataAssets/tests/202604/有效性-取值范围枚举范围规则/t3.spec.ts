@@ -29,7 +29,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤2: 找到 ruleset_15695_range 点击编辑，新增规则仅填写取值范围 >= 0 → Step2 打开，规则包显示仅取值范围包",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_range", ["仅取值范围包"]);
-        await expect(page.getByText("仅取值范围包")).toBeVisible({ timeout: 10000 });
+        await expect(
+          page.locator(".ruleSetMonitor__package").filter({ hasText: "仅取值范围包" }).first(),
+        ).toBeVisible({ timeout: 10000 });
 
         const ruleForm = await addRuleToPackage(page, "仅取值范围包");
         await configureRangeEnumRule(page, ruleForm, {

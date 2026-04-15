@@ -35,7 +35,9 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
       "步骤2: 找到 ruleset_15695_enum_orig 点击编辑，新增规则选择原有枚举值规则类型，查看下拉框选项 → 枚举值设置下拉框包含 in 和 not in，默认显示 in",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_enum_orig", ["原枚举值包"]);
-        await expect(page.getByText("原枚举值包")).toBeVisible({ timeout: 10000 });
+        await expect(
+          page.locator(".ruleSetMonitor__package").filter({ hasText: "原枚举值包" }).first(),
+        ).toBeVisible({ timeout: 10000 });
 
         const ruleForm = await addRuleToPackage(page, "原枚举值包");
         functionRow = await selectRuleFieldAndFunction(page, ruleForm, "category", "枚举值");
