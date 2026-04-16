@@ -73,7 +73,7 @@ export function readCodeBlocks(inputDir: string): CodeBlock[] {
 
   const files = readdirSync(inputDir)
     .filter((f) => f.endsWith(".ts"))
-    .sort();
+    .sort((left, right) => left.localeCompare(right, "en", { numeric: true }));
 
   const blocks: CodeBlock[] = [];
 
@@ -97,37 +97,23 @@ export function readCodeBlocks(inputDir: string): CodeBlock[] {
 
 /**
  * 生成合并后的 spec 文件内容。
- * 将多个独立的 test 块合并，去除重复 import。
+ * 对于已成型的独立 spec，生成聚合入口文件并按顺序 side-effect import。
+ * 这样可保留各文件自己的 helper import、顶层常量和 beforeAll，而不发生合并冲突。
  */
 export function buildSpecContent(blocks: CodeBlock[], label: string): string {
-  if (blocks.length === 0) {
-    return `// ${label} — 无用例\nimport { test } from '../../fixtures/step-screenshot';\n`;
-  }
-
   const header = [
     `// ${label}`,
     `// 生成时间：${new Date().toISOString()}`,
     `// 用例数量：${blocks.length}`,
     "",
-    "import { test, expect } from '../../fixtures/step-screenshot';",
-    "",
   ].join("\n");
 
-  // 从每个代码块中提取 test.describe 块（去掉 import 行和 META 注释）
-  const testBlocks = blocks.map((block) => {
-    const lines = block.code.split("\n");
-    const filtered = lines.filter(
-      (line) =>
-        !line.startsWith("// META:") &&
-        !line.startsWith("import ") &&
-        line !== "",
-    );
+  if (blocks.length === 0) {
+    return `${header}export {};\n`;
+  }
 
-    // 确保块之间有空行分隔
-    return filtered.join("\n").trim();
-  });
-
-  return header + testBlocks.join("\n\n") + "\n";
+  const importLines = blocks.map((block) => `import "./${block.fileName}";`);
+  return `${header}${importLines.join("\n")}\n`;
 }
 
 /**

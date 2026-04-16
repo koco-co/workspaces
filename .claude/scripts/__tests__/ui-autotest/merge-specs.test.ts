@@ -57,6 +57,22 @@ test.describe('质量问题台账 - 列表页', () => {
 });
 `;
 
+const BLOCK_WITH_HELPER_IMPORT = `// META: {"id":"t10","priority":"P1","title":"【P1】验证带 helper 依赖的独立 spec"}
+import { test, expect } from '../../fixtures/step-screenshot';
+import { saveRuleSet } from './rule-editor-helpers';
+
+const SUITE_NAME = '规则集';
+
+test.use({ storageState: '.auth/session.json' });
+
+test.describe(SUITE_NAME, () => {
+  test('【P1】验证带 helper 依赖的独立 spec', async ({ page }) => {
+    await saveRuleSet(page);
+    await expect(page.locator('body')).toBeVisible();
+  });
+});
+`;
+
 const BLOCK_INVALID = `// 无 META 注释的代码块
 import { test } from '@playwright/test';
 
@@ -136,25 +152,23 @@ describe("buildSpecContent", () => {
   it("空 blocks 时生成占位内容", () => {
     const content = buildSpecContent([], "冒烟测试");
     assert.ok(content.includes("冒烟测试"), "应包含标签");
-    assert.ok(content.includes("import"), "应包含 import 语句");
+    assert.ok(content.includes("export {};"), "空文件应导出空模块");
   });
 
-  it("生成内容包含所有 test.describe 块", () => {
+  it("生成内容按顺序聚合导入所有独立 spec", () => {
     const blocksDir = join(TMP_DIR, "build-spec-test");
     mkdirSync(blocksDir, { recursive: true });
-    writeFileSync(join(blocksDir, "t1.ts"), BLOCK_P0, "utf-8");
-    writeFileSync(join(blocksDir, "t2.ts"), BLOCK_P1, "utf-8");
+    writeFileSync(join(blocksDir, "t10.spec.ts"), BLOCK_WITH_HELPER_IMPORT, "utf-8");
+    writeFileSync(join(blocksDir, "t2.spec.ts"), BLOCK_P1, "utf-8");
 
     const blocks = readCodeBlocks(blocksDir);
     const content = buildSpecContent(blocks, "完整测试");
 
-    // 去除重复 import
     const importCount = (content.match(/^import /gm) ?? []).length;
-    assert.equal(importCount, 1, "应只有一个 import 语句");
-
-    // 包含两个 test.describe
-    const describeCount = (content.match(/test\.describe\(/g) ?? []).length;
-    assert.equal(describeCount, 2, "应包含两个 test.describe 块");
+    assert.equal(importCount, 2, "应为每个独立 spec 生成一个聚合 import");
+    assert.match(content, /import "\.\/t2\.spec";\nimport "\.\/t10\.spec";/, "应按自然顺序导入");
+    assert.ok(!content.includes("rule-editor-helpers"), "聚合文件不应内联 helper import");
+    assert.ok(!content.includes("test.describe("), "聚合文件不应内联测试实现");
   });
 });
 
@@ -184,14 +198,14 @@ describe("mergeSpecs", () => {
     const outputDir = join(TMP_DIR, "merge-smoke-output");
     mkdirSync(blocksDir, { recursive: true });
 
-    writeFileSync(join(blocksDir, "t1.ts"), BLOCK_P0, "utf-8");
-    writeFileSync(join(blocksDir, "t2.ts"), BLOCK_P1, "utf-8");
+    writeFileSync(join(blocksDir, "t1.spec.ts"), BLOCK_P0, "utf-8");
+    writeFileSync(join(blocksDir, "t2.spec.ts"), BLOCK_P1, "utf-8");
 
     const result = mergeSpecs(blocksDir, outputDir);
 
     const smokeContent = readFileSync(result.smoke_spec, "utf-8");
-    assert.ok(smokeContent.includes("验证列表页默认加载"), "smoke spec 应包含 P0 用例");
-    assert.ok(!smokeContent.includes("验证筛选功能"), "smoke spec 不应包含 P1 用例");
+    assert.ok(smokeContent.includes('import "./t1.spec";'), "smoke spec 应包含 P0 聚合 import");
+    assert.ok(!smokeContent.includes('import "./t2.spec";'), "smoke spec 不应包含 P1 聚合 import");
   });
 
   it("full.spec.ts 包含所有优先级用例", () => {
@@ -199,16 +213,16 @@ describe("mergeSpecs", () => {
     const outputDir = join(TMP_DIR, "merge-full-output");
     mkdirSync(blocksDir, { recursive: true });
 
-    writeFileSync(join(blocksDir, "t1.ts"), BLOCK_P0, "utf-8");
-    writeFileSync(join(blocksDir, "t2.ts"), BLOCK_P1, "utf-8");
-    writeFileSync(join(blocksDir, "t3.ts"), BLOCK_P2, "utf-8");
+    writeFileSync(join(blocksDir, "t1.spec.ts"), BLOCK_P0, "utf-8");
+    writeFileSync(join(blocksDir, "t2.spec.ts"), BLOCK_P1, "utf-8");
+    writeFileSync(join(blocksDir, "t3.spec.ts"), BLOCK_P2, "utf-8");
 
     const result = mergeSpecs(blocksDir, outputDir);
 
     const fullContent = readFileSync(result.full_spec, "utf-8");
-    assert.ok(fullContent.includes("验证列表页默认加载"), "应包含 P0 用例");
-    assert.ok(fullContent.includes("验证筛选功能"), "应包含 P1 用例");
-    assert.ok(fullContent.includes("验证分页功能"), "应包含 P2 用例");
+    assert.ok(fullContent.includes('import "./t1.spec";'), "应包含 P0 import");
+    assert.ok(fullContent.includes('import "./t2.spec";'), "应包含 P1 import");
+    assert.ok(fullContent.includes('import "./t3.spec";'), "应包含 P2 import");
   });
 
   it("输出目录不存在时自动创建", () => {

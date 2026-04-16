@@ -45,13 +45,17 @@ export async function clickHeaderButton(
   await page.getByRole("button", { name: exactPattern }).click();
 }
 
-/** 等待弹窗出现并返回 locator */
+/** 等待弹窗出现（动画结束后）并返回 locator */
 export async function waitModal(
   page: Page,
   titleText?: string,
 ): Promise<Locator> {
+  // 等动画完成（ant-zoom-appear 消失）再操作，避免动画期间点击无效
+  await page.locator(".ant-modal:not(.ant-zoom-appear)").waitFor({
+    state: "visible",
+    timeout: 10000,
+  });
   const modal = page.locator(".ant-modal:visible").last();
-  await modal.waitFor({ state: "visible", timeout: 10000 });
   if (titleText) {
     await expect(
       modal.locator(".ant-modal-title"),

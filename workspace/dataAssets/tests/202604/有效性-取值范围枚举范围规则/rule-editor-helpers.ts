@@ -225,6 +225,15 @@ export async function gotoRuleSetList(page: Page): Promise<void> {
   await page.reload();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
+  await dismissIntroDialog(page);
+}
+
+async function dismissIntroDialog(page: Page): Promise<void> {
+  const knowBtn = page.getByRole("button", { name: "知道了" });
+  if (await knowBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await knowBtn.click();
+    await page.waitForTimeout(500);
+  }
 }
 
 async function gotoRuleSetCreate(page: Page): Promise<void> {
@@ -236,6 +245,7 @@ async function gotoRuleSetCreate(page: Page): Promise<void> {
   await page.reload();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1000);
+  await dismissIntroDialog(page);
 }
 
 async function ensurePackageNamesInBaseInfo(

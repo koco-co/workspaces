@@ -138,8 +138,8 @@ interface QualityProjectResult {
 }
 
 // ── 质量项目 ID（环境中已配置 tongmeng_doris3 Doris3.x 数据源的项目）──
-export const QUALITY_PROJECT_ID = 35;
-export const QUALITY_PROJECT_NAME = "Story_15695";
+export const QUALITY_PROJECT_ID = 87;
+export const QUALITY_PROJECT_NAME = "pw_test";
 
 // ── 数据源和数据库配置 ──
 export const DORIS_DATASOURCE_KEYWORD = "doris"; // 数据源下拉框匹配关键字
