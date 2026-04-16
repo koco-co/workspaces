@@ -163,7 +163,7 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 ### 步骤 S1: 解析源文件
 
 ```bash
-bun run .claude/scripts/history-convert.ts --path {{input_file}} --detect
+bun run .claude/scripts/history-convert.ts --path {{input_file}} --project {{project}} --detect
 ```
 
 展示解析结果后，使用 AskUserQuestion 工具向用户确认：
@@ -263,7 +263,7 @@ bun run .claude/scripts/plugin-loader.ts notify --event archive-converted --data
 ### RS2: 解析 XMind 文件
 
 ```bash
-bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --detect
+bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --project {{project}} --project {{project}} --detect
 ```
 
 展示解析结果，并使用 AskUserQuestion 确认：
@@ -284,7 +284,7 @@ bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --detect
 ### RS4: 执行转换
 
 ```bash
-bun run .claude/scripts/history-convert.ts --path {{xmind_file}}
+bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --project {{project}}
 ```
 
 转换完成后，将生成的 Archive MD 覆盖写入目标路径（或写入 tmp/ 供预览）。

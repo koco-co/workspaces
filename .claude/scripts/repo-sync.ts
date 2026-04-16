@@ -58,7 +58,15 @@ program
   )
   .action((opts: { url?: string; branch?: string; project?: string; baseDir?: string }) => {
     const { url, branch } = opts;
-    const baseDir = opts.baseDir ?? (opts.project ? `workspace/${opts.project}/.repos` : "workspace/.repos");
+    if (!opts.baseDir && !opts.project) {
+      const out: ErrorOutput = {
+        error: "--project is required (or use --base-dir to override)",
+        step: "validate-args",
+      };
+      process.stderr.write(`${JSON.stringify(out, null, 2)}\n`);
+      process.exit(1);
+    }
+    const baseDir = opts.baseDir ?? `workspace/${opts.project}/.repos`;
 
     if (!url || !branch) {
       const out: ErrorOutput = {

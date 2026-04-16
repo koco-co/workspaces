@@ -3,7 +3,7 @@
  * history-convert.ts — Convert historical CSV/XMind files to Archive Markdown.
  *
  * Usage:
- *   bun run .claude/scripts/history-convert.ts --path <file-or-dir> [--module <key>] [--detect] [--force] [--no-split]
+ *   bun run .claude/scripts/history-convert.ts --path <file-or-dir> --project <name> [--module <key>] [--detect] [--force] [--no-split]
  *   bun run .claude/scripts/history-convert.ts --help
  */
 
@@ -1214,11 +1214,10 @@ function scanDirectory(dir: string, moduleFilter?: string): string[] {
   }
 }
 
-function computeOutputDir(): string {
+function computeOutputDir(project: string): string {
   const root = repoRoot();
   const yyyymm = currentYYYYMM();
-  const wsDir = getEnv("WORKSPACE_DIR") ?? "workspace";
-  return join(root, wsDir, "archive", yyyymm);
+  return join(root, "workspace", project, "archive", yyyymm);
 }
 
 /** Extract case_id from L1 title like "xxx(#10305)" → "10305", and the clean name without the ticket token */
@@ -1274,11 +1273,12 @@ function buildUniqueOutputPath(
 async function convertFile(
   inputPath: string,
   force: boolean,
+  project: string,
   prdVersion?: string,
   noSplit?: boolean,
 ): Promise<FileConvertResult[]> {
   const ext = extname(inputPath).toLowerCase();
-  const outDir = computeOutputDir();
+  const outDir = computeOutputDir(project);
 
   try {
     const { mkdirSync: mkdir } = await import("node:fs");
@@ -1305,6 +1305,7 @@ async function convertFile(
         const archiveDir = join(
           repoRoot(),
           "workspace",
+          project,
           "archive",
           archive.archiveYYYYMM,
         );
@@ -1434,6 +1435,7 @@ const program = new Command("history-convert");
 program
   .description("Convert historical CSV/XMind files to Archive Markdown")
   .requiredOption("--path <file-or-dir>", "File or directory to convert")
+  .requiredOption("--project <name>", "Project name (e.g. dataAssets)")
   .option("--module <key>", "Filter files by module name keyword")
   .option("--version <ver>", "PRD version (e.g. v6.4.8)")
   .option("--detect", "Scan only, report what would be converted (no write)")
@@ -1442,6 +1444,7 @@ program
   .action(
     async (opts: {
       path: string;
+      project: string;
       module?: string;
       version?: string;
       detect?: boolean;
@@ -1472,7 +1475,7 @@ program
         const entries: DetectEntry[] = files.map((f) => ({
           path: f,
           type: extname(f).toLowerCase() === ".csv" ? "csv" : "xmind",
-          outputDir: computeOutputDir(),
+          outputDir: computeOutputDir(opts.project),
         }));
         process.stdout.write(`${JSON.stringify(entries, null, 2)}\n`);
         return;
@@ -1480,7 +1483,7 @@ program
 
       const results: FileConvertResult[] = [];
       for (const f of files) {
-        const fileResults = await convertFile(f, force, prdVersion, noSplit);
+        const fileResults = await convertFile(f, force, opts.project, prdVersion, noSplit);
         results.push(...fileResults);
       }
 

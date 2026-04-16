@@ -4,7 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
-  readdirSync,
+
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -15,15 +15,13 @@ import { after, before, describe, it } from "node:test";
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
 const FIXTURE_CSV = join(import.meta.dirname, "fixtures/sample-history.csv");
 const TMP_DIR = join(tmpdir(), `qa-flow-history-convert-test-${process.pid}`);
+const TEST_PROJECT = "testProject";
 
 /** Compute the archive directory the script writes to (mirrors computeOutputDir in history-convert.ts) */
 function getArchiveDir(): string {
   const yyyymm = new Date().toISOString().slice(0, 7).replace("-", "");
-  return join(REPO_ROOT, "workspace", "archive", yyyymm);
+  return join(REPO_ROOT, "workspace", TEST_PROJECT, "archive", yyyymm);
 }
-
-/** Snapshot file names in the archive directory before tests */
-let archiveFilesBefore: Set<string> = new Set();
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
@@ -49,13 +47,6 @@ function run(args: string[]): { stdout: string; stderr: string; code: number } {
 
 before(() => {
   mkdirSync(TMP_DIR, { recursive: true });
-  // Snapshot existing files in archive dir so we can clean up test-generated ones
-  const archiveDir = getArchiveDir();
-  try {
-    archiveFilesBefore = new Set(readdirSync(archiveDir));
-  } catch {
-    archiveFilesBefore = new Set();
-  }
 });
 
 after(() => {
@@ -64,15 +55,10 @@ after(() => {
   } catch {
     // ignore
   }
-  // Remove files created by tests in the real archive directory
-  const archiveDir = getArchiveDir();
+  // Remove the test project directory created by tests
+  const testProjectDir = join(REPO_ROOT, "workspace", TEST_PROJECT);
   try {
-    const currentFiles = readdirSync(archiveDir);
-    for (const file of currentFiles) {
-      if (!archiveFilesBefore.has(file)) {
-        rmSync(join(archiveDir, file), { recursive: true, force: true });
-      }
-    }
+    rmSync(testProjectDir, { recursive: true, force: true });
   } catch {
     // ignore if directory doesn't exist
   }
@@ -101,7 +87,7 @@ describe("history-convert --detect", () => {
       "module,title,steps,expected,priority\n商品管理,验证列表,进入页面,加载完成,P0",
     );
 
-    const { code, stdout } = run(["--path", dir, "--detect"]);
+    const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT, "--detect"]);
     assert.equal(code, 0);
 
     const entries = JSON.parse(stdout) as {
@@ -121,7 +107,7 @@ describe("history-convert --detect", () => {
 
 describe("history-convert CSV conversion", () => {
   it("converts a CSV file to Archive Markdown", () => {
-    const { code, stdout } = run(["--path", FIXTURE_CSV, "--force"]);
+    const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {
@@ -148,7 +134,7 @@ describe("history-convert CSV conversion", () => {
 
   it("generated Markdown contains module sections and case titles", () => {
     // Run conversion and check content
-    const { code, stdout } = run(["--path", FIXTURE_CSV, "--force"]);
+    const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {
@@ -179,10 +165,10 @@ describe("history-convert CSV conversion", () => {
 
   it("skips existing output without --force", () => {
     // First conversion
-    run(["--path", FIXTURE_CSV, "--force"]);
+    run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
 
     // Second run without --force
-    const { code, stdout } = run(["--path", FIXTURE_CSV]);
+    const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as { skipped: number };
@@ -191,9 +177,9 @@ describe("history-convert CSV conversion", () => {
 
   it("converts with --force overwriting existing output", () => {
     // First conversion
-    run(["--path", FIXTURE_CSV, "--force"]);
+    run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
     // Second conversion with --force
-    const { code, stdout } = run(["--path", FIXTURE_CSV, "--force"]);
+    const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
     const out = JSON.parse(stdout) as { converted: number };
     assert.ok(out.converted >= 1, "should convert again with --force");
@@ -217,7 +203,7 @@ describe("history-convert directory scan", () => {
     // Non-CSV should be ignored
     writeFileSync(join(dir, "notes.txt"), "ignore me");
 
-    const { code, stdout } = run(["--path", dir, "--force"]);
+    const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {
@@ -249,6 +235,8 @@ describe("history-convert --module filter", () => {
     const { code, stdout } = run([
       "--path",
       dir,
+      "--project",
+      TEST_PROJECT,
       "--module",
       "商品",
       "--detect",
@@ -269,6 +257,8 @@ describe("history-convert error handling", () => {
     const { code, stderr } = run([
       "--path",
       "/tmp/non-existent-history-path-xyz",
+      "--project",
+      TEST_PROJECT,
     ]);
     assert.equal(code, 1);
     assert.match(stderr, /path not found|Error/i);
@@ -278,7 +268,7 @@ describe("history-convert error handling", () => {
     const dir = join(TMP_DIR, "shape-test");
     mkdirSync(dir, { recursive: true });
 
-    const { code, stdout } = run(["--path", dir]);
+    const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT]);
     assert.equal(code, 0);
     const out = JSON.parse(stdout) as Record<string, unknown>;
     assert.ok("converted" in out);
@@ -389,6 +379,8 @@ describe("history-convert --no-split XMind", () => {
     const { code, stdout } = run([
       "--path",
       xmindFile,
+      "--project",
+      TEST_PROJECT,
       "--no-split",
       "--force",
     ]);
@@ -421,7 +413,7 @@ describe("history-convert --no-split XMind", () => {
     const xmindFile = join(TMP_DIR, "multi-l1-split.xmind");
     await createTestXmind(xmindFile);
 
-    const { code, stdout } = run(["--path", xmindFile, "--force"]);
+    const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {
@@ -558,7 +550,7 @@ describe("history-convert --no-split XMind", () => {
       await zip.generateAsync({ type: "nodebuffer" }),
     );
 
-    const { code, stdout } = run(["--path", xmindFile, "--force"]);
+    const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {
@@ -640,7 +632,7 @@ describe("history-convert --no-split XMind", () => {
       await zip.generateAsync({ type: "nodebuffer" }),
     );
 
-    const { code, stdout } = run(["--path", xmindFile, "--force"]);
+    const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
     assert.equal(code, 0);
 
     const out = JSON.parse(stdout) as {

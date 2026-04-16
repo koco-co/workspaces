@@ -467,11 +467,15 @@ async function main(): Promise<void> {
         dir?: string;
         limit: string;
       }) => {
+        if (!opts.dir && !opts.project) {
+          process.stderr.write(
+            `Error: --project is required (or use --dir to override)\n`,
+          );
+          process.exit(1);
+        }
         const searchDir =
           opts.dir ??
-          (opts.project
-            ? resolve(repoRoot(), "workspace", opts.project, "archive")
-            : resolve(repoRoot(), "workspace", "archive"));
+          resolve(repoRoot(), "workspace", opts.project!, "archive");
         await runSearch({
           query: opts.query,
           dir: searchDir,
