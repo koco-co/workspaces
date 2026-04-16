@@ -1,6 +1,11 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-import { applyRuntimeCookies, buildDataAssetsUrl, selectAntOption } from "../../helpers/test-setup";
+import {
+  applyRuntimeCookies,
+  buildDataAssetsUrl,
+  confirmAntModal,
+  selectAntOption,
+} from "../../helpers/test-setup";
 import { DORIS_DATABASE, injectProjectContext, QUALITY_PROJECT_ID } from "./test-data";
 
 export interface RangeConfig {
@@ -320,6 +325,7 @@ async function addPackageSlot(page: Page, packageName: string): Promise<void> {
     const deleteBtn = packageSection.locator(".ruleSetMonitor__packageDeleteBtn").first();
     if (await deleteBtn.isVisible().catch(() => false)) {
       await deleteBtn.click();
+      await confirmAntModal(page);
       await page.waitForTimeout(300);
     }
 
@@ -746,6 +752,7 @@ export async function saveRuleSet(page: Page): Promise<void> {
     .locator(".ant-modal-confirm:visible .ant-btn-primary, .ant-modal:visible .ant-btn-primary")
     .filter({ hasText: /保\s*存/ })
     .first();
+  await confirmSaveBtn.waitFor({ state: "visible", timeout: 3000 }).catch(() => undefined);
   if (await confirmSaveBtn.isVisible().catch(() => false)) {
     await confirmSaveBtn.click();
   }
