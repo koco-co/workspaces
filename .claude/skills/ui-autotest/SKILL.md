@@ -32,13 +32,13 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 <confirmation_policy>
 <rule id="status_only">步骤完成统计、通过/失败摘要、报告路径展示仅作状态展示，不要求确认。</rule>
 <rule id="scope_selection">仅在 URL、执行范围或登录方式不明确时使用 AskUserQuestion。</rule>
-<rule id="reference_permission">允许用实际 DOM、playwright-cli snapshot 与只读源码来修正脚本；此许可不包含 Archive MD 写回。</rule>
-<rule id="archive_writeback">若拟回写 Archive MD，必须先展示差异预览，再单独确认；默认只记录建议，不写回。</rule>
+<rule id="reference_permission">允许用实际 DOM、playwright-cli snapshot 与只读源码来修正脚本；前端 DOM 与用例不符时，直接反向更新 Archive MD，无需确认。</rule>
+<rule id="archive_writeback">前端 DOM 不一致（页面结构、字段名、按钮文本、流程步骤等）→ 直接写回 Archive MD，追加注释后通知用户；非前端原因（需求逻辑变更等）→ 展示差异预览并请用户确认。</rule>
 </confirmation_policy>
 
 <output_contract>
 <archive_contract>保留 Task 2 的 Archive MD 标题契约、`suite_name` 语义与 `parse-cases.ts` 解析约定。</archive_contract>
-<artifacts>产物包括 UI blocks、合并 spec、Playwright HTML 报告、可选的 Archive MD 校正建议。</artifacts>
+<artifacts>产物包括 UI blocks、合并 spec、Playwright HTML 报告；前端 DOM 不一致时自动更新 Archive MD；需求逻辑差异时输出校正建议待用户确认。</artifacts>
 </output_contract>
 
 <error_handling>
@@ -522,14 +522,35 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 Sub-Agent 返回 `FIXED` → 更新进度 `test_status = "passed"`；返回 `STILL_FAILING` → 更新 `test_status = "failed"` + `last_error`，`attempts < 3` 则再派发一轮，否则标记放弃。
 
-**5.3 Archive MD 写回门禁**
+**5.3 Archive MD 反向更新**
 
-Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一致，将在返回结果中附带 `corrections` 字段。主 agent 收集所有 corrections，在步骤 5 全部完成后**统一展示**：
+Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一致，将在返回结果中附带 `corrections` 字段，并标注 `reason_type`：
+
+- `frontend`：前端 DOM 变化（页面结构、字段名、按钮文本、流程步骤、选项值等）
+- `logic`：需求逻辑变更（业务规则、预期结果等）
+
+主 agent 收集所有 corrections 后，按 `reason_type` 分两类处理：
+
+**前端类（自动写回）**
+
+直接更新 Archive MD，追加注释 `<!-- 由 ui-autotest 自测校正 -->`，完成后通知用户：
 
 ```
-以下用例的 Archive MD 描述与实际系统行为不一致：
+已自动同步以下用例（前端 DOM 变更）：
 
-{{#each corrections}}
+{{#each frontend_corrections}}
+- {{case_title}}：{{field}} "{{current}}" → "{{proposed}}"
+{{/each}}
+```
+
+**逻辑类（需确认）**
+
+展示差异预览，等待用户确认后才写回：
+
+```
+以下用例存在需求逻辑差异，请确认是否更新：
+
+{{#each logic_corrections}}
 - {{case_title}}：{{field}} "{{current}}" → "{{proposed}}" (依据: {{evidence}})
 {{/each}}
 
@@ -537,8 +558,6 @@ Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一
 1. 不更新（默认）
 2. 更新
 ```
-
-仅在用户确认后才写回，写回时追加注释：`<!-- 由 ui-autotest 自测校正 -->`
 
 **5.4 3 次重试仍失败的处理**
 
