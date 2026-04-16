@@ -13,6 +13,7 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 <inputs>
 - Archive MD 路径或功能名
 - 目标 URL
+- 环境标识（env）：从用户输入或 ACTIVE_ENV 环境变量获取，如 ltqcdev、ci63
 - 当前项目配置、登录 session、只读源码副本
 </inputs>
 
@@ -106,6 +107,8 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 | `@parse-cases` | `bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}` |
 | `@merge-specs` | `bun run .claude/skills/ui-autotest/scripts/merge-specs.ts ...` |
 
+> 当 `{{env}}` 已确定时，所有 `@progress:*` 命令均追加 `--env {{env}}` 参数。
+
 ### 脚本编码规范
 
 参见 `.claude/references/playwright-patterns.md`，包含：
@@ -185,6 +188,7 @@ bun run .claude/scripts/preference-loader.ts load --project {{project}} > worksp
 
 - `md_path`：Archive MD 文件路径（支持功能名模糊匹配 → 在 `workspace/{{project}}/archive/` 下搜索）
 - `url`：目标测试 URL（如 `https://www.bing.com/`）
+- `env`：环境标识（如 `ltqcdev`、`ci63`）。优先从用户输入提取；若未指定，读取 `ACTIVE_ENV` 环境变量；若仍为空，从 `url` 的域名推断或向用户询问
 
 若 `md_path` 为功能名而非完整路径，在 `workspace/{{project}}/archive/` 中递归搜索匹配的 `.md` 文件。
 
@@ -231,7 +235,7 @@ bun run .claude/skills/ui-autotest/scripts/parse-cases.ts --file {{md_path}}
 **⏳ 自动检查**：在步骤 2 之前，检查是否存在未完成的进度：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite_name}}"
+bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite_name}}" --env "{{env}}"
 ```
 
 **情况 A — 无进度文件**（命令 exit 1）：正常继续步骤 2。
@@ -244,14 +248,14 @@ bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --
 2. 取消
 ```
 
-若选 1，执行 `bun run .claude/scripts/ui-autotest-progress.ts reset --project {{project}} --suite "{{suite_name}}"` 后继续步骤 2。
+若选 1，执行 `bun run .claude/scripts/ui-autotest-progress.ts reset --project {{project}} --suite "{{suite_name}}" --env "{{env}}"` 后继续步骤 2。
 
 **情况 C — 有进度文件且未完成**：
 
 先执行 resume 清理中断状态：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}"
+bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --env "{{env}}"
 ```
 
 然后读取 summary，向用户展示：
@@ -272,7 +276,7 @@ bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --s
 ```
 
 - 选 1：直接跳到 `current_step` 对应的步骤（4/5/6），已 passed 的用例自动跳过
-- 选 2：执行 `bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --retry-failed`，然后跳到 `current_step`
+- 选 2：执行 `bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --retry-failed`，然后跳到 `current_step`
 - 选 3：执行 `reset`，正常从步骤 2 继续
 
 > **恢复跳转规则**：恢复时直接跳到 `current_step` 对应的步骤。步骤 1~3（解析、范围、登录态）始终重新执行（它们很快且登录态需刷新），但从进度文件中恢复 `url`、`selected_priorities` 等参数，无需重新询问用户。
@@ -289,6 +293,7 @@ bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --s
 ```
 🧪 UI 自动化测试配置
 
+环境：{{env}}
 目标 URL：{{url}}
 用例文件：{{md_path}}
 用例总数：{{total}}（P0: {{p0}}, P1: {{p1}}, P2: {{p2}}）
@@ -318,7 +323,7 @@ bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --s
 **3.1 检查已有 session**
 
 ```bash
-bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --output .auth/session.json
+bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --output .auth/session-{{env}}.json
 ```
 
 若返回 `{ "valid": true }`，直接复用，跳过登录。
@@ -332,7 +337,7 @@ bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --outp
 登录完成后请回到此终端按 Enter 继续...
 ```
 
-登录完成后，session 保存至 `.auth/session.json`。
+登录完成后，session 保存至 `.auth/session-{{env}}.json`。
 
 ---
 
@@ -350,6 +355,7 @@ bun run .claude/skills/ui-autotest/scripts/session-login.ts --url {{url}} --outp
 bun run .claude/scripts/ui-autotest-progress.ts create \
   --project {{project}} \
   --suite "{{suite_name}}" \
+  --env "{{env}}" \
   --archive "{{md_path}}" \
   --url "{{url}}" \
   --priorities "{{selected_priorities | join(',')}}" \
@@ -425,8 +431,8 @@ import { test, expect } from "../../fixtures/step-screenshot";
 每条用例的 sub-agent 完成后，更新进度：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field generated --value true
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field script_path --value "workspace/{{project}}/.temp/ui-blocks/{{id}}.ts"
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field generated --value true
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field script_path --value "workspace/{{project}}/.temp/ui-blocks/{{id}}.ts"
 ```
 
 断点恢复时，跳过 `generated === true` 的用例，只生成剩余的。
@@ -436,7 +442,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 **💾 进度持久化 — 步骤 4 完成**：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field current_step --value 5
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --field current_step --value 5
 ```
 
 ## 步骤 5：逐条自测与修复（强制，不可跳过）
@@ -452,7 +458,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 前置条件（建表/引入/同步/质量项目授权）完成后：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field preconditions_ready --value true
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --field preconditions_ready --value true
 ```
 
 断点恢复时，若 `preconditions_ready === true`，跳过前置条件准备。
@@ -460,7 +466,7 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 对 `workspace/{{project}}/.temp/ui-blocks/` 中的每个代码块，逐条执行 Playwright 测试：
 
 ```bash
-QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-blocks/{{id}}.ts --project=chromium --timeout=30000
+ACTIVE_ENV={{env}} QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-blocks/{{id}}.ts --project=chromium --timeout=30000
 ```
 
 **💾 进度持久化 — 自测状态**：
@@ -468,20 +474,20 @@ QA_PROJECT={{project}} bunx playwright test workspace/{{project}}/.temp/ui-block
 每条用例执行前：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value running
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field test_status --value running
 ```
 
 执行结果（通过）：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value passed
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field test_status --value passed
 ```
 
 执行结果（失败）：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field test_status --value failed
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --case {{id}} --field last_error --value "{{error_summary}}"
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field test_status --value failed
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --case {{id}} --field last_error --value "{{error_summary}}"
 ```
 
 断点恢复时，跳过 `test_status === "passed"` 的用例。对于 `test_status === "failed"` 且 `attempts >= 3` 的用例，也跳过（除非用户选择「重试失败项」）。
@@ -559,7 +565,7 @@ Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一
 **💾 进度持久化 — 步骤 5 完成**：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field current_step --value 6
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --field current_step --value 6
 ```
 
 ## 步骤 6：合并脚本
@@ -597,7 +603,7 @@ bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
 **💾 进度持久化 — 合并完成**：
 
 ```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --field merge_status --value completed
+bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --field merge_status --value completed
 ```
 
 ## 步骤 7：执行测试（全量回归）
@@ -610,15 +616,15 @@ bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --s
 
 ```bash
 # 冒烟测试
-QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
+ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
   --project=chromium
 
 # 完整测试
-QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
+ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
   --project=chromium
 ```
 
-> `QA_SUITE_NAME` 用于动态生成报告路径和标题，报告输出至 `workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/`。
+> `QA_SUITE_NAME` 用于动态生成报告路径和标题，报告输出至 `workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{env}}/`。
 
 记录执行开始时间，计算 `duration`。
 
@@ -643,10 +649,10 @@ QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test works
 
 通过：{{passed}} / {{total}}
 耗时：{{duration}}
-报告：workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html
+报告：workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{env}}/{{suite_name}}.html
 
 验收命令（可直接复制运行）：
-QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
+ACTIVE_ENV={{env}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
 ```
 
 **8.2 存在失败**
@@ -655,7 +661,7 @@ QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project
 
 - 失败的测试用例数据
 - Playwright 错误信息
-- 截图路径（`workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/` 下的截图）
+- 截图路径（`workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{env}}/` 下的截图）
 - Console 错误日志
 
 Bug 报告输出至：`workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html`
@@ -675,7 +681,7 @@ Bug 报告输出至：`workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest
 Bug 报告：workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html
 
 验收命令（可直接复制运行）：
-QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
+ACTIVE_ENV={{env}} QA_SUITE_NAME="{{suite_name}}" bunx playwright test {{full_spec_path}} --project=chromium
 ```
 
 ---
@@ -693,7 +699,7 @@ bun run .claude/scripts/plugin-loader.ts notify \
     "passed": {{passed}},
     "failed": {{failed}},
     "specFiles": ["{{spec_file}}"],
-    "reportFile": "workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{suite_name}}.html",
+    "reportFile": "workspace/{{project}}/reports/playwright/{{YYYYMM}}/{{suite_name}}/{{env}}/{{suite_name}}.html",
     "duration": "{{duration}}"
   }'
 ```
@@ -725,6 +731,6 @@ bun run .claude/scripts/plugin-loader.ts notify \
 | -------------------- | --------------------------------------------------------------------------- |
 | 临时代码块           | `workspace/{{project}}/.temp/ui-blocks/`                                    |
 | E2E spec 文件        | `workspace/{{project}}/tests/YYYYMM/{{suite_name}}/`                        |
-| Playwright HTML 报告 | `workspace/{{project}}/reports/playwright/YYYYMM/{{suite_name}}/`           |
+| Playwright HTML 报告 | `workspace/{{project}}/reports/playwright/YYYYMM/{{suite_name}}/{{env}}/`   |
 | Bug 报告             | `workspace/{{project}}/reports/bugs/YYYYMM/ui-autotest-{{suite_name}}.html` |
-| Session 文件         | `.auth/session.json`                                                        |
+| Session 文件         | `.auth/session-{{env}}.json`                                                |
