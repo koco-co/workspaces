@@ -8,10 +8,10 @@ Playwright 自动化测试脚本的标准化编码模式和规范。
 
 ```
 lib/playwright/              ← 跨项目共享层（通用 Ant Design 交互）
-  ├── ant-interactions.ts    ← selectAntOption, expectAntMessage, waitForAntModal, confirmAntModal, closeAntModal
+  ├── ant-interactions.ts    ← Select / Message / Modal / Drawer / Popconfirm / Table / Form / Tabs / Checkbox & Radio / Dropdown
   ├── navigation.ts          ← navigateViaMenu
   ├── utils.ts               ← uniqueName, todayStr
-  └── index.ts               ← 统一导出
+  └── index.ts               ← 统一导出（完整清单见此文件）
 
 workspace/{project}/tests/helpers/   ← 项目专属层（业务逻辑、API 调用）
   └── test-setup.ts                  ← 环境配置、Cookie 注入、URL 构建、项目特有操作
@@ -24,7 +24,7 @@ workspace/{project}/tests/{YYYYMM}/{suite}/  ← 套件专属层
 
 | 归属 | 判断条件 | 示例 |
 |------|---------|------|
-| **共享层** `lib/playwright/` | 只依赖 Ant Design 组件结构，不涉及任何业务 API 或项目 URL | `selectAntOption`, `confirmAntModal`, `navigateViaMenu` |
+| **共享层** `lib/playwright/` | 只依赖 Ant Design 组件结构，不涉及任何业务 API 或项目 URL | `selectAntOption`, `confirmPopconfirm`, `waitForTableLoaded`, `switchAntTab` |
 | **项目层** `helpers/test-setup.ts` | 涉及项目特有的 URL 构建、API 端点、环境变量 | `buildDataAssetsUrl`, `applyRuntimeCookies`, `syncMetadata` |
 | **套件层** `{suite}/xxx-helpers.ts` | 涉及特定需求的业务流程组合 | `saveRuleSet`, `configureRangeEnumRule` |
 

@@ -8,12 +8,39 @@ import type { Page } from "@playwright/test";
 
 // ── Re-export 共享库（保持现有 import 兼容） ──────────────
 export {
+  // Select
   selectAntOption,
+  // Message / Notification
   expectAntMessage,
+  // Modal
   waitForAntModal,
   confirmAntModal,
   closeAntModal,
+  // Drawer
+  waitForAntDrawer,
+  closeAntDrawer,
+  waitForOverlay,
+  // Popconfirm / Popover
+  confirmPopconfirm,
+  cancelPopconfirm,
+  // Table
+  waitForTableLoaded,
+  findTableRow,
+  // Form
+  locateFormItem,
+  expectFormError,
+  expectNoFormError,
+  // Tabs
+  switchAntTab,
+  // Checkbox & Radio
+  checkAntCheckbox,
+  uncheckAntCheckbox,
+  clickAntRadio,
+  // Dropdown
+  clickDropdownMenuItem,
+  // Navigation
   navigateViaMenu,
+  // Utils
   uniqueName,
   todayStr,
 } from "../../../../lib/playwright/index";
@@ -153,12 +180,13 @@ export async function selectBatchProject(page: Page, projectName: string): Promi
   await projectLink.click();
 
   await page.waitForURL(/#\/offline\/task/, { timeout: 30000 });
+  await page.waitForLoadState("networkidle");
   await page
     .locator(".org-tree-select-wrap, .ant-select-selection-item")
     .filter({ hasText: projectName })
     .first()
     .waitFor({ state: "visible", timeout: 30000 });
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(3000);
 }
 
 // ── 离线开发：执行 SQL 任务 ──────────────────────────────
@@ -185,18 +213,46 @@ export async function executeSqlViaBatchDoris(
 ): Promise<{ resultText: string }> {
   const name = taskName ?? `auto_sql_${Date.now().toString(36)}`;
 
+  await openBatchDorisEditor(page, name, projectName);
+  return runSqlInCurrentBatchEditor(page, sqlContent);
+}
+
+export async function executeSqlSequenceViaBatchDoris(
+  page: Page,
+  sqlStatements: readonly string[],
+  taskNamePrefix?: string,
+  projectName = "env_rebuild_test",
+): Promise<ReadonlyArray<{ statement: string; resultText: string }>> {
+  const statements = sqlStatements.map((sql) => sql.trim()).filter(Boolean);
+  const name = taskNamePrefix ?? `auto_sql_sequence_${Date.now().toString(36)}`;
+  await openBatchDorisEditor(page, name, projectName);
+
+  const results: Array<{ statement: string; resultText: string }> = [];
+  for (const statement of statements) {
+    const { resultText } = await runSqlInCurrentBatchEditor(page, statement);
+    results.push({ statement, resultText });
+  }
+
+  return results;
+}
+
+async function openBatchDorisEditor(
+  page: Page,
+  name: string,
+  projectName: string,
+): Promise<void> {
   // 1. 进入指定项目
   await selectBatchProject(page, projectName);
 
   // 2. 点击左侧"临时查询"垂直 tab
-  const tempQueryTab = page.locator(".ant-tabs-tab").filter({ hasText: "临时查询" }).first();
-  await tempQueryTab.waitFor({ state: "visible", timeout: 10000 });
+  const tempQueryTab = page.locator(".ant-tabs-tab, [role='tab']").filter({ hasText: "临时查询" }).first();
+  await tempQueryTab.waitFor({ state: "visible", timeout: 30000 });
   await tempQueryTab.click();
   await page
     .locator(".ant-tabs-tab-active")
     .filter({ hasText: "临时查询" })
     .first()
-    .waitFor({ state: "visible", timeout: 10000 });
+    .waitFor({ state: "visible", timeout: 30000 });
   await page.waitForTimeout(3000);
 
   // 3. 右键"临时查询"树节点
@@ -204,7 +260,7 @@ export async function executeSqlViaBatchDoris(
     .locator(".folder-item.folderTreeNodeItem")
     .filter({ hasText: "临时查询" })
     .first();
-  await treeNode.waitFor({ state: "visible", timeout: 10000 });
+  await treeNode.waitFor({ state: "visible", timeout: 30000 });
   await treeNode.click({ button: "right" });
   await page.waitForTimeout(500);
 
@@ -213,15 +269,14 @@ export async function executeSqlViaBatchDoris(
     .locator(".ant-dropdown-menu-item, [role='menuitem']")
     .filter({ hasText: "新建临时查询" })
     .first();
-  await newQueryMenu.waitFor({ state: "visible", timeout: 10000 });
+  await newQueryMenu.waitFor({ state: "visible", timeout: 30000 });
   await newQueryMenu.click();
   await page.waitForTimeout(1500);
 
   // 5. 处理新建临时查询弹窗
   const modal = page.locator(".ant-modal:visible").first();
-  await modal.waitFor({ state: "visible", timeout: 10000 });
+  await modal.waitFor({ state: "visible", timeout: 30000 });
 
-  // 填写临时查询名称
   const nameInput = modal.locator("input").first();
   await nameInput.clear();
   await nameInput.fill(name);
@@ -260,13 +315,18 @@ export async function executeSqlViaBatchDoris(
     await page.waitForTimeout(500);
   }
 
-  // 点击确认按钮，并确保真正进入编辑器
   const okBtn = modal.locator(".ant-btn-primary").first();
   await okBtn.click();
   await modal.waitFor({ state: "hidden", timeout: 15000 });
   await page.waitForTimeout(2000);
+}
 
-  // 7. 编辑器中输入 SQL
+async function runSqlInCurrentBatchEditor(
+  page: Page,
+  sqlContent: string,
+): Promise<{ resultText: string }> {
+  const requiresDdlConfirm = /^(TRUNCATE|DROP|CREATE|ALTER)\b/i.test(sqlContent.trim());
+  await confirmBatchDdlModal(page);
   const editorArea = page.locator(".view-lines, .monaco-editor .overflow-guard").first();
   await editorArea.waitFor({ state: "visible", timeout: 20000 });
   await editorArea.click();
@@ -292,6 +352,7 @@ export async function executeSqlViaBatchDoris(
     .first();
   if (await runBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
     await runBtn.click();
+    await confirmBatchDdlModal(page, requiresDdlConfirm);
   }
   await page.waitForTimeout(5000);
 
@@ -320,6 +381,46 @@ export async function executeSqlViaBatchDoris(
   await page.waitForTimeout(2000);
 
   return { resultText };
+}
+
+async function confirmBatchDdlModal(page: Page, required = false): Promise<void> {
+  const ddlModal = page
+    .locator("#JS_ddl_confirm_modal, .ant-modal, dialog")
+    .filter({ hasText: /执行的语句中包含DDL语句/ })
+    .first();
+
+  const modalVisible = await ddlModal
+    .waitFor({ state: "visible", timeout: required ? 5000 : 3000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!modalVisible) {
+    return;
+  }
+
+  const clicked = await page.evaluate(() => {
+    const modal = document.querySelector("#JS_ddl_confirm_modal");
+    if (!modal) return false;
+
+    const checkbox = Array.from(
+      modal.querySelectorAll("label, .ant-checkbox-wrapper, [role='checkbox']"),
+    ).find((node) => /不再提示/.test(node.textContent ?? ""));
+    (checkbox as HTMLElement | undefined)?.click();
+
+    const confirmBtn = Array.from(modal.querySelectorAll("button")).find((node) =>
+      /执\s*行|确\s*认/.test(node.textContent ?? ""),
+    );
+    (confirmBtn as HTMLButtonElement | undefined)?.click();
+    return Boolean(confirmBtn);
+  });
+
+  if (!clicked) {
+    const confirmBtn = ddlModal
+      .locator("button")
+      .filter({ hasText: /执\s*行|确\s*认/ })
+      .last();
+    await confirmBtn.click();
+  }
+  await ddlModal.waitFor({ state: "hidden", timeout: 10000 }).catch(() => {});
 }
 
 // ── 元数据同步 ──────────────────────────────────────────

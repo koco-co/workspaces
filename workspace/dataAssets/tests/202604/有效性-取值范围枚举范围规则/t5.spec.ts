@@ -63,7 +63,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
 
         await openRuleSetEditor(page, "ruleset_15695_notin");
         const packageSection = await getRulePackage(page, "notin校验包");
-        await expect(packageSection).toContainText("取值范围&枚举范围");
+        await expect(packageSection).toContainText("枚举值");
         await expect(packageSection).toContainText("not in");
 
         const enumTags = packageSection.locator(".ant-tag, .ant-select-selection-item");

@@ -147,16 +147,20 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
           .locator(".ant-form-item")
           .filter({ hasText: /选择数据表/ })
           .first();
-        const tableSelector = tableFormItem.locator(".ant-select-selector").first();
-        await tableSelector.click();
-        await page.waitForTimeout(1000);
-        const tableDropdown = page.locator(".ant-select-dropdown:visible").last();
-        await tableDropdown.waitFor({ state: "visible", timeout: 5000 });
-        await tableDropdown
-          .locator(".ant-select-item-option")
-          .filter({ hasText: "quality_test_num" })
-          .first()
-          .click();
+        let tableSelected = false;
+        let lastTableSelectError: unknown;
+        for (let attempt = 0; attempt < 3 && !tableSelected; attempt += 1) {
+          try {
+            await selectAntOption(page, tableFormItem.locator(".ant-select").first(), "quality_test_num");
+            tableSelected = true;
+          } catch (error) {
+            lastTableSelectError = error;
+            await page.waitForTimeout(1000);
+          }
+        }
+        if (!tableSelected) {
+          throw lastTableSelectError;
+        }
         await page.waitForTimeout(500);
 
         // 填写规则包名称

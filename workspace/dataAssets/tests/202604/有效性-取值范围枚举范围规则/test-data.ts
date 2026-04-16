@@ -4,7 +4,7 @@
  */
 import type { Page } from "@playwright/test";
 import { setupPreconditions } from "../../helpers/preconditions";
-import { applyRuntimeCookies, normalizeBaseUrl } from "../../helpers/test-setup";
+import { applyRuntimeCookies, executeSqlViaBatchDoris } from "../../helpers/test-setup";
 
 // ── SQL 表定义 ─────────────────────────────────────────────
 
@@ -23,6 +23,9 @@ INSERT INTO quality_test_num VALUES
   (5, 8.0, '5')
 `.trim();
 
+const QUALITY_TEST_NUM_SEED_SQL =
+  "INSERT OVERWRITE TABLE quality_test_num VALUES (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5')";
+
 const QUALITY_TEST_STR_SQL = `
 DROP TABLE IF EXISTS quality_test_str;
 CREATE TABLE quality_test_str (
@@ -38,6 +41,9 @@ INSERT INTO quality_test_str VALUES
   (5, '-1.0', '5')
 `.trim();
 
+const QUALITY_TEST_STR_SEED_SQL =
+  "INSERT OVERWRITE TABLE quality_test_str VALUES (1, '5', '2'), (2, '5.0', '4'), (3, '15.0', '1'), (4, 'abc', '3'), (5, '-1.0', '5')";
+
 const QUALITY_TEST_SAMPLE_SQL = `
 DROP TABLE IF EXISTS quality_test_sample;
 CREATE TABLE quality_test_sample (
@@ -49,6 +55,9 @@ INSERT INTO quality_test_sample VALUES
   (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5'),
   (6, 7.0, '1'), (7, 9.0, '2'), (8, 2.0, '3'), (9, 6.0, '1'), (10, 4.0, '2')
 `.trim();
+
+const QUALITY_TEST_SAMPLE_SEED_SQL =
+  "INSERT OVERWRITE TABLE quality_test_sample VALUES (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5'), (6, 7.0, '1'), (7, 9.0, '2'), (8, 2.0, '3'), (9, 6.0, '1'), (10, 4.0, '2')";
 
 const QUALITY_TEST_PARTITION_SQL = `
 DROP TABLE IF EXISTS quality_test_partition;
@@ -66,6 +75,9 @@ INSERT INTO quality_test_partition VALUES
   (3, 3.0, '1', '2026-04-02'), (4, -1.0, '3', '2026-04-02')
 `.trim();
 
+const QUALITY_TEST_PARTITION_SEED_SQL =
+  "INSERT OVERWRITE TABLE quality_test_partition VALUES (1, 5.0, '2', '2026-04-01'), (2, 15.0, '4', '2026-04-01'), (3, 3.0, '1', '2026-04-02'), (4, -1.0, '3', '2026-04-02')";
+
 const QUALITY_TEST_ENUM_PASS_SQL = `
 DROP TABLE IF EXISTS quality_test_enum_pass;
 CREATE TABLE quality_test_enum_pass (
@@ -75,12 +87,22 @@ CREATE TABLE quality_test_enum_pass (
 INSERT INTO quality_test_enum_pass VALUES (1, '1'), (2, '2'), (3, '3')
 `.trim();
 
+const QUALITY_TEST_ENUM_PASS_SEED_SQL =
+  "INSERT OVERWRITE TABLE quality_test_enum_pass VALUES (1, '1'), (2, '2'), (3, '3')";
+
 export const ALL_TABLES = [
   { name: "quality_test_num", sql: QUALITY_TEST_NUM_SQL },
   { name: "quality_test_str", sql: QUALITY_TEST_STR_SQL },
   { name: "quality_test_sample", sql: QUALITY_TEST_SAMPLE_SQL },
   { name: "quality_test_partition", sql: QUALITY_TEST_PARTITION_SQL },
   { name: "quality_test_enum_pass", sql: QUALITY_TEST_ENUM_PASS_SQL },
+] as const;
+const TABLE_SEED_SQLS = [
+  { name: "quality_test_num", sql: QUALITY_TEST_NUM_SEED_SQL },
+  { name: "quality_test_str", sql: QUALITY_TEST_STR_SEED_SQL },
+  { name: "quality_test_sample", sql: QUALITY_TEST_SAMPLE_SEED_SQL },
+  { name: "quality_test_partition", sql: QUALITY_TEST_PARTITION_SEED_SQL },
+  { name: "quality_test_enum_pass", sql: QUALITY_TEST_ENUM_PASS_SEED_SQL },
 ] as const;
 
 // ── 前置条件：建表 + 数据源导入 + 元数据同步 ─────────────────
@@ -98,6 +120,12 @@ export async function runPreconditions(page: Page): Promise<void> {
   }).catch((err) => {
     process.stderr.write(`[preconditions] API setup partial: ${(err as Error).message}\n`);
   });
+
+  process.stderr.write("[preconditions] Reseeding Doris tables via batch SQL...\n");
+  for (const { name, sql } of TABLE_SEED_SQLS) {
+    process.stderr.write(`[preconditions] Overwriting ${name}...\n`);
+    await executeSqlViaBatchDoris(page, sql, `seed_${name}_${Date.now().toString(36)}`, "pw");
+  }
 
   process.stderr.write("[preconditions] Preconditions complete.\n");
 }

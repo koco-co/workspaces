@@ -32,7 +32,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
     );
 
     await step(
-      "步骤2: 找到 ruleset_15695_enum_orig 点击编辑，新增规则选择原有枚举值规则类型，查看下拉框选项 → 枚举值设置下拉框包含 in 和 not in，默认显示 in",
+      "步骤2: 找到 ruleset_15695_enum_orig 点击编辑，新增规则选择原有枚举值规则类型，查看下拉框选项 → 枚举值设置下拉框包含 in 和 not in，默认待选择操作符",
       async () => {
         await openRuleSetEditor(page, "ruleset_15695_enum_orig", ["原枚举值包"]);
         await expect(
@@ -43,7 +43,7 @@ test.describe(`${SUITE_NAME} - ${PAGE_NAME}`, () => {
         functionRow = await selectRuleFieldAndFunction(page, ruleForm, "category", "枚举值");
 
         const enumOpSelect = functionRow.locator(".ant-select").nth(1);
-        await expect(enumOpSelect).toContainText("in");
+        await expect(enumOpSelect).toContainText("请选择");
 
         const enumOptions = await getSelectOptions(page, enumOpSelect);
         expect(enumOptions).toContain("in");

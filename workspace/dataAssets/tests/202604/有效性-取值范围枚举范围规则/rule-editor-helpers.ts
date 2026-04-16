@@ -35,12 +35,142 @@ const RULESET_ROW_FALLBACKS: Record<string, string> = {
 
 const DORIS_DATASOURCE_PATTERN = /doris/i;
 
+const RANGE_AND_RULE_SEED: RangeEnumConfig = {
+  field: "score",
+  range: {
+    firstOperator: ">",
+    firstValue: "1",
+    condition: "且",
+    secondOperator: "<",
+    secondValue: "10",
+  },
+  enumOperator: "in",
+  enumValues: ["1", "2", "3"],
+  relation: "且",
+  ruleStrength: "强规则",
+  description: "score取值范围1到10且枚举值in 1,2,3",
+};
+
+const RANGE_OR_RULE_SEED: RangeEnumConfig = {
+  field: "score",
+  range: {
+    firstOperator: ">",
+    firstValue: "1",
+  },
+  enumOperator: "in",
+  enumValues: ["-1"],
+  relation: "或",
+  ruleStrength: "强规则",
+  description: "score取值范围>1或枚举值in -1",
+};
+
+const RANGE_ONLY_RULE_SEED: RangeEnumConfig = {
+  field: "score",
+  range: {
+    firstOperator: ">=",
+    firstValue: "0",
+  },
+  ruleStrength: "强规则",
+  description: "score取值范围>=0",
+};
+
+const ENUM_IN_RULE_SEED: RangeEnumConfig = {
+  field: "category",
+  functionName: "枚举值",
+  enumOperator: "in",
+  enumValues: ["1", "2", "3"],
+  ruleStrength: "强规则",
+  description: "category枚举值in 1,2,3",
+};
+
+const ENUM_NOT_IN_RULE_SEED: RangeEnumConfig = {
+  field: "category",
+  functionName: "枚举值",
+  enumOperator: "not in",
+  enumValues: ["4", "5"],
+  ruleStrength: "强规则",
+  description: "category枚举值not in 4,5",
+};
+
+const STRING_RULE_SEED: RangeEnumConfig = {
+  field: "score_str",
+  range: {
+    firstOperator: ">",
+    firstValue: "1",
+    condition: "且",
+    secondOperator: "<",
+    secondValue: "10",
+  },
+  enumOperator: "in",
+  enumValues: ["5", "5.5", "15"],
+  relation: "且",
+  ruleStrength: "强规则",
+  description: "score_str取值范围1到10且枚举值in 5,5.5,15",
+};
+
+const RULESET_PACKAGE_SEEDS: Record<string, RangeEnumConfig> = {
+  且关系校验包: RANGE_AND_RULE_SEED,
+  或关系校验包: RANGE_OR_RULE_SEED,
+  仅取值范围包: RANGE_ONLY_RULE_SEED,
+  仅枚举值包: ENUM_IN_RULE_SEED,
+  notin校验包: ENUM_NOT_IN_RULE_SEED,
+  原枚举值包: ENUM_IN_RULE_SEED,
+  过滤条件包: RANGE_AND_RULE_SEED,
+  string强转包: STRING_RULE_SEED,
+};
+
 export function getRuleSetListRow(page: Page, rulesetName: string): Locator {
   const rowText = RULESET_ROW_FALLBACKS[rulesetName] ?? rulesetName;
   return page
     .locator(".ant-table-tbody tr:not(.ant-table-measure-row)")
     .filter({ hasText: rowText })
     .first();
+}
+
+async function postRuleSetApi<T>(page: Page, path: string, body: unknown): Promise<T> {
+  return page.evaluate(
+    async ({ requestPath, requestBody, projectId }) => {
+      const response = await fetch(requestPath, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "content-type": "application/json;charset=UTF-8",
+          "Accept-Language": "zh-CN",
+          "X-Valid-Project-ID": String(projectId),
+        },
+        body: JSON.stringify(requestBody),
+      });
+      return response.json();
+    },
+    {
+      requestPath: path,
+      requestBody: body,
+      projectId: QUALITY_PROJECT_ID,
+    },
+  ) as Promise<T>;
+}
+
+export async function deleteRuleSetsByTableNames(page: Page, tableNames: string[]): Promise<void> {
+  const listResponse = (await postRuleSetApi<{
+    data?: { contentList?: Array<{ id?: number | string; tableName?: string }> };
+  }>(page, "/dassets/v1/valid/monitorRuleSet/pageQuery", {
+    current: 1,
+    size: 50,
+    search: "",
+  })) ?? { data: { contentList: [] } };
+
+  const rows = (listResponse.data?.contentList ?? []).filter((item) =>
+    tableNames.includes(String(item.tableName ?? "")),
+  );
+
+  for (const row of rows) {
+    if (!row.id) {
+      continue;
+    }
+    await postRuleSetApi(page, "/dassets/v1/valid/monitorRuleSet/delete", {
+      id: Number(row.id),
+    });
+  }
 }
 
 export async function gotoRuleSetList(page: Page): Promise<void> {
@@ -70,21 +200,49 @@ async function ensurePackageNamesInBaseInfo(
   requiredPackageNames: string[],
 ): Promise<void> {
   const packageNameInputs = page.locator('input[placeholder="请输入规则包名称"]');
+  const addPackageBtn = page
+    .locator(".ant-table-footer")
+    .getByRole("button", { name: /新增/ })
+    .first();
   await packageNameInputs.first().waitFor({ state: "visible", timeout: 10000 });
 
-  const existingPackageNames = (await packageNameInputs.evaluateAll((inputs) =>
-    inputs.map((input) => (input as HTMLInputElement).value.trim()).filter(Boolean),
-  )) as string[];
+  const getPackageNameValues = async () =>
+    (await packageNameInputs.evaluateAll((inputs) =>
+      inputs.map((input) => (input as HTMLInputElement).value.trim()),
+    )) as string[];
 
-  const missingPackageNames = requiredPackageNames.filter(
-    (packageName) => !existingPackageNames.includes(packageName),
-  );
+  for (const packageName of requiredPackageNames) {
+    const currentValues = await getPackageNameValues();
+    if (currentValues.includes(packageName)) {
+      continue;
+    }
 
-  for (const packageName of missingPackageNames) {
-    await page.getByRole("button", { name: /新增/ }).click();
-    await page.waitForTimeout(300);
-    await packageNameInputs.last().fill(packageName);
-    await page.waitForTimeout(200);
+    let targetIndex = currentValues.findIndex((value) => !value);
+    if (targetIndex === -1) {
+      const beforeCount = await packageNameInputs.count();
+      await addPackageBtn.click();
+      await expect(packageNameInputs).toHaveCount(beforeCount + 1, { timeout: 10000 });
+      targetIndex = beforeCount;
+    }
+
+    const targetInput = packageNameInputs.nth(targetIndex);
+    await targetInput.fill(packageName);
+    await targetInput.press("Tab");
+    await expect(targetInput).toHaveValue(packageName);
+  }
+
+  if (requiredPackageNames.length > 0) {
+    await expect
+      .poll(
+        async () => {
+          const currentPackageNames = (await getPackageNameValues()).filter(Boolean);
+          return requiredPackageNames.every((packageName) =>
+            currentPackageNames.includes(packageName),
+          );
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true);
   }
 }
 
@@ -154,7 +312,19 @@ async function addPackageSlot(page: Page, packageName: string): Promise<void> {
   const packageSection = page.locator(".ruleSetMonitor__package").last();
   const packageSelect = packageSection.locator(".ruleSetMonitor__packageSelect").first();
   await packageSelect.waitFor({ state: "visible", timeout: 10000 });
-  await selectAntOption(page, packageSelect, packageName);
+  try {
+    await selectAntOption(page, packageSelect, packageName);
+  } catch (error) {
+    await page.keyboard.press("Escape").catch(() => undefined);
+
+    const deleteBtn = packageSection.locator(".ruleSetMonitor__packageDeleteBtn").first();
+    if (await deleteBtn.isVisible().catch(() => false)) {
+      await deleteBtn.click();
+      await page.waitForTimeout(300);
+    }
+
+    throw error;
+  }
   await page.waitForTimeout(300);
 }
 
@@ -181,7 +351,19 @@ async function ensureRuleSetPackagesVisible(
     if (await packageSection.isVisible().catch(() => false)) {
       continue;
     }
-    await addPackageSlot(page, packageName);
+    try {
+      await addPackageSlot(page, packageName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("Ant Select option not found")) {
+        throw error;
+      }
+
+      await gotoBaseInfoStep(page);
+      await ensurePackageNamesInBaseInfo(page, [packageName]);
+      await gotoMonitorRulesStep(page);
+      await addPackageSlot(page, packageName);
+    }
     await expect(
       page.locator(".ruleSetMonitor__package").filter({ hasText: packageName }).first(),
     ).toBeVisible({ timeout: 10000 });
@@ -216,12 +398,63 @@ async function createRuleSetDraft(
     .locator(".ant-form-item")
     .filter({ hasText: /选择数据表/ })
     .first();
-  await selectAntOption(page, tableFormItem.locator(".ant-select").first(), tableName);
+  const tableSelect = tableFormItem.locator(".ant-select").first();
+  let selectTableError: Error | null = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      await selectAntOption(page, tableSelect, tableName);
+      selectTableError = null;
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("Ant Select option not found")) {
+        throw error;
+      }
+      selectTableError = error instanceof Error ? error : new Error(message);
+      await page.waitForTimeout(1000 * (attempt + 1));
+    }
+  }
+  if (selectTableError) {
+    throw selectTableError;
+  }
   await page.waitForTimeout(500);
 
   await ensurePackageNamesInBaseInfo(page, requiredPackageNames);
   await gotoMonitorRulesStep(page);
   await ensureRuleSetPackagesVisible(page, requiredPackageNames);
+}
+
+export async function createRuleSetForTable(
+  page: Page,
+  tableName: string,
+  packageName: string,
+  config: RangeEnumConfig,
+  ruleType = "有效性校验",
+): Promise<void> {
+  await createRuleSetDraft(page, tableName, [packageName]);
+  const ruleForm = await addRuleToPackage(page, packageName, ruleType);
+  await configureRangeEnumRule(page, ruleForm, config);
+  await saveRuleSet(page);
+}
+
+async function tryOpenRuleSetRow(
+  page: Page,
+  dataRows: Locator,
+  rowTexts: string[],
+  requiredPackageNames: string[],
+): Promise<boolean> {
+  for (const rowText of rowTexts) {
+    const targetRow = dataRows.filter({ hasText: rowText }).first();
+    if (await targetRow.isVisible().catch(() => false)) {
+      await targetRow.getByRole("button", { name: "编辑" }).click();
+      await page.waitForLoadState("networkidle");
+      await page.waitForTimeout(1000);
+      await ensureMonitorRulesStep(page, requiredPackageNames);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export async function openRuleSetEditor(
@@ -239,19 +472,26 @@ export async function openRuleSetEditor(
     rowTexts.push(fallbackRowText);
   }
 
-  for (const rowText of rowTexts) {
-    const targetRow = dataRows.filter({ hasText: rowText }).first();
-    if (await targetRow.isVisible().catch(() => false)) {
-      await targetRow.getByRole("button", { name: "编辑" }).click();
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(1000);
-      await ensureMonitorRulesStep(page, requiredPackageNames);
+  if (await tryOpenRuleSetRow(page, dataRows, rowTexts, requiredPackageNames)) {
+    return;
+  }
+
+  const targetTableName =
+    fallbackRowText ?? (rulesetName.startsWith("quality_test_") ? rulesetName : undefined);
+  const seedPackageName = requiredPackageNames[0];
+  const seedRuleConfig = seedPackageName ? RULESET_PACKAGE_SEEDS[seedPackageName] : undefined;
+
+  if (targetTableName && seedPackageName && seedRuleConfig) {
+    await createRuleSetForTable(page, targetTableName, seedPackageName, seedRuleConfig);
+    await gotoRuleSetList(page);
+    await page.locator(".ant-table-tbody").waitFor({ state: "visible", timeout: 15000 });
+    if (await tryOpenRuleSetRow(page, dataRows, rowTexts, requiredPackageNames)) {
       return;
     }
   }
 
-  if (fallbackRowText === "quality_test_str") {
-    await createRuleSetDraft(page, fallbackRowText, requiredPackageNames);
+  if (targetTableName && requiredPackageNames.length > 0) {
+    await createRuleSetDraft(page, targetTableName, requiredPackageNames);
     return;
   }
 
@@ -379,11 +619,13 @@ export async function configureRangeEnumRule(
     config.field,
     config.functionName,
   );
+  const functionSelects = functionRow.locator(".ant-select");
+  const isEnumOnlyFunction = config.functionName === "枚举值";
 
   if (config.range?.firstOperator) {
     await selectAntOption(
       page,
-      functionRow.locator(".ant-select").nth(1),
+      functionSelects.nth(1),
       config.range.firstOperator,
     );
     await page.waitForTimeout(200);
@@ -414,11 +656,14 @@ export async function configureRangeEnumRule(
   }
 
   if (config.enumOperator) {
-    await selectAntOption(page, functionRow.locator(".ant-select").nth(3), config.enumOperator);
+    await selectAntOption(page, functionSelects.nth(isEnumOnlyFunction ? 1 : 3), config.enumOperator);
     await page.waitForTimeout(200);
   }
   if (config.enumValues?.length) {
-    const enumInput = functionRow.locator(".ant-select").nth(4).locator("input").last();
+    const enumInput = functionSelects
+      .nth(isEnumOnlyFunction ? 2 : 4)
+      .locator("input")
+      .last();
     for (const value of config.enumValues) {
       await enumInput.fill(value);
       await page.keyboard.press("Enter");

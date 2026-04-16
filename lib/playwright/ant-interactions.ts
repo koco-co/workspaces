@@ -1,8 +1,9 @@
 /**
  * Ant Design 通用组件交互工具
  *
- * 适用于所有使用 Ant Design 的项目，处理 Select 虚拟滚动、
- * Message 提示、Modal 弹窗等常见交互场景。
+ * 适用于所有使用 Ant Design 的项目。
+ * 按组件分区：Select / Message / Modal / Drawer / Popconfirm /
+ *             Table / Form / Tabs / Checkbox & Radio / Dropdown
  */
 import type { Locator, Page } from "@playwright/test";
 
@@ -174,4 +175,314 @@ export async function closeAntModal(
   }
   const { expect } = await import("@playwright/test");
   await expect(target).not.toBeVisible({ timeout: 5000 });
+}
+
+// ── Drawer 抽屉 ────────────────────────────────────────
+
+/**
+ * 等待 Ant Design Drawer 可见并返回其 Locator
+ *
+ * @param page - Playwright Page 实例
+ * @param titleText - 可选，抽屉标题文本
+ */
+export async function waitForAntDrawer(
+  page: Page,
+  titleText?: string,
+): Promise<Locator> {
+  const drawer = page.locator(".ant-drawer:visible");
+  await drawer.first().waitFor({ state: "visible", timeout: 10000 });
+  if (titleText) {
+    const { expect } = await import("@playwright/test");
+    await expect(
+      drawer.filter({ hasText: titleText }).first(),
+    ).toBeVisible();
+  }
+  return drawer.first();
+}
+
+/**
+ * 关闭 Ant Design Drawer（点击关闭图标）
+ *
+ * @param page - Playwright Page 实例
+ * @param drawer - 可选，指定 Drawer Locator
+ */
+export async function closeAntDrawer(
+  page: Page,
+  drawer?: Locator,
+): Promise<void> {
+  const target = drawer ?? page.locator(".ant-drawer:visible").first();
+  await target.locator(".ant-drawer-close").first().click();
+  const { expect } = await import("@playwright/test");
+  await expect(target).not.toBeVisible({ timeout: 5000 });
+}
+
+/**
+ * 等待浮层（Modal 或 Drawer）可见 — 业务中弹窗/抽屉形态不固定时使用
+ *
+ * @param page - Playwright Page 实例
+ * @param titleText - 可选，浮层标题文本
+ */
+export async function waitForOverlay(
+  page: Page,
+  titleText?: string,
+): Promise<Locator> {
+  const overlay = page.locator(".ant-modal:visible, .ant-drawer:visible");
+  await overlay.first().waitFor({ state: "visible", timeout: 10000 });
+  if (titleText) {
+    const { expect } = await import("@playwright/test");
+    await expect(
+      overlay.filter({ hasText: titleText }).first(),
+    ).toBeVisible();
+  }
+  return overlay.first();
+}
+
+// ── Popconfirm / Popover 气泡确认 ─────────────────────
+
+/**
+ * 确认 Ant Design Popconfirm 气泡确认框
+ *
+ * 兼容 ant-popconfirm 和 ant-popover 两种容器。
+ *
+ * @param page - Playwright Page 实例
+ * @param timeout - 等待气泡出现的超时时间，默认 3000ms
+ */
+export async function confirmPopconfirm(
+  page: Page,
+  timeout = 3000,
+): Promise<void> {
+  const popconfirm = page
+    .locator(".ant-popconfirm:visible, .ant-popover:visible")
+    .first();
+  await popconfirm
+    .waitFor({ state: "visible", timeout })
+    .catch(() => { /* 未弹出则静默跳过 */ });
+
+  const confirmBtn = popconfirm
+    .locator(".ant-btn-primary")
+    .first();
+  if (await confirmBtn.isVisible().catch(() => false)) {
+    await confirmBtn.click();
+    await page.waitForTimeout(300);
+  }
+}
+
+/**
+ * 取消 Ant Design Popconfirm 气泡确认框
+ */
+export async function cancelPopconfirm(
+  page: Page,
+  timeout = 3000,
+): Promise<void> {
+  const popconfirm = page
+    .locator(".ant-popconfirm:visible, .ant-popover:visible")
+    .first();
+  await popconfirm.waitFor({ state: "visible", timeout });
+  await popconfirm
+    .locator("button")
+    .filter({ hasText: /取消|Cancel|No/ })
+    .first()
+    .click();
+}
+
+// ── Table 表格 ─────────────────────────────────────────
+
+/**
+ * 等待 Ant Design Table 加载完成（tbody 可见且无 loading 遮罩）
+ *
+ * @param page - Playwright Page 实例
+ * @param tableLocator - 可选，指定 Table 容器；默认取页面第一个 .ant-table
+ * @param timeout - 超时时间，默认 15000ms
+ */
+export async function waitForTableLoaded(
+  page: Page,
+  tableLocator?: Locator,
+  timeout = 15000,
+): Promise<Locator> {
+  const table = tableLocator ?? page.locator(".ant-table").first();
+  const tbody = table.locator(".ant-table-tbody");
+  await tbody.waitFor({ state: "visible", timeout });
+  // 等待 loading 遮罩消失
+  const spinner = table.locator(".ant-spin-spinning");
+  if (await spinner.isVisible().catch(() => false)) {
+    const { expect } = await import("@playwright/test");
+    await expect(spinner).not.toBeVisible({ timeout });
+  }
+  return table;
+}
+
+/**
+ * 在 Ant Design Table 中按文本定位某一行
+ *
+ * @param page - Playwright Page 实例
+ * @param rowText - 行中应包含的文本（字符串或正则）
+ * @param tableLocator - 可选，指定 Table 容器
+ */
+export function findTableRow(
+  page: Page,
+  rowText: string | RegExp,
+  tableLocator?: Locator,
+): Locator {
+  const table = tableLocator ?? page.locator(".ant-table").first();
+  return table
+    .locator(".ant-table-tbody tr:not(.ant-table-measure-row)")
+    .filter({ hasText: rowText })
+    .first();
+}
+
+// ── Form 表单 ──────────────────────────────────────────
+
+/**
+ * 按标签文本定位 Ant Design 表单字段（ant-form-item）
+ *
+ * @param container - 表单所在容器（Page、Modal、Drawer 的 Locator）
+ * @param label - 字段标签文本（字符串或正则）
+ * @returns 对应 ant-form-item 的 Locator
+ */
+export function locateFormItem(
+  container: Page | Locator,
+  label: string | RegExp,
+): Locator {
+  return container
+    .locator(".ant-form-item")
+    .filter({ hasText: label })
+    .first();
+}
+
+/**
+ * 断言 Ant Design 表单验证错误消息可见
+ *
+ * @param container - 表单所在容器
+ * @param errorText - 可选，期望的错误文本；不传则只检查是否有任何错误
+ * @param timeout - 超时时间，默认 5000ms
+ */
+export async function expectFormError(
+  container: Page | Locator,
+  errorText?: string | RegExp,
+  timeout = 5000,
+): Promise<void> {
+  const { expect } = await import("@playwright/test");
+  const errors = container.locator(".ant-form-item-explain-error");
+  if (errorText) {
+    await expect(
+      errors.filter({ hasText: errorText }).first(),
+    ).toBeVisible({ timeout });
+  } else {
+    await expect(errors.first()).toBeVisible({ timeout });
+  }
+}
+
+/**
+ * 断言 Ant Design 表单无验证错误
+ */
+export async function expectNoFormError(
+  container: Page | Locator,
+  timeout = 3000,
+): Promise<void> {
+  const { expect } = await import("@playwright/test");
+  await expect(
+    container.locator(".ant-form-item-explain-error"),
+  ).not.toBeVisible({ timeout });
+}
+
+// ── Tabs 标签页 ────────────────────────────────────────
+
+/**
+ * 切换 Ant Design Tabs 标签页
+ *
+ * @param page - Playwright Page 实例
+ * @param tabName - 标签页文本
+ * @param container - 可选，Tabs 所在容器
+ */
+export async function switchAntTab(
+  page: Page,
+  tabName: string | RegExp,
+  container?: Locator,
+): Promise<void> {
+  const scope = container ?? page;
+  const tab = scope
+    .locator(".ant-tabs-tab")
+    .filter({ hasText: tabName })
+    .first();
+  await tab.click();
+  // 等待 tab 变为 active
+  const { expect } = await import("@playwright/test");
+  await expect(
+    scope
+      .locator(".ant-tabs-tab-active")
+      .filter({ hasText: tabName })
+      .first(),
+  ).toBeVisible({ timeout: 5000 });
+}
+
+// ── Checkbox & Radio ───────────────────────────────────
+
+/**
+ * 勾选 Ant Design Checkbox（如果尚未勾选）
+ *
+ * @param checkbox - Checkbox 的 Locator（.ant-checkbox-wrapper 或其父级）
+ */
+export async function checkAntCheckbox(checkbox: Locator): Promise<void> {
+  const input = checkbox.locator(
+    "input[type='checkbox'], .ant-checkbox-input",
+  ).first();
+  if (!(await input.isChecked())) {
+    await checkbox.click();
+  }
+}
+
+/**
+ * 取消勾选 Ant Design Checkbox
+ */
+export async function uncheckAntCheckbox(checkbox: Locator): Promise<void> {
+  const input = checkbox.locator(
+    "input[type='checkbox'], .ant-checkbox-input",
+  ).first();
+  if (await input.isChecked()) {
+    await checkbox.click();
+  }
+}
+
+/**
+ * 点击 Ant Design Radio 选项
+ *
+ * @param container - Radio Group 所在容器
+ * @param label - 要选择的 Radio 文本
+ */
+export async function clickAntRadio(
+  container: Page | Locator,
+  label: string | RegExp,
+): Promise<void> {
+  await container
+    .locator(".ant-radio-wrapper, .ant-radio-button-wrapper")
+    .filter({ hasText: label })
+    .first()
+    .click();
+}
+
+// ── Dropdown 下拉菜单 ──────────────────────────────────
+
+/**
+ * 在 Ant Design Dropdown 菜单中点击指定菜单项
+ *
+ * 适用于右键菜单、按钮下拉菜单等 ant-dropdown 场景（非 Select）。
+ *
+ * @param page - Playwright Page 实例
+ * @param menuItemText - 菜单项文本
+ * @param timeout - 等待菜单出现的超时时间，默认 5000ms
+ */
+export async function clickDropdownMenuItem(
+  page: Page,
+  menuItemText: string | RegExp,
+  timeout = 5000,
+): Promise<void> {
+  const menu = page.locator(
+    ".ant-dropdown:visible, .ant-dropdown-menu:visible",
+  );
+  await menu.first().waitFor({ state: "visible", timeout });
+  await menu
+    .locator(".ant-dropdown-menu-item, [role='menuitem']")
+    .filter({ hasText: menuItemText })
+    .first()
+    .click();
 }

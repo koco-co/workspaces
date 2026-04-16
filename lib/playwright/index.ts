@@ -12,11 +12,36 @@
 
 // Ant Design 组件交互
 export {
+  // Select
   selectAntOption,
+  // Message / Notification
   expectAntMessage,
+  // Modal
   waitForAntModal,
   confirmAntModal,
   closeAntModal,
+  // Drawer
+  waitForAntDrawer,
+  closeAntDrawer,
+  waitForOverlay,
+  // Popconfirm / Popover
+  confirmPopconfirm,
+  cancelPopconfirm,
+  // Table
+  waitForTableLoaded,
+  findTableRow,
+  // Form
+  locateFormItem,
+  expectFormError,
+  expectNoFormError,
+  // Tabs
+  switchAntTab,
+  // Checkbox & Radio
+  checkAntCheckbox,
+  uncheckAntCheckbox,
+  clickAntRadio,
+  // Dropdown
+  clickDropdownMenuItem,
 } from "./ant-interactions";
 
 // 通用导航
