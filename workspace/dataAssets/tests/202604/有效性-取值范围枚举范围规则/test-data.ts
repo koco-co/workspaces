@@ -4,11 +4,45 @@
  */
 import type { Page } from "@playwright/test";
 import { setupPreconditions } from "../../helpers/preconditions";
-import { applyRuntimeCookies, executeSqlViaBatchDoris } from "../../helpers/test-setup";
+import { applyRuntimeCookies } from "../../helpers/test-setup";
 
-// ── SQL 表定义 ─────────────────────────────────────────────
+export interface DatasourceConfig {
+  readonly id: "sparkthrift2.x" | "doris3.x";
+  readonly cacheKey: "sparkthrift2_x" | "doris3_x";
+  readonly reportName: "sparkthrift2.x" | "doris3.x";
+  readonly preconditionType: "SparkThrift" | "Doris";
+  readonly optionPattern: RegExp;
+  readonly sourceTypePattern: RegExp;
+  readonly database: string;
+}
 
-const QUALITY_TEST_NUM_SQL = `
+type DatasourceSqlMap = Readonly<Record<DatasourceConfig["id"], string>>;
+
+type TableDefinition = {
+  readonly name: string;
+  readonly sqlByDatasource: DatasourceSqlMap;
+};
+
+const QUALITY_TEST_NUM_SQL: DatasourceSqlMap = {
+  "sparkthrift2.x": `
+DROP TABLE IF EXISTS quality_test_num;
+CREATE TABLE quality_test_num (
+  id INT,
+  score DOUBLE,
+  category STRING
+) STORED AS PARQUET;
+INSERT INTO TABLE quality_test_num
+SELECT 1, 5.0, '2'
+UNION ALL
+SELECT 2, 15.0, '4'
+UNION ALL
+SELECT 3, 3.0, '1'
+UNION ALL
+SELECT 4, -1.0, '3'
+UNION ALL
+SELECT 5, 8.0, '5';
+`.trim(),
+  "doris3.x": `
 DROP TABLE IF EXISTS quality_test_num;
 CREATE TABLE quality_test_num (
   id INT NOT NULL,
@@ -20,13 +54,30 @@ INSERT INTO quality_test_num VALUES
   (2, 15.0, '4'),
   (3, 3.0, '1'),
   (4, -1.0, '3'),
-  (5, 8.0, '5')
-`.trim();
+  (5, 8.0, '5');
+`.trim(),
+};
 
-const QUALITY_TEST_NUM_SEED_SQL =
-  "INSERT OVERWRITE TABLE quality_test_num VALUES (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5')";
-
-const QUALITY_TEST_STR_SQL = `
+const QUALITY_TEST_STR_SQL: DatasourceSqlMap = {
+  "sparkthrift2.x": `
+DROP TABLE IF EXISTS quality_test_str;
+CREATE TABLE quality_test_str (
+  id INT,
+  score_str STRING,
+  category STRING
+) STORED AS PARQUET;
+INSERT INTO TABLE quality_test_str
+SELECT 1, '5', '2'
+UNION ALL
+SELECT 2, '5.0', '4'
+UNION ALL
+SELECT 3, '15.0', '1'
+UNION ALL
+SELECT 4, 'abc', '3'
+UNION ALL
+SELECT 5, '-1.0', '5';
+`.trim(),
+  "doris3.x": `
 DROP TABLE IF EXISTS quality_test_str;
 CREATE TABLE quality_test_str (
   id INT NOT NULL,
@@ -38,13 +89,40 @@ INSERT INTO quality_test_str VALUES
   (2, '5.0', '4'),
   (3, '15.0', '1'),
   (4, 'abc', '3'),
-  (5, '-1.0', '5')
-`.trim();
+  (5, '-1.0', '5');
+`.trim(),
+};
 
-const QUALITY_TEST_STR_SEED_SQL =
-  "INSERT OVERWRITE TABLE quality_test_str VALUES (1, '5', '2'), (2, '5.0', '4'), (3, '15.0', '1'), (4, 'abc', '3'), (5, '-1.0', '5')";
-
-const QUALITY_TEST_SAMPLE_SQL = `
+const QUALITY_TEST_SAMPLE_SQL: DatasourceSqlMap = {
+  "sparkthrift2.x": `
+DROP TABLE IF EXISTS quality_test_sample;
+CREATE TABLE quality_test_sample (
+  id INT,
+  score DOUBLE,
+  category STRING
+) STORED AS PARQUET;
+INSERT INTO TABLE quality_test_sample
+SELECT 1, 5.0, '2'
+UNION ALL
+SELECT 2, 15.0, '4'
+UNION ALL
+SELECT 3, 3.0, '1'
+UNION ALL
+SELECT 4, -1.0, '3'
+UNION ALL
+SELECT 5, 8.0, '5'
+UNION ALL
+SELECT 6, 7.0, '1'
+UNION ALL
+SELECT 7, 9.0, '2'
+UNION ALL
+SELECT 8, 2.0, '3'
+UNION ALL
+SELECT 9, 6.0, '1'
+UNION ALL
+SELECT 10, 4.0, '2';
+`.trim(),
+  "doris3.x": `
 DROP TABLE IF EXISTS quality_test_sample;
 CREATE TABLE quality_test_sample (
   id INT NOT NULL,
@@ -52,14 +130,39 @@ CREATE TABLE quality_test_sample (
   category VARCHAR(50)
 ) DISTRIBUTED BY HASH(id) BUCKETS 3 PROPERTIES("replication_num"="1");
 INSERT INTO quality_test_sample VALUES
-  (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5'),
-  (6, 7.0, '1'), (7, 9.0, '2'), (8, 2.0, '3'), (9, 6.0, '1'), (10, 4.0, '2')
-`.trim();
+  (1, 5.0, '2'),
+  (2, 15.0, '4'),
+  (3, 3.0, '1'),
+  (4, -1.0, '3'),
+  (5, 8.0, '5'),
+  (6, 7.0, '1'),
+  (7, 9.0, '2'),
+  (8, 2.0, '3'),
+  (9, 6.0, '1'),
+  (10, 4.0, '2');
+`.trim(),
+};
 
-const QUALITY_TEST_SAMPLE_SEED_SQL =
-  "INSERT OVERWRITE TABLE quality_test_sample VALUES (1, 5.0, '2'), (2, 15.0, '4'), (3, 3.0, '1'), (4, -1.0, '3'), (5, 8.0, '5'), (6, 7.0, '1'), (7, 9.0, '2'), (8, 2.0, '3'), (9, 6.0, '1'), (10, 4.0, '2')";
-
-const QUALITY_TEST_PARTITION_SQL = `
+const QUALITY_TEST_PARTITION_SQL: DatasourceSqlMap = {
+  "sparkthrift2.x": `
+DROP TABLE IF EXISTS quality_test_partition;
+CREATE TABLE quality_test_partition (
+  id INT,
+  score DOUBLE,
+  category STRING
+)
+PARTITIONED BY (dt STRING)
+STORED AS PARQUET;
+INSERT INTO TABLE quality_test_partition PARTITION (dt='2026-04-01')
+SELECT 1, 5.0, '2'
+UNION ALL
+SELECT 2, 15.0, '4';
+INSERT INTO TABLE quality_test_partition PARTITION (dt='2026-04-02')
+SELECT 3, 3.0, '1'
+UNION ALL
+SELECT 4, -1.0, '3';
+`.trim(),
+  "doris3.x": `
 DROP TABLE IF EXISTS quality_test_partition;
 CREATE TABLE quality_test_partition (
   id INT NOT NULL,
@@ -71,84 +174,131 @@ CREATE TABLE quality_test_partition (
   PARTITION p20260402 VALUES LESS THAN ('2026-04-03')
 ) DISTRIBUTED BY HASH(id) BUCKETS 3 PROPERTIES("replication_num"="1");
 INSERT INTO quality_test_partition VALUES
-  (1, 5.0, '2', '2026-04-01'), (2, 15.0, '4', '2026-04-01'),
-  (3, 3.0, '1', '2026-04-02'), (4, -1.0, '3', '2026-04-02')
-`.trim();
+  (1, 5.0, '2', '2026-04-01'),
+  (2, 15.0, '4', '2026-04-01'),
+  (3, 3.0, '1', '2026-04-02'),
+  (4, -1.0, '3', '2026-04-02');
+`.trim(),
+};
 
-const QUALITY_TEST_PARTITION_SEED_SQL =
-  "INSERT OVERWRITE TABLE quality_test_partition VALUES (1, 5.0, '2', '2026-04-01'), (2, 15.0, '4', '2026-04-01'), (3, 3.0, '1', '2026-04-02'), (4, -1.0, '3', '2026-04-02')";
-
-const QUALITY_TEST_ENUM_PASS_SQL = `
+const QUALITY_TEST_ENUM_PASS_SQL: DatasourceSqlMap = {
+  "sparkthrift2.x": `
+DROP TABLE IF EXISTS quality_test_enum_pass;
+CREATE TABLE quality_test_enum_pass (
+  id INT,
+  category STRING
+) STORED AS PARQUET;
+INSERT INTO TABLE quality_test_enum_pass
+SELECT 1, '1'
+UNION ALL
+SELECT 2, '2'
+UNION ALL
+SELECT 3, '3';
+`.trim(),
+  "doris3.x": `
 DROP TABLE IF EXISTS quality_test_enum_pass;
 CREATE TABLE quality_test_enum_pass (
   id INT NOT NULL,
   category VARCHAR(50)
 ) DISTRIBUTED BY HASH(id) BUCKETS 3 PROPERTIES("replication_num"="1");
-INSERT INTO quality_test_enum_pass VALUES (1, '1'), (2, '2'), (3, '3')
-`.trim();
+INSERT INTO quality_test_enum_pass VALUES (1, '1'), (2, '2'), (3, '3');
+`.trim(),
+};
 
-const QUALITY_TEST_ENUM_PASS_SEED_SQL =
-  "INSERT OVERWRITE TABLE quality_test_enum_pass VALUES (1, '1'), (2, '2'), (3, '3')";
-
-export const ALL_TABLES = [
-  { name: "quality_test_num", sql: QUALITY_TEST_NUM_SQL },
-  { name: "quality_test_str", sql: QUALITY_TEST_STR_SQL },
-  { name: "quality_test_sample", sql: QUALITY_TEST_SAMPLE_SQL },
-  { name: "quality_test_partition", sql: QUALITY_TEST_PARTITION_SQL },
-  { name: "quality_test_enum_pass", sql: QUALITY_TEST_ENUM_PASS_SQL },
-] as const;
-const TABLE_SEED_SQLS = [
-  { name: "quality_test_num", sql: QUALITY_TEST_NUM_SEED_SQL },
-  { name: "quality_test_str", sql: QUALITY_TEST_STR_SEED_SQL },
-  { name: "quality_test_sample", sql: QUALITY_TEST_SAMPLE_SEED_SQL },
-  { name: "quality_test_partition", sql: QUALITY_TEST_PARTITION_SEED_SQL },
-  { name: "quality_test_enum_pass", sql: QUALITY_TEST_ENUM_PASS_SEED_SQL },
+const TABLE_DEFINITIONS: readonly TableDefinition[] = [
+  { name: "quality_test_num", sqlByDatasource: QUALITY_TEST_NUM_SQL },
+  { name: "quality_test_str", sqlByDatasource: QUALITY_TEST_STR_SQL },
+  { name: "quality_test_sample", sqlByDatasource: QUALITY_TEST_SAMPLE_SQL },
+  { name: "quality_test_partition", sqlByDatasource: QUALITY_TEST_PARTITION_SQL },
+  { name: "quality_test_enum_pass", sqlByDatasource: QUALITY_TEST_ENUM_PASS_SQL },
 ] as const;
 
-// ── 前置条件：建表 + 数据源导入 + 元数据同步 ─────────────────
+const DEFAULT_DATASOURCES: readonly DatasourceConfig[] = [
+  {
+    id: "sparkthrift2.x",
+    cacheKey: "sparkthrift2_x",
+    reportName: "sparkthrift2.x",
+    preconditionType: "SparkThrift",
+    optionPattern: /(sparkthrift|hadoop)/i,
+    sourceTypePattern: /sparkthrift/i,
+    database: "pw_test",
+  },
+  {
+    id: "doris3.x",
+    cacheKey: "doris3_x",
+    reportName: "doris3.x",
+    preconditionType: "Doris",
+    optionPattern: /doris/i,
+    sourceTypePattern: /doris/i,
+    database: "pw_test",
+  },
+] as const;
 
-export async function runPreconditions(page: Page): Promise<void> {
-  await applyRuntimeCookies(page);
+const DATASOURCE_BY_ID = new Map(DEFAULT_DATASOURCES.map((item) => [item.id, item] as const));
 
-  process.stderr.write("[preconditions] Starting table creation via API...\n");
-
-  await setupPreconditions(page, {
-    datasourceType: "Doris",
-    tables: ALL_TABLES.map((t) => ({ name: t.name, sql: t.sql })),
-    projectName: QUALITY_PROJECT_NAME,
-    syncTimeout: 90, // API 元数据同步轮询超时（秒）
-  }).catch((err) => {
-    process.stderr.write(`[preconditions] API setup partial: ${(err as Error).message}\n`);
-  });
-
-  process.stderr.write("[preconditions] Reseeding Doris tables via batch SQL...\n");
-  for (const { name, sql } of TABLE_SEED_SQLS) {
-    process.stderr.write(`[preconditions] Overwriting ${name}...\n`);
-    await executeSqlViaBatchDoris(
-      page,
-      sql,
-      `seed_${name}_${Date.now().toString(36)}`,
-      QUALITY_PROJECT_NAME,
-    );
+function loadActiveDatasources(): readonly DatasourceConfig[] {
+  const rawMatrix = process.env.QA_DATASOURCE_MATRIX?.trim();
+  if (!rawMatrix) {
+    return DEFAULT_DATASOURCES;
   }
 
-  process.stderr.write("[preconditions] Preconditions complete.\n");
+  const resolved = rawMatrix
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean)
+    .map((item) => DATASOURCE_BY_ID.get(item as DatasourceConfig["id"]));
+
+  if (resolved.some((item) => !item)) {
+    throw new Error(`Unsupported QA_DATASOURCE_MATRIX value: ${rawMatrix}`);
+  }
+
+  return resolved as readonly DatasourceConfig[];
 }
 
-// ── 前置条件：找到有 Doris 数据源的质量项目 ─────────────────────
+export const ACTIVE_DATASOURCES = loadActiveDatasources();
+export const ALL_TABLES = TABLE_DEFINITIONS.map((table) => table.name) as readonly string[];
 
-interface QualityProjectResult {
-  readonly projectId: number | null;
-  readonly projectName: string;
-}
-
-// ── 质量项目 ID（环境中已配置 tongmeng_doris3 Doris3.x 数据源的项目）──
 export const QUALITY_PROJECT_ID = 87;
 export const QUALITY_PROJECT_NAME = "pw_test";
 
-// ── 数据源和数据库配置 ──
-export const DORIS_DATASOURCE_KEYWORD = "doris"; // 数据源下拉框匹配关键字
-export const DORIS_DATABASE = "pw"; // 建表所在的 Doris 数据库
+let currentDatasource = ACTIVE_DATASOURCES[0] ?? DEFAULT_DATASOURCES[0];
+
+export function setCurrentDatasource(datasource: DatasourceConfig): void {
+  currentDatasource = datasource;
+}
+
+export function clearCurrentDatasource(): void {
+  currentDatasource = ACTIVE_DATASOURCES[0] ?? DEFAULT_DATASOURCES[0];
+}
+
+export function getCurrentDatasource(): DatasourceConfig {
+  return currentDatasource;
+}
+
+export function resolveVariantName(baseName: string, datasource = getCurrentDatasource()): string {
+  return `${baseName}_${datasource.cacheKey}`;
+}
+
+export async function runPreconditions(
+  page: Page,
+  datasource = getCurrentDatasource(),
+): Promise<void> {
+  await applyRuntimeCookies(page);
+
+  process.stderr.write(`[preconditions] Preparing ${datasource.reportName} tables...\n`);
+
+  await setupPreconditions(page, {
+    datasourceType: datasource.preconditionType,
+    tables: TABLE_DEFINITIONS.map((table) => ({
+      name: table.name,
+      sql: table.sqlByDatasource[datasource.id],
+    })),
+    projectName: QUALITY_PROJECT_NAME,
+    syncTimeout: 90,
+  });
+
+  process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
+}
 
 /**
  * 注入质量项目 ID 到 sessionStorage，确保后续 API 请求携带正确的 X-Valid-Project-ID 头。

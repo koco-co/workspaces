@@ -10,6 +10,7 @@ export interface BatchDatasource {
   readonly id: number;
   readonly dataName: string;
   readonly dataSourceType: number;
+  readonly type?: number;
   readonly identity?: string;
   readonly schemaName?: string;
   readonly schema?: string;
@@ -67,6 +68,31 @@ function extractSchemaFromJdbcUrl(jdbcUrl: string): string | undefined {
   }
 }
 
+function getDatasourceAliases(datasourceType: string): {
+  readonly keywords: readonly string[];
+  readonly typeIds: readonly number[];
+} {
+  const typeLower = datasourceType.toLowerCase();
+
+  switch (typeLower) {
+    case "sparkthrift":
+      return {
+        keywords: ["sparkthrift", "hadoop"],
+        typeIds: [45],
+      };
+    case "doris":
+      return {
+        keywords: ["doris", "doris3"],
+        typeIds: [119],
+      };
+    default:
+      return {
+        keywords: [typeLower],
+        typeIds: [],
+      };
+  }
+}
+
 export class BatchApi {
   constructor(private readonly client: DtStackClientLike) {}
 
@@ -108,10 +134,14 @@ export class BatchApi {
       projectId,
     );
     if (resp.code !== 1 || !resp.data) return null;
-    const typeLower = datasourceType.toLowerCase();
+    const { keywords, typeIds } = getDatasourceAliases(datasourceType);
     const ds = resp.data.find((d) => {
-      if (d.identity?.toLowerCase() === typeLower) return true;
-      if (d.dataName?.toLowerCase().includes(typeLower)) return true;
+      if (d.identity && keywords.includes(d.identity.toLowerCase())) return true;
+      if (d.dataName && keywords.some((keyword) => d.dataName.toLowerCase().includes(keyword))) {
+        return true;
+      }
+      if (d.dataSourceType && typeIds.includes(d.dataSourceType)) return true;
+      if (d.type && typeIds.includes(d.type)) return true;
       return false;
     });
     return ds ?? null;
@@ -161,7 +191,9 @@ export class BatchApi {
         }
       } catch (primaryError) {
         if (isAlreadyExistsError((primaryError as Error).message)) {
-          process.stderr.write(`[batch] warning (already exists): ${(primaryError as Error).message}\n`);
+          process.stderr.write(
+            `[batch] warning (already exists): ${(primaryError as Error).message}\n`,
+          );
           continue;
         }
         if (isDrop) {
@@ -179,7 +211,9 @@ export class BatchApi {
         } catch (fallbackError) {
           // For INSERT: warn but continue (table may already have data)
           if (isInsertStatement(stmt)) {
-            process.stderr.write(`[batch] INSERT skipped (table may have data): ${(primaryError as Error).message}\n`);
+            process.stderr.write(
+              `[batch] INSERT skipped (table may have data): ${(primaryError as Error).message}\n`,
+            );
             continue;
           }
           const details = [(primaryError as Error).message, (fallbackError as Error).message].join(

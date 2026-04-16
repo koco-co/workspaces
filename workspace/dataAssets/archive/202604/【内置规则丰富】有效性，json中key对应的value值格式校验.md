@@ -36,7 +36,7 @@ origin: "xmind"
 ```
 1) 使用 admin 账号登录系统
 2) 已在「通用配置 → json格式校验管理」中维护key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
-3) 已通过【数据质量 → 规则集管理】页面创建规则集"rule_set_value_fmt_ui"，关联Doris数据源 quality_test_db 库 json_format_test 表（含字段 info（JSON类型）、name（VARCHAR类型）），规则包名称"value格式校验UI测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面创建规则集"rule_set_value_fmt_ui"，关联 SparkThrift2.x 数据源 pw_test 库 json_format_test 表（含字段 info（STRING类型）、name（VARCHAR类型）），规则包名称"value格式校验UI测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -45,6 +45,7 @@ origin: "xmind"
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_value_fmt_ui"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"value格式校验UI测试包"中点击【新增规则】，选择「有效性校验」，「字段」下拉框选择「info（json）」，展开「统计规则」下拉框，查看选项列表 | 「统计规则」下拉框中出现「格式-json格式校验」选项，且该选项位于「自定义正则」选项的上方 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证「格式-json格式校验」统计规则悬浮提示内容正确
 
@@ -53,7 +54,7 @@ origin: "xmind"
 ```
 1) 使用 admin 账号登录系统
 2) 已在「通用配置 → json格式校验管理」中维护key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_value_fmt_tip"，关联Doris数据源 quality_test_db 库 json_format_test 表，规则包名称"提示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_value_fmt_tip"，关联 SparkThrift2.x 数据源 pw_test 库 json_format_test 表，规则包名称"提示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -62,6 +63,7 @@ origin: "xmind"
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_value_fmt_tip"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"提示测试包"中点击【新增规则】，选择「有效性校验」，「字段」下拉框选择「info（json）」，「统计规则」下拉框选择「格式-json格式校验」，将鼠标悬浮在「格式-json格式校验」选项或其旁边的提示图标上 | 悬浮提示内容显示为：「校验内容为key名对应的value格式是否符合要求，value格式需要在通用配置模块维护。」 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 规则配置-字段类型限制
 
@@ -72,16 +74,16 @@ origin: "xmind"
 ```
 1) 使用 admin 账号登录系统
 2) 已执行以下 SQL 创建包含多种字段类型的测试表：
-   CREATE TABLE quality_test_db.multi_type_test (
+   CREATE TABLE pw_test.multi_type_test (
      id INT,
      name VARCHAR(255),
      age INT,
      salary DECIMAL(10,2),
-     info JSON,
+     info STRING,
      created_at DATETIME
    );
 3) 已在资产平台引入该表，且元数据字段类型识别正确
-4) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_field_type_test"，关联Doris数据源quality_test_db库multi_type_test表，规则包名称"字段类型测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+4) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_field_type_test"，关联 SparkThrift2.x 数据源pw_test库multi_type_test表，规则包名称"字段类型测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 5) 已在「通用配置 → json格式校验管理」中维护key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
 ```
 
@@ -93,6 +95,7 @@ origin: "xmind"
 | 2    | 找到规则集"rule_set_field_type_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"字段类型测试包"中点击【新增规则】，添加有效性校验规则，分别将「字段」依次选择为「age（int）」「salary（decimal）」「created_at（datetime）」，观察每次选择后「统计规则」下拉框的可选项 | 选择 int、decimal、datetime 类型字段时，「统计规则」下拉框中均不出现「格式-json格式校验」选项 |
 | 3    | 将「字段」切换选择为「info（json）」，展开「统计规则」下拉框查看选项 | 选择 json 类型字段后，「统计规则」下拉框中出现「格式-json格式校验」选项 |
 | 4    | 将「字段」切换选择为「name（varchar）」，展开「统计规则」下拉框查看选项 | 选择 varchar 类型字段后，「统计规则」下拉框中同样出现「格式-json格式校验」选项 |
+| 5 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 规则配置-校验key选择
 
@@ -106,7 +109,7 @@ origin: "xmind"
    - key路径「product-name」，中文名称「产品名称」，value格式正则：^.{1,50}$
    - key路径「product-code」，中文名称「产品编码」，value格式正则：^[A-Z]{2}\d{6}$
    - key路径「product-desc」，中文名称「产品描述」，未配置value格式
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_key_select_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"key选择测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_key_select_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"key选择测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -117,6 +120,7 @@ origin: "xmind"
 | 2    | 找到规则集"rule_set_key_select_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"key选择测试包"中点击【新增规则】，添加有效性校验规则，按如下配置：<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>展开「校验key」下拉选择框，查看列表中各key的可选状态 | 「校验key」下拉框列表中：<br>1) 「product-name」（已配置value格式）显示为可选状态，可点击勾选<br>2) 「product-code」（已配置value格式）显示为可选状态，可点击勾选<br>3) 「product-desc」（未配置value格式）显示为不可选状态，置灰禁用 |
 | 3    | 点击「product-desc」进行选中操作 | 「product-desc」无法被选中，复选框保持未勾选状态 |
 | 4    | 点击勾选「product-name」和「product-code」 | 「product-name」和「product-code」均成功勾选，下拉框输入框内回显「product-name;product-code」 |
+| 5 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验key支持多选和全选操作
 
@@ -128,7 +132,7 @@ origin: "xmind"
    - key路径「user-name」，中文名称「用户姓名」，value格式正则：^[\u4e00-\u9fa5a-zA-Z]{1,20}$
    - key路径「user-phone」，中文名称「用户手机号」，value格式正则：^1[3-9]\d{9}$
    - key路径「user-id」，中文名称「用户身份证号」，value格式正则：^\d{18}$
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_multi_select_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"多选全选测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_multi_select_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"多选全选测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -140,6 +144,7 @@ origin: "xmind"
 | 3    | 查看输入框的回显内容 | 输入框回显格式为「user-name;user-phone;user-id」，多个key以分号分隔 |
 | 4    | 点击下拉框中的「全部」选项 | 列表中所有可选key（已配置value格式的key）全部被勾选，「全部」选项复选框显示为选中状态 |
 | 5    | 再次点击「全部」选项取消全选 | 所有key均取消勾选，「全部」选项复选框恢复为未选中状态，输入框回显清空 |
+| 6 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验key搜索功能正常
 
@@ -151,7 +156,7 @@ origin: "xmind"
    - key路径「order-amount」，中文名称「订单金额」，value格式正则：^\d+\.\d{2}$
    - key路径「order-status」，中文名称「订单状态」，value格式正则：^(paid|pending)$
    - key路径「user-name」，中文名称「用户姓名」，value格式正则：^.{1,20}$
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_key_search_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"key搜索测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_key_search_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"key搜索测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -161,6 +166,7 @@ origin: "xmind"
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_key_search_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"key搜索测试包"中点击【新增规则】，添加有效性校验规则，按如下配置：<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>展开「校验key」下拉框，在搜索框中输入「order」 | 下拉列表过滤展示，仅显示包含「order」的key：「order-amount」和「order-status」；「user-name」不在列表中显示 |
 | 3    | 清空搜索框内容，查看下拉列表 | 下拉列表恢复展示全部key，「order-amount」「order-status」「user-name」均重新显示 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验key数据量超过200条时默认加载前200条展示
 
@@ -182,7 +188,7 @@ for i in range(1, 211):
 wb.save("json_value_format_import_210.xlsx")
 print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，均配置value格式")
 
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_large_key_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"大数据量key测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_large_key_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"大数据量key测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -192,6 +198,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_large_key_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"大数据量key测试包"中点击【新增规则】，添加有效性校验规则，按如下配置：<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>展开「校验key」下拉框，观察初始加载的key列表 | 「校验key」下拉框初始展示前200条key（test-key-001 至 test-key-200），第201条及以后的key（test-key-201至test-key-210）不在初始列表中显示 |
 | 3    | 在搜索框中输入「test-key-205」进行搜索 | 搜索结果中显示「test-key-205」，可正常选中 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验key回显格式及勾选仅对当前层级生效
 
@@ -203,7 +210,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - 一级key「person」下二级key「name」，路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
    - 一级key「person」下二级key「age」，路径「person-age」，中文名称「人员年龄」，value格式正则：^\d{1,3}$
    - 一级key「address」下二级key「city」，路径「address-city」，中文名称「地址城市」，value格式正则：^.{1,20}$
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_layer_key_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"层级key测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_layer_key_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"层级key测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -213,6 +220,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_layer_key_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"层级key测试包"中点击【新增规则】，添加有效性校验规则，按如下配置：<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>展开「校验key」下拉框，勾选「person-name」和「address-city」，点击【保存】 | 规则保存成功；规则行的「校验key」列回显内容为「person-name;address-city」，分号分隔不同key路径，连字符分隔层级 |
 | 3    | 编辑该规则，重新展开「校验key」下拉框，查看已勾选的key是否正确回显 | 1) 「person-name」复选框显示为勾选状态<br>2) 「address-city」复选框显示为勾选状态<br>3) 「person-age」复选框显示为未勾选状态 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验key输入框悬浮时展示全部key名，默认仅显示前两个
 
@@ -225,7 +233,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - key路径「field-key2」，中文名称「字段键2」，value格式正则：^.+$
    - key路径「field-key3」，中文名称「字段键3」，value格式正则：^.+$
    - key路径「field-key4」，中文名称「字段键4」，value格式正则：^.+$
-3) 已通过【数据质量 → 规则集管理】页面，创建规则集"rule_set_hover_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"悬浮展示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则，校验key选择了4个key：「field-key1」「field-key2」「field-key3」「field-key4」，并已保存
+3) 已通过【数据质量 → 规则集管理】页面，创建规则集"rule_set_hover_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"悬浮展示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则，校验key选择了4个key：「field-key1」「field-key2」「field-key3」「field-key4」，并已保存
 ```
 
 > 用例步骤
@@ -236,6 +244,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 2    | 找到规则集"rule_set_hover_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，查看"悬浮展示测试包"中已配置的「格式-json格式校验」规则行的"校验key"列 | 规则集编辑页正常打开，Step 2 监控规则页面加载完成，已配置的「格式-json格式校验」规则行展示校验key为「field-key1;field-key2;field-key3;field-key4」 |
 | 3    | 观察"校验key"列在非悬浮状态下的显示内容 | 「校验key」字段区域默认仅展示前两个key「field-key1」和「field-key2」，后续key以省略符截断 |
 | 4    | 将鼠标悬浮在「校验key」字段区域 | 浮层展示全部4个key名：「field-key1」「field-key2」「field-key3」「field-key4」 |
+| 5 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 规则配置-value格式预览
 
@@ -249,7 +258,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - key路径「check-key-01」，中文名称「校验键01」，value格式正则：^[A-Z]{2}\d{4}$
    - key路径「check-key-02」，中文名称「校验键02」，value格式正则：^1[3-9]\d{9}$
    - key路径「check-key-03」至「check-key-15」，中文名称「校验键03」至「校验键15」，各配置不同正则
-3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_preview_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"value预览测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+3) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_preview_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"value预览测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 ```
 
 > 用例步骤
@@ -261,6 +270,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 3    | 点击「value格式预览」按钮，等待弹窗加载完成 | 弹窗正常打开：<br>1) 弹窗内列表仅展示已勾选的3个key对应的信息，未勾选的「check-key-04」至「check-key-15」不显示<br>2) 列表包含两列：「key」列和「value格式」列<br>3) 「check-key-01」对应「^[A-Z]{2}\d{4}$」<br>4) 「check-key-02」对应「^1[3-9]\d{9}$」 |
 | 4    | 关闭弹窗，取消勾选「check-key-03」，再次点击「value格式预览」按钮，等待弹窗加载完成 | 弹窗内列表更新为仅展示「check-key-01」和「check-key-02」共2条记录，「check-key-03」不再显示 |
 | 5    | 关闭弹窗，重新勾选「check-key-03」至「check-key-12」共12个key（合计12个），点击「value格式预览」按钮，查看弹窗分页情况 | 1) 弹窗展示分页控件<br>2) 默认展示第1页数据<br>3) 可翻页查看剩余key的格式信息 |
+| 6 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 规则配置
 
@@ -271,13 +281,13 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 ```
 1) 使用 admin 账号登录系统
 2) 已执行以下 SQL 创建包含 int 类型字段的测试表：
-   CREATE TABLE quality_test_db.int_type_test (
+   CREATE TABLE pw_test.int_type_test (
      id INT,
      count_val INT,
      note VARCHAR(255)
    );
 3) 已在资产平台引入该表，元数据中 count_val 字段类型识别为 int
-4) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_int_type_test"，关联Doris数据源quality_test_db库int_type_test表，规则包名称"int类型限制测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+4) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_int_type_test"，关联 SparkThrift2.x 数据源pw_test库int_type_test表，规则包名称"int类型限制测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 5) 已在「通用配置 → json格式校验管理」中维护key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
 ```
 
@@ -287,6 +297,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_int_type_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"int类型限制测试包"中点击【新增规则】，选择「有效性校验」，「字段」下拉框选择「count_val（int）」，展开「统计规则」下拉框 | 「统计规则」下拉框中不出现「格式-json格式校验」选项 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证未选择校验key时保存规则提示「请选择校验key」
 
@@ -294,7 +305,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 
 ```
 1) 使用 admin 账号登录系统
-2) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_required_test"，关联Doris数据源quality_test_db库json_format_test表，规则包名称"必填校验测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
+2) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】创建规则集"rule_set_required_test"，关联 SparkThrift2.x 数据源pw_test库json_format_test表，规则包名称"必填校验测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建
 3) 已在「通用配置 → json格式校验管理」中维护key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
 ```
 
@@ -304,6 +315,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_required_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，在"必填校验测试包"中点击【新增规则】，选择「有效性校验」，按如下配置：<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>- *校验key：不选择任何key<br>直接点击【保存】按钮 | 保存失败；「校验key」输入框下方显示错误提示「请选择校验key」；规则未被添加到列表 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 规则配置参数展示
 
@@ -314,7 +326,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 ```
 1) 使用 admin 账号登录系统
 2) 已在「通用配置 → json格式校验管理」中维护key路径「device-type」，中文名称「设备类型」，value格式正则：^(mobile|pc|tablet)$
-3) 已通过【数据质量 → 规则集管理】页面，创建规则集"rule_set_param_display_test"，关联Doris数据源quality_test_db库含json字段（字段名 device_info，类型 json）的数据表，规则包名称"参数展示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则：
+3) 已通过【数据质量 → 规则集管理】页面，创建规则集"rule_set_param_display_test"，关联 SparkThrift2.x 数据源pw_test库含json字段（字段名 device_info，类型 json）的数据表，规则包名称"参数展示测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则：
    - 字段：device_info
    - 校验key：device-type
    - 强弱规则：强规则
@@ -327,6 +339,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
 | 2    | 找到规则集"rule_set_param_display_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，查看"参数展示测试包"中已配置的「格式-json格式校验」规则行的参数展示区域 | 规则配置参数展示区域各字段内容如下：<br>1) 规则类型=「字段级」<br>2) 字段=「device_info」<br>3) 统计规则=「格式-json格式校验」<br>4) 校验key=「device-type」<br>5) 强弱规则=「强规则」 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ### 规则任务管理
 
@@ -338,19 +351,19 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 
 ```
 1) 使用 admin 账号登录系统
-2) 数据源中心已添加数据源「测试数据源_Doris」并授权给资产平台
+2) 数据源中心已添加数据源「测试数据源_SparkThrift2」并授权给资产平台
 3) 已在「通用配置 → json格式校验管理」中维护如下数据：
    - key路径「person-name」，中文名称「人员姓名」，value格式正则：^[\u4e00-\u9fa5]+$
    - key路径「person-age」，中文名称「人员年龄」，value格式正则：^\d{1,3}$
    - key路径「person-email」，中文名称「人员邮箱」，未配置value格式
-4) 资产平台已引入该数据源，数据源下存在 quality_test_db 数据库
+4) 资产平台已引入该数据源，数据源下存在 pw_test 数据库
 5) 已执行以下 SQL 创建测试表并灌入数据：
-   CREATE TABLE quality_test_db.json_format_test (
+   CREATE TABLE pw_test.json_format_test (
      id INT,
-     info JSON,
+     info STRING,
      name VARCHAR(255)
    );
-   INSERT INTO quality_test_db.json_format_test VALUES
+   INSERT INTO pw_test.json_format_test VALUES
      (1, '{"person":{"name":"张三","age":"25","email":"test@example.com"}}', 'row1'),
      (2, '{"person":{"name":"李四","age":"30","email":"admin@test.com"}}', 'row2');
 6) 已在资产平台引入该表，且元数据中 info 字段类型识别为 json
@@ -361,13 +374,14 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 编号 | 步骤 | 预期 |
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
-| 2    | 点击【新建规则集】，在 Step 1 基础信息中按顺序配置如下：<br>- *选择数据源：测试数据源_Doris<br>- *选择数据库：quality_test_db<br>- *选择数据表：json_format_test<br>- 规则集描述：无<br>- *规则包名称：P0主流程测试包（点击【新增】按钮添加）<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
+| 2    | 点击【新建规则集】，在 Step 1 基础信息中按顺序配置如下：<br>- *选择数据源：测试数据源_SparkThrift2<br>- *选择数据库：pw_test<br>- *选择数据表：json_format_test<br>- 规则集描述：无<br>- *规则包名称：P0主流程测试包（点击【新增】按钮添加）<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
 | 3    | 在 Step 2 监控规则中，在「P0主流程测试包」下点击【新增规则】，选择【有效性校验】，按顺序配置如下：<br>- *规则类型：字段级<br>- *字段：info（json）<br>- *统计规则：格式-json格式校验<br>- *校验key：person-name、person-age<br>- 强弱规则：强规则<br>- 过滤条件：无<br>- 规则描述：无<br>点击规则行的【保存】按钮，再点击页面底部【保存】 | 规则集保存成功，列表新增 json_format_test 表对应的规则集记录，规则包「P0主流程测试包」下显示已保存的「格式-json格式校验」规则 |
-| 4    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成，点击【新建监控规则】，在 Step 1 基础信息中按顺序配置如下：<br>- *规则名称：json格式校验任务_P0<br>- *选择数据源：测试数据源_Doris<br>- *选择数据库：quality_test_db<br>- *选择数据表：json_format_test<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
+| 4    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成，点击【新建监控规则】，在 Step 1 基础信息中按顺序配置如下：<br>- *规则名称：json格式校验任务_P0<br>- *选择数据源：测试数据源_SparkThrift2<br>- *选择数据库：pw_test<br>- *选择数据表：json_format_test<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
 | 5    | 在 Step 2 监控规则中点击【导入规则包】，选择规则集管理中刚创建的规则包「P0主流程测试包」并确认导入 | 规则包导入成功，Step 2 页面仅展示从规则集管理导入的「格式-json格式校验」相关规则，无额外手工新增规则 |
 | 6    | 点击【下一步】进入 Step 3 调度属性，填写调度属性后点击【保存】 | 规则任务创建成功，返回任务列表后可查询到任务「json格式校验任务\_P0」 |
 | 7    | 在规则任务列表中找到「json格式校验任务\_P0」，点击操作列的【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 8    | 进入【数据质量 → 校验结果查询】页面，等待列表加载完成，找到「json格式校验任务\_P0」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 实例状态显示「已完成」，最新校验结果显示「校验通过」<br>3) 实例详情中「格式-json格式校验」规则行展示：规则类型=「有效性校验」、规则名称=「格式-json格式校验」、字段类型=「json」、质检结果=「校验通过」、未通过原因=「--」、详情说明=「符合规则key为"person-name;person-age"时的value格式要求」<br>4) 操作列不显示「查看详情」链接 |
+| 9 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P0】验证格式-json格式校验校验不通过主流程：规则集配置+导入规则包+执行任务+在校验结果查询中查看失败明细
 
@@ -375,18 +389,18 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 
 ```
 1) 使用 admin 账号登录系统
-2) 数据源中心已添加数据源「测试数据源_Doris」并授权给资产平台
-3) 资产平台已引入该数据源，数据源下存在 quality_test_db 数据库
+2) 数据源中心已添加数据源「测试数据源_SparkThrift2」并授权给资产平台
+3) 资产平台已引入该数据源，数据源下存在 pw_test 数据库
 4) 已在「通用配置 → json格式校验管理」中维护：
    - key路径「order-amount」，中文名称「订单金额」，value格式正则：^\d+\.\d{2}$
    - key路径「order-status」，中文名称「订单状态」，value格式正则：^(pending|paid|cancelled)$
 5) 已执行以下 SQL 创建测试表并灌入包含不合规数据的数据：
-   CREATE TABLE quality_test_db.json_invalid_test (
+   CREATE TABLE pw_test.json_invalid_test (
      id INT,
-     order_info JSON,
+     order_info STRING,
      remark VARCHAR(255)
    );
-   INSERT INTO quality_test_db.json_invalid_test VALUES
+   INSERT INTO pw_test.json_invalid_test VALUES
      (1, '{"order":{"amount":"100.00","status":"paid"}}', 'row_valid'),
      (2, '{"order":{"amount":"abc","status":"unknown"}}', 'row_invalid'),
      (3, '{"order":{"amount":"50.5","status":"pending"}}', 'row_invalid2');
@@ -398,14 +412,15 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 编号 | 步骤 | 预期 |
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 规则集管理】页面，等待规则集列表加载完成 | 规则集管理页面正常打开，列表加载完成 |
-| 2    | 点击【新建规则集】，在 Step 1 基础信息中按顺序配置如下：<br>- *选择数据源：测试数据源_Doris<br>- *选择数据库：quality_test_db<br>- *选择数据表：json_invalid_test<br>- 规则集描述：无<br>- *规则包名称：校验不通过测试包（点击【新增】按钮添加）<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
+| 2    | 点击【新建规则集】，在 Step 1 基础信息中按顺序配置如下：<br>- *选择数据源：测试数据源_SparkThrift2<br>- *选择数据库：pw_test<br>- *选择数据表：json_invalid_test<br>- 规则集描述：无<br>- *规则包名称：校验不通过测试包（点击【新增】按钮添加）<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
 | 3    | 在 Step 2 监控规则中，在「校验不通过测试包」下点击【新增规则】，选择【有效性校验】，按顺序配置如下：<br>- *规则类型：字段级<br>- *字段：order_info（json）<br>- *统计规则：格式-json格式校验<br>- *校验key：order-amount、order-status<br>- 强弱规则：强规则<br>- 过滤条件：无<br>- 规则描述：无<br>点击规则行的【保存】按钮，再点击页面底部【保存】 | 规则集保存成功，列表新增 json_invalid_test 表对应的规则集记录，规则包「校验不通过测试包」下显示已保存的「格式-json格式校验」规则 |
-| 4    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成，点击【新建监控规则】，在 Step 1 基础信息中按顺序配置如下：<br>- *规则名称：json格式校验任务_不通过<br>- *选择数据源：测试数据源_Doris<br>- *选择数据库：quality_test_db<br>- *选择数据表：json_invalid_test<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
+| 4    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成，点击【新建监控规则】，在 Step 1 基础信息中按顺序配置如下：<br>- *规则名称：json格式校验任务_不通过<br>- *选择数据源：测试数据源_SparkThrift2<br>- *选择数据库：pw_test<br>- *选择数据表：json_invalid_test<br>点击【下一步】 | Step 1 校验通过，进入 Step 2 监控规则页面 |
 | 5    | 在 Step 2 监控规则中点击【导入规则包】，选择规则集管理中刚创建的规则包「校验不通过测试包」并确认导入 | 规则包导入成功，Step 2 页面仅展示从规则集管理导入的「格式-json格式校验」相关规则，无额外手工新增规则 |
 | 6    | 点击【下一步】进入 Step 3 调度属性，填写调度属性后点击【保存】 | 规则任务创建成功，返回任务列表后可查询到任务「json格式校验任务\_不通过」 |
 | 7    | 在规则任务列表中找到「json格式校验任务\_不通过」，点击操作列的【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 8    | 进入【数据质量 → 校验结果查询】页面，等待列表加载完成，找到「json格式校验任务\_不通过」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 实例状态显示「已完成」，最新校验结果显示「校验不通过」<br>3) 实例详情中「格式-json格式校验」规则行展示：规则类型=「有效性校验」、规则名称=「格式-json格式校验」、字段类型=「json」、质检结果=「校验不通过」、未通过原因=「key对应value格式校验未通过」、详情说明=「不符合规则key为"order-amount;order-status"时的value格式要求」<br>4) 操作列显示「查看详情」链接 |
 | 9    | 点击「格式-json格式校验」规则行操作列的【查看详情】链接，等待明细弹窗加载完成 | 弹窗标题显示「查看"有效性校验-格式-json格式校验"明细」；明细列表加载完成，显示不符合要求的数据行（id=2 和 id=3 的记录）；「order_info」字段以红色高亮标红展示，其余字段正常展示 |
+| 10 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 数据源兼容性
 
@@ -475,14 +490,14 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 2) 数据源中心已添加 Hive 2.x 版本数据源「测试数据源_Hive2」并授权给资产平台
 3) 已在「通用配置 → json格式校验管理」中维护 key路径「score-value」，中文名称「分数值」，value格式正则：^\d{1,3}$
 4) 已在 Hive 数据源的 hive_test_db 数据库中创建测试表并灌入数据：
-   CREATE TABLE hive_test_db.json_score_test (
+   CREATE TABLE pw_test.json_score_test (
      id INT,
      score_info STRING
    ) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
-   INSERT INTO hive_test_db.json_score_test VALUES
+   INSERT INTO pw_test.json_score_test VALUES
      (1, '{"score":{"value":"95"}}'),
      (2, '{"score":{"value":"1000"}}');
-5) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_hive2_compat"创建：Step 1 基础信息中关联 Hive2.x 数据源的 hive_test_db.json_score_test 表，并新增规则包"Hive2兼容性测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=score_info（string类型）、统计规则=格式-json格式校验、校验key=score-value、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_hive2_compat"创建：Step 1 基础信息中关联 Hive2.x 数据源的 pw_test.json_score_test 表，并新增规则包"Hive2兼容性测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=score_info（string类型）、统计规则=格式-json格式校验、校验key=score-value、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
 6) 已通过【数据质量 → 规则任务管理】页面完成任务"Hive2兼容性测试任务"创建：Step 1 基础信息中规则名称=Hive2兼容性测试任务，并关联同一 Hive 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_hive2_compat"的"Hive2兼容性测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
 ```
 
@@ -522,18 +537,18 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    print("已生成 json_value_format_import_1200.xlsx，共1200条key数据（1000条配置value格式+200条未配置）")
 
 3) 已执行以下 SQL 创建测试表并灌入数据：
-   CREATE TABLE quality_test_db.json_perf_test (
+   CREATE TABLE pw_test.json_perf_test (
      id INT,
-     big_info JSON
+     big_info STRING
    );
-   INSERT INTO quality_test_db.json_perf_test VALUES
+   INSERT INTO pw_test.json_perf_test VALUES
      (1, '{"perf-key-0001":"value_1","perf-key-0002":"value_2"}'),
      (2, '{"perf-key-0001":"","perf-key-0002":"value_2"}');
-   Doris表大量json数据灌数脚本如下:
+   SparkThrift2.x表大量json数据灌数脚本如下:
 
    lines = []
-   lines.append("CREATE TABLE IF NOT EXISTS quality_test_db.json_perf_test (id INT, big_info JSON);")
-   lines.append("INSERT INTO quality_test_db.json_perf_test VALUES")
+   lines.append("CREATE TABLE IF NOT EXISTS pw_test.json_perf_test (id INT, big_info STRING);")
+   lines.append("INSERT INTO pw_test.json_perf_test VALUES")
    for i in range(1, 1001):
        keys = [f'"perf-key-{j:04d}": "value_{j}"' for j in range(max(1, i-2), min(1001, i+3))]
        json_str = "{" + ", ".join(keys) + "}"
@@ -544,8 +559,8 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
        f.write("\n".join(lines))
    print("已生成 insert_json_perf_1000.sql，共1000条INSERT记录")
 
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_perf_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_perf_test 表，并新增规则包"大数据量key校验包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=big_info、统计规则=格式-json格式校验、校验key=perf-key-0001 和 perf-key-0002、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"大数据量key校验任务"创建：Step 1 基础信息中规则名称=大数据量key校验任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_perf_test"的"大数据量key校验包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_perf_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_perf_test 表，并新增规则包"大数据量key校验包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=big_info、统计规则=格式-json格式校验、校验key=perf-key-0001 和 perf-key-0002、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"大数据量key校验任务"创建：Step 1 基础信息中规则名称=大数据量key校验任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_perf_test"的"大数据量key校验包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
 ```
 
 > 用例步骤
@@ -555,6 +570,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成 | 规则任务管理页面正常打开，列表加载完成 |
 | 2    | 找到「大数据量key校验任务」，点击【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 3    | 进入【数据质量 → 校验结果查询】页面，找到「大数据量key校验任务」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 实例详情可正常打开，不出现超时、空白或报错<br>3) 实例详情中 id=1 记录质检结果=「校验通过」，id=2 记录因 perf-key-0001 值为空而质检结果=「校验不通过」<br>4) 详情说明列准确引用校验key「perf-key-0001;perf-key-0002」 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### key删除后关联影响
 
@@ -568,14 +584,14 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - key路径「del-key-a」，中文名称「待删除键A」，value格式正则：^[A-Z]+$
    - key路径「del-key-b」，中文名称「待删除键B」，value格式正则：^\d+$
 3) 已执行以下 SQL 创建测试表并灌入数据：
-   CREATE TABLE quality_test_db.json_del_test (
+   CREATE TABLE pw_test.json_del_test (
      id INT,
-     del_info JSON
+     del_info STRING
    );
-   INSERT INTO quality_test_db.json_del_test VALUES
+   INSERT INTO pw_test.json_del_test VALUES
      (1, '{"del":{"key":{"a":"ABC","b":"123"}}}');
-4) 已通过【数据质量 → 规则集管理】创建规则集"rule_set_key_del_test"，关联Doris数据源quality_test_db库json_del_test表，规则包名称"key删除测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则：字段=del_info、校验key=del-key-a和del-key-b，已保存规则集
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"key删除影响测试任务"创建：Step 1 基础信息中规则名称=key删除影响测试任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_key_del_test"的"key删除测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
+4) 已通过【数据质量 → 规则集管理】创建规则集"rule_set_key_del_test"，关联 SparkThrift2.x 数据源pw_test库json_del_test表，规则包名称"key删除测试包"，点击【下一步】进入 Step 2 监控规则，在规则包中点击【新增规则】，统计函数选择【非空值数】，字段选择 payload，点击规则行【保存】，再点击页面底部【保存】完成规则集创建，在 Step 2 中配置「格式-json格式校验」规则：字段=del_info、校验key=del-key-a和del-key-b，已保存规则集
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"key删除影响测试任务"创建：Step 1 基础信息中规则名称=key删除影响测试任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_key_del_test"的"key删除测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
 ```
 
 > 用例步骤
@@ -587,6 +603,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 3    | 进入【数据质量 → 规则集管理】页面，找到规则集"rule_set_key_del_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，查看「格式-json格式校验」规则行的「校验key」回显内容 | 规则配置页面正常加载，「校验key」列回显内容中「del-key-a」已从校验key列表中移除，「del-key-b」正常显示 |
 | 4    | 点击该规则行的【编辑】按钮，展开「校验key」下拉框 | 下拉框正常打开，列表中不再显示已删除的「del-key-a」，「del-key-b」显示为已勾选状态 |
 | 5    | 点击【保存】按钮 | 规则保存成功，「校验key」列回显「del-key-b」 |
+| 6 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证删除已被规则引用的key后value格式预览弹窗和执行校验任务正常
 
@@ -598,15 +615,15 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - key路径「preview-key-x」，中文名称「预览键X」，value格式正则：^[0-9]+$
    - key路径「preview-key-y」，中文名称「预览键Y」，value格式正则：^[a-z]+$
 3) 已执行以下 SQL 创建测试表并灌入数据：
-   CREATE TABLE quality_test_db.json_preview_del (
+   CREATE TABLE pw_test.json_preview_del (
      id INT,
-     preview_info JSON
+     preview_info STRING
    );
-   INSERT INTO quality_test_db.json_preview_del VALUES
+   INSERT INTO pw_test.json_preview_del VALUES
      (1, '{"preview":{"key":{"x":"123","y":"abc"}}}'),
      (2, '{"preview":{"key":{"x":"456","y":"def"}}}');
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_preview_del_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_preview_del 表，并新增规则包"key删除预览测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=preview_info、统计规则=格式-json格式校验、校验key=preview-key-x 和 preview-key-y、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"key删除预览测试任务"创建：Step 1 基础信息中规则名称=key删除预览测试任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_preview_del_test"的"key删除预览测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_preview_del_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_preview_del 表，并新增规则包"key删除预览测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=preview_info、统计规则=格式-json格式校验、校验key=preview-key-x 和 preview-key-y、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"key删除预览测试任务"创建：Step 1 基础信息中规则名称=key删除预览测试任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_preview_del_test"的"key删除预览测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
 6) 已在「通用配置 → json格式校验管理」中删除「preview-key-x」
 ```
 
@@ -618,6 +635,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 2    | 进入【数据质量 → 规则集管理】页面，找到规则集"rule_set_preview_del_test"，点击操作列的【编辑】按钮，进入 Step 2 监控规则页面，找到「格式-json格式校验」规则行，点击「value格式预览」按钮，等待弹窗加载 | 弹窗正常打开，仅展示「preview-key-y」的格式信息，已删除的「preview-key-x」不在列表中 |
 | 3    | 关闭弹窗，返回规则任务列表，找到「key删除预览测试任务」，点击【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 4    | 进入【数据质量 → 校验结果查询】页面，找到「key删除预览测试任务」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 实例状态显示「已完成」，最新校验结果显示「校验通过」<br>3) 实例详情中「格式-json格式校验」规则的详情说明仅引用「preview-key-y」，不再展示已删除的「preview-key-x」<br>4) 页面未出现引用已删除 key 的报错信息 |
+| 5 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 抽样场景
 
@@ -629,11 +647,11 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 1) 使用 admin 账号登录系统
 2) 已在「通用配置 → json格式校验管理」中维护 key路径「sample-code」，中文名称「样本编码」，value格式正则：^S\d{6}$
 3) 已执行以下 SQL 创建测试表并灌入20条数据：
-   CREATE TABLE quality_test_db.json_sample_test (
+   CREATE TABLE pw_test.json_sample_test (
      id INT,
-     sample_info JSON
+     sample_info STRING
    );
-   INSERT INTO quality_test_db.json_sample_test VALUES
+   INSERT INTO pw_test.json_sample_test VALUES
      (1, '{"sample":{"code":"S000001"}}'),
      (2, '{"sample":{"code":"S000002"}}'),
      (3, '{"sample":{"code":"S000003"}}'),
@@ -654,8 +672,8 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
      (18, '{"sample":{"code":"S000018"}}'),
      (19, '{"sample":{"code":"S000019"}}'),
      (20, '{"sample":{"code":"S000020"}}');
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_sample_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_sample_test 表，并新增规则包"抽样校验测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=sample_info、统计规则=格式-json格式校验、校验key=sample-code、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"抽样校验测试任务"创建：Step 1 基础信息中规则名称=抽样校验测试任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_sample_test"的"抽样校验测试包"，并在任务配置中设置抽样比例为 50%；点击【下一步】进入 Step 3 调度属性并点击【保存】，任务创建成功
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_sample_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_sample_test 表，并新增规则包"抽样校验测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=sample_info、统计规则=格式-json格式校验、校验key=sample-code、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"抽样校验测试任务"创建：Step 1 基础信息中规则名称=抽样校验测试任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_sample_test"的"抽样校验测试包"，并在任务配置中设置抽样比例为 50%；点击【下一步】进入 Step 3 调度属性并点击【保存】，任务创建成功
 ```
 
 > 用例步骤
@@ -665,6 +683,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成 | 规则任务列表正常加载 |
 | 2    | 找到「抽样校验测试任务」，点击【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 3    | 进入【数据质量 → 校验结果查询】页面，找到「抽样校验测试任务」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 实例详情中的统计信息显示参与校验的数据量约为总数据量的 50%（约10条）<br>3) 「格式-json格式校验」规则行的质检结果正常显示本次抽样后的实际校验结果（id=11、id=12 的无效数据被抽中时结果为「校验不通过」，否则为「校验通过」）<br>4) 详情说明列准确显示校验key为「sample-code」时的 value 格式要求 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 #### 分区场景
 
@@ -676,21 +695,21 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 1) 使用 admin 账号登录系统
 2) 数据源中心已添加 Hive 2.x 版本数据源「测试数据源_Hive2」并授权给资产平台
 3) 已在「通用配置 → json格式校验管理」中维护 key路径「part-code」，中文名称「分区编码」，value格式正则：^P\d{4}$
-4) 已在 Hive 数据源的 hive_test_db 数据库中创建分区表并灌入数据：
-   CREATE TABLE hive_test_db.json_partition_test (
+4) 已在 Hive 数据源的 pw_test 数据库中创建分区表并灌入数据：
+   CREATE TABLE pw_test.json_partition_test (
      id INT,
      part_info STRING
    ) PARTITIONED BY (dt STRING)
    ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';
-   ALTER TABLE hive_test_db.json_partition_test ADD PARTITION (dt='2026-04-01');
-   ALTER TABLE hive_test_db.json_partition_test ADD PARTITION (dt='2026-04-02');
-   INSERT INTO hive_test_db.json_partition_test PARTITION (dt='2026-04-01') VALUES
+   ALTER TABLE pw_test.json_partition_test ADD PARTITION (dt='2026-04-01');
+   ALTER TABLE pw_test.json_partition_test ADD PARTITION (dt='2026-04-02');
+   INSERT INTO pw_test.json_partition_test PARTITION (dt='2026-04-01') VALUES
      (1, '{"part":{"code":"P0001"}}'),
      (2, '{"part":{"code":"invalid"}}');
-   INSERT INTO hive_test_db.json_partition_test PARTITION (dt='2026-04-02') VALUES
+   INSERT INTO pw_test.json_partition_test PARTITION (dt='2026-04-02') VALUES
      (3, '{"part":{"code":"P0003"}}'),
      (4, '{"part":{"code":"P0004"}}');
-5) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_partition_test"创建：Step 1 基础信息中关联 Hive2.x 数据源的 hive_test_db.json_partition_test 表，并新增规则包"分区校验测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=part_info（string类型）、统计规则=格式-json格式校验、校验key=part-code、强弱规则=强规则、过滤条件=分区字段 dt = '2026-04-01'、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_partition_test"创建：Step 1 基础信息中关联 Hive2.x 数据源的 pw_test.json_partition_test 表，并新增规则包"分区校验测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=part_info（string类型）、统计规则=格式-json格式校验、校验key=part-code、强弱规则=强规则、过滤条件=分区字段 dt = '2026-04-01'、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
 6) 已通过【数据质量 → 规则任务管理】页面完成任务"分区校验测试任务"创建：Step 1 基础信息中规则名称=分区校验测试任务，并关联同一 Hive 分区表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_partition_test"的"分区校验测试包"；点击【下一步】进入 Step 3 调度属性，点击【保存】，任务创建成功
 ```
 
@@ -701,6 +720,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则任务管理】页面，等待规则任务列表加载完成 | 规则任务列表正常加载 |
 | 2    | 找到「分区校验测试任务」，点击【立即执行】按钮 | 页面弹出提示信息，提示任务已提交执行 |
 | 3    | 进入【数据质量 → 校验结果查询】页面，找到「分区校验测试任务」最新实例记录并打开实例详情 | 1) 本次执行生成新的实例记录，任务名称与执行时间与本次操作匹配<br>2) 仅校验 dt='2026-04-01' 分区下的数据（id=1 和 id=2）<br>3) id=1 记录质检结果=「校验通过」，id=2 记录质检结果=「校验不通过」<br>4) dt='2026-04-02' 分区的数据（id=3、id=4）不参与本次校验 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ### 规则库配置
 
@@ -721,6 +741,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 规则库配置】页面，等待内置规则列表加载完成 | 规则库页面正常加载，内置规则列表展示完成 |
 | 2    | 在「内置规则」列表的搜索框中输入「格式-json格式校验」，点击搜索 | 搜索结果展示「格式-json格式校验」规则条目，各字段显示：<br>1) 规则名称=「格式-json格式校验」<br>2) 规则解释=「格式-json格式校验」<br>3) 规则分类=「有效性校验」<br>4) 关联范围=「字段」<br>5) 规则描述=「校验json类型的字段中key对应的value值是否符合规范要求」 |
 | 3    | 导出规则库 | 存在格式校验-格式-json格式校验-有效性校验 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ### 校验结果查询
 
@@ -733,19 +754,19 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 ```
 1) 使用 admin 账号登录系统
 2) 已执行以下 SQL 创建测试表并灌入包含不合规数据的数据：
-   CREATE TABLE quality_test_db.json_dl_test (
+   CREATE TABLE pw_test.json_dl_test (
      id INT,
-     payload JSON,
+     payload STRING,
      name VARCHAR(255)
    );
-   INSERT INTO quality_test_db.json_dl_test VALUES
+   INSERT INTO pw_test.json_dl_test VALUES
      (1, '{"product":{"code":"AB123456","price":"100.00"}}', 'valid'),
      (2, '{"product":{"code":"invalid_code","price":"abc"}}', 'invalid');
 3) 已在「通用配置 → json格式校验管理」中维护：
    - key路径「product-code」，中文名称「产品编码」，value格式正则：^[A-Z]{2}\d{6}$
    - key路径「product-price」，中文名称「产品价格」，value格式正则：^\d+\.\d{2}$
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_dl_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_dl_test 表，并新增规则包"下载明细测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=payload、统计规则=格式-json格式校验、校验key=product-code 和 product-price、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"下载明细测试任务"创建：Step 1 基础信息中规则名称=下载明细测试任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_dl_test"的"下载明细测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验不通过」
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_dl_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_dl_test 表，并新增规则包"下载明细测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=payload、统计规则=格式-json格式校验、校验key=product-code 和 product-price、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"下载明细测试任务"创建：Step 1 基础信息中规则名称=下载明细测试任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_dl_test"的"下载明细测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验不通过」
 ```
 
 > 用例步骤
@@ -756,6 +777,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 2    | 找到「下载明细测试任务」最新实例记录并打开实例详情，点击「格式-json格式校验」规则行操作列的【查看详情】，等待明细弹窗加载 | 明细弹窗打开，显示不符合规则的数据行（id=2 的记录） |
 | 3    | 在明细弹窗中点击【下载明细数据】按钮，等待文件下载完成 | 文件成功下载，文件格式为 Excel（.xlsx） |
 | 4    | 打开下载的 Excel 文件，查看校验字段（payload列）中不符合规则记录的单元格样式 | 文件内容包含全部字段列（id、payload、name）；「payload」列（校验字段）以红色标记展示；其他字段列正常展示 |
+| 5 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证校验通过时不记录明细数据，查看详情入口不显示
 
@@ -764,16 +786,16 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 ```
 1) 使用 admin 账号登录系统
 2) 已执行以下 SQL 创建测试表并灌入合规数据：
-   CREATE TABLE quality_test_db.json_pass_test (
+   CREATE TABLE pw_test.json_pass_test (
      id INT,
-     info JSON
+     info STRING
    );
-   INSERT INTO quality_test_db.json_pass_test VALUES
+   INSERT INTO pw_test.json_pass_test VALUES
      (1, '{"meta":{"version":"v1.0"}}'),
      (2, '{"meta":{"version":"v2.5"}}');
 3) 已在「通用配置 → json格式校验管理」中维护 key路径「meta-version」，中文名称「版本号」，value格式正则：^v\d+\.\d+$
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_pass_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_pass_test 表，并新增规则包"通过场景测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=info、统计规则=格式-json格式校验、校验key=meta-version、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"通过场景测试任务"创建：Step 1 基础信息中规则名称=通过场景测试任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_pass_test"的"通过场景测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验通过」
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_pass_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_pass_test 表，并新增规则包"通过场景测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=info、统计规则=格式-json格式校验、校验key=meta-version、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"通过场景测试任务"创建：Step 1 基础信息中规则名称=通过场景测试任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_pass_test"的"通过场景测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验通过」
 ```
 
 > 用例步骤
@@ -783,6 +805,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 校验结果查询】页面，等待页面加载完成 | 校验结果查询页面正常打开，列表加载完成 |
 | 2    | 找到「通过场景测试任务」最新实例记录并打开实例详情 | 实例详情页面正常打开，数据加载完成 |
 | 3    | 找到「格式-json格式校验」规则行，查看「质检结果」「未通过原因」「操作」列内容 | 1) 「质检结果」列显示「校验通过」<br>2) 「未通过原因」列显示「--」<br>3) 「操作」列不显示「查看详情」链接 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P2】验证校验失败时支持查看日志
 
@@ -800,6 +823,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | ---- | ---- | ---- |
 | 1    | 进入【数据质量 → 校验结果查询】页面，等待页面加载完成 | 校验结果查询页面正常打开，列表加载完成 |
 | 2    | 找到「日志查看测试任务」执行状态为「校验失败」的最新实例记录，点击操作列的【查看日志】按钮，等待日志内容加载 | 日志弹窗正常打开，显示本次任务执行的错误日志内容，日志内容包含数据源连接异常的错误描述信息，不显示空白页 |
+| 3 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ### 数据质量报告
 
@@ -813,15 +837,15 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 1) 使用 admin 账号登录系统
 2) 已在「通用配置 → json格式校验管理」中维护 key路径「meta-version」，中文名称「版本号」，value格式正则：^v\d+\.\d+$
 3) 已执行以下 SQL 创建测试表并灌入合规数据：
-   CREATE TABLE quality_test_db.json_report_pass (
+   CREATE TABLE pw_test.json_report_pass (
      id INT,
-     info JSON
+     info STRING
    );
-   INSERT INTO quality_test_db.json_report_pass VALUES
+   INSERT INTO pw_test.json_report_pass VALUES
      (1, '{"meta":{"version":"v1.0"}}'),
      (2, '{"meta":{"version":"v2.3"}}');
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_report_pass_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_report_pass 表，并新增规则包"报告通过测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=info、统计规则=格式-json格式校验、校验key=meta-version、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"报告通过展示任务"创建：Step 1 基础信息中规则名称=报告通过展示任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_report_pass_test"的"报告通过测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验通过」
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_report_pass_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_report_pass 表，并新增规则包"报告通过测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=info、统计规则=格式-json格式校验、校验key=meta-version、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"报告通过展示任务"创建：Step 1 基础信息中规则名称=报告通过展示任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_report_pass_test"的"报告通过测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验通过」
 ```
 
 > 用例步骤
@@ -831,6 +855,7 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 数据质量报告】页面，等待页面加载完成 | 数据质量报告页面正常打开，报告列表加载完成 |
 | 2    | 找到「报告通过展示任务」最新一次执行的报告详情并打开 | 报告详情页正常打开，数据加载完成 |
 | 3    | 找到「格式-json格式校验」规则行，逐列核对各字段内容 | 1) 规则类型列=「有效性校验」<br>2) 规则名称列=「格式-json格式校验」<br>3) 字段类型列=「json」<br>4) 质检结果列=「校验通过」<br>5) 未通过原因列=「--」<br>6) 详情说明列=「符合规则key为"meta-version"时的value格式要求」<br>7) 操作列无内容 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |
 
 ##### 【P1】验证质量报告中「格式-json格式校验」规则行各列字段展示正确（校验不通过场景）
 
@@ -842,15 +867,15 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
    - key路径「log-level」，中文名称「日志级别」，value格式正则：^(INFO|WARN|ERROR)$
    - key路径「log-code」，中文名称「日志编码」，value格式正则：^[A-Z]{3}\d{5}$
 3) 已执行以下 SQL 创建测试表并灌入包含不合规数据的数据：
-   CREATE TABLE quality_test_db.json_report_fail (
+   CREATE TABLE pw_test.json_report_fail (
      id INT,
-     log_info JSON
+     log_info STRING
    );
-   INSERT INTO quality_test_db.json_report_fail VALUES
+   INSERT INTO pw_test.json_report_fail VALUES
      (1, '{"log":{"level":"INFO","code":"ERR00001"}}'),
      (2, '{"log":{"level":"DEBUG","code":"invalid"}}');
-4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_report_fail_test"创建：Step 1 基础信息中关联 Doris 数据源 quality_test_db.json_report_fail 表，并新增规则包"报告不通过测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=log_info、统计规则=格式-json格式校验、校验key=log-level 和 log-code、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
-5) 已通过【数据质量 → 规则任务管理】页面完成任务"报告不通过展示任务"创建：Step 1 基础信息中规则名称=报告不通过展示任务，并关联同一 Doris 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_report_fail_test"的"报告不通过测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验不通过」
+4) 已通过【数据质量 → 规则集管理】页面完成规则集"rule_set_report_fail_test"创建：Step 1 基础信息中关联 SparkThrift2.x 数据源 pw_test.json_report_fail 表，并新增规则包"报告不通过测试包"；点击【下一步】进入 Step 2 监控规则，点击【新增规则】，选择【有效性校验】，配置字段=log_info、统计规则=格式-json格式校验、校验key=log-level 和 log-code、强弱规则=强规则、过滤条件=无、规则描述=无；点击规则行的【保存】按钮，再点击页面底部【保存】，规则集创建成功
+5) 已通过【数据质量 → 规则任务管理】页面完成任务"报告不通过展示任务"创建：Step 1 基础信息中规则名称=报告不通过展示任务，并关联同一 SparkThrift2.x 表；点击【下一步】进入 Step 2 监控规则，仅通过【导入规则包】导入规则集"rule_set_report_fail_test"的"报告不通过测试包"；点击【下一步】进入 Step 3 调度属性并点击【保存】；随后在任务列表点击【立即执行】，页面弹出提示信息，提示任务已提交执行，且【数据质量 → 校验结果查询】页面已生成该任务最新实例记录，最新校验结果为「校验不通过」
 ```
 
 > 用例步骤
@@ -860,3 +885,4 @@ print("已生成 json_value_format_import_210.xlsx，共210条一层key数据，
 | 1    | 进入【数据质量 → 数据质量报告】页面，等待页面加载完成 | 数据质量报告页面正常打开，报告列表加载完成 |
 | 2    | 找到「报告不通过展示任务」最新一次执行的报告详情并打开 | 报告详情页正常打开，数据加载完成 |
 | 3    | 找到「格式-json格式校验」规则行，逐列核对各字段内容 | 1) 规则类型列=「有效性校验」<br>2) 规则名称列=「格式-json格式校验」<br>3) 字段类型列=「json」<br>4) 质检结果列=「校验不通过」<br>5) 未通过原因列=「key对应value格式校验未通过」<br>6) 详情说明列=「不符合规则key为"log-level;log-code"时的value格式要求」<br>7) 操作列显示「查看详情」链接 |
+| 4 | 使用 Doris3.x 数据源重复以上步骤，验证结果一致 | 使用 Doris3.x 数据源执行后结果与 SparkThrift2.x 数据源一致 |

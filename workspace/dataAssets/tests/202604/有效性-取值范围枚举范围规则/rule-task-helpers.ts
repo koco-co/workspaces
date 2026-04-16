@@ -14,15 +14,16 @@ import {
   type RangeEnumConfig,
 } from "./rule-editor-helpers";
 import {
-  DORIS_DATABASE,
-  DORIS_DATASOURCE_KEYWORD,
+  getCurrentDatasource,
   injectProjectContext,
   QUALITY_PROJECT_ID,
+  resolveVariantName,
   runPreconditions,
 } from "./test-data";
 
 const TABLE_ROWS = ".ant-table-tbody tr:not(.ant-table-measure-row)";
 const TASK_API_PAGE_SIZE = 200;
+const preconditionReadyDatasources = new Set<string>();
 
 const RANGE_AND_RULE: RangeEnumConfig = {
   field: "score",
@@ -193,7 +194,6 @@ const TASK_SETUP_CONFIGS: Record<string, TaskSetupConfig> = {
 const preparedTasks = new Set<string>();
 const executedTasks = new Set<string>();
 const readyQualityReports = new Set<string>();
-let baseDataReady = false;
 
 type MonitorListRow = {
   id?: number | string;
@@ -313,12 +313,24 @@ function getMonitorId(row: MonitorListRow): number | null {
   return Number.isFinite(id) ? id : null;
 }
 
+function resolveTaskName(taskName: string): string {
+  const { cacheKey } = getCurrentDatasource();
+  const suffix = `_${cacheKey}`;
+  if (taskName.endsWith(suffix) || taskName.includes(`${suffix}_report`)) {
+    return taskName;
+  }
+  return resolveVariantName(taskName);
+}
+
 function getReportName(taskName: string): string {
-  return `${taskName}_report`;
+  return `${resolveTaskName(taskName)}_report`;
 }
 
 export function getTableRowByTaskName(page: Page, taskName: string): Locator {
-  return page.locator(TABLE_ROWS).filter({ hasText: taskName }).first();
+  return page
+    .locator(TABLE_ROWS)
+    .filter({ hasText: resolveTaskName(taskName) })
+    .first();
 }
 
 async function openQualityRoute(page: Page, path: string): Promise<void> {
@@ -358,11 +370,12 @@ export async function gotoQualityReport(page: Page): Promise<void> {
 }
 
 async function ensureBaseData(page: Page): Promise<void> {
-  if (baseDataReady) {
+  const datasource = getCurrentDatasource();
+  if (preconditionReadyDatasources.has(datasource.cacheKey)) {
     return;
   }
   await runPreconditions(page);
-  baseDataReady = true;
+  preconditionReadyDatasources.add(datasource.cacheKey);
 }
 
 async function ensureSupportingRuleSet(
@@ -387,6 +400,7 @@ async function deleteTasksByNames(page: Page, taskNames: string[]): Promise<void
   if (taskNames.length === 0) {
     return;
   }
+  const actualTaskNames = taskNames.map((taskName) => resolveTaskName(taskName));
 
   const listResponse =
     (await postTaskApi<{
@@ -397,7 +411,7 @@ async function deleteTasksByNames(page: Page, taskNames: string[]): Promise<void
     })) ?? {};
 
   const rows = extractMonitorRows(listResponse).filter((row) =>
-    taskNames.includes(getMonitorName(row)),
+    actualTaskNames.includes(getMonitorName(row)),
   );
 
   for (const row of rows) {
@@ -411,27 +425,41 @@ async function deleteTasksByNames(page: Page, taskNames: string[]): Promise<void
   }
 }
 
-async function fillTaskBaseInfo(page: Page, taskName: string, config: TaskSetupConfig): Promise<void> {
+async function fillTaskBaseInfo(
+  page: Page,
+  taskName: string,
+  config: TaskSetupConfig,
+): Promise<void> {
+  const datasource = getCurrentDatasource();
   const ruleNameInput = page
     .locator(".ant-form-item")
     .filter({ hasText: /^规则名称/ })
     .locator("input")
     .first();
   await ruleNameInput.waitFor({ state: "visible", timeout: 10000 });
-  await ruleNameInput.fill(taskName);
+  await ruleNameInput.fill(resolveTaskName(taskName));
 
-  const sourceFormItem = page.locator(".ant-form-item").filter({ hasText: /选择数据源/ }).first();
+  const sourceFormItem = page
+    .locator(".ant-form-item")
+    .filter({ hasText: /选择数据源/ })
+    .first();
   await selectAntOption(
     page,
     sourceFormItem.locator(".ant-select").first(),
-    new RegExp(DORIS_DATASOURCE_KEYWORD, "i"),
+    datasource.optionPattern,
   );
 
-  const schemaFormItem = page.locator(".ant-form-item").filter({ hasText: /选择数据库/ }).first();
-  await selectAntOption(page, schemaFormItem.locator(".ant-select").first(), DORIS_DATABASE);
+  const schemaFormItem = page
+    .locator(".ant-form-item")
+    .filter({ hasText: /选择数据库/ })
+    .first();
+  await selectAntOption(page, schemaFormItem.locator(".ant-select").first(), datasource.database);
   await page.waitForTimeout(1000);
 
-  const tableFormItem = page.locator(".ant-form-item").filter({ hasText: /选择数据表/ }).first();
+  const tableFormItem = page
+    .locator(".ant-form-item")
+    .filter({ hasText: /选择数据表/ })
+    .first();
   const tableSelect = tableFormItem.locator(".ant-select").first();
   let selectTableError: Error | null = null;
   for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -458,7 +486,10 @@ async function fillTaskBaseInfo(page: Page, taskName: string, config: TaskSetupC
   await page.waitForTimeout(1500);
 
   await expect(
-    page.locator(".ant-form-item").filter({ hasText: /规则包/ }).first(),
+    page
+      .locator(".ant-form-item")
+      .filter({ hasText: /规则包/ })
+      .first(),
   ).toBeVisible({ timeout: 10000 });
 }
 
@@ -528,6 +559,7 @@ async function weakenImportedRule(page: Page): Promise<void> {
 }
 
 async function completeTaskScheduleAndSave(page: Page, taskName: string): Promise<void> {
+  const actualTaskName = resolveTaskName(taskName);
   await page.getByRole("button", { name: "下一步" }).last().click();
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(1500);
@@ -555,14 +587,19 @@ async function completeTaskScheduleAndSave(page: Page, taskName: string): Promis
     .locator("input")
     .first();
   if (await reportNameInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await reportNameInput.fill(`${taskName}_report`);
+    await reportNameInput.fill(`${actualTaskName}_report`);
   }
 
   const dataCycleInputs = page
     .locator(".ant-form-item")
     .filter({ hasText: /数据周期/ })
     .locator("input");
-  if (await dataCycleInputs.first().isVisible({ timeout: 2000 }).catch(() => false)) {
+  if (
+    await dataCycleInputs
+      .first()
+      .isVisible({ timeout: 2000 })
+      .catch(() => false)
+  ) {
     await dataCycleInputs.nth(0).fill("1");
     await dataCycleInputs.nth(1).fill("0");
   }
@@ -578,9 +615,7 @@ async function completeTaskScheduleAndSave(page: Page, taskName: string): Promis
 
   const confirmModal = page.locator(".ant-modal:visible, .ant-modal-confirm:visible").last();
   if (await confirmModal.isVisible({ timeout: 2000 }).catch(() => false)) {
-    const confirmButton = confirmModal
-      .getByRole("button", { name: /确\s*认|确\s*定/ })
-      .first();
+    const confirmButton = confirmModal.getByRole("button", { name: /确\s*认|确\s*定/ }).first();
     if (await confirmButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await confirmButton.click();
     }
@@ -605,6 +640,7 @@ async function createTask(page: Page, taskName: string, config: TaskSetupConfig)
   }
 
   await completeTaskScheduleAndSave(page, taskName);
+  const actualTaskName = resolveTaskName(taskName);
   const deadline = Date.now() + 30000;
   while (Date.now() < deadline) {
     try {
@@ -614,7 +650,9 @@ async function createTask(page: Page, taskName: string, config: TaskSetupConfig)
       await page.waitForTimeout(2000);
     }
   }
-  throw new Error(`Created task "${taskName}" was not returned by monitor pageQuery within 30000ms`);
+  throw new Error(
+    `Created task "${taskName}" was not returned by monitor pageQuery within 30000ms`,
+  );
 }
 
 async function hasTaskMonitorRow(page: Page, taskName: string): Promise<boolean> {
@@ -630,12 +668,14 @@ export async function ensureRuleTasks(page: Page, taskNames: string[]): Promise<
   await ensureBaseData(page);
 
   for (const taskName of taskNames) {
-    if (preparedTasks.has(taskName) && (await hasTaskMonitorRow(page, taskName))) {
+    const actualTaskName = resolveTaskName(taskName);
+    if (preparedTasks.has(actualTaskName) && (await hasTaskMonitorRow(page, taskName))) {
       continue;
     }
 
-    preparedTasks.delete(taskName);
-    executedTasks.delete(taskName);
+    preparedTasks.delete(actualTaskName);
+    executedTasks.delete(actualTaskName);
+    readyQualityReports.delete(actualTaskName);
 
     const config = TASK_SETUP_CONFIGS[taskName];
     if (!config) {
@@ -649,11 +689,12 @@ export async function ensureRuleTasks(page: Page, taskNames: string[]): Promise<
     await gotoRuleTaskList(page);
     await deleteTasksByNames(page, [taskName]);
     await createTask(page, taskName, config);
-    preparedTasks.add(taskName);
+    preparedTasks.add(actualTaskName);
   }
 }
 
 async function getTaskMonitorRow(page: Page, taskName: string): Promise<MonitorListRow> {
+  const actualTaskName = resolveTaskName(taskName);
   const listResponse =
     (await postTaskApi<{
       data?: { data?: MonitorListRow[]; contentList?: MonitorListRow[]; list?: MonitorListRow[] };
@@ -662,9 +703,11 @@ async function getTaskMonitorRow(page: Page, taskName: string): Promise<MonitorL
       pageSize: TASK_API_PAGE_SIZE,
     })) ?? {};
 
-  const taskRow = extractMonitorRows(listResponse).find((row) => getMonitorName(row) === taskName);
+  const taskRow = extractMonitorRows(listResponse).find(
+    (row) => getMonitorName(row) === actualTaskName,
+  );
   if (!taskRow) {
-    throw new Error(`Task "${taskName}" not found in monitor list`);
+    throw new Error(`Task "${actualTaskName}" not found in monitor list`);
   }
   return taskRow;
 }
@@ -686,7 +729,9 @@ async function getTaskDetail(page: Page, taskName: string): Promise<TaskDetailPa
     })) ?? {};
 
   if (!response.success || !response.data) {
-    throw new Error(`Failed to load task detail for "${taskName}": ${response.message ?? "unknown error"}`);
+    throw new Error(
+      `Failed to load task detail for "${taskName}": ${response.message ?? "unknown error"}`,
+    );
   }
 
   return response.data;
@@ -703,7 +748,9 @@ async function getConfigReportDetail(page: Page, reportId: number): Promise<Conf
     })) ?? {};
 
   if (!response.success || !response.data) {
-    throw new Error(`Failed to load config quality report detail ${reportId}: ${response.message ?? "unknown error"}`);
+    throw new Error(
+      `Failed to load config quality report detail ${reportId}: ${response.message ?? "unknown error"}`,
+    );
   }
 
   return response.data;
@@ -749,8 +796,13 @@ async function suppressGuideOverlay(page: Page): Promise<void> {
   }, tenantId);
 }
 
-async function waitForConfigReport(page: Page, taskName: string, timeout = 60000): Promise<ConfigReportRow> {
+async function waitForConfigReport(
+  page: Page,
+  taskName: string,
+  timeout = 60000,
+): Promise<ConfigReportRow> {
   const reportName = getReportName(taskName);
+  const actualTaskName = resolveTaskName(taskName);
   const deadline = Date.now() + timeout;
 
   while (Date.now() < deadline) {
@@ -760,7 +812,7 @@ async function waitForConfigReport(page: Page, taskName: string, timeout = 60000
       }>(page, "/dassets/v1/valid/monitorReport/page", {
         current: 1,
         size: 20,
-        reportName: taskName,
+        reportName: actualTaskName,
       })) ?? {};
 
     const reportRow = (response.data?.contentList ?? []).find(
@@ -776,20 +828,27 @@ async function waitForConfigReport(page: Page, taskName: string, timeout = 60000
   throw new Error(`Config quality report "${reportName}" did not appear within ${timeout}ms`);
 }
 
-async function listGeneratedQualityReports(page: Page, taskName: string): Promise<GeneratedReportRow[]> {
+async function listGeneratedQualityReports(
+  page: Page,
+  taskName: string,
+): Promise<GeneratedReportRow[]> {
+  const actualTaskName = resolveTaskName(taskName);
   const response =
     (await postQualityReportApi<{
       data?: { contentList?: GeneratedReportRow[] };
     }>(page, "/dassets/v1/valid/monitorReportRecord/pageList", {
       current: 1,
       size: 50,
-      search: taskName,
+      search: actualTaskName,
     })) ?? {};
 
-  return (response.data?.contentList ?? []).filter((item) => item.reportName === getReportName(taskName));
+  return (response.data?.contentList ?? []).filter(
+    (item) => item.reportName === getReportName(taskName),
+  );
 }
 
 async function ensureQualityReportConfig(page: Page, taskName: string): Promise<void> {
+  const actualTaskName = resolveTaskName(taskName);
   const configRow = await waitForConfigReport(page, taskName);
   const monitorReportId = Number(configRow.monitorReport?.id);
   if (!Number.isFinite(monitorReportId)) {
@@ -803,10 +862,12 @@ async function ensureQualityReportConfig(page: Page, taskName: string): Promise<
   const taskDetail = await getTaskDetail(page, taskName);
   const taskReport = taskDetail.monitorReportDetailDTO?.monitorReport;
   if (!hasCompleteReportSchedule(taskReport)) {
-    throw new Error(`Task "${taskName}" detail is missing report schedule config`);
+    throw new Error(`Task "${actualTaskName}" detail is missing report schedule config`);
   }
 
-  const table = (taskDetail.monitorReportDetailDTO?.reportRelationTables ?? configRow.reportRelationTables)
+  const table = (
+    taskDetail.monitorReportDetailDTO?.reportRelationTables ?? configRow.reportRelationTables
+  )
     ?.flatMap((item) => item.dqTables ?? [])
     .find((item) => item.monitorTableId);
   const tableId = table?.monitorTableId ? String(table.monitorTableId) : "";
@@ -825,34 +886,34 @@ async function ensureQualityReportConfig(page: Page, taskName: string): Promise<
       success?: boolean;
       message?: string;
     }>(page, "/dassets/v1/valid/monitorReport/save", {
-    monitorReport: {
-      id: monitorReportId,
-      reportName: taskReport?.reportName ?? getReportName(taskName),
-      periodType: taskReport?.periodType ?? configRow.monitorReport?.periodType ?? 2,
-      reportType: taskReport?.reportType ?? configRow.monitorReport?.reportType ?? 1,
-      needCar: taskReport?.needCar ?? configRow.monitorReport?.needCar ?? 1,
-      reportShowResultType:
-        taskReport?.reportShowResultType ?? configRow.monitorReport?.reportShowResultType ?? 1,
-      reportGenerateType:
-        taskReport?.reportGenerateType ?? configRow.monitorReport?.reportGenerateType ?? 2,
-      ruleTaskTypesList: taskReport?.ruleTaskTypesList ?? [],
-      dataContextStart: String(taskReport?.dataContextStart ?? ""),
-      dataContextEnd: String(taskReport?.dataContextEnd ?? ""),
-      dispatchConfigDTO: taskReport?.dispatchConfigDTO,
-      isEnable: taskReport?.isEnable ?? configRow.monitorReport?.isEnable ?? 1,
-    },
-    dqTables: [tableId],
-    dqTableRules: [
-      {
-        tableId,
-        monitorRuleVOS: [
-          {
-            monitorId,
-            ruleName: taskName,
-          },
-        ],
+      monitorReport: {
+        id: monitorReportId,
+        reportName: taskReport?.reportName ?? getReportName(taskName),
+        periodType: taskReport?.periodType ?? configRow.monitorReport?.periodType ?? 2,
+        reportType: taskReport?.reportType ?? configRow.monitorReport?.reportType ?? 1,
+        needCar: taskReport?.needCar ?? configRow.monitorReport?.needCar ?? 1,
+        reportShowResultType:
+          taskReport?.reportShowResultType ?? configRow.monitorReport?.reportShowResultType ?? 1,
+        reportGenerateType:
+          taskReport?.reportGenerateType ?? configRow.monitorReport?.reportGenerateType ?? 2,
+        ruleTaskTypesList: taskReport?.ruleTaskTypesList ?? [],
+        dataContextStart: String(taskReport?.dataContextStart ?? ""),
+        dataContextEnd: String(taskReport?.dataContextEnd ?? ""),
+        dispatchConfigDTO: taskReport?.dispatchConfigDTO,
+        isEnable: taskReport?.isEnable ?? configRow.monitorReport?.isEnable ?? 1,
       },
-    ],
+      dqTables: [tableId],
+      dqTableRules: [
+        {
+          tableId,
+          monitorRuleVOS: [
+            {
+              monitorId,
+              ruleName: actualTaskName,
+            },
+          ],
+        },
+      ],
     })) ?? {};
 
   if (!saveResponse.success) {
@@ -863,7 +924,9 @@ async function ensureQualityReportConfig(page: Page, taskName: string): Promise<
 
   const repairedConfig = await getConfigReportDetail(page, monitorReportId);
   if (!hasCompleteReportSchedule(repairedConfig.monitorReport)) {
-    throw new Error(`Config quality report "${getReportName(taskName)}" still misses schedule config after repair`);
+    throw new Error(
+      `Config quality report "${getReportName(taskName)}" still misses schedule config after repair`,
+    );
   }
 }
 
@@ -945,7 +1008,9 @@ export async function executeTaskFromList(page: Page, taskName: string): Promise
   await executeButton.click();
   await page.waitForTimeout(1000);
 
-  const successMessage = page.locator(".ant-message-notice, .ant-notification-notice, .ant-message");
+  const successMessage = page.locator(
+    ".ant-message-notice, .ant-notification-notice, .ant-message",
+  );
   await expect(successMessage.filter({ hasText: /执行|提交|成功/ }).first()).toBeVisible({
     timeout: 10000,
   });
@@ -965,7 +1030,10 @@ export async function openTaskInstanceDetail(page: Page, instanceRow: Locator): 
   const detailDrawer = page.locator(".dtc-drawer:visible").last();
   await expect(detailDrawer).toBeVisible({ timeout: 10000 });
 
-  const ruleCard = detailDrawer.locator(".ruleView").filter({ hasText: "取值范围&枚举范围" }).first();
+  const ruleCard = detailDrawer
+    .locator(".ruleView")
+    .filter({ hasText: "取值范围&枚举范围" })
+    .first();
   await expect(ruleCard).toBeVisible({ timeout: 20000 });
   return detailDrawer;
 }
@@ -974,7 +1042,10 @@ export function getTaskDetailRuleCard(drawer: Locator, ruleName: string): Locato
   return drawer.locator(".ruleView").filter({ hasText: ruleName }).first();
 }
 
-export async function openTaskRuleDetailDataDrawer(page: Page, detailDrawer: Locator): Promise<Locator> {
+export async function openTaskRuleDetailDataDrawer(
+  page: Page,
+  detailDrawer: Locator,
+): Promise<Locator> {
   const viewDetailButton = detailDrawer.getByRole("button", { name: "查看明细" }).first();
   await expect(viewDetailButton).toBeVisible({ timeout: 10000 });
   await viewDetailButton.click();
@@ -993,6 +1064,7 @@ export async function waitForTaskInstanceFinished(
   timeout = 180000,
 ): Promise<Locator> {
   await gotoValidationResults(page);
+  const actualTaskName = resolveTaskName(taskName);
   const deadline = Date.now() + timeout;
 
   while (Date.now() < deadline) {
@@ -1010,7 +1082,7 @@ export async function waitForTaskInstanceFinished(
     await page.waitForTimeout(1000);
   }
 
-  throw new Error(`Task instance "${taskName}" did not finish within ${timeout}ms`);
+  throw new Error(`Task instance "${actualTaskName}" did not finish within ${timeout}ms`);
 }
 
 export async function executeTaskAndWaitForResult(
@@ -1026,11 +1098,12 @@ export async function ensureExecutedRuleTasks(page: Page, taskNames: string[]): 
   await ensureRuleTasks(page, taskNames);
 
   for (const taskName of taskNames) {
-    if (executedTasks.has(taskName)) {
+    const actualTaskName = resolveTaskName(taskName);
+    if (executedTasks.has(actualTaskName)) {
       continue;
     }
     await executeTaskAndWaitForResult(page, taskName);
-    executedTasks.add(taskName);
+    executedTasks.add(actualTaskName);
   }
 }
 
@@ -1055,7 +1128,11 @@ export async function waitForQualityReportRow(
   throw new Error(`Quality report row "${reportName}" did not appear within ${timeout}ms`);
 }
 
-async function waitForGeneratedQualityReport(page: Page, taskName: string, timeout = 300000): Promise<void> {
+async function waitForGeneratedQualityReport(
+  page: Page,
+  taskName: string,
+  timeout = 300000,
+): Promise<void> {
   const reportName = getReportName(taskName);
   const deadline = Date.now() + timeout;
 
@@ -1085,18 +1162,19 @@ export async function ensureQualityReportsReady(page: Page, taskNames: string[])
   await ensureRuleTasks(page, taskNames);
 
   for (const taskName of taskNames) {
+    const actualTaskName = resolveTaskName(taskName);
     await ensureQualityReportConfig(page, taskName);
-    if (!executedTasks.has(taskName)) {
+    if (!executedTasks.has(actualTaskName)) {
       await executeTaskAndWaitForResult(page, taskName);
-      executedTasks.add(taskName);
+      executedTasks.add(actualTaskName);
     }
-    if (readyQualityReports.has(taskName)) {
+    if (readyQualityReports.has(actualTaskName)) {
       continue;
     }
     await triggerQualityReportToday(page, taskName);
     await waitForGeneratedQualityReport(page, taskName);
     await waitForQualityReportRow(page, taskName);
-    readyQualityReports.add(taskName);
+    readyQualityReports.add(actualTaskName);
   }
 }
 
@@ -1119,10 +1197,7 @@ export function getQualityReportRuleRow(page: Page, ruleName: string): Locator {
   return page.locator(TABLE_ROWS).filter({ hasText: ruleName }).first();
 }
 
-export async function openQualityReportRuleDetail(
-  page: Page,
-  ruleRow: Locator,
-): Promise<Locator> {
+export async function openQualityReportRuleDetail(page: Page, ruleRow: Locator): Promise<Locator> {
   await suppressGuideOverlay(page);
   await ruleRow.getByRole("button", { name: "查看详情" }).first().click({ force: true });
   const dataDrawer = page.locator(".ant-drawer:visible").last();

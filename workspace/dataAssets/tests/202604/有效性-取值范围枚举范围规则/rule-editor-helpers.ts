@@ -6,7 +6,7 @@ import {
   confirmAntModal,
   selectAntOption,
 } from "../../helpers/test-setup";
-import { DORIS_DATABASE, injectProjectContext, QUALITY_PROJECT_ID } from "./test-data";
+import { getCurrentDatasource, injectProjectContext, QUALITY_PROJECT_ID } from "./test-data";
 
 export interface RangeConfig {
   firstOperator?: string;
@@ -38,13 +38,7 @@ const RULESET_ROW_FALLBACKS: Record<string, string> = {
   ruleset_15695_str: "quality_test_str",
 };
 
-const DORIS_DATASOURCE_PATTERN = /doris/i;
-
-async function postProjectApi<T>(
-  page: Page,
-  path: string,
-  body: unknown,
-): Promise<T> {
+async function postProjectApi<T>(page: Page, path: string, body: unknown): Promise<T> {
   return page.evaluate(
     async ({ requestPath, requestBody, projectId }) => {
       const response = await fetch(requestPath, {
@@ -67,54 +61,77 @@ async function postProjectApi<T>(
   ) as Promise<T>;
 }
 
-async function ensureDorisMonitorDatasource(page: Page): Promise<boolean> {
+async function ensureMonitorDatasource(page: Page): Promise<boolean> {
+  const datasource = getCurrentDatasource();
   const listMonitorDatasources = async () =>
     postProjectApi<{
-      success?: boolean;
-      data?: Array<{ id?: string; dataSourceName?: string; dtCenterSourceName?: string }>;
+      data?: Array<{
+        id?: string;
+        dataSourceName?: string;
+        dtCenterSourceName?: string;
+        sourceTypeValue?: string;
+      }>;
     }>(page, "/dmetadata/v1/dataSource/monitor/list", {});
 
-  const findDorisMonitorDatasource = async () => {
+  const findMonitorDatasource = async () => {
     const response = await listMonitorDatasources();
-    return (response.data ?? []).find((item) =>
-      DORIS_DATASOURCE_PATTERN.test(
-        `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
-      ),
+    return (response.data ?? []).find(
+      (item) =>
+        datasource.optionPattern.test(
+          `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
+        ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
     );
   };
 
-  if (await findDorisMonitorDatasource()) {
+  if (await findMonitorDatasource()) {
     return false;
   }
 
   const allDatasources = await postProjectApi<{
-    success?: boolean;
-    data?: Array<{ dataSourceId?: string; dataSourceName?: string }>;
-  }>(page, "/dassets/v1/dataSource/getAllDataSourceAndDatabase", {});
-  const dorisDatasource = (allDatasources.data ?? []).find((item) =>
-    DORIS_DATASOURCE_PATTERN.test(String(item.dataSourceName ?? "")),
+    data?: {
+      contentList?: Array<{
+        id?: string;
+        dataSourceName?: string;
+        dtCenterSourceName?: string;
+        sourceTypeValue?: string;
+      }>;
+    };
+  }>(page, "/dassets/v1/dataSource/pageQuery", {
+    current: 1,
+    size: 200,
+    search: "",
+  });
+  const projectDatasource = (allDatasources.data?.contentList ?? []).find(
+    (item) =>
+      datasource.optionPattern.test(
+        `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
+      ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
   );
 
-  if (!dorisDatasource?.dataSourceId) {
-    throw new Error("No Doris datasource available for current quality project.");
+  if (!projectDatasource?.id) {
+    throw new Error(
+      `No ${datasource.reportName} datasource available for current quality project.`,
+    );
   }
 
   const authResponse = await postProjectApi<{ success?: boolean; message?: string }>(
     page,
     "/dmetadata/v1/dataSource/authDataSourceToProject",
     {
-      dataSourceId: Number(dorisDatasource.dataSourceId),
+      dataSourceId: Number(projectDatasource.id),
       projectList: [QUALITY_PROJECT_ID],
     },
   );
   if (!authResponse.success) {
-    throw new Error(authResponse.message ?? "Authorize Doris datasource to project failed.");
+    throw new Error(
+      authResponse.message ?? `Authorize ${datasource.reportName} datasource to project failed.`,
+    );
   }
 
   await expect
-    .poll(async () => Boolean(await findDorisMonitorDatasource()), {
+    .poll(async () => Boolean(await findMonitorDatasource()), {
       timeout: 15000,
-      message: "Waiting for Doris datasource to appear in monitor datasource list.",
+      message: `Waiting for ${datasource.reportName} datasource to appear in monitor datasource list.`,
     })
     .toBe(true);
 
@@ -510,8 +527,9 @@ export async function createRuleSetDraft(
   tableName: string,
   requiredPackageNames: string[],
 ): Promise<void> {
+  const datasource = getCurrentDatasource();
   await gotoRuleSetCreate(page);
-  if (await ensureDorisMonitorDatasource(page)) {
+  if (await ensureMonitorDatasource(page)) {
     await page.reload();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
@@ -525,7 +543,7 @@ export async function createRuleSetDraft(
   await selectAntOptionWithRetry(
     page,
     sourceFormItem.locator(".ant-select").first(),
-    DORIS_DATASOURCE_PATTERN,
+    datasource.optionPattern,
   );
 
   const schemaFormItem = page
@@ -535,7 +553,7 @@ export async function createRuleSetDraft(
   await selectAntOptionWithRetry(
     page,
     schemaFormItem.locator(".ant-select").first(),
-    DORIS_DATABASE,
+    datasource.database,
   );
   await page.waitForTimeout(1000);
 
@@ -768,11 +786,7 @@ export async function configureRangeEnumRule(
   const isEnumOnlyFunction = config.functionName === "枚举值";
 
   if (config.range?.firstOperator) {
-    await selectAntOption(
-      page,
-      functionSelects.nth(1),
-      config.range.firstOperator,
-    );
+    await selectAntOption(page, functionSelects.nth(1), config.range.firstOperator);
     await page.waitForTimeout(200);
   }
   if (config.range?.firstValue !== undefined) {
@@ -801,7 +815,11 @@ export async function configureRangeEnumRule(
   }
 
   if (config.enumOperator) {
-    await selectAntOption(page, functionSelects.nth(isEnumOnlyFunction ? 1 : 3), config.enumOperator);
+    await selectAntOption(
+      page,
+      functionSelects.nth(isEnumOnlyFunction ? 1 : 3),
+      config.enumOperator,
+    );
     await page.waitForTimeout(200);
   }
   if (config.enumValues?.length) {
