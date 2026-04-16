@@ -25,13 +25,13 @@ type TableDefinition = {
 
 const QUALITY_TEST_NUM_SQL: DatasourceSqlMap = {
   "sparkthrift2.x": `
-DROP TABLE IF EXISTS quality_test_num;
-CREATE TABLE quality_test_num (
+DROP TABLE IF EXISTS pw_test.quality_test_num;
+CREATE TABLE pw_test.quality_test_num (
   id INT,
   score DOUBLE,
   category STRING
 ) STORED AS PARQUET;
-INSERT INTO TABLE quality_test_num
+INSERT INTO TABLE pw_test.quality_test_num
 SELECT 1, 5.0, '2'
 UNION ALL
 SELECT 2, 15.0, '4'
@@ -60,13 +60,13 @@ INSERT INTO quality_test_num VALUES
 
 const QUALITY_TEST_STR_SQL: DatasourceSqlMap = {
   "sparkthrift2.x": `
-DROP TABLE IF EXISTS quality_test_str;
-CREATE TABLE quality_test_str (
+DROP TABLE IF EXISTS pw_test.quality_test_str;
+CREATE TABLE pw_test.quality_test_str (
   id INT,
   score_str STRING,
   category STRING
 ) STORED AS PARQUET;
-INSERT INTO TABLE quality_test_str
+INSERT INTO TABLE pw_test.quality_test_str
 SELECT 1, '5', '2'
 UNION ALL
 SELECT 2, '5.0', '4'
@@ -95,13 +95,13 @@ INSERT INTO quality_test_str VALUES
 
 const QUALITY_TEST_SAMPLE_SQL: DatasourceSqlMap = {
   "sparkthrift2.x": `
-DROP TABLE IF EXISTS quality_test_sample;
-CREATE TABLE quality_test_sample (
+DROP TABLE IF EXISTS pw_test.quality_test_sample;
+CREATE TABLE pw_test.quality_test_sample (
   id INT,
   score DOUBLE,
   category STRING
 ) STORED AS PARQUET;
-INSERT INTO TABLE quality_test_sample
+INSERT INTO TABLE pw_test.quality_test_sample
 SELECT 1, 5.0, '2'
 UNION ALL
 SELECT 2, 15.0, '4'
@@ -145,19 +145,19 @@ INSERT INTO quality_test_sample VALUES
 
 const QUALITY_TEST_PARTITION_SQL: DatasourceSqlMap = {
   "sparkthrift2.x": `
-DROP TABLE IF EXISTS quality_test_partition;
-CREATE TABLE quality_test_partition (
+DROP TABLE IF EXISTS pw_test.quality_test_partition;
+CREATE TABLE pw_test.quality_test_partition (
   id INT,
   score DOUBLE,
   category STRING
 )
 PARTITIONED BY (dt STRING)
 STORED AS PARQUET;
-INSERT INTO TABLE quality_test_partition PARTITION (dt='2026-04-01')
+INSERT INTO TABLE pw_test.quality_test_partition PARTITION (dt='2026-04-01')
 SELECT 1, 5.0, '2'
 UNION ALL
 SELECT 2, 15.0, '4';
-INSERT INTO TABLE quality_test_partition PARTITION (dt='2026-04-02')
+INSERT INTO TABLE pw_test.quality_test_partition PARTITION (dt='2026-04-02')
 SELECT 3, 3.0, '1'
 UNION ALL
 SELECT 4, -1.0, '3';
@@ -183,12 +183,12 @@ INSERT INTO quality_test_partition VALUES
 
 const QUALITY_TEST_ENUM_PASS_SQL: DatasourceSqlMap = {
   "sparkthrift2.x": `
-DROP TABLE IF EXISTS quality_test_enum_pass;
-CREATE TABLE quality_test_enum_pass (
+DROP TABLE IF EXISTS pw_test.quality_test_enum_pass;
+CREATE TABLE pw_test.quality_test_enum_pass (
   id INT,
   category STRING
 ) STORED AS PARQUET;
-INSERT INTO TABLE quality_test_enum_pass
+INSERT INTO TABLE pw_test.quality_test_enum_pass
 SELECT 1, '1'
 UNION ALL
 SELECT 2, '2'
@@ -287,15 +287,25 @@ export async function runPreconditions(
 
   process.stderr.write(`[preconditions] Preparing ${datasource.reportName} tables...\n`);
 
-  await setupPreconditions(page, {
-    datasourceType: datasource.preconditionType,
-    tables: TABLE_DEFINITIONS.map((table) => ({
-      name: table.name,
-      sql: table.sqlByDatasource[datasource.id],
-    })),
-    projectName: QUALITY_PROJECT_NAME,
-    syncTimeout: 90,
-  });
+  try {
+    await setupPreconditions(page, {
+      datasourceType: datasource.preconditionType,
+      tables: TABLE_DEFINITIONS.map((table) => ({
+        name: table.name,
+        sql: table.sqlByDatasource[datasource.id],
+      })),
+      projectName: QUALITY_PROJECT_NAME,
+      syncTimeout: 90,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Metadata sync timed out")) {
+      throw error;
+    }
+    process.stderr.write(
+      `[preconditions] ${datasource.reportName} metadata sync timed out, continuing with existing synced metadata.\n`,
+    );
+  }
 
   process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
 }
