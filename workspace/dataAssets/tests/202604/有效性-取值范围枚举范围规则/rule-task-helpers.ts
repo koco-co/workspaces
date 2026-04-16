@@ -4,6 +4,7 @@ import {
   applyRuntimeCookies,
   buildDataAssetsUrl,
   navigateViaMenu,
+  normalizeDataAssetsBaseUrl,
   selectAntOption,
 } from "../../helpers/test-setup";
 import {
@@ -242,10 +243,19 @@ const GENERATED_REPORT_STATUS_SUCCESS = 2;
 const GENERATED_REPORT_STATUS_FAILED = 3;
 const GENERATED_REPORT_STATUS_KEEP_RUNNING = 4;
 
+function buildTaskApiUrl(path: string): string {
+  if (/^https?:\/\//.test(path)) {
+    return path;
+  }
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const dataAssetsOrigin = new URL(normalizeDataAssetsBaseUrl()).origin;
+  return new URL(normalizedPath, dataAssetsOrigin).toString();
+}
+
 async function postTaskApi<T>(page: Page, path: string, body: unknown): Promise<T> {
   return page.evaluate(
-    async ({ requestPath, requestBody, projectId }) => {
-      const response = await fetch(requestPath, {
+    async ({ requestUrl, requestBody, projectId }) => {
+      const response = await fetch(requestUrl, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -258,7 +268,7 @@ async function postTaskApi<T>(page: Page, path: string, body: unknown): Promise<
       return response.json();
     },
     {
-      requestPath: path,
+      requestUrl: buildTaskApiUrl(path),
       requestBody: body,
       projectId: QUALITY_PROJECT_ID,
     },
@@ -267,8 +277,8 @@ async function postTaskApi<T>(page: Page, path: string, body: unknown): Promise<
 
 async function postQualityReportApi<T>(page: Page, path: string, body: unknown): Promise<T> {
   return page.evaluate(
-    async ({ requestPath, requestBody, projectId }) => {
-      const response = await fetch(requestPath, {
+    async ({ requestUrl, requestBody, projectId }) => {
+      const response = await fetch(requestUrl, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -281,7 +291,7 @@ async function postQualityReportApi<T>(page: Page, path: string, body: unknown):
       return response.json();
     },
     {
-      requestPath: path,
+      requestUrl: buildTaskApiUrl(path),
       requestBody: body,
       projectId: QUALITY_PROJECT_ID,
     },
