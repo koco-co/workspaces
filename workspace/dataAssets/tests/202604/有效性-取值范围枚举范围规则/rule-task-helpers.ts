@@ -617,13 +617,25 @@ async function createTask(page: Page, taskName: string, config: TaskSetupConfig)
   throw new Error(`Created task "${taskName}" was not returned by monitor pageQuery within 30000ms`);
 }
 
+async function hasTaskMonitorRow(page: Page, taskName: string): Promise<boolean> {
+  try {
+    await getTaskMonitorRow(page, taskName);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureRuleTasks(page: Page, taskNames: string[]): Promise<void> {
   await ensureBaseData(page);
 
   for (const taskName of taskNames) {
-    if (preparedTasks.has(taskName)) {
+    if (preparedTasks.has(taskName) && (await hasTaskMonitorRow(page, taskName))) {
       continue;
     }
+
+    preparedTasks.delete(taskName);
+    executedTasks.delete(taskName);
 
     const config = TASK_SETUP_CONFIGS[taskName];
     if (!config) {
