@@ -59,7 +59,10 @@ function readProjectConfigs(): Record<string, ProjectConfig> {
   const configPath = join(repoRoot(), "config.json");
   if (!existsSync(configPath)) return {};
   try {
-    const raw = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync(configPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
     return (raw.projects ?? {}) as Record<string, ProjectConfig>;
   } catch (err) {
     process.stderr.write(`[config] failed to parse config.json: ${err}\n`);

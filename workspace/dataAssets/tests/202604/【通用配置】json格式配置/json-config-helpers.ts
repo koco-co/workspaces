@@ -38,10 +38,11 @@ export async function clickHeaderButton(
   page: Page,
   name: string,
 ): Promise<void> {
-  // 使用 .json-format-check 内的按钮区域来限定范围，避免匹配操作列按钮
-  const headerArea = page.locator(".json-format-check__content, .json-format-check").first();
-  const btn = headerArea.locator("button").filter({ hasText: name }).first();
-  await btn.click();
+  // 按钮文本可能含内部空格（如"新 增"），用精确正则匹配完整按钮名称，排除"新增子层级"等包含子串的行内按钮
+  const exactPattern = new RegExp(
+    `^${name.split("").join("\\s*")}$`,
+  );
+  await page.getByRole("button", { name: exactPattern }).click();
 }
 
 /** 等待弹窗出现并返回 locator */
@@ -138,7 +139,7 @@ export async function confirmAndWaitClose(
   modal: Locator,
 ): Promise<void> {
   await clickModalConfirm(modal);
-  await modal.waitFor({ state: "hidden", timeout: 15000 });
+  await expect(modal).not.toBeVisible({ timeout: 15000 });
   await page.waitForLoadState("networkidle");
 }
 
