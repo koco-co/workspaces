@@ -21,23 +21,41 @@ function loadDotEnv() {
 
 loadDotEnv();
 
-// 根据 QA_ACTIVE_ENV 自动桥接 Cookie / BaseURL，无需命令行传参
-const activeEnv = (process.env.QA_ACTIVE_ENV ?? "ltqc").toUpperCase();
+// 根据 ACTIVE_ENV 自动桥接 Cookie / BaseURL，无需命令行传参
+// 向后兼容：优先读新名 ACTIVE_ENV，回退到旧名 QA_ACTIVE_ENV
+const env = (
+  process.env.ACTIVE_ENV ?? process.env.QA_ACTIVE_ENV ?? "ltqc"
+).toUpperCase();
+const envLower = env.toLowerCase();
+
+// Cookie：新名 {ENV}_COOKIE → 旧名 QA_COOKIE_{ENV} → 已有桥接变量
 const cookie =
-  process.env[`QA_COOKIE_${activeEnv}`] ?? process.env.UI_AUTOTEST_COOKIE ?? "";
+  process.env[`${env}_COOKIE`] ??
+  process.env[`QA_COOKIE_${env}`] ??
+  process.env.UI_AUTOTEST_COOKIE ??
+  "";
+
+// BaseURL：新名 {ENV}_BASE_URL → 旧名 QA_BASE_URL_{ENV} → 已有桥接变量
 const baseUrl =
-  process.env[`QA_BASE_URL_${activeEnv}`] ??
+  process.env[`${env}_BASE_URL`] ??
+  process.env[`QA_BASE_URL_${env}`] ??
   process.env.UI_AUTOTEST_BASE_URL ??
   "";
+
+// 写入桥接变量供 test-setup.ts 消费
 process.env.UI_AUTOTEST_COOKIE = cookie;
 if (baseUrl) process.env.UI_AUTOTEST_BASE_URL = baseUrl;
 
-// 报告路径：workspace/reports/playwright/YYYYMM/{{需求名称}}/{{需求名称}}.html
+// 环境隔离 session 路径
+const sessionPath = `.auth/session-${envLower}.json`;
+process.env.UI_AUTOTEST_SESSION_PATH = sessionPath;
+
+// 报告路径：workspace/{project}/reports/playwright/YYYYMM/{suiteName}/{env}/
 // 通过环境变量 QA_SUITE_NAME 传入需求名称，默认 report
 const yyyymm = new Date().toISOString().slice(0, 7).replace(/-/g, ""); // YYYYMM
 const suiteName = process.env.QA_SUITE_NAME ?? "report";
 const project = process.env.QA_PROJECT ?? "dataAssets";
-const reportDir = `workspace/${project}/reports/playwright/${yyyymm}/${suiteName}`;
+const reportDir = `workspace/${project}/reports/playwright/${yyyymm}/${suiteName}/${envLower}`;
 
 export default defineConfig({
   testMatch: `workspace/${project}/tests/**/*.spec.ts`,
@@ -47,7 +65,7 @@ export default defineConfig({
     [
       "monocart-reporter",
       {
-        name: `${suiteName} - UI自动化测试报告`,
+        name: `${suiteName} - UI自动化测试报告 (${envLower})`,
         outputFile: `${reportDir}/${suiteName}.html`,
       },
     ],
@@ -55,6 +73,7 @@ export default defineConfig({
   use: {
     headless: process.env.HEADLESS !== "false",
     viewport: { width: 1280, height: 720 },
+    storageState: sessionPath,
   },
   projects: [
     {

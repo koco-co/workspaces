@@ -25,8 +25,6 @@ const TMP_DIR = join(tmpdir(), `qa-flow-merge-specs-test-${process.pid}`);
 const BLOCK_P0 = `// META: {"id":"t1","priority":"P0","title":"【P0】验证列表页默认加载"}
 import { test, expect } from '@playwright/test';
 
-test.use({ storageState: '.auth/session.json' });
-
 test.describe('质量问题台账 - 列表页', () => {
   test('【P0】验证列表页默认加载', async ({ page }) => {
     await page.goto('https://test.example.com');
@@ -37,8 +35,6 @@ test.describe('质量问题台账 - 列表页', () => {
 
 const BLOCK_P1 = `// META: {"id":"t2","priority":"P1","title":"【P1】验证筛选功能"}
 import { test, expect } from '@playwright/test';
-
-test.use({ storageState: '.auth/session.json' });
 
 test.describe('质量问题台账 - 列表页', () => {
   test('【P1】验证筛选功能', async ({ page }) => {

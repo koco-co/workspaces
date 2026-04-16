@@ -214,7 +214,7 @@ await expect(page.getByRole("dialog")).not.toBeVisible();
 // META: {"id":"t1","priority":"P0","title":"【P0】验证xxx"}
 import { test, expect } from "../../fixtures/step-screenshot";
 
-test.use({ storageState: ".auth/session.json" });
+// storageState 由 playwright.config.ts 根据 ACTIVE_ENV 全局设置，无需在此指定
 
 test.describe("功能名称 - 页面名", () => {
   test("【P0】验证xxx", async ({ page, step }) => {
@@ -235,7 +235,7 @@ test.describe("功能名称 - 页面名", () => {
 // META: {"id":"t1","priority":"P0","title":"【P0】验证xxx"}
 import { test, expect } from "../../fixtures/step-screenshot";
 
-test.use({ storageState: ".auth/session.json" });
+// storageState 由 playwright.config.ts 根据 ACTIVE_ENV 全局设置，无需在此指定
 
 test.describe("功能名称 - 页面名", () => {
   test("【P0】验证xxx", async ({ page, step }) => {

@@ -34,6 +34,7 @@ interface CaseState {
 interface Progress {
   readonly version: 1;
   readonly suite_name: string;
+  readonly env?: string;
   readonly archive_md: string;
   readonly url: string;
   readonly selected_priorities: readonly string[];
@@ -57,16 +58,17 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function progressFilePath(project: string, suiteName: string): string {
-  return `${tempDir(project)}/ui-autotest-progress-${slugify(suiteName)}.json`;
+function progressFilePath(project: string, suiteName: string, env?: string): string {
+  const envSuffix = env ? `-${env.toLowerCase()}` : "";
+  return `${tempDir(project)}/ui-autotest-progress-${slugify(suiteName)}${envSuffix}.json`;
 }
 
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-function readProgress(project: string, suiteName: string): Progress | null {
-  const filePath = progressFilePath(project, suiteName);
+function readProgress(project: string, suiteName: string, env?: string): Progress | null {
+  const filePath = progressFilePath(project, suiteName, env);
   if (!existsSync(filePath)) return null;
   try {
     return JSON.parse(readFileSync(filePath, "utf8")) as Progress;
@@ -75,8 +77,8 @@ function readProgress(project: string, suiteName: string): Progress | null {
   }
 }
 
-function writeProgress(project: string, suiteName: string, progress: Progress): void {
-  const filePath = progressFilePath(project, suiteName);
+function writeProgress(project: string, suiteName: string, progress: Progress, env?: string): void {
+  const filePath = progressFilePath(project, suiteName, env);
   mkdirSync(dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(progress, null, 2)}\n`, "utf8");
 }
@@ -102,6 +104,7 @@ program
   .option("--priorities <csv>", "Comma-separated priorities to run", "P0")
   .option("--output-dir <dir>", "Output directory for test scripts", "tests/")
   .requiredOption("--cases <json>", "JSON map of case id → {title, priority}")
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
   .action(
     (opts: {
       project: string;
@@ -111,6 +114,7 @@ program
       priorities: string;
       outputDir: string;
       cases: string;
+      env?: string;
     }) => {
       initEnv();
 
@@ -144,6 +148,7 @@ program
       const progress: Progress = {
         version: 1,
         suite_name: opts.suite,
+        ...(opts.env ? { env: opts.env } : {}),
         archive_md: opts.archive,
         url: opts.url,
         selected_priorities: opts.priorities.split(",").map((p) => p.trim()),
@@ -157,7 +162,7 @@ program
       };
 
       try {
-        writeProgress(opts.project, opts.suite, progress);
+        writeProgress(opts.project, opts.suite, progress, opts.env);
         process.stdout.write(`${JSON.stringify(progress, null, 2)}\n`);
       } catch (err) {
         process.stderr.write(`[ui-autotest-progress:create] error: ${err}\n`);
@@ -176,6 +181,7 @@ program
   .option("--case <id>", "Case ID to update (omit for top-level field)")
   .requiredOption("--field <name>", "Field name to update")
   .requiredOption("--value <val>", "New value")
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
   .action(
     (opts: {
       project: string;
@@ -183,10 +189,11 @@ program
       case?: string;
       field: string;
       value: string;
+      env?: string;
     }) => {
       initEnv();
 
-      const progress = readProgress(opts.project, opts.suite);
+      const progress = readProgress(opts.project, opts.suite, opts.env);
       if (!progress) {
         process.stderr.write(
           `[ui-autotest-progress:update] progress file not found for suite "${opts.suite}"\n`,
@@ -245,7 +252,7 @@ program
       }
 
       try {
-        writeProgress(opts.project, opts.suite, updated);
+        writeProgress(opts.project, opts.suite, updated, opts.env);
         process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
       } catch (err) {
         process.stderr.write(`[ui-autotest-progress:update] error: ${err}\n`);
@@ -261,10 +268,11 @@ program
   .description("Read and output current progress JSON")
   .requiredOption("--project <name>", "Project name")
   .requiredOption("--suite <name>", "Test suite name")
-  .action((opts: { project: string; suite: string }) => {
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
+  .action((opts: { project: string; suite: string; env?: string }) => {
     initEnv();
 
-    const progress = readProgress(opts.project, opts.suite);
+    const progress = readProgress(opts.project, opts.suite, opts.env);
     if (!progress) {
       process.stderr.write(
         `[ui-autotest-progress:read] progress file not found for suite "${opts.suite}"\n`,
@@ -282,10 +290,11 @@ program
   .description("Output aggregated counts and status for a suite")
   .requiredOption("--project <name>", "Project name")
   .requiredOption("--suite <name>", "Test suite name")
-  .action((opts: { project: string; suite: string }) => {
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
+  .action((opts: { project: string; suite: string; env?: string }) => {
     initEnv();
 
-    const progress = readProgress(opts.project, opts.suite);
+    const progress = readProgress(opts.project, opts.suite, opts.env);
     if (!progress) {
       process.stderr.write(
         `[ui-autotest-progress:summary] progress file not found for suite "${opts.suite}"\n`,
@@ -302,6 +311,7 @@ program
 
     const summary = {
       suite_name: progress.suite_name,
+      ...(progress.env ? { env: progress.env } : {}),
       current_step: progress.current_step,
       preconditions_ready: progress.preconditions_ready,
       merge_status: progress.merge_status,
@@ -325,10 +335,11 @@ program
   .description("Delete the progress file for a suite")
   .requiredOption("--project <name>", "Project name")
   .requiredOption("--suite <name>", "Test suite name")
-  .action((opts: { project: string; suite: string }) => {
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
+  .action((opts: { project: string; suite: string; env?: string }) => {
     initEnv();
 
-    const filePath = progressFilePath(opts.project, opts.suite);
+    const filePath = progressFilePath(opts.project, opts.suite, opts.env);
 
     try {
       if (existsSync(filePath)) {
@@ -351,10 +362,11 @@ program
   .requiredOption("--project <name>", "Project name")
   .requiredOption("--suite <name>", "Test suite name")
   .option("--retry-failed", "Also reset failed cases to pending", false)
-  .action((opts: { project: string; suite: string; retryFailed: boolean }) => {
+  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
+  .action((opts: { project: string; suite: string; retryFailed: boolean; env?: string }) => {
     initEnv();
 
-    const progress = readProgress(opts.project, opts.suite);
+    const progress = readProgress(opts.project, opts.suite, opts.env);
     if (!progress) {
       process.stderr.write(
         `[ui-autotest-progress:resume] progress file not found for suite "${opts.suite}"\n`,
@@ -410,7 +422,7 @@ program
     };
 
     try {
-      writeProgress(opts.project, opts.suite, sanitized);
+      writeProgress(opts.project, opts.suite, sanitized, opts.env);
       process.stdout.write(`${JSON.stringify(sanitized, null, 2)}\n`);
     } catch (err) {
       process.stderr.write(`[ui-autotest-progress:resume] error: ${err}\n`);

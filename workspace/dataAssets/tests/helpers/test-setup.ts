@@ -57,7 +57,7 @@ export function getEnv(name: string): string | undefined {
 }
 
 function getRawBaseUrl(): string {
-  return getEnv("UI_AUTOTEST_BASE_URL") ?? getEnv("E2E_BASE_URL") ?? "http://172.16.122.52";
+  return getEnv("UI_AUTOTEST_BASE_URL") ?? getEnv("E2E_BASE_URL") ?? "";
 }
 
 // ── URL 构建 ────────────────────────────────────────────

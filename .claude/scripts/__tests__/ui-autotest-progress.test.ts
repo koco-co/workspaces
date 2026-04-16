@@ -620,3 +620,157 @@ describe("cached_parse_result and source_mtime", () => {
     assert.deepEqual(progress.cached_parse_result, { tasks: ["t1"] });
   });
 });
+
+// ── env isolation ─────────────────────────────────────────────────────────────
+
+describe("env isolation", () => {
+  it("create with --env produces env-scoped progress file", () => {
+    const { stdout, code } = run([
+      "create",
+      "--project", "dataAssets",
+      "--suite", "env-scoped-suite",
+      "--archive", "test.md",
+      "--url", "http://localhost",
+      "--env", "ci63",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.equal(progress.env, "ci63");
+
+    const filePath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      "ui-autotest-progress-env-scoped-suite-ci63.json",
+    );
+    assert.ok(existsSync(filePath), "env-scoped progress file should exist");
+  });
+
+  it("same suite different env produces separate files", () => {
+    run([
+      "create", "--project", "dataAssets", "--suite", "multi-env-suite",
+      "--archive", "test.md", "--url", "http://ci63",
+      "--env", "ci63",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+    run([
+      "create", "--project", "dataAssets", "--suite", "multi-env-suite",
+      "--archive", "test.md", "--url", "http://ltqcdev",
+      "--env", "ltqcdev",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    const ci63Path = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      "ui-autotest-progress-multi-env-suite-ci63.json",
+    );
+    const ltqcdevPath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      "ui-autotest-progress-multi-env-suite-ltqcdev.json",
+    );
+    assert.ok(existsSync(ci63Path));
+    assert.ok(existsSync(ltqcdevPath));
+
+    const { stdout: ci63Out } = run([
+      "read", "--project", "dataAssets", "--suite", "multi-env-suite", "--env", "ci63",
+    ]);
+    const { stdout: ltqcdevOut } = run([
+      "read", "--project", "dataAssets", "--suite", "multi-env-suite", "--env", "ltqcdev",
+    ]);
+    assert.equal(JSON.parse(ci63Out).url, "http://ci63");
+    assert.equal(JSON.parse(ltqcdevOut).url, "http://ltqcdev");
+  });
+
+  it("commands without --env still work (backward compat)", () => {
+    // Use the existing createTestSuite helper (no --env)
+    createTestSuite("no-env-compat-suite");
+    const { stdout, code } = run([
+      "read", "--project", "dataAssets", "--suite", "no-env-compat-suite",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.equal(progress.env, undefined);
+  });
+
+  it("summary includes env field when set", () => {
+    run([
+      "create", "--project", "dataAssets", "--suite", "env-summary-suite",
+      "--archive", "test.md", "--url", "http://localhost",
+      "--env", "ci78",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    const { stdout, code } = run([
+      "summary", "--project", "dataAssets", "--suite", "env-summary-suite", "--env", "ci78",
+    ]);
+    assert.equal(code, 0);
+    const summary = JSON.parse(stdout);
+    assert.equal(summary.env, "ci78");
+  });
+
+  it("update with --env targets correct file", () => {
+    run([
+      "create", "--project", "dataAssets", "--suite", "env-update-suite",
+      "--archive", "test.md", "--url", "http://localhost",
+      "--env", "ci63",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    const { stdout, code } = run([
+      "update", "--project", "dataAssets", "--suite", "env-update-suite",
+      "--env", "ci63",
+      "--case", "t1", "--field", "test_status", "--value", "passed",
+    ]);
+    assert.equal(code, 0);
+    assert.equal(JSON.parse(stdout).cases.t1.test_status, "passed");
+  });
+
+  it("reset with --env only deletes env-specific file", () => {
+    run([
+      "create", "--project", "dataAssets", "--suite", "env-reset-suite",
+      "--archive", "test.md", "--url", "http://ci63",
+      "--env", "ci63",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+    run([
+      "create", "--project", "dataAssets", "--suite", "env-reset-suite",
+      "--archive", "test.md", "--url", "http://ltqcdev",
+      "--env", "ltqcdev",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+
+    // Reset ci63 only
+    run(["reset", "--project", "dataAssets", "--suite", "env-reset-suite", "--env", "ci63"]);
+
+    // ci63 should be gone
+    const { code: ci63Code } = run([
+      "read", "--project", "dataAssets", "--suite", "env-reset-suite", "--env", "ci63",
+    ]);
+    assert.equal(ci63Code, 1);
+
+    // ltqcdev should still exist
+    const { code: ltqcdevCode } = run([
+      "read", "--project", "dataAssets", "--suite", "env-reset-suite", "--env", "ltqcdev",
+    ]);
+    assert.equal(ltqcdevCode, 0);
+  });
+
+  it("resume with --env targets correct file", () => {
+    run([
+      "create", "--project", "dataAssets", "--suite", "env-resume-suite",
+      "--archive", "test.md", "--url", "http://localhost",
+      "--env", "ci63",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } }),
+    ]);
+    run([
+      "update", "--project", "dataAssets", "--suite", "env-resume-suite",
+      "--env", "ci63",
+      "--case", "t1", "--field", "test_status", "--value", "running",
+    ]);
+
+    const { stdout, code } = run([
+      "resume", "--project", "dataAssets", "--suite", "env-resume-suite", "--env", "ci63",
+    ]);
+    assert.equal(code, 0);
+    assert.equal(JSON.parse(stdout).cases.t1.test_status, "pending");
+  });
+});

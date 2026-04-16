@@ -157,13 +157,17 @@ async function guidedLogin(url: string, outputPath: string): Promise<void> {
 // CLI 入口
 // ────────────────────────────────────────────────────────────
 
+const envLabel = (
+  process.env.ACTIVE_ENV ?? process.env.QA_ACTIVE_ENV ?? "default"
+).toLowerCase();
+
 const program = new Command();
 
 program
   .name("session-login")
   .description("检查或创建 Playwright 登录 session")
   .requiredOption("--url <url>", "目标系统 URL")
-  .requiredOption("--output <path>", "session.json 输出路径")
+  .option("--output <path>", "session.json 输出路径", `.auth/session-${envLabel}.json`)
   .option("--force", "强制重新登录，忽略现有 session")
   .parse(process.argv);
 
