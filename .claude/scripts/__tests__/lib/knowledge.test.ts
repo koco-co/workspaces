@@ -7,6 +7,7 @@ import {
   parseContentJson,
   renderIndex,
   searchPitfalls,
+  confidenceGate,
   type Frontmatter,
   type ContentTerm,
   type ContentOverview,
@@ -282,5 +283,38 @@ describe("searchPitfalls", () => {
       { name: "other", tags: [] },
     ]);
     assert.equal(res.length, 2);
+  });
+});
+
+describe("confidenceGate", () => {
+  it("allows high without --confirmed", () => {
+    const r = confidenceGate("high", false);
+    assert.equal(r.allowed, true);
+  });
+
+  it("allows high with --confirmed (harmless redundancy)", () => {
+    const r = confidenceGate("high", true);
+    assert.equal(r.allowed, true);
+  });
+
+  it("rejects medium without --confirmed", () => {
+    const r = confidenceGate("medium", false);
+    assert.equal(r.allowed, false);
+    assert.match(r.reason ?? "", /requires --confirmed/);
+  });
+
+  it("allows medium with --confirmed", () => {
+    const r = confidenceGate("medium", true);
+    assert.equal(r.allowed, true);
+  });
+
+  it("rejects low always (even with --confirmed)", () => {
+    assert.equal(confidenceGate("low", false).allowed, false);
+    assert.equal(confidenceGate("low", true).allowed, false);
+  });
+
+  it("rejects unknown confidence", () => {
+    const r = confidenceGate("bogus", true);
+    assert.equal(r.allowed, false);
   });
 });

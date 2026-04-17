@@ -250,3 +250,24 @@ export function searchPitfalls(
     match_by: Array.from(by).sort(),
   }));
 }
+
+export function confidenceGate(
+  confidence: string,
+  confirmed: boolean,
+): { allowed: boolean; reason?: string } {
+  if (confidence === "high") return { allowed: true };
+  if (confidence === "low") {
+    return {
+      allowed: false,
+      reason: "Low confidence is forbidden; upgrade to medium in skill layer",
+    };
+  }
+  if (confidence === "medium") {
+    if (confirmed) return { allowed: true };
+    return {
+      allowed: false,
+      reason: "Non-high confidence requires --confirmed flag",
+    };
+  }
+  return { allowed: false, reason: `Unknown confidence: ${confidence}` };
+}
