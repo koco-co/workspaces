@@ -170,3 +170,58 @@ export function parseContentJson<T>(type: string, raw: string): T {
 
   return obj as T;
 }
+
+export interface IndexEntry {
+  name: string;
+  title: string;
+  tags: string[];
+  updated: string;
+  confidence: string;
+}
+
+export interface IndexData {
+  modules: IndexEntry[];
+  pitfalls: IndexEntry[];
+  overview_updated: string;
+  terms_updated: string;
+  terms_count: number;
+}
+
+function renderIndexEntry(subdir: "modules" | "pitfalls", entry: IndexEntry): string {
+  const tagsStr = entry.tags.length ? ` [tags: ${entry.tags.join(", ")}]` : "";
+  return `- [${entry.name}.md](${subdir}/${entry.name}.md) — ${entry.title}${tagsStr} (updated: ${entry.updated}, confidence: ${entry.confidence})`;
+}
+
+export function renderIndex(project: string, data: IndexData): string {
+  const sortedModules = [...data.modules].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedPitfalls = [...data.pitfalls].sort((a, b) => a.name.localeCompare(b.name));
+
+  const modulesBody = sortedModules.length
+    ? sortedModules.map((e) => renderIndexEntry("modules", e)).join("\n")
+    : "_（暂无）_";
+  const pitfallsBody = sortedPitfalls.length
+    ? sortedPitfalls.map((e) => renderIndexEntry("pitfalls", e)).join("\n")
+    : "_（暂无）_";
+
+  const nowIso = new Date().toISOString();
+
+  return `# ${project} Knowledge Index
+
+> 由 knowledge-keeper 自动维护，请勿手动编辑。
+
+## Core
+
+- [overview.md](overview.md) — 产品定位 + 主流程（updated: ${data.overview_updated}）
+- [terms.md](terms.md) — 术语表（${data.terms_count} 条，updated: ${data.terms_updated}）
+
+## Modules
+
+${modulesBody}
+
+## Pitfalls
+
+${pitfallsBody}
+
+<!-- last-indexed: ${nowIso} -->
+`;
+}

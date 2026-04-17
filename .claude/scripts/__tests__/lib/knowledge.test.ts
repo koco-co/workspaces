@@ -5,11 +5,13 @@ import {
   serializeFrontmatter,
   todayIso,
   parseContentJson,
+  renderIndex,
   type Frontmatter,
   type ContentTerm,
   type ContentOverview,
   type ContentModule,
   type ContentPitfall,
+  type IndexData,
 } from "../../lib/knowledge.ts";
 
 describe("parseFrontmatter", () => {
@@ -168,5 +170,70 @@ describe("parseContentJson", () => {
       () => parseContentJson("bogus", "{}"),
       /Unknown type/,
     );
+  });
+});
+
+describe("renderIndex", () => {
+  it("renders header + core + empty modules/pitfalls", () => {
+    const data: IndexData = {
+      modules: [],
+      pitfalls: [],
+      overview_updated: "2026-04-17",
+      terms_updated: "2026-04-17",
+      terms_count: 0,
+    };
+    const out = renderIndex("dataAssets", data);
+    assert.ok(out.includes("# dataAssets Knowledge Index"));
+    assert.ok(out.includes("## Core"));
+    assert.ok(out.includes("## Modules"));
+    assert.ok(out.includes("## Pitfalls"));
+    assert.ok(out.includes("<!-- last-indexed: "));
+  });
+
+  it("lists module entries sorted by name", () => {
+    const data: IndexData = {
+      modules: [
+        { name: "quality", title: "质量管理", tags: ["q"], updated: "2026-04-16", confidence: "medium" },
+        { name: "data-source", title: "数据源", tags: ["ds"], updated: "2026-04-17", confidence: "high" },
+      ],
+      pitfalls: [],
+      overview_updated: "2026-04-17",
+      terms_updated: "2026-04-17",
+      terms_count: 3,
+    };
+    const out = renderIndex("p", data);
+    const dsIdx = out.indexOf("data-source.md");
+    const qIdx = out.indexOf("quality.md");
+    assert.ok(dsIdx > 0 && qIdx > 0);
+    assert.ok(dsIdx < qIdx);
+    assert.ok(out.includes("[tags: ds]"));
+    assert.ok(out.includes("confidence: high"));
+  });
+
+  it("lists pitfalls correctly", () => {
+    const data: IndexData = {
+      modules: [],
+      pitfalls: [
+        { name: "ui-drift", title: "UI 漂移", tags: ["ui", "playwright"], updated: "2026-04-15", confidence: "high" },
+      ],
+      overview_updated: "2026-04-17",
+      terms_updated: "2026-04-17",
+      terms_count: 0,
+    };
+    const out = renderIndex("p", data);
+    assert.ok(out.includes("[ui-drift.md](pitfalls/ui-drift.md)"));
+    assert.ok(out.includes("[tags: ui, playwright]"));
+  });
+
+  it("terms_count appears in Core block", () => {
+    const data: IndexData = {
+      modules: [],
+      pitfalls: [],
+      overview_updated: "2026-04-17",
+      terms_updated: "2026-04-17",
+      terms_count: 7,
+    };
+    const out = renderIndex("p", data);
+    assert.ok(out.includes("术语表（7 条"));
   });
 });
