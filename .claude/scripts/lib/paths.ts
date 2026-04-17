@@ -61,8 +61,8 @@ export function tempDir(project: string): string {
   return join(projectDir(project), ".temp");
 }
 
-export function projectPreferencesDir(project: string): string {
-  return join(projectDir(project), "preferences");
+export function projectRulesDir(project: string): string {
+  return join(projectDir(project), "rules");
 }
 
 export function scriptsDir(): string {
