@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
-import { slugify, uiBlocksDir } from "../ui-autotest-progress.ts";
+import { asciiSlugify, slugify, uiBlocksDir } from "../ui-autotest-progress.ts";
 
 const TMP_DIR = join(tmpdir(), `qa-flow-uap-test-${process.pid}`);
 const SCRIPT = ".claude/scripts/ui-autotest-progress.ts";
@@ -1088,6 +1088,84 @@ describe("slugify()", () => {
 
   it("trims leading and trailing dashes", () => {
     assert.equal(slugify("(leading)"), "leading");
+  });
+});
+
+// ── asciiSlugify ──────────────────────────────────────────────────────────────
+
+describe("asciiSlugify()", () => {
+  it("strips CJK characters and collapses dashes", () => {
+    assert.equal(asciiSlugify("【通用】中文-xyz(#999)"), "xyz-999");
+  });
+
+  it("handles pure ASCII the same as slugify for ASCII input", () => {
+    assert.equal(asciiSlugify("Abc (Def) #123"), "Abc-Def-123");
+  });
+
+  it("trims leading and trailing dashes", () => {
+    assert.equal(asciiSlugify("(leading)"), "leading");
+  });
+
+  it("produces only ASCII characters", () => {
+    const result = asciiSlugify("【通用配置】json格式配置(#15696)");
+    assert.ok(/^[\x00-\x7f]+$/.test(result), `expected ASCII-only result, got: ${result}`);
+    assert.equal(result, "json-15696");
+  });
+});
+
+// ── slug alias file ───────────────────────────────────────────────────────────
+
+describe("slug alias file", () => {
+  it("writes a shell-safe ASCII alias alongside cjk progress file", () => {
+    const project = "dataAssets";
+    const suite = "【通用】中文-xyz(#999)";
+    run(["create", "--project", project, "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    // primary path uses slugify (keeps CJK)
+    const primary = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suite)}.json`);
+    const aliasPath = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    assert.ok(existsSync(aliasPath), `alias should exist at: ${aliasPath}`);
+    // alias path must be ASCII-only (the path segment we control)
+    const aliasFilename = `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`;
+    assert.ok(/^[\x00-\x7f]+$/.test(aliasFilename), "alias filename must be ASCII");
+    // content identical
+    const a = JSON.parse(readFileSync(aliasPath, "utf8"));
+    const p = JSON.parse(readFileSync(primary, "utf8"));
+    assert.deepEqual(a, p);
+  });
+
+  it("also writes alias for ASCII-only suite name (different prefix guarantees distinct path)", () => {
+    const suite = "ascii-only-suite";
+    run(["create", "--project", "dataAssets", "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    const primary = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suite)}.json`);
+    const alias = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    // Both files should exist (different prefix means different path)
+    assert.equal(existsSync(primary), true);
+    assert.equal(existsSync(alias), true);
+    // Contents should be equal
+    const a = JSON.parse(readFileSync(alias, "utf8"));
+    const p = JSON.parse(readFileSync(primary, "utf8"));
+    assert.deepEqual(a, p);
+  });
+
+  it("reset also removes the alias file", () => {
+    const suite = "reset-alias-suite";
+    run(["create", "--project", "dataAssets", "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    const alias = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    assert.ok(existsSync(alias), "alias should exist before reset");
+
+    run(["reset", "--project", "dataAssets", "--suite", suite]);
+    assert.equal(existsSync(alias), false, "alias should be removed after reset");
   });
 });
 

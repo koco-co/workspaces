@@ -63,6 +63,17 @@ export function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
+/**
+ * asciiSlugify — like slugify but additionally strips all non-ASCII characters
+ * (e.g. CJK), producing a shell-safe filename component.
+ */
+export function asciiSlugify(name: string): string {
+  return slugify(name)
+    .replace(/[^\x00-\x7f]/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function progressFilePath(project: string, suiteName: string, env?: string): string {
   const envSuffix = env ? `-${env.toLowerCase()}` : "";
   return `${tempDir(project)}/ui-autotest-progress-${slugify(suiteName)}${envSuffix}.json`;
@@ -126,7 +137,14 @@ function readProgress(project: string, suiteName: string, env?: string): Progres
 function writeProgress(project: string, suiteName: string, progress: Progress, env?: string): void {
   const filePath = progressFilePath(project, suiteName, env);
   mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, `${JSON.stringify(progress, null, 2)}\n`, "utf8");
+  const json = `${JSON.stringify(progress, null, 2)}\n`;
+  writeFileSync(filePath, json, "utf8");
+  // W6: shell-safe alias copy (ASCII only)
+  const envSuffix = env ? `-${env.toLowerCase()}` : "";
+  const aliasPath = `${dirname(filePath)}/ui-autotest-progress-alias-${asciiSlugify(suiteName)}${envSuffix}.json`;
+  if (aliasPath !== filePath) {
+    writeFileSync(aliasPath, json, "utf8");
+  }
 }
 
 // ── Commander ────────────────────────────────────────────────────────────────
@@ -408,10 +426,21 @@ program
     initEnv();
 
     const filePath = progressFilePath(opts.project, opts.suite, opts.env);
+    const envSuffix = opts.env ? `-${opts.env.toLowerCase()}` : "";
+    const aliasPath = `${dirname(filePath)}/ui-autotest-progress-alias-${asciiSlugify(opts.suite)}${envSuffix}.json`;
 
     try {
       if (existsSync(filePath)) {
         rmSync(filePath);
+      }
+      // W6: also remove the alias file if it exists
+      try {
+        if (existsSync(aliasPath)) {
+          rmSync(aliasPath);
+        }
+      } catch (aliasErr: unknown) {
+        const code = (aliasErr as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") throw aliasErr;
       }
       process.stdout.write(
         `${JSON.stringify({ reset: true, path: filePath }, null, 2)}\n`,
