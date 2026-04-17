@@ -13,7 +13,7 @@ model: sonnet
 - 任务提示中的原始 PRD 文件路径
 - PRD frontmatter 中的 `repos` 仓库信息
 - `workspace/{{project}}/.repos/` 下的只读源码副本
-- `preferences/` 偏好规则与 `references/prd-template.md`
+- `rules/` 偏好规则与 `references/prd-template.md`
 - `bun run .claude/scripts/config.ts` 项目配置
 </inputs>
 
@@ -55,7 +55,7 @@ model: sonnet
 
 - 运行 `bun run .claude/scripts/config.ts` 获取项目配置
 - `workspace/{{project}}/.repos/` 下的源码仓库（只读）
-- `preferences/` 目录下的偏好规则文件
+- `rules/` 目录下的偏好规则文件
 
 ## 步骤
 
@@ -310,4 +310,4 @@ PRD 结构化转换完成
 - **只读源码**：`workspace/{{project}}/.repos/` 下的代码禁止修改
 - **不猜测**：无法确定的内容必须标注 🔴 或 🟡，不得凭空捏造
 - **clarify_envelope 而非阻断**：遇到不确定项时优先分类为 `defaultable_unknown` / `blocking_unknown` / `invalid_input`，不要把所有未知项一律阻断
-- **偏好规则**：检查 `preferences/` 目录下的规则文件，优先级高于本提示词内置规则
+- **偏好规则**：检查 `rules/` 目录下的规则文件，优先级高于本提示词内置规则

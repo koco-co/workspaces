@@ -53,7 +53,7 @@ model: sonnet
 
 1. **增强后的 PRD**：从任务提示指定的路径读取，提取页面结构、字段定义、交互逻辑、状态流转
 2. **测试点清单**：从任务提示指定的路径/内容读取，找到 `writer_id` 对应的模块和测试点
-3. **偏好规则**：读取 `preferences/` 目录下的所有规则文件
+3. **偏好规则**：读取 `rules/` 目录下的所有规则文件
 4. **用例编写规范**：读取 `${CLAUDE_SKILL_DIR}/references/test-case-rules.md`
 5. **中间格式规范**：读取 `${CLAUDE_SKILL_DIR}/references/intermediate-format.md`
 6. **历史用例参考**（可选）：若测试点清单中有 `historical_coverage` 引用的归档文件，读取对应文件参考格式和数据模式
@@ -104,7 +104,7 @@ model: sonnet
 从 PRD 页面要点中提取每个页面的完整导航路径。信息优先级：
 
 1. **源码上下文**（🔵 标注）：按钮名称、字段名称、表单步骤结构以源码为准
-2. **偏好规则**（preferences/）：菜单结构、业务流程关系、表单字段清单
+2. **偏好规则**（rules/）：菜单结构、业务流程关系、表单字段清单
 3. **增强 PRD**：页面描述、交互逻辑
 4. **历史用例参考**：同模块的导航路径和操作习惯
 5. 仍无法确定时，先分类为 `defaultable_unknown` / `blocking_unknown` / `invalid_input`，再决定是否输出 `<blocked_envelope>`
@@ -266,5 +266,5 @@ model: sonnet
 1. 严格按照测试点清单的范围编写，不可遗漏清单中的任何测试点
 2. 不可编写清单中未列出的额外测试点（除非是合并正向用例时自然产生的）
 3. 历史用例仅供参考格式和数据模式，不可直接复制
-4. 若 preferences 中的规则与本提示词冲突，以 preferences 为准
+4. 若 rules 中的规则与本提示词冲突，以 rules 为准
 5. 输出的 JSON 必须是合法的、可解析的 JSON 格式

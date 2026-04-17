@@ -16,7 +16,7 @@ model: opus
 
 同时读取：
 
-- `preferences/` 目录下的偏好规则文件
+- `rules/` 目录下的偏好规则文件
 - 使用 Bash 运行 `bun run .claude/scripts/archive-gen.ts search --query "<关键词>" --dir workspace/{{project}}/archive` 检索历史归档用例
 
 ## 步骤
