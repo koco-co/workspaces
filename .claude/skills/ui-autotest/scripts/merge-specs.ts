@@ -8,8 +8,10 @@
  *     --output tests/e2e/202604/xxx/
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
 import { Command } from "commander";
 
 // ────────────────────────────────────────────────────────────
@@ -35,6 +37,29 @@ interface MergeResult {
     smoke: number;
     full: number;
   };
+}
+
+export interface MergeOptions {
+  readonly compileCheck?: boolean;
+}
+
+// ────────────────────────────────────────────────────────────
+// 工具函数
+// ────────────────────────────────────────────────────────────
+
+/**
+ * 从给定目录向上查找 node_modules 目录。
+ * 在 git worktree 场景下，node_modules 可能在主仓库根目录，而非 worktree 目录。
+ */
+function findNodeModules(startDir: string): string | null {
+  let current = startDir;
+  while (true) {
+    const candidate = join(current, "node_modules");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(current);
+    if (parent === current) return null; // 到达文件系统根目录
+    current = parent;
+  }
 }
 
 // ────────────────────────────────────────────────────────────
@@ -110,9 +135,48 @@ export function buildSpecContent(blocks: CodeBlock[], label: string): string {
 
 /**
  * 主合并函数：从 inputDir 读取代码块，生成 smoke.spec.ts 和 full.spec.ts。
+ * opts.compileCheck — 若为 true，在生成前对代码块文件运行 tsc --noEmit 类型检查。
  */
-export function mergeSpecs(inputDir: string, outputDir: string): MergeResult {
+export function mergeSpecs(inputDir: string, outputDir: string, opts: MergeOptions = {}): MergeResult {
   const blocks = readCodeBlocks(inputDir);
+
+  if (opts.compileCheck && blocks.length > 0) {
+    const blockFiles = blocks.map((b) => join(inputDir, `${b.fileName}.ts`));
+
+    // 使用临时 tsconfig 以便 tsc 能解析 @playwright/test 等外部模块。
+    // git worktree 下 node_modules 可能在主仓库目录，通过向上查找定位。
+    const nodeModulesDir = findNodeModules(process.cwd());
+    const baseUrl = nodeModulesDir ?? process.cwd();
+
+    const tmpTsconfig = join(tmpdir(), `merge-specs-tsc-${Date.now()}.json`);
+    const tsconfigContent = JSON.stringify({
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        lib: ["ES2022"],
+        strict: true,
+        skipLibCheck: true,
+        allowImportingTsExtensions: true,
+        noImplicitAny: true,
+        noEmit: true,
+        baseUrl,
+      },
+      files: blockFiles,
+    });
+    writeFileSync(tmpTsconfig, tsconfigContent, "utf-8");
+
+    try {
+      const result = spawnSync("bunx", ["tsc", "--project", tmpTsconfig], { encoding: "utf8" });
+      if (result.status !== 0) {
+        throw new Error(
+          `[merge-specs] tsc gate failed:\n${result.stdout ?? ""}\n${result.stderr ?? ""}`,
+        );
+      }
+    } finally {
+      rmSync(tmpTsconfig, { force: true });
+    }
+  }
 
   mkdirSync(outputDir, { recursive: true });
 
@@ -149,12 +213,13 @@ function runCli(): void {
     .description("合并 Playwright 代码块为 smoke.spec.ts 和 full.spec.ts")
     .requiredOption("--input <dir>", "代码块输入目录（含 .ts 文件）")
     .requiredOption("--output <dir>", "spec 文件输出目录")
+    .option("--no-compile-check", "跳过 tsc 类型检查门控（默认开启）")
     .parse(process.argv);
 
-  const opts = program.opts<{ input: string; output: string }>();
+  const opts = program.opts<{ input: string; output: string; compileCheck: boolean }>();
 
   try {
-    const result = mergeSpecs(opts.input, opts.output);
+    const result = mergeSpecs(opts.input, opts.output, { compileCheck: opts.compileCheck });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (err) {
     process.stderr.write(

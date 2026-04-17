@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
+import { asciiSlugify, slugify, uiBlocksDir } from "../ui-autotest-progress.ts";
 
 const TMP_DIR = join(tmpdir(), `qa-flow-uap-test-${process.pid}`);
 const SCRIPT = ".claude/scripts/ui-autotest-progress.ts";
@@ -119,7 +120,7 @@ describe("create", () => {
     assert.equal(t1.generated, false);
     assert.equal(t1.test_status, "pending");
     assert.equal(t1.attempts, 0);
-    assert.equal(t1.last_error, null);
+    assert.deepEqual(t1.error_history, []);
     assert.equal(t1.script_path, null);
 
     const t2 = progress.cases.t2;
@@ -194,19 +195,22 @@ describe("update", () => {
     assert.equal(progress.cases.t1.test_status, "running");
   });
 
-  it("updates last_error", () => {
+  it("--error flag appends to error_history when status set to failed", () => {
     createTestSuite("update-error-suite");
     const { stdout, code } = run([
       "update",
       "--project", "dataAssets",
       "--suite", "update-error-suite",
       "--case", "t1",
-      "--field", "last_error",
-      "--value", "Timeout after 30s",
+      "--field", "test_status",
+      "--value", "failed",
+      "--error", "Timeout after 30s",
     ]);
     assert.equal(code, 0);
     const progress = JSON.parse(stdout);
-    assert.equal(progress.cases.t1.last_error, "Timeout after 30s");
+    assert.equal(progress.cases.t1.error_history.length, 1);
+    assert.equal(progress.cases.t1.error_history[0].message, "Timeout after 30s");
+    assert.ok(progress.cases.t1.error_history[0].at, "at should be an ISO date string");
   });
 
   it("updates top-level current_step (number coercion)", () => {
@@ -445,7 +449,7 @@ describe("resume", () => {
     ]);
     run([
       "update", "--project", "dataAssets", "--suite", "resume-failed-suite",
-      "--case", "t1", "--field", "last_error", "--value", "Assertion failed",
+      "--case", "t1", "--field", "test_status", "--value", "failed", "--error", "Assertion failed",
     ]);
 
     const { stdout, code } = run([
@@ -456,7 +460,7 @@ describe("resume", () => {
     const progress = JSON.parse(stdout);
     assert.equal(progress.cases.t1.test_status, "pending");
     assert.equal(progress.cases.t1.attempts, 0);
-    assert.equal(progress.cases.t1.last_error, null);
+    assert.deepEqual(progress.cases.t1.error_history, []);
   });
 
   it("validates script_path, resets generated if file missing", () => {
@@ -772,5 +776,437 @@ describe("env isolation", () => {
     ]);
     assert.equal(code, 0);
     assert.equal(JSON.parse(stdout).cases.t1.test_status, "pending");
+  });
+});
+
+// ── error_history ─────────────────────────────────────────────────────────────
+
+describe("error_history", () => {
+  it("create initializes error_history as [] for each case", () => {
+    const { stdout, code } = run([
+      "create",
+      "--project", "dataAssets",
+      "--suite", "error-history-init-suite",
+      "--archive", "test.md",
+      "--url", "http://localhost",
+      "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" }, t2: { title: "c2", priority: "P1" } }),
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.deepEqual(progress.cases.t1.error_history, []);
+    assert.deepEqual(progress.cases.t2.error_history, []);
+  });
+
+  it("update --error appends one entry with at and message", () => {
+    createTestSuite("error-history-append-suite");
+    const { stdout, code } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "error-history-append-suite",
+      "--case", "t1",
+      "--field", "test_status",
+      "--value", "failed",
+      "--error", "Element not found",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    const history = progress.cases.t1.error_history;
+    assert.equal(history.length, 1);
+    assert.equal(history[0].message, "Element not found");
+    assert.ok(history[0].at, "at should be present");
+    // Verify at is a valid ISO date string
+    assert.ok(!Number.isNaN(Date.parse(history[0].at)), "at should be a valid ISO date");
+  });
+
+  it("two sequential failed updates append two entries in order", () => {
+    createTestSuite("error-history-two-entries-suite");
+    run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "error-history-two-entries-suite",
+      "--case", "t1",
+      "--field", "test_status",
+      "--value", "failed",
+      "--error", "First failure",
+    ]);
+    const { stdout, code } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "error-history-two-entries-suite",
+      "--case", "t1",
+      "--field", "test_status",
+      "--value", "failed",
+      "--error", "Second failure",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    const history = progress.cases.t1.error_history;
+    assert.equal(history.length, 2);
+    assert.equal(history[0].message, "First failure");
+    assert.equal(history[1].message, "Second failure");
+  });
+
+  it("update to passed does NOT mutate error_history", () => {
+    createTestSuite("error-history-passed-suite");
+    // First add a failure
+    run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "error-history-passed-suite",
+      "--case", "t1",
+      "--field", "test_status",
+      "--value", "failed",
+      "--error", "Initial failure",
+    ]);
+    // Then update to passed
+    const { stdout, code } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "error-history-passed-suite",
+      "--case", "t1",
+      "--field", "test_status",
+      "--value", "passed",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    // error_history should still have the original entry
+    assert.equal(progress.cases.t1.error_history.length, 1);
+    assert.equal(progress.cases.t1.error_history[0].message, "Initial failure");
+    assert.equal(progress.cases.t1.test_status, "passed");
+  });
+
+  it("migration: legacy last_error is converted to error_history on read", () => {
+    const suiteName = "error-history-migration-suite";
+    // Manually write a legacy progress file with last_error
+    const filePath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suiteName)}.json`,
+    );
+    const legacyProgress = {
+      version: 1,
+      suite_name: suiteName,
+      archive_md: "test.md",
+      url: "http://localhost",
+      selected_priorities: ["P0"],
+      output_dir: "tests/",
+      started_at: "2024-01-01T00:00:00.000Z",
+      updated_at: "2024-01-02T00:00:00.000Z",
+      current_step: 4,
+      preconditions_ready: false,
+      cases: {
+        t1: {
+          title: "c1",
+          priority: "P0",
+          generated: false,
+          script_path: null,
+          test_status: "failed",
+          attempts: 1,
+          last_error: "Old error from legacy format",
+        },
+      },
+      merge_status: "pending",
+    };
+    writeFileSync(filePath, `${JSON.stringify(legacyProgress, null, 2)}\n`, "utf8");
+
+    const { stdout, code } = run([
+      "read", "--project", "dataAssets", "--suite", suiteName,
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    // Should have error_history migrated from last_error
+    assert.equal(progress.cases.t1.error_history.length, 1);
+    assert.equal(progress.cases.t1.error_history[0].message, "Old error from legacy format");
+    assert.equal(progress.cases.t1.error_history[0].at, "2024-01-02T00:00:00.000Z");
+    // last_error should be stripped
+    assert.equal(progress.cases.t1.last_error, undefined);
+  });
+
+  it("migration: legacy last_error=null produces empty error_history", () => {
+    const suiteName = "error-history-migration-null-suite";
+    const filePath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suiteName)}.json`,
+    );
+    const legacyProgress = {
+      version: 1,
+      suite_name: suiteName,
+      archive_md: "test.md",
+      url: "http://localhost",
+      selected_priorities: ["P0"],
+      output_dir: "tests/",
+      started_at: "2024-01-01T00:00:00.000Z",
+      updated_at: "2024-01-02T00:00:00.000Z",
+      current_step: 4,
+      preconditions_ready: false,
+      cases: {
+        t1: {
+          title: "c1",
+          priority: "P0",
+          generated: false,
+          script_path: null,
+          test_status: "pending",
+          attempts: 0,
+          last_error: null,
+        },
+      },
+      merge_status: "pending",
+    };
+    writeFileSync(filePath, `${JSON.stringify(legacyProgress, null, 2)}\n`, "utf8");
+
+    const { stdout, code } = run([
+      "read", "--project", "dataAssets", "--suite", suiteName,
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.deepEqual(progress.cases.t1.error_history, []);
+    assert.equal(progress.cases.t1.last_error, undefined);
+  });
+
+  it("resume --retry-failed resets error_history to []", () => {
+    createTestSuite("error-history-resume-suite");
+    run([
+      "update", "--project", "dataAssets", "--suite", "error-history-resume-suite",
+      "--case", "t1", "--field", "test_status", "--value", "failed",
+      "--error", "Failure before retry",
+    ]);
+
+    const { stdout, code } = run([
+      "resume", "--project", "dataAssets", "--suite", "error-history-resume-suite",
+      "--retry-failed",
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    assert.equal(progress.cases.t1.test_status, "pending");
+    assert.deepEqual(progress.cases.t1.error_history, []);
+  });
+});
+
+// ── update: reject structured-field direct writes ─────────────────────────────
+
+describe("update: reject direct writes to structured fields", () => {
+  it("exits non-zero with stderr when --field last_error is used", () => {
+    createTestSuite("reject-last-error-suite");
+    const { code, stderr } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "reject-last-error-suite",
+      "--case", "t1",
+      "--field", "last_error",
+      "--value", "some error",
+    ]);
+    assert.equal(code, 1);
+    assert.ok(
+      stderr.includes("last_error") && stderr.includes("cannot be set directly"),
+      `expected "last_error cannot be set directly" in stderr, got: ${stderr}`,
+    );
+  });
+
+  it("exits non-zero with stderr when --field error_history is used", () => {
+    createTestSuite("reject-error-history-suite");
+    const { code, stderr } = run([
+      "update",
+      "--project", "dataAssets",
+      "--suite", "reject-error-history-suite",
+      "--case", "t1",
+      "--field", "error_history",
+      "--value", "[]",
+    ]);
+    assert.equal(code, 1);
+    assert.ok(
+      stderr.includes("error_history") && stderr.includes("cannot be set directly"),
+      `expected "error_history cannot be set directly" in stderr, got: ${stderr}`,
+    );
+  });
+});
+
+// ── migration: strip last_error even when error_history already exists ─────────
+
+describe("migration: strip last_error when error_history already exists", () => {
+  it("strips last_error but preserves existing error_history when both are present", () => {
+    const suiteName = "migration-both-fields-suite";
+    const filePath = join(
+      TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suiteName)}.json`,
+    );
+    const legacyProgress = {
+      version: 1,
+      suite_name: suiteName,
+      archive_md: "test.md",
+      url: "http://localhost",
+      selected_priorities: ["P0"],
+      output_dir: "tests/",
+      started_at: "2024-01-01T00:00:00.000Z",
+      updated_at: "2024-01-02T00:00:00.000Z",
+      current_step: 4,
+      preconditions_ready: false,
+      cases: {
+        t1: {
+          title: "c1",
+          priority: "P0",
+          generated: false,
+          script_path: null,
+          test_status: "failed",
+          attempts: 2,
+          // Both fields present — legacy leak scenario
+          last_error: "foo",
+          error_history: [{ at: "2024-01-02T00:00:00.000Z", message: "bar" }],
+        },
+      },
+      merge_status: "pending",
+    };
+    writeFileSync(filePath, `${JSON.stringify(legacyProgress, null, 2)}\n`, "utf8");
+
+    const { stdout, code } = run([
+      "read", "--project", "dataAssets", "--suite", suiteName,
+    ]);
+    assert.equal(code, 0);
+    const progress = JSON.parse(stdout);
+    // error_history must be preserved exactly as written
+    assert.deepEqual(
+      progress.cases.t1.error_history,
+      [{ at: "2024-01-02T00:00:00.000Z", message: "bar" }],
+    );
+    // last_error must be stripped entirely
+    assert.equal(
+      progress.cases.t1.last_error,
+      undefined,
+      "last_error should be stripped even when error_history already exists",
+    );
+  });
+});
+
+// ── slugify ───────────────────────────────────────────────────────────────────
+
+describe("slugify()", () => {
+  it("replaces special chars and collapses dashes", () => {
+    assert.equal(slugify("【通用配置】json格式配置(#15696)"), "通用配置-json格式配置-15696");
+  });
+
+  it("handles plain ASCII with spaces and parens", () => {
+    assert.equal(slugify("Abc (Def) #123"), "Abc-Def-123");
+  });
+
+  it("trims leading and trailing dashes", () => {
+    assert.equal(slugify("(leading)"), "leading");
+  });
+});
+
+// ── asciiSlugify ──────────────────────────────────────────────────────────────
+
+describe("asciiSlugify()", () => {
+  it("strips CJK characters and collapses dashes", () => {
+    assert.equal(asciiSlugify("【通用】中文-xyz(#999)"), "xyz-999");
+  });
+
+  it("handles pure ASCII the same as slugify for ASCII input", () => {
+    assert.equal(asciiSlugify("Abc (Def) #123"), "Abc-Def-123");
+  });
+
+  it("trims leading and trailing dashes", () => {
+    assert.equal(asciiSlugify("(leading)"), "leading");
+  });
+
+  it("produces only ASCII characters", () => {
+    const result = asciiSlugify("【通用配置】json格式配置(#15696)");
+    assert.ok(/^[\x00-\x7f]+$/.test(result), `expected ASCII-only result, got: ${result}`);
+    assert.equal(result, "json-15696");
+  });
+});
+
+// ── slug alias file ───────────────────────────────────────────────────────────
+
+describe("slug alias file", () => {
+  it("writes a shell-safe ASCII alias alongside cjk progress file", () => {
+    const project = "dataAssets";
+    const suite = "【通用】中文-xyz(#999)";
+    run(["create", "--project", project, "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    // primary path uses slugify (keeps CJK)
+    const primary = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suite)}.json`);
+    const aliasPath = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    assert.ok(existsSync(aliasPath), `alias should exist at: ${aliasPath}`);
+    // alias path must be ASCII-only (the path segment we control)
+    const aliasFilename = `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`;
+    assert.ok(/^[\x00-\x7f]+$/.test(aliasFilename), "alias filename must be ASCII");
+    // content identical
+    const a = JSON.parse(readFileSync(aliasPath, "utf8"));
+    const p = JSON.parse(readFileSync(primary, "utf8"));
+    assert.deepEqual(a, p);
+  });
+
+  it("also writes alias for ASCII-only suite name (different prefix guarantees distinct path)", () => {
+    const suite = "ascii-only-suite";
+    run(["create", "--project", "dataAssets", "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    const primary = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-${slugify(suite)}.json`);
+    const alias = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    // Both files should exist (different prefix means different path)
+    assert.equal(existsSync(primary), true);
+    assert.equal(existsSync(alias), true);
+    // Contents should be equal
+    const a = JSON.parse(readFileSync(alias, "utf8"));
+    const p = JSON.parse(readFileSync(primary, "utf8"));
+    assert.deepEqual(a, p);
+  });
+
+  it("reset also removes the alias file", () => {
+    const suite = "reset-alias-suite";
+    run(["create", "--project", "dataAssets", "--suite", suite,
+         "--archive", "a.md", "--url", "http://x",
+         "--cases", JSON.stringify({ t1: { title: "c1", priority: "P0" } })]);
+    const alias = join(TMP_DIR, "workspace", "dataAssets", ".temp",
+      `ui-autotest-progress-alias-${asciiSlugify(suite)}.json`);
+    assert.ok(existsSync(alias), "alias should exist before reset");
+
+    run(["reset", "--project", "dataAssets", "--suite", suite]);
+    assert.equal(existsSync(alias), false, "alias should be removed after reset");
+  });
+});
+
+// ── suite-slug command ────────────────────────────────────────────────────────
+
+describe("suite-slug command", () => {
+  it("prints slug only (no newline, no extra output)", () => {
+    const { stdout, code } = run(["suite-slug", "--suite", "【X】a b"]);
+    assert.equal(code, 0);
+    assert.equal(stdout, "X-a-b");
+  });
+
+  it("slug matches the slug embedded in progressFilePath", () => {
+    const suite = "【通用】中文-xyz(#999)";
+    const { stdout } = run(["suite-slug", "--suite", suite]);
+    assert.equal(stdout, slugify(suite));
+  });
+});
+
+// ── uiBlocksDir() ─────────────────────────────────────────────────────────────
+
+describe("uiBlocksDir()", () => {
+  let savedWorkspaceDir: string | undefined;
+
+  before(() => {
+    savedWorkspaceDir = process.env.WORKSPACE_DIR;
+    process.env.WORKSPACE_DIR = join(TMP_DIR, "workspace");
+  });
+
+  after(() => {
+    if (savedWorkspaceDir === undefined) delete process.env.WORKSPACE_DIR;
+    else process.env.WORKSPACE_DIR = savedWorkspaceDir;
+  });
+
+  it("returns {tempDir}/ui-blocks/{slug} for given project+suite", () => {
+    const result = uiBlocksDir("dataAssets", "【通用配置】json格式配置(#15696)");
+    assert.match(result, /\/workspace\/dataAssets\/\.temp\/ui-blocks\/通用配置-json格式配置-15696$/);
+  });
+
+  it("slugifies identical to progressFilePath", () => {
+    const blocksDir = uiBlocksDir("dataAssets", "Abc (Def) #123");
+    assert.ok(blocksDir.endsWith("/ui-blocks/Abc-Def-123"));
   });
 });
