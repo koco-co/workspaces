@@ -8,7 +8,7 @@
 ## 原则
 
 - **每阶段独立 CC 实例**：阶段结束时主 agent 必须生成"下阶段启动 prompt"，提示用户 `/clear` 或新开实例粘贴继续，以控制上下文成本
-- **每阶段独立 spec**：产出于 `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
+- **每阶段独立 spec**：产出于 `docs/refactor/specs/YYYY-MM-DD-<topic>-design.md`
 - **每阶段独立 commit**：spec、实施、测试、文档分批 commit，smoke 验证通过后才算阶段完成
 - **每阶段遵循"先调研 → 先方案 → 先对齐 → 再实施"**：未经用户批准的 spec 不得动手写代码
 
@@ -18,7 +18,7 @@
 
 | # | 目标 | 状态 | Spec | 核心交付 |
 | --- | --- | --- | --- | --- |
-| **0** | 信息架构 + `rules/` 迁移 | 🟡 IN PROGRESS | [`2026-04-17-knowledge-architecture-design.md`](superpowers/specs/2026-04-17-knowledge-architecture-design.md) | 三层边界定型、`preferences → rules` 迁移、`knowledge/` 空骨架、`knowledge-keeper` contract |
+| **0** | 信息架构 + `rules/` 迁移 | 🟡 IN PROGRESS | [`2026-04-17-knowledge-architecture-design.md`](refactor/specs/2026-04-17-knowledge-architecture-design.md) | 三层边界定型、`preferences → rules` 迁移、`knowledge/` 空骨架、`knowledge-keeper` contract |
 | **1** | `create-project` skill + `setup` 瘦身 + `knowledge-keeper` 实施 | ⏳ PENDING | — | 新 skill 创建、setup 移除项目管理步骤、knowledge-keeper 代码实施 |
 | **2** | PRD 需求讨论阶段（目标 1.1） | ⏳ PENDING | — | 主 agent 亲自主持需求讨论、结构化 plan 模板、支持 `/clear` 重启 |
 | **3** | UI 自动化（目标 1.3） | ⏳ PENDING | — | 技术调研、Playwright 工作流重构、Allure 报告、subagent 升级契约、多环境/多项目 session |
