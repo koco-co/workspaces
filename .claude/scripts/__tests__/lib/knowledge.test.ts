@@ -6,6 +6,7 @@ import {
   todayIso,
   parseContentJson,
   renderIndex,
+  searchPitfalls,
   type Frontmatter,
   type ContentTerm,
   type ContentOverview,
@@ -235,5 +236,51 @@ describe("renderIndex", () => {
     };
     const out = renderIndex("p", data);
     assert.ok(out.includes("术语表（7 条"));
+  });
+});
+
+describe("searchPitfalls", () => {
+  const files = [
+    { name: "ui-dom-drift", tags: ["ui", "playwright"] },
+    { name: "auth-token-expire", tags: ["auth"] },
+    { name: "data-source-timeout", tags: ["ds", "timeout"] },
+  ];
+
+  it("matches by filename substring (case-insensitive)", () => {
+    const res = searchPitfalls("DOM", files);
+    assert.equal(res.length, 1);
+    assert.equal(res[0].name, "ui-dom-drift");
+    assert.ok(res[0].match_by.includes("filename"));
+  });
+
+  it("matches by tag substring", () => {
+    const res = searchPitfalls("auth", files);
+    assert.equal(res.length, 1);
+    assert.equal(res[0].name, "auth-token-expire");
+  });
+
+  it("returns both filename and tag matches deduplicated", () => {
+    const res = searchPitfalls("timeout", files);
+    assert.equal(res.length, 1);
+    assert.deepEqual(res[0].match_by.sort(), ["filename", "tags"]);
+  });
+
+  it("returns empty when no match", () => {
+    const res = searchPitfalls("xyzzy", files);
+    assert.deepEqual(res, []);
+  });
+
+  it("returns empty on empty query", () => {
+    const res = searchPitfalls("", files);
+    assert.deepEqual(res, []);
+  });
+
+  it("matches multiple files", () => {
+    const res = searchPitfalls("ui", [
+      { name: "ui-a", tags: [] },
+      { name: "ui-b", tags: [] },
+      { name: "other", tags: [] },
+    ]);
+    assert.equal(res.length, 2);
   });
 });

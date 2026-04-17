@@ -225,3 +225,28 @@ ${pitfallsBody}
 <!-- last-indexed: ${nowIso} -->
 `;
 }
+
+export function searchPitfalls(
+  query: string,
+  files: { name: string; tags: string[] }[],
+): { name: string; match_by: string[] }[] {
+  if (query === "") return [];
+  const q = query.toLowerCase();
+  const hits = new Map<string, Set<string>>();
+
+  for (const f of files) {
+    if (f.name.toLowerCase().includes(q)) {
+      if (!hits.has(f.name)) hits.set(f.name, new Set());
+      hits.get(f.name)!.add("filename");
+    }
+    if (f.tags.some((t) => t.toLowerCase().includes(q))) {
+      if (!hits.has(f.name)) hits.set(f.name, new Set());
+      hits.get(f.name)!.add("tags");
+    }
+  }
+
+  return Array.from(hits.entries()).map(([name, by]) => ({
+    name,
+    match_by: Array.from(by).sort(),
+  }));
+}
