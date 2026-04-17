@@ -65,14 +65,17 @@ function isLocatorLike(value: unknown): value is Locator {
 }
 
 async function settleForScreenshot(page: Page): Promise<void> {
-  await page
-    .evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        }),
-    )
-    .catch(() => {});
+  await Promise.race([
+    page
+      .evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          }),
+      )
+      .catch(() => {}),
+    new Promise<void>((resolve) => setTimeout(resolve, 2000)),
+  ]);
 }
 
 async function renderStepBadge(page: Page, label: string): Promise<void> {
