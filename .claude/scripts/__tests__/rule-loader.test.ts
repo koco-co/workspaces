@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, it } from "node:test";
 
-const TMP_DIR = join(tmpdir(), `qa-flow-pref-loader-test-${process.pid}`);
-const GLOBAL_PREFS_DIR = join(TMP_DIR, "global-prefs");
+const TMP_DIR = join(tmpdir(), `qa-flow-rule-loader-test-${process.pid}`);
+const GLOBAL_RULES_DIR = join(TMP_DIR, "global-rules");
 const WORKSPACE_DIR = join(TMP_DIR, "workspace");
 
 function runLoader(
@@ -16,14 +16,14 @@ function runLoader(
   try {
     const stdout = execFileSync(
       "bun",
-      ["run", ".claude/scripts/preference-loader.ts", ...args],
+      ["run", ".claude/scripts/rule-loader.ts", ...args],
       {
         cwd: resolve(import.meta.dirname, "../../.."),
         encoding: "utf8",
         env: {
           ...process.env,
           WORKSPACE_DIR,
-          QA_PREFERENCES_DIR: GLOBAL_PREFS_DIR,
+          QA_RULES_DIR: GLOBAL_RULES_DIR,
           ...extraEnv,
         },
       },
@@ -39,13 +39,13 @@ function runLoader(
   }
 }
 
-function writeGlobalPref(filename: string, content: string): void {
-  mkdirSync(GLOBAL_PREFS_DIR, { recursive: true });
-  writeFileSync(join(GLOBAL_PREFS_DIR, filename), content, "utf8");
+function writeGlobalRule(filename: string, content: string): void {
+  mkdirSync(GLOBAL_RULES_DIR, { recursive: true });
+  writeFileSync(join(GLOBAL_RULES_DIR, filename), content, "utf8");
 }
 
-function writeProjectPref(project: string, filename: string, content: string): void {
-  const dir = join(WORKSPACE_DIR, project, "preferences");
+function writeProjectRule(project: string, filename: string, content: string): void {
+  const dir = join(WORKSPACE_DIR, project, "rules");
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, filename), content, "utf8");
 }
@@ -58,13 +58,13 @@ after(() => {
   }
 });
 
-describe("preference-loader.ts load — project overrides global", () => {
+describe("rule-loader.ts load — project overrides global", () => {
   it("project-level value overrides global value for same key", () => {
-    writeGlobalPref(
+    writeGlobalRule(
       "case-writing.md",
       "# 用例编写偏好\n> 优先级说明\nrule_a: global_value\nrule_b: global_only\n",
     );
-    writeProjectPref(
+    writeProjectRule(
       "myProject",
       "case-writing.md",
       "# 用例编写偏好\nrule_a: project_value\n",
@@ -80,13 +80,13 @@ describe("preference-loader.ts load — project overrides global", () => {
   });
 });
 
-describe("preference-loader.ts load — falls back to global when no project prefs", () => {
-  it("uses global preferences when project has no preference files", () => {
-    writeGlobalPref(
+describe("rule-loader.ts load — falls back to global when no project rules", () => {
+  it("uses global rules when project has no rule files", () => {
+    writeGlobalRule(
       "xmind-structure.md",
       "# XMind 结构偏好\n> 优先级说明\niteration_id: 42\nroot_title_template: test-template\n",
     );
-    // no project prefs for this project
+    // no project rules for this project
 
     const { stdout, code } = runLoader(["load", "--project", "emptyProject"]);
     assert.equal(code, 0, `expected exit 0`);
@@ -98,21 +98,21 @@ describe("preference-loader.ts load — falls back to global when no project pre
   });
 });
 
-describe("preference-loader.ts load — empty when no preference files exist", () => {
-  it("returns empty object when no global and no project preferences exist", () => {
+describe("rule-loader.ts load — empty when no rule files exist", () => {
+  it("returns empty object when no global and no project rules exist", () => {
     const { stdout, code } = runLoader(["load", "--project", "ghostProject"], {
-      QA_PREFERENCES_DIR: join(TMP_DIR, "nonexistent-global"),
+      QA_RULES_DIR: join(TMP_DIR, "nonexistent-global"),
     });
     assert.equal(code, 0, `expected exit 0`);
 
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.deepEqual(result, {}, "should return empty object when no prefs found");
+    assert.deepEqual(result, {}, "should return empty object when no rules found");
   });
 });
 
-describe("preference-loader.ts load — parse rules", () => {
+describe("rule-loader.ts load — parse rules", () => {
   it("skips lines starting with #, >, (, and blank lines", () => {
-    writeGlobalPref(
+    writeGlobalRule(
       "test-rules.md",
       [
         "# heading line",
@@ -136,20 +136,20 @@ describe("preference-loader.ts load — parse rules", () => {
   });
 
   it("uses filename without .md as the output key", () => {
-    writeGlobalPref("my-pref-file.md", "some_key: some_value\n");
+    writeGlobalRule("my-rule-file.md", "some_key: some_value\n");
 
     const { stdout, code } = runLoader(["load", "--project", "keyProject"]);
     assert.equal(code, 0);
 
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("my-pref-file" in result, "key should be filename without .md");
+    assert.ok("my-rule-file" in result, "key should be filename without .md");
   });
 });
 
-describe("preference-loader.ts load — multiple preference files merged", () => {
-  it("output contains keys for all preference files found", () => {
-    writeGlobalPref("alpha.md", "key1: val1\n");
-    writeGlobalPref("beta.md", "key2: val2\n");
+describe("rule-loader.ts load — multiple rule files merged", () => {
+  it("output contains keys for all rule files found", () => {
+    writeGlobalRule("alpha.md", "key1: val1\n");
+    writeGlobalRule("beta.md", "key2: val2\n");
 
     const { stdout, code } = runLoader(["load", "--project", "multiProject"]);
     assert.equal(code, 0);

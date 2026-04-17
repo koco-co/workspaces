@@ -16,7 +16,7 @@ import {
   testsDir,
   reposDir,
   tempDir,
-  projectPreferencesDir,
+  projectRulesDir,
   listProjects,
   repoRoot,
   scriptsDir,
@@ -196,10 +196,10 @@ describe("tempDir", () => {
   });
 });
 
-describe("projectPreferencesDir", () => {
-  it("returns workspace/{project}/preferences", () => {
-    const dir = projectPreferencesDir("dataAssets");
-    assert.ok(dir.endsWith("workspace/dataAssets/preferences"));
+describe("projectRulesDir", () => {
+  it("returns workspace/{project}/rules", () => {
+    const dir = projectRulesDir("dataAssets");
+    assert.ok(dir.endsWith("workspace/dataAssets/rules"));
   });
 });
 

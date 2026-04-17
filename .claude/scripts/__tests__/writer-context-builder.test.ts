@@ -71,7 +71,7 @@ const MOCK_TEST_POINTS = {
   ],
 };
 
-const MOCK_PREFERENCES = {
+const MOCK_RULES = {
   priority_default: "P1",
   language: "zh-CN",
 };
@@ -107,7 +107,7 @@ describe("writer-context-builder build — module match", () => {
       writer_id: string;
       module_prd_section: string;
       test_points: unknown[];
-      preferences: Record<string, unknown>;
+      rules: Record<string, unknown>;
       fallback: boolean;
     };
 
@@ -204,35 +204,35 @@ describe("writer-context-builder build — test-points filtering", () => {
   });
 });
 
-describe("writer-context-builder build — preferences optional", () => {
-  it("includes preferences when --preferences path provided", () => {
-    const prdPath = join(TMP_DIR, "prefs.md");
-    const tpPath = join(TMP_DIR, "prefs-tp.json");
-    const prefsPath = join(TMP_DIR, "prefs.json");
+describe("writer-context-builder build — rules optional", () => {
+  it("includes rules when --rules path provided", () => {
+    const prdPath = join(TMP_DIR, "rules.md");
+    const tpPath = join(TMP_DIR, "rules-tp.json");
+    const rulesPath = join(TMP_DIR, "rules.json");
     writeFileSync(prdPath, MOCK_PRD, "utf8");
     writeFileSync(tpPath, JSON.stringify(MOCK_TEST_POINTS), "utf8");
-    writeFileSync(prefsPath, JSON.stringify(MOCK_PREFERENCES), "utf8");
+    writeFileSync(rulesPath, JSON.stringify(MOCK_RULES), "utf8");
 
     const { code, stdout } = run([
       "build",
       "--prd", prdPath,
       "--test-points", tpPath,
       "--writer-id", "商品管理",
-      "--preferences", prefsPath,
+      "--rules", rulesPath,
     ]);
 
     assert.equal(code, 0);
     const out = JSON.parse(stdout) as {
-      preferences: Record<string, unknown>;
+      rules: Record<string, unknown>;
     };
 
-    assert.equal(out.preferences.priority_default, "P1");
-    assert.equal(out.preferences.language, "zh-CN");
+    assert.equal(out.rules.priority_default, "P1");
+    assert.equal(out.rules.language, "zh-CN");
   });
 
-  it("returns empty preferences object when --preferences not provided", () => {
-    const prdPath = join(TMP_DIR, "no-prefs.md");
-    const tpPath = join(TMP_DIR, "no-prefs-tp.json");
+  it("returns empty rules object when --rules not provided", () => {
+    const prdPath = join(TMP_DIR, "no-rules.md");
+    const tpPath = join(TMP_DIR, "no-rules-tp.json");
     writeFileSync(prdPath, MOCK_PRD, "utf8");
     writeFileSync(tpPath, JSON.stringify(MOCK_TEST_POINTS), "utf8");
 
@@ -244,8 +244,8 @@ describe("writer-context-builder build — preferences optional", () => {
     ]);
 
     assert.equal(code, 0);
-    const out = JSON.parse(stdout) as { preferences: Record<string, unknown> };
-    assert.deepEqual(out.preferences, {});
+    const out = JSON.parse(stdout) as { rules: Record<string, unknown> };
+    assert.deepEqual(out.rules, {});
   });
 });
 
