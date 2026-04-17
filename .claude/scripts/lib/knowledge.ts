@@ -110,3 +110,63 @@ export function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+export interface ContentTerm {
+  term: string;
+  zh: string;
+  desc: string;
+  alias: string;
+}
+
+export interface ContentOverview {
+  section: string;
+  body: string;
+  mode: "append" | "replace";
+}
+
+export interface ContentModule {
+  name: string;
+  title: string;
+  tags: string[];
+  body: string;
+  source: string;
+}
+
+export interface ContentPitfall extends ContentModule {}
+
+const TERM_FIELDS: (keyof ContentTerm)[] = ["term", "zh", "desc", "alias"];
+const OVERVIEW_FIELDS: (keyof ContentOverview)[] = ["section", "body", "mode"];
+const MODULE_FIELDS: (keyof ContentModule)[] = ["name", "title", "tags", "body", "source"];
+
+export function parseContentJson<T>(type: string, raw: string): T {
+  let obj: Record<string, unknown>;
+  try {
+    obj = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new Error(`Invalid JSON for type=${type}`);
+  }
+
+  let required: string[];
+  if (type === "term") required = TERM_FIELDS as string[];
+  else if (type === "overview") required = OVERVIEW_FIELDS as string[];
+  else if (type === "module" || type === "pitfall") required = MODULE_FIELDS as string[];
+  else throw new Error(`Unknown type: ${type}`);
+
+  for (const field of required) {
+    if (!(field in obj)) {
+      throw new Error(`Missing required field "${field}" for type=${type}`);
+    }
+  }
+
+  if (type === "overview") {
+    const mode = obj.mode as string;
+    if (mode !== "append" && mode !== "replace") {
+      throw new Error(`Invalid mode "${mode}" for overview; must be append|replace`);
+    }
+  }
+  if ((type === "module" || type === "pitfall") && !Array.isArray(obj.tags)) {
+    throw new Error(`Field "tags" must be an array for type=${type}`);
+  }
+
+  return obj as T;
+}

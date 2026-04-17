@@ -4,7 +4,12 @@ import {
   parseFrontmatter,
   serializeFrontmatter,
   todayIso,
+  parseContentJson,
   type Frontmatter,
+  type ContentTerm,
+  type ContentOverview,
+  type ContentModule,
+  type ContentPitfall,
 } from "../../lib/knowledge.ts";
 
 describe("parseFrontmatter", () => {
@@ -109,5 +114,59 @@ describe("todayIso", () => {
     const d = new Date();
     const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     assert.equal(s, expected);
+  });
+});
+
+describe("parseContentJson", () => {
+  it("parses valid term content", () => {
+    const raw = '{"term":"QI","zh":"质量项","desc":"data quality entity","alias":"quality-item"}';
+    const result = parseContentJson<ContentTerm>("term", raw);
+    assert.equal(result.term, "QI");
+    assert.equal(result.zh, "质量项");
+    assert.equal(result.desc, "data quality entity");
+    assert.equal(result.alias, "quality-item");
+  });
+
+  it("parses valid overview content", () => {
+    const raw = '{"section":"产品定位","body":"数据资产平台","mode":"replace"}';
+    const result = parseContentJson<ContentOverview>("overview", raw);
+    assert.equal(result.section, "产品定位");
+    assert.equal(result.mode, "replace");
+  });
+
+  it("parses valid module content with empty arrays/strings", () => {
+    const raw = '{"name":"data-source","title":"数据源接入","tags":[],"body":"...","source":""}';
+    const result = parseContentJson<ContentModule>("module", raw);
+    assert.equal(result.name, "data-source");
+    assert.deepEqual(result.tags, []);
+    assert.equal(result.source, "");
+  });
+
+  it("parses valid pitfall content", () => {
+    const raw = '{"name":"dom-drift","title":"DOM 漂移","tags":["ui"],"body":"...","source":"x.ts:1"}';
+    const result = parseContentJson<ContentPitfall>("pitfall", raw);
+    assert.equal(result.name, "dom-drift");
+    assert.deepEqual(result.tags, ["ui"]);
+  });
+
+  it("throws on invalid JSON", () => {
+    assert.throws(
+      () => parseContentJson("term", "{not json}"),
+      /Invalid JSON/,
+    );
+  });
+
+  it("throws on term missing required field", () => {
+    assert.throws(
+      () => parseContentJson("term", '{"term":"x"}'),
+      /Missing required field/,
+    );
+  });
+
+  it("throws on unknown type", () => {
+    assert.throws(
+      () => parseContentJson("bogus", "{}"),
+      /Unknown type/,
+    );
   });
 });
