@@ -29,23 +29,46 @@ workspace/
 │   ├── reports/         # 分析报告
 │   ├── historys/        # 历史数据
 │   ├── tests/           # Playwright 自动化脚本
-│   ├── preferences/     # 项目级偏好（覆盖全局）
-│   ├── .repos/          # 源码仓库（只读）
-│   └── .temp/           # 状态文件
+│   ├── rules/            # 项目级规则（覆盖全局）
+│   ├── knowledge/        # 项目级业务知识库
+│   ├── .repos/           # 源码仓库（只读）
+│   └── .temp/            # 状态文件
 ├── xyzh/                # 信永中和项目
 │   └── ...              # 同上结构
 ```
 
 - 脚本通过 `--project` 参数指定项目，路径函数见 `paths.ts`
 - `config.json` 按 `projects.{name}` 组织配置
-- 偏好优先级：用户当前指令 > 项目级 `workspace/{project}/preferences/` > 全局 `preferences/` > skill 内置规则
+- 规则优先级：用户当前指令 > 项目级 `workspace/{project}/rules/` > 全局 `rules/` > skill 内置规则
 
 ## 核心约束
 
 - `workspace/{project}/.repos/` 下的源码仓库为只读，禁止 push/commit
-- 用户偏好规则见 `preferences/` 目录（全局）和 `workspace/{project}/preferences/`（项目级），优先级高于 skill 内置规则
+- 规则见 `rules/` 目录（全局）和 `workspace/{project}/rules/`（项目级），优先级高于 skill 内置规则
 - 生成产物（PRD、XMind、Archive、报告、测试脚本等）写入 `workspace/{project}/`，不污染框架代码
-- 配置类修改（如 `.env`、`config.json`、project preferences）仅在对应 skill 明确声明并获得确认后允许写入
+- 配置类修改（如 `.env`、`config.json`、project rules、project knowledge）仅在对应 skill 明确声明并获得确认后允许写入
+
+## 三层信息架构
+
+qa-flow 的协作偏好、规则、业务知识分三层存放，职责互斥：
+
+| 层 | 路径 | 寿命 | 作用域 | 语义 | 典型内容 |
+|---|---|---|---|---|---|
+| **偏好（memory）** | `~/.claude/projects/.../memory/` | 长（跨项目） | 用户级 | AI 协作偏好 + 项目状态小便签 | `feedback_*`（AI 协作风格）、`project_*`（如"当前迭代 15695"） |
+| **规则（rules）** | `rules/` + `workspace/{project}/rules/` | 中（项目周期） | 项目 + 全局（双层） | 硬约束 | 用例编写规范、XMind 结构约束、格式/命名约定 |
+| **知识（knowledge）** | `workspace/{project}/knowledge/` | 短-中（业务迭代更新） | 仅项目级 | 业务知识库 | 主流程、术语表、业务规则、踩坑 |
+
+**边界判断口诀：**
+- 跨项目可复用的 AI 协作偏好 → memory
+- 项目内硬性编写/格式约束 → rules
+- 项目内业务事实（"是什么"、"怎么做业务"）→ knowledge
+
+**读写约束：**
+- `rules/` 通过 `bun run .claude/scripts/rule-loader.ts load --project {{project}}` 合并加载；主 agent 读、skill 读；AI 在 xmind-editor 等场景下可追加写入
+- `knowledge/` 由 `knowledge-keeper` skill（阶段 1 实施）统一读写；subagent 不得直接改文件
+- `memory/` 由 Claude Code 自动持久化；AI 主动写入
+
+详见 [`docs/refactor/specs/2026-04-17-knowledge-architecture-design.md`](docs/refactor/specs/2026-04-17-knowledge-architecture-design.md)。
 
 ## 脚本变更规则
 

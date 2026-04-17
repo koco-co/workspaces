@@ -83,7 +83,7 @@ qa-flow uses a **Router + Skill + Agent + Plugin Hook** architecture:
 - **7 Skills** — `qa-flow` / `setup` / `test-case-gen` / `code-analysis` / `xmind-editor` / `ui-autotest` / `playwright-cli`
 - **5 primary user workflows** — `setup`, `test-case-gen`, `code-analysis`, `xmind-editor`, `ui-autotest`
 - **13 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill
-- **Cross-cutting capabilities** — project-level preferences, breakpoint resume, read-only source repos, and plugin hooks span the workflow
+- **Cross-cutting capabilities** — project-level rules, breakpoint resume, read-only source repos, and plugin hooks span the workflow
 - **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright assets
 
 </details>
@@ -308,7 +308,7 @@ Perform local edits on existing XMind files without re-reading PRDs. All write o
 
 #### Preference Learning
 
-After modifications, the AI automatically extracts reusable writing rules and persists them to `preferences/case-writing.md`, influencing future test-case-gen output style.
+After modifications, the AI automatically extracts reusable writing rules and persists them to `rules/case-writing.md`, influencing future test-case-gen output style.
 
 ---
 
@@ -437,16 +437,17 @@ qa-flow/
 │   │   ├── historys/             # Legacy CSV / XMind inputs
 │   │   ├── reports/              # Bug / conflict / Playwright reports
 │   │   ├── tests/                # Generated Playwright specs
-│   │   ├── preferences/          # Project-level overrides
+│   │   ├── rules/               # Project-level rule overrides
+│   │   ├── knowledge/           # Project-level business knowledge base
 │   │   ├── .repos/               # Cloned source repos (read-only)
 │   │   └── .temp/                # Temporary state and UI blocks
 │   └── xyzh/
 │       └── ...                   # Same project structure as above
-├── preferences/                  # User preference rules (auto-written)
+├── rules/                       # Writing rule library (project > global)
 │   ├── case-writing.md           # Test case writing conventions
 │   ├── data-preparation.md       # Test data preparation rules
 │   ├── prd-recognition.md        # PRD recognition patterns
-│   └── xmind-structure.md        # XMind structure preferences
+│   └── xmind-structure.md        # XMind structure rules
 ├── templates/                    # Handlebars report templates
 ├── tests/                        # E2E test specs
 │   └── e2e/YYYYMM/              # Playwright test files
