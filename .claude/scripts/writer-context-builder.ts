@@ -3,7 +3,7 @@
  * writer-context-builder.ts — 按模块切分 PRD，为每个 writer 构建精简上下文。
  * Usage:
  *   bun run .claude/scripts/writer-context-builder.ts build \
- *     --prd <path> --test-points <path> --writer-id <module> [--preferences <path>]
+ *     --prd <path> --test-points <path> --writer-id <module> [--rules <path>]
  */
 
 import { readFileSync } from "node:fs";
@@ -25,7 +25,7 @@ interface WriterContext {
   writer_id: string;
   module_prd_section: string;
   test_points: unknown[];
-  preferences: Record<string, unknown>;
+  rules: Record<string, unknown>;
   fallback: boolean;
 }
 
@@ -105,13 +105,13 @@ const buildCmd = program
   .requiredOption("--prd <path>", "Path to the PRD Markdown file")
   .requiredOption("--test-points <path>", "Path to the test-points JSON file")
   .requiredOption("--writer-id <module>", "Module name (fuzzy-matched against PRD ## headings)")
-  .option("--preferences <path>", "Optional path to merged preferences JSON")
+  .option("--rules <path>", "Optional path to merged rules JSON")
   .action(
     (opts: {
       prd: string;
       testPoints: string;
       writerId: string;
-      preferences?: string;
+      rules?: string;
     }) => {
       const prdPath = resolve(opts.prd);
       const tpPath = resolve(opts.testPoints);
@@ -135,15 +135,15 @@ const buildCmd = program
         process.exit(1);
       }
 
-      // Read preferences (optional)
-      let preferences: Record<string, unknown> = {};
-      if (opts.preferences) {
+      // Read rules (optional)
+      let rules: Record<string, unknown> = {};
+      if (opts.rules) {
         try {
-          const raw = readFileSync(resolve(opts.preferences), "utf8");
-          preferences = JSON.parse(raw) as Record<string, unknown>;
+          const raw = readFileSync(resolve(opts.rules), "utf8");
+          rules = JSON.parse(raw) as Record<string, unknown>;
         } catch {
-          // Non-fatal: fall back to empty preferences
-          preferences = {};
+          // Non-fatal: fall back to empty rules
+          rules = {};
         }
       }
 
@@ -170,7 +170,7 @@ const buildCmd = program
         writer_id: opts.writerId,
         module_prd_section: modulePrdSection,
         test_points: testPoints,
-        preferences,
+        rules,
         fallback,
       };
 
