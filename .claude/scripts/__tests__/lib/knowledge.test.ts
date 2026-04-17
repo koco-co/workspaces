@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   parseFrontmatter,
   serializeFrontmatter,
+  todayIso,
   type Frontmatter,
 } from "../../lib/knowledge.ts";
 
@@ -94,5 +95,19 @@ describe("serializeFrontmatter", () => {
     const out = serializeFrontmatter(fm);
     assert.ok(out.includes("tags: []"));
     assert.ok(out.includes('source: ""'));
+  });
+});
+
+describe("todayIso", () => {
+  it("returns YYYY-MM-DD format", () => {
+    const s = todayIso();
+    assert.match(s, /^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("matches today's date in local time", () => {
+    const s = todayIso();
+    const d = new Date();
+    const expected = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    assert.equal(s, expected);
   });
 });
