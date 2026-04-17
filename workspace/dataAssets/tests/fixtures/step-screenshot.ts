@@ -38,6 +38,19 @@ type StepCaptureState = {
   lastLocator?: Locator;
 };
 
+type StepCaptureMode = "all" | "failed" | "off";
+
+function resolveStepCaptureMode(): StepCaptureMode {
+  const raw = (process.env.UI_AUTOTEST_STEP_CAPTURE ?? "all").toLowerCase();
+  if (raw === "failed") {
+    return "failed";
+  }
+  if (raw === "off") {
+    return "off";
+  }
+  return "all";
+}
+
 let currentStepCapture: StepCaptureState | null = null;
 
 function isLocatorLike(value: unknown): value is Locator {
@@ -106,6 +119,7 @@ async function clearStepBadge(page: Page): Promise<void> {
 export const test = base.extend<{ step: StepFn }>({
   step: async ({ page }, use, testInfo) => {
     let stepIndex = 0;
+    const captureMode = resolveStepCaptureMode();
 
     const stepFn: StepFn = async (name, body, highlight?) => {
       // 解析步骤名：格式 "步骤N: {{操作}} → {{预期}}"
@@ -135,6 +149,13 @@ export const test = base.extend<{ step: StepFn }>({
           const badgeLabel = expected
             ? `步骤-${idx} ${stepDesc} → ${expected}`
             : `步骤-${idx} ${stepDesc}`;
+
+          const shouldCapture =
+            captureMode === "all" || (captureMode === "failed" && !passed);
+
+          if (!shouldCapture) {
+            return;
+          }
 
           // 高亮目标元素（可选，元素不存在时静默跳过）
           if (highlightTarget) {
