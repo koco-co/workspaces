@@ -424,3 +424,83 @@ describe("write --type pitfall", () => {
     assert.ok(content.includes("type: pitfall"));
   });
 });
+
+describe("update action", () => {
+  before(() => {
+    resetFixture();
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "m1.md"),
+      `---
+title: 原标题
+type: module
+tags: [a]
+confidence: medium
+source: "old"
+updated: 2026-04-15
+---
+
+原 body
+`,
+    );
+  });
+
+  it("patches frontmatter fields", () => {
+    const { code } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/m1.md",
+      "--content", JSON.stringify({
+        frontmatter_patch: { title: "新标题", tags: ["a", "b"] },
+        mode: "patch",
+      }),
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
+    assert.ok(content.includes("title: 新标题"));
+    assert.ok(content.includes("tags: [a, b]"));
+    // unchanged fields stay
+    assert.ok(content.includes("source: old"));
+    // body unchanged
+    assert.ok(content.includes("原 body"));
+  });
+
+  it("patches body for module type replaces new_body fully", () => {
+    const { code } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/m1.md",
+      "--content", JSON.stringify({
+        body_patch: { new_body: "更新后的正文\n" },
+        mode: "patch",
+      }),
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
+    assert.ok(content.includes("更新后的正文"));
+    assert.ok(!content.includes("原 body"));
+  });
+
+  it("dry-run does not persist", () => {
+    const { stdout } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/m1.md",
+      "--content", JSON.stringify({ frontmatter_patch: { title: "XXX" }, mode: "patch" }),
+      "--confirmed", "--dry-run",
+    ]);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.dry_run, true);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
+    assert.ok(!content.includes("title: XXX"));
+  });
+
+  it("exits 1 on missing file", () => {
+    const { code, stderr } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/nonexistent.md",
+      "--content", JSON.stringify({ frontmatter_patch: {}, mode: "patch" }),
+      "--confirmed",
+    ]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("not found") || stderr.includes("does not exist"));
+  });
+});

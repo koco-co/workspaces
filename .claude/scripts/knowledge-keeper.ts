@@ -535,6 +535,129 @@ program
     );
   });
 
+interface UpdateContentShape {
+  frontmatter_patch?: Partial<Frontmatter>;
+  body_patch?: { section?: string; row_id?: string; new_body?: string };
+  mode: "patch" | "replace";
+}
+
+program
+  .command("update")
+  .description("Update an existing knowledge file (frontmatter / body)")
+  .requiredOption("--project <name>", "Project name")
+  .requiredOption("--path <rel>", "Relative path under knowledge/")
+  .requiredOption("--content <json>", "JSON patch spec")
+  .option("--confirmed", "Confirm update", false)
+  .option("--dry-run", "Preview without persisting", false)
+  .action((opts: {
+    project: string;
+    path: string;
+    content: string;
+    confirmed: boolean;
+    dryRun: boolean;
+  }) => {
+    // 1. 路径安全
+    if (opts.path.startsWith("/") || opts.path.includes("..")) {
+      process.stderr.write(`[knowledge-keeper] Invalid path: ${opts.path}\n`);
+      process.exit(1);
+    }
+
+    // 2. --confirmed 必须
+    if (!opts.confirmed) {
+      process.stderr.write(`[knowledge-keeper] update requires --confirmed\n`);
+      process.exit(1);
+    }
+
+    // 3. 路径存在性
+    const full = knowledgePath(opts.project, opts.path);
+    if (!existsSync(full)) {
+      process.stderr.write(`[knowledge-keeper] File not found: ${opts.path}\n`);
+      process.exit(1);
+    }
+
+    // 4. parse content JSON
+    let patch: UpdateContentShape;
+    try {
+      patch = JSON.parse(opts.content) as UpdateContentShape;
+    } catch (err) {
+      process.stderr.write(`[knowledge-keeper] Invalid JSON for update: ${err}\n`);
+      process.exit(1);
+      return;
+    }
+    if (patch.mode !== "patch" && patch.mode !== "replace") {
+      process.stderr.write(`[knowledge-keeper] Invalid mode "${patch.mode}"; must be patch|replace\n`);
+      process.exit(1);
+    }
+
+    // 5. 读文件 → parseFrontmatter
+    const beforeContent = readFileSync(full, "utf8");
+    const parsed = parseFrontmatter(beforeContent);
+    if (!parsed.frontmatter) {
+      process.stderr.write(`[knowledge-keeper] File has no valid frontmatter: ${opts.path}\n`);
+      process.exit(1);
+      return;
+    }
+
+    const today = todayIso();
+
+    // 6. 构造新 fm（immutable spread）
+    const newFm: Frontmatter = {
+      ...parsed.frontmatter,
+      ...(patch.frontmatter_patch ?? {}),
+      updated: today,
+    };
+
+    // 7. 处理 body_patch
+    let newBody = parsed.body;
+    if (patch.body_patch) {
+      const bp = patch.body_patch;
+      const fmType = newFm.type;
+      if ((fmType === "module" || fmType === "pitfall") && typeof bp.new_body === "string") {
+        newBody = bp.new_body;
+      } else if (fmType === "overview" && bp.section && typeof bp.new_body === "string") {
+        newBody = upsertOverviewSection(parsed.body, bp.section, bp.new_body, "replace");
+      } else if (fmType === "term" && bp.row_id && typeof bp.new_body === "string") {
+        newBody = upsertTermRow(parsed.body, bp.new_body, bp.row_id);
+      }
+    }
+
+    const afterContent =
+      serializeFrontmatter(newFm) + "\n" + newBody + (newBody.endsWith("\n") ? "" : "\n");
+
+    // 9. dry-run
+    if (opts.dryRun) {
+      process.stdout.write(
+        JSON.stringify(
+          {
+            dry_run: true,
+            action: "update",
+            file: full,
+            before: beforeContent,
+            after: afterContent,
+          },
+          null,
+          2,
+        ) + "\n",
+      );
+      return;
+    }
+
+    // 10. 真实写
+    writeFileSync(full, afterContent);
+    process.stdout.write(
+      JSON.stringify(
+        {
+          action: "update",
+          file: full,
+          before: beforeContent,
+          after: afterContent,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  });
+
 program.parseAsync(process.argv).catch((err) => {
   process.stderr.write(`[knowledge-keeper] Unexpected error: ${err}\n`);
   process.exit(1);
