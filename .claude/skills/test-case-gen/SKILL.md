@@ -54,7 +54,7 @@ bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{
 </inputs>
 
 <workflow>
-  <primary>init → transform → enhance → analyze → write → review → format-check → output</primary>
+  <primary>init → discuss → transform → enhance → analyze → write → review → format-check → output</primary>
   <standardize>parse → standardize → review → output</standardize>
   <reverse_sync>confirm_xmind → parse → locate_archive → preview_or_write → report</reverse_sync>
 </workflow>
@@ -99,13 +99,14 @@ bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{
 
 > 全流程使用 `TaskCreate` / `TaskUpdate` 工具展示实时进度，让用户在终端看到全局视图。
 
-### 主流程（7 节点）
+### 主流程（9 节点）
 
-workflow 启动时（节点 1 开始前），使用 `TaskCreate` 一次性创建 8 个任务（含 format-check），按顺序设置 `addBlockedBy` 依赖：
+workflow 启动时（节点 1 开始前），使用 `TaskCreate` 一次性创建 9 个任务（含 discuss 与 format-check），按顺序设置 `addBlockedBy` 依赖：
 
 | 任务 subject                        | activeForm                       |
 | ----------------------------------- | -------------------------------- |
 | `init — 输入解析与环境准备`         | `解析输入与检测断点`             |
+| `discuss — 主 agent 主持需求讨论`   | `主持需求讨论与 plan.md 落地`    |
 | `transform — 源码分析与 PRD 结构化` | `分析源码与结构化 PRD`           |
 | `enhance — PRD 增强`                | `增强 PRD（图片识别、要点提取）` |
 | `analyze — 测试点规划`              | `生成测试点清单`                 |
@@ -303,7 +304,7 @@ bun run .claude/scripts/history-convert.ts --path {{xmind_file}} --project {{pro
 
 **目标**：解析用户输入、检查插件、检测断点、确认运行参数。
 
-**⏳ Task**：使用 `TaskCreate` 创建 8 个主流程任务（见「任务可视化」章节），然后将 `init` 任务标记为 `in_progress`。
+**⏳ Task**：使用 `TaskCreate` 创建 9 个主流程任务（见「任务可视化」章节），然后将 `init` 任务标记为 `in_progress`。
 
 ### 1.1 断点续传检测
 
@@ -313,7 +314,21 @@ bun run .claude/scripts/state.ts resume --prd-slug {{prd_slug}} --project {{proj
 
 若返回有效状态 → 跳转到断点所在节点继续执行。
 
-### 1.2 插件检测（蓝湖 URL 等）
+### 1.2 plan.md 状态检测（discuss 续跑路由）
+
+```bash
+bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}} 2>/dev/null
+```
+
+按返回 `frontmatter.status` / `frontmatter.resume_anchor` 决定下游路由：
+
+- 不存在 / status=obsolete → 进入节点 1.5 discuss（init 模式）
+- status=discussing → 进入节点 1.5 discuss（恢复模式，从未答 Q* 续问）
+- status=ready → **跳过节点 1.5 discuss，直接进入节点 2 transform**（并把 plan_path 作为 task prompt 传给 transform-agent）
+
+> 提示：`state.ts resume` 与 `discuss read` 互补 — 前者管"工作流上次跑到哪个节点"，后者管"需求讨论是否已落地"。两个独立判定后按各自结论行事。
+
+### 1.4 插件检测（蓝湖 URL 等）
 
 ```bash
 bun run .claude/scripts/plugin-loader.ts check --input "{{user_input}}"
@@ -321,7 +336,7 @@ bun run .claude/scripts/plugin-loader.ts check --input "{{user_input}}"
 
 若匹配插件（如蓝湖 URL）→ 执行插件 fetch 命令获取 PRD 内容。
 
-### 1.3 初始化状态
+### 1.5 初始化状态
 
 ```bash
 bun run .claude/scripts/state.ts init --prd {{prd_path}} --project {{project}} --mode {{mode}}
@@ -341,7 +356,92 @@ bun run .claude/scripts/state.ts init --prd {{prd_path}} --project {{project}} -
 - 选项 2：切换为快速模式
 - 选项 3：指定其他 PRD 文件
 
-完成分歧处理后，将 `init` 任务标记为 `completed`（subject 更新为 `init — 已识别 PRD，{{mode}} 模式`），进入节点 2。
+完成分歧处理后，将 `init` 任务标记为 `completed`（subject 更新为 `init — 已识别 PRD，{{mode}} 模式`），按节点 1.2 的路由结论进入节点 1.5（discuss）或直接跳到节点 2（transform）。
+
+---
+
+## 节点 1.5: discuss — 主 agent 主持需求讨论
+
+**目标**：在 transform 之前由主 agent 亲自主持需求讨论，将 6 维度自检结果与用户答案落地为 plan.md。完整协议见 `references/discuss-protocol.md` 与 `rules/prd-discussion.md`。
+
+**⏳ Task**：将 `discuss` 任务标记为 `in_progress`。
+
+> **⚠️ 主持原则**：
+>
+> - 本节点禁派 transform-agent / writer-agent 等承担需求讨论职责的 subagent
+> - 仅允许派 Explore subagent 执行只读源码考古或归档检索
+> - AskUserQuestion 由主 agent 直接发起；subagent 不得对用户发问
+
+### 1.5.1 plan.md 初始化或恢复
+
+按节点 1.2 的检测结果：
+
+- 全新讨论 → `bun run .claude/scripts/discuss.ts init --project {{project}} --prd {{prd_path}}`
+- 恢复 → `bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}}` 拿到已答清单 + 未答 Q*
+
+### 1.5.2 需求摘要（plan §1）
+
+主 agent 读 PRD 原文 → 摘录 1-3 段核心需求 → AskUserQuestion 让用户确认或修正。
+摘要确认后由主 agent 直接编辑 plan.md `<!-- summary:begin --> ... <!-- summary:end -->` 段落（仅 §1 段，frontmatter 与 §3 JSON fence 不动）。
+
+### 1.5.3 6 维度自检（plan §2）
+
+主 agent 自己执行（不派 subagent 做最终判断），必要时调辅助工具：
+
+```bash
+bun run .claude/scripts/source-analyze.ts analyze --repo {{repo}} --keywords "..." --output json
+bun run .claude/scripts/archive-gen.ts search --query "..." --project {{project}}
+```
+
+> 深度源码考古可派 Explore subagent，但 Explore 仅返回事实摘要，最终澄清问题由主 agent 整理后向用户提问。
+
+§2 自检表由 §3 累积写入的 `location` 字段自动统计渲染（按维度关键字匹配），主 agent 无需手工维护。
+
+### 1.5.4 逐条澄清（plan §3 + §4）
+
+对每条 `blocking_unknown`：
+
+```
+AskUserQuestion(
+  question: "{{Q.question}}",
+  options: 最多 4 项（含 recommended_option 标注 推荐）,
+)
+```
+
+收到答案后立即调 `append-clarify` 落盘：
+
+```bash
+bun run .claude/scripts/discuss.ts append-clarify \
+  --project {{project}} --prd {{prd_path}} \
+  --content '{{json}}'
+```
+
+`defaultable_unknown` 直接 `append-clarify` with `default_policy`，不向用户发问。
+
+### 1.5.5 知识沉淀（plan §5）
+
+用户在讨论中提到的新术语 / 业务规则 / 踩坑 → 显式调：
+
+```bash
+bun run .claude/scripts/knowledge-keeper.ts write \
+  --project {{project}} --type term|module|pitfall \
+  --content '{...}' --confidence high --confirmed
+```
+
+收集所有沉淀条目 → 待 1.5.6 一并传入 `complete --knowledge-summary`。
+
+### 1.5.6 complete
+
+```bash
+bun run .claude/scripts/discuss.ts complete \
+  --project {{project}} --prd {{prd_path}} \
+  --knowledge-summary '[{"type":"term","name":"..."},...]'
+```
+
+成功 → status=ready / resume_anchor=discuss-completed → 进入节点 2 transform。
+若返回 exit 1（仍有未答 blocking）→ 回 1.5.4 续问后再 complete。
+
+**✅ Task**：将 `discuss` 任务标记为 `completed`（subject 更新为 `discuss — {{n}} 条澄清，{{m}} 条自动默认`）。
 
 ---
 
@@ -423,31 +523,22 @@ bun run .claude/scripts/repo-sync.ts --url {{repo_url}} --branch {{branch}}
 
 ### 2.4 PRD 结构化转换（AI 任务）
 
-派发 `transform-agent`（model: sonnet），执行：
+派发 `transform-agent`（model: sonnet），task prompt 中**必须**包含 plan.md 路径（见节点 1.5 落盘的 `{{prd_slug}}.plan.md`）：
+
+```
+plan_path: workspace/{{project}}/prds/{{YYYYMM}}/{{prd_slug}}.plan.md
+```
+
+transform-agent 执行：
 
 - 蓝湖素材解析
 - 源码状态检测与分析（A/B 级）
 - 历史用例检索
-- 按 `references/prd-template.md` 模板填充
-- 输出 `<clarify_envelope>`（含空载荷或待确认项）
+- **读取 plan.md** §3 已澄清项 / §4 自动默认项 / §6 hints
+- 按 `references/prd-template.md` 模板填充（已澄清项标 🟢、自动默认项标 🟡）
+- 不再输出 `<clarify_envelope>`（envelope 协议已 deprecated，详见 `references/clarify-protocol.md` 顶部说明）
 
-### 2.5 结构化澄清中转（强制检查）
-
-> **⚠️ transform subagent 必须输出 `<clarify_envelope>`（含空载荷或待确认项）。若缺失，主 agent 须要求 subagent 补充执行 6 维度自检。**
-
-处理流程参见 `references/clarify-protocol.md`：
-
-1. 检查 transform 输出中是否包含 `<clarify_envelope>`
-   - **缺失** → 通过 SendMessage 要求 subagent 执行步骤 5 的 6 维度自检
-   - **`status = "ready"` 且 `items = []`** → 正常进入下一节点
-   - **`status = "invalid_input"`** → 停止 transform，要求修正输入
-2. 将 `defaultable_unknown` 项按推荐默认整理到 `<confirmed_context>`，无需额外确认
-3. 仅对 `blocking_unknown` 项逐个使用 AskUserQuestion，保留推荐答案与备选
-4. 将用户答案与自动默认项合并为 `<confirmed_context>` 发回 transform subagent
-5. subagent 合入确认结果，移除对应 🔴 标记
-6. 若产生新的 `blocking_unknown` → 最多循环 3 轮；否则输出最终 PRD
-
-### 2.6 更新状态
+### 2.5 更新状态
 
 ```bash
 bun run .claude/scripts/state.ts update --prd-slug {{slug}} --project {{project}} --node transform --data '{{json}}'
