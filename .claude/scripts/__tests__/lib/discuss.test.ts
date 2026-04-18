@@ -1,0 +1,390 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  appendClarificationToPlan,
+  buildInitialPlan,
+  Clarification,
+  completePlanText,
+  KnowledgeDropped,
+  parsePlan,
+  PLAN_VERSION,
+  shouldObsolete,
+  validatePlanSchema,
+  __internal,
+} from "../../lib/discuss.ts";
+
+const FIXED_NOW = new Date("2026-04-18T10:30:00+08:00");
+const LATER_NOW = new Date("2026-04-18T11:00:00+08:00");
+
+const baseInput = {
+  project: "dataAssets",
+  prdPath: "workspace/dataAssets/prds/202604/15695.md",
+  prdSlug: "15695-quality",
+  requirementId: "15695",
+  requirementName: "质量项目检查",
+  now: FIXED_NOW,
+};
+
+function blockingClarification(overrides: Partial<Clarification> = {}): Clarification {
+  return {
+    id: "Q1",
+    severity: "blocking_unknown",
+    question: "审批状态字段是否包含已驳回？",
+    location: "审批列表页 → 字段定义 → 审批状态",
+    recommended_option: "B",
+    options: [
+      { id: "A", description: "仅保留待审批/已通过" },
+      { id: "B", description: "包含 待审批/审批中/已通过/已驳回", reason: "归档与 UI 均出现" },
+    ],
+    ...overrides,
+  };
+}
+
+function defaultableClarification(overrides: Partial<Clarification> = {}): Clarification {
+  return {
+    id: "Q2",
+    severity: "defaultable_unknown",
+    question: "列表默认排序字段是否为创建时间倒序？",
+    location: "列表页 → 交互逻辑 → 默认排序",
+    recommended_option: "A",
+    options: [{ id: "A", description: "创建时间倒序" }],
+    default_policy: "采用 source 接口默认 + 同模块归档",
+    ...overrides,
+  };
+}
+
+// ============================================================================
+// buildInitialPlan
+// ============================================================================
+
+describe("buildInitialPlan", () => {
+  it("includes all required frontmatter fields", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    assert.equal(parsed.frontmatter.plan_version, PLAN_VERSION);
+    assert.equal(parsed.frontmatter.prd_slug, "15695-quality");
+    assert.equal(parsed.frontmatter.prd_path, "workspace/dataAssets/prds/202604/15695.md");
+    assert.equal(parsed.frontmatter.project, "dataAssets");
+    assert.equal(parsed.frontmatter.requirement_id, "15695");
+    assert.equal(parsed.frontmatter.requirement_name, "质量项目检查");
+    assert.equal(parsed.frontmatter.status, "discussing");
+    assert.equal(parsed.frontmatter.resume_anchor, "discuss-in-progress");
+    assert.equal(parsed.frontmatter.discussion_rounds, 0);
+    assert.equal(parsed.frontmatter.clarify_count, 0);
+    assert.equal(parsed.frontmatter.auto_defaulted_count, 0);
+    assert.deepEqual(parsed.frontmatter.knowledge_dropped, []);
+  });
+
+  it("uses ISO8601 +08:00 timestamps for created_at and updated_at", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    assert.match(parsed.frontmatter.created_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+08:00$/);
+    assert.equal(parsed.frontmatter.created_at, parsed.frontmatter.updated_at);
+  });
+
+  it("renders title with requirement name and id", () => {
+    const plan = buildInitialPlan(baseInput);
+    assert.match(plan, /# 需求讨论 Plan：质量项目检查（#15695）/);
+  });
+
+  it("includes all 6 sections", () => {
+    const plan = buildInitialPlan(baseInput);
+    assert.match(plan, /## 1\. 需求摘要/);
+    assert.match(plan, /## 2\. 6 维度自检结果/);
+    assert.match(plan, /## 3\. 澄清记录/);
+    assert.match(plan, /## 4\. 自动默认项汇总/);
+    assert.match(plan, /## 5\. 沉淀的 knowledge/);
+    assert.match(plan, /## 6\. 下游节点 hint/);
+  });
+
+  it("includes summary marker block with TODO placeholder", () => {
+    const plan = buildInitialPlan(baseInput);
+    assert.ok(plan.includes(__internal.SUMMARY_MARKER_OPEN));
+    assert.ok(plan.includes(__internal.SUMMARY_MARKER_CLOSE));
+    assert.ok(plan.includes("_TODO 主 agent 摘录_"));
+  });
+
+  it("includes empty clarifications JSON fence", () => {
+    const plan = buildInitialPlan(baseInput);
+    assert.ok(plan.includes(__internal.CLARIFY_FENCE_OPEN));
+    assert.ok(plan.includes(__internal.CLARIFY_FENCE_CLOSE));
+    assert.ok(plan.includes("```json\n[]\n```"));
+  });
+});
+
+// ============================================================================
+// parsePlan
+// ============================================================================
+
+describe("parsePlan", () => {
+  it("parses freshly built plan with empty clarifications", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    assert.equal(parsed.clarifications.length, 0);
+    assert.equal(parsed.summary, "_TODO 主 agent 摘录_");
+  });
+
+  it("parses plan with single blocking clarification", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: next } = appendClarificationToPlan(plan, blockingClarification(), LATER_NOW);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.clarifications.length, 1);
+    assert.equal(parsed.clarifications[0].id, "Q1");
+    assert.equal(parsed.clarifications[0].severity, "blocking_unknown");
+  });
+
+  it("parses plan with knowledge_dropped list-of-objects", () => {
+    const plan = buildInitialPlan(baseInput);
+    const knowledge: KnowledgeDropped[] = [
+      { type: "term", name: "质量项" },
+      { type: "pitfall", name: "ui-redirect" },
+    ];
+    const { plan: completed } = completePlanText(plan, LATER_NOW, knowledge);
+    const parsed = parsePlan(completed);
+    assert.equal(parsed.frontmatter.knowledge_dropped.length, 2);
+    assert.deepEqual(parsed.frontmatter.knowledge_dropped[0], { type: "term", name: "质量项" });
+    assert.deepEqual(parsed.frontmatter.knowledge_dropped[1], { type: "pitfall", name: "ui-redirect" });
+  });
+
+  it("returns empty knowledge_dropped when frontmatter has explicit []", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    assert.deepEqual(parsed.frontmatter.knowledge_dropped, []);
+  });
+
+  it("returns empty clarifications when no fence present", () => {
+    const raw = "---\nplan_version: 1\nstatus: discussing\n---\n\n# Title\n\nNo fence.\n";
+    const parsed = parsePlan(raw);
+    assert.equal(parsed.clarifications.length, 0);
+  });
+});
+
+// ============================================================================
+// appendClarificationToPlan
+// ============================================================================
+
+describe("appendClarificationToPlan", () => {
+  it("adds a new blocking clarification and increments discussion_rounds", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: next, isNew } = appendClarificationToPlan(
+      plan,
+      blockingClarification({
+        user_answer: { selected_option: "B", value: "包含已驳回", answered_at: "2026-04-18T11:00:00+08:00" },
+      }),
+      LATER_NOW,
+    );
+    assert.equal(isNew, true);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.clarifications.length, 1);
+    assert.equal(parsed.frontmatter.discussion_rounds, 1);
+    assert.equal(parsed.frontmatter.clarify_count, 1);
+    assert.equal(parsed.frontmatter.auto_defaulted_count, 0);
+  });
+
+  it("replaces existing clarification with same id and recomputes counts", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: afterFirst } = appendClarificationToPlan(plan, blockingClarification(), FIXED_NOW);
+    const { plan: afterSecond, isNew } = appendClarificationToPlan(
+      afterFirst,
+      blockingClarification({
+        user_answer: { selected_option: "A", value: "仅保留", answered_at: "2026-04-18T11:00:00+08:00" },
+      }),
+      LATER_NOW,
+    );
+    assert.equal(isNew, false);
+    const parsed = parsePlan(afterSecond);
+    assert.equal(parsed.clarifications.length, 1);
+    assert.equal(parsed.clarifications[0].user_answer?.selected_option, "A");
+    assert.equal(parsed.frontmatter.clarify_count, 1);
+  });
+
+  it("counts defaultable as auto_defaulted, not as clarify", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: next } = appendClarificationToPlan(plan, defaultableClarification(), LATER_NOW);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.frontmatter.clarify_count, 0);
+    assert.equal(parsed.frontmatter.auto_defaulted_count, 1);
+  });
+
+  it("does not count blocking without user_answer as clarified", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: next } = appendClarificationToPlan(plan, blockingClarification(), LATER_NOW);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.frontmatter.clarify_count, 0);
+  });
+
+  it("updates updated_at on each append", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: next } = appendClarificationToPlan(plan, blockingClarification(), LATER_NOW);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.frontmatter.updated_at, "2026-04-18T11:00:00+08:00");
+    assert.notEqual(parsed.frontmatter.updated_at, parsed.frontmatter.created_at);
+  });
+});
+
+// ============================================================================
+// completePlanText
+// ============================================================================
+
+describe("completePlanText", () => {
+  it("sets status=ready when all blocking are answered", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: afterQ1 } = appendClarificationToPlan(
+      plan,
+      blockingClarification({
+        user_answer: { selected_option: "B", value: "x", answered_at: "2026-04-18T11:00:00+08:00" },
+      }),
+      LATER_NOW,
+    );
+    const { plan: completed, remainingBlocking } = completePlanText(afterQ1, LATER_NOW);
+    assert.equal(remainingBlocking, 0);
+    const parsed = parsePlan(completed);
+    assert.equal(parsed.frontmatter.status, "ready");
+    assert.equal(parsed.frontmatter.resume_anchor, "discuss-completed");
+  });
+
+  it("keeps status=discussing when blocking remains unanswered", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: afterQ1 } = appendClarificationToPlan(plan, blockingClarification(), LATER_NOW);
+    const { plan: completed, remainingBlocking } = completePlanText(afterQ1, LATER_NOW);
+    assert.equal(remainingBlocking, 1);
+    const parsed = parsePlan(completed);
+    assert.equal(parsed.frontmatter.status, "discussing");
+    assert.equal(parsed.frontmatter.resume_anchor, "discuss-in-progress");
+  });
+
+  it("writes knowledge_summary into frontmatter", () => {
+    const plan = buildInitialPlan(baseInput);
+    const knowledge: KnowledgeDropped[] = [{ type: "term", name: "smoke-term" }];
+    const { plan: completed } = completePlanText(plan, LATER_NOW, knowledge);
+    const parsed = parsePlan(completed);
+    assert.equal(parsed.frontmatter.knowledge_dropped.length, 1);
+    assert.deepEqual(parsed.frontmatter.knowledge_dropped[0], { type: "term", name: "smoke-term" });
+  });
+
+  it("ignores knowledge_summary when undefined (preserves existing)", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: withK } = completePlanText(plan, LATER_NOW, [{ type: "term", name: "k1" }]);
+    const { plan: again } = completePlanText(withK, LATER_NOW);
+    const parsed = parsePlan(again);
+    assert.equal(parsed.frontmatter.knowledge_dropped.length, 1);
+    assert.equal(parsed.frontmatter.knowledge_dropped[0].name, "k1");
+  });
+});
+
+// ============================================================================
+// validatePlanSchema
+// ============================================================================
+
+describe("validatePlanSchema", () => {
+  it("returns valid for fresh plan frontmatter", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    const result = validatePlanSchema(parsed.frontmatter);
+    assert.equal(result.valid, true);
+    assert.deepEqual(result.errors, []);
+  });
+
+  it("flags missing required fields", () => {
+    const result = validatePlanSchema({ plan_version: 1, status: "discussing" });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes("prd_slug")));
+    assert.ok(result.errors.some((e) => e.includes("project")));
+  });
+
+  it("flags unsupported plan_version", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    const result = validatePlanSchema({ ...parsed.frontmatter, plan_version: 99 });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes("plan_version")));
+  });
+
+  it("flags invalid status enum", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    const result = validatePlanSchema({ ...parsed.frontmatter, status: "bogus" as never });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes("status")));
+  });
+
+  it("flags invalid resume_anchor enum", () => {
+    const plan = buildInitialPlan(baseInput);
+    const parsed = parsePlan(plan);
+    const result = validatePlanSchema({
+      ...parsed.frontmatter,
+      resume_anchor: "transform-completed" as never,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.errors.some((e) => e.includes("resume_anchor")));
+  });
+});
+
+// ============================================================================
+// shouldObsolete
+// ============================================================================
+
+describe("shouldObsolete", () => {
+  it("returns false when prd is older than plan", () => {
+    const plan = new Date("2026-04-18T12:00:00+08:00");
+    const prd = new Date("2026-04-18T11:00:00+08:00");
+    assert.equal(shouldObsolete(plan, prd), false);
+  });
+
+  it("returns false within 5-minute tolerance", () => {
+    const plan = new Date("2026-04-18T12:00:00+08:00");
+    const prd = new Date("2026-04-18T12:04:00+08:00");
+    assert.equal(shouldObsolete(plan, prd), false);
+  });
+
+  it("returns true when prd is more than 5 minutes newer", () => {
+    const plan = new Date("2026-04-18T12:00:00+08:00");
+    const prd = new Date("2026-04-18T12:06:00+08:00");
+    assert.equal(shouldObsolete(plan, prd), true);
+  });
+});
+
+// ============================================================================
+// Roundtrip + edge cases
+// ============================================================================
+
+describe("roundtrip", () => {
+  it("preserves clarification structure after parse + render cycle", () => {
+    const plan = buildInitialPlan(baseInput);
+    const incoming = blockingClarification({
+      context: { lanhu: "x", source: "y", archive: "z" },
+      user_answer: { selected_option: "B", value: "包含", answered_at: "2026-04-18T11:00:00+08:00" },
+    });
+    const { plan: next } = appendClarificationToPlan(plan, incoming, LATER_NOW);
+    const parsed = parsePlan(next);
+    assert.equal(parsed.clarifications[0].id, incoming.id);
+    assert.equal(parsed.clarifications[0].context?.lanhu, "x");
+    assert.equal(parsed.clarifications[0].user_answer?.value, "包含");
+  });
+
+  it("maintains stable counts after appending two blocking + one defaultable", () => {
+    let plan = buildInitialPlan(baseInput);
+    plan = appendClarificationToPlan(
+      plan,
+      blockingClarification({
+        id: "Q1",
+        user_answer: { selected_option: "A", value: "v1", answered_at: "2026-04-18T11:00:00+08:00" },
+      }),
+      LATER_NOW,
+    ).plan;
+    plan = appendClarificationToPlan(
+      plan,
+      blockingClarification({
+        id: "Q2",
+        user_answer: { selected_option: "B", value: "v2", answered_at: "2026-04-18T11:01:00+08:00" },
+      }),
+      LATER_NOW,
+    ).plan;
+    plan = appendClarificationToPlan(plan, defaultableClarification({ id: "Q3" }), LATER_NOW).plan;
+    const parsed = parsePlan(plan);
+    assert.equal(parsed.clarifications.length, 3);
+    assert.equal(parsed.frontmatter.clarify_count, 2);
+    assert.equal(parsed.frontmatter.auto_defaulted_count, 1);
+    assert.equal(parsed.frontmatter.discussion_rounds, 3);
+  });
+});
