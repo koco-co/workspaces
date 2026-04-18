@@ -1,0 +1,281 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { after, before, describe, it } from "node:test";
+
+const TMP = join(tmpdir(), `qa-flow-kk-test-${process.pid}`);
+const WORKSPACE_DIR = join(TMP, "workspace");
+const PROJECT = "kk-fixture";
+const PROJECT_KNOWLEDGE = join(WORKSPACE_DIR, PROJECT, "knowledge");
+
+function runKk(
+  args: string[],
+): { stdout: string; stderr: string; code: number } {
+  try {
+    const stdout = execFileSync(
+      "bun",
+      ["run", ".claude/scripts/knowledge-keeper.ts", ...args],
+      {
+        cwd: resolve(import.meta.dirname, "../../.."),
+        encoding: "utf8",
+        env: { ...process.env, WORKSPACE_DIR },
+      },
+    );
+    return { stdout, stderr: "", code: 0 };
+  } catch (err: unknown) {
+    const e = err as { stdout?: string; stderr?: string; status?: number };
+    return {
+      stdout: e.stdout ?? "",
+      stderr: e.stderr ?? "",
+      code: e.status ?? 1,
+    };
+  }
+}
+
+function resetFixture(): void {
+  rmSync(join(WORKSPACE_DIR, PROJECT), { recursive: true, force: true });
+  mkdirSync(join(PROJECT_KNOWLEDGE, "modules"), { recursive: true });
+  mkdirSync(join(PROJECT_KNOWLEDGE, "pitfalls"), { recursive: true });
+  writeFileSync(
+    join(PROJECT_KNOWLEDGE, "overview.md"),
+    `---
+title: kk 业务概览
+type: overview
+tags: []
+confidence: high
+source: ""
+updated: 2026-04-17
+---
+
+# kk 业务概览
+
+## 产品定位
+
+占位。
+
+## 主流程
+
+1. 占位
+`,
+  );
+  writeFileSync(
+    join(PROJECT_KNOWLEDGE, "terms.md"),
+    `---
+title: kk 术语表
+type: term
+tags: []
+confidence: high
+source: ""
+updated: 2026-04-17
+---
+
+# kk 术语表
+
+| 术语 | 中文 | 解释 | 别名 |
+|---|---|---|---|
+`,
+  );
+}
+
+before(() => {
+  mkdirSync(WORKSPACE_DIR, { recursive: true });
+});
+after(() => {
+  try { rmSync(TMP, { recursive: true, force: true }); } catch { /* ignore */ }
+});
+
+describe("knowledge-keeper CLI skeleton", () => {
+  it("prints help when no args", () => {
+    const { stdout, code } = runKk(["--help"]);
+    assert.equal(code, 0);
+    assert.ok(stdout.includes("knowledge-keeper"));
+    assert.ok(stdout.includes("read-core"));
+  });
+
+  it("errors when --project missing", () => {
+    const { code, stderr } = runKk(["read-core"]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("--project") || stderr.includes("required"));
+  });
+});
+
+describe("read-core", () => {
+  before(resetFixture);
+
+  it("returns shape: project / overview / terms / index", () => {
+    const { stdout, code } = runKk(["read-core", "--project", PROJECT]);
+    assert.equal(code, 0, `stderr? stdout=${stdout}`);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.project, PROJECT);
+    assert.ok(obj.overview);
+    assert.equal(typeof obj.overview.title, "string");
+    assert.ok(obj.overview.content.includes("产品定位"));
+    assert.ok(Array.isArray(obj.terms));
+    assert.ok(obj.index);
+    assert.ok(Array.isArray(obj.index.modules));
+    assert.ok(Array.isArray(obj.index.pitfalls));
+  });
+
+  it("parses terms table with rows", () => {
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "terms.md"),
+      `---
+title: terms
+type: term
+tags: []
+confidence: high
+source: ""
+updated: 2026-04-17
+---
+
+| 术语 | 中文 | 解释 | 别名 |
+|---|---|---|---|
+| QI | 质量项 | 数据质量实体 | quality-item |
+| DS | 数据源 | 数据接入 | data-source |
+`,
+    );
+    const { stdout } = runKk(["read-core", "--project", PROJECT]);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.terms.length, 2);
+    assert.equal(obj.terms[0].term, "QI");
+    assert.equal(obj.terms[0].zh, "质量项");
+    assert.equal(obj.terms[1].alias, "data-source");
+  });
+});
+
+describe("read-module", () => {
+  before(resetFixture);
+
+  it("returns frontmatter + content for existing module", () => {
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "data-source.md"),
+      `---
+title: 数据源接入
+type: module
+tags: [ds, auth]
+confidence: high
+source: src.ts
+updated: 2026-04-17
+---
+
+# 数据源接入
+
+模块正文。
+`,
+    );
+    const { stdout, code } = runKk(["read-module", "--project", PROJECT, "--module", "data-source"]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.module, "data-source");
+    assert.equal(obj.frontmatter.title, "数据源接入");
+    assert.deepEqual(obj.frontmatter.tags, ["ds", "auth"]);
+    assert.ok(obj.content.includes("模块正文"));
+  });
+
+  it("exits 1 when module not found", () => {
+    const { code, stderr } = runKk(["read-module", "--project", PROJECT, "--module", "nope"]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("Module not found"));
+  });
+});
+
+describe("read-pitfall", () => {
+  before(() => {
+    resetFixture();
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "pitfalls", "ui-dom-drift.md"),
+      `---
+title: UI DOM 漂移
+type: pitfall
+tags: [ui, playwright]
+confidence: high
+source: x.ts:1
+updated: 2026-04-17
+---
+body`,
+    );
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "pitfalls", "auth-expire.md"),
+      `---
+title: 认证过期
+type: pitfall
+tags: [auth]
+confidence: medium
+source: ""
+updated: 2026-04-17
+---
+body`,
+    );
+  });
+
+  it("matches filename substring", () => {
+    const { stdout, code } = runKk(["read-pitfall", "--project", PROJECT, "--query", "dom"]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.matches.length, 1);
+    assert.equal(obj.matches[0].name, "ui-dom-drift");
+    assert.ok(obj.matches[0].match_by.includes("filename"));
+  });
+
+  it("matches tag substring", () => {
+    const { stdout } = runKk(["read-pitfall", "--project", PROJECT, "--query", "auth"]);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.matches.length, 1);
+    assert.equal(obj.matches[0].name, "auth-expire");
+    assert.ok(obj.matches[0].match_by.includes("tags"));
+  });
+
+  it("returns empty matches with exit 0", () => {
+    const { stdout, code } = runKk(["read-pitfall", "--project", PROJECT, "--query", "xyzzy"]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.deepEqual(obj.matches, []);
+  });
+});
+
+describe("index", () => {
+  before(() => {
+    resetFixture();
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "ds.md"),
+      `---
+title: 数据源
+type: module
+tags: [ds]
+confidence: high
+source: ""
+updated: 2026-04-17
+---
+body`,
+    );
+  });
+
+  it("writes a _index.md with correct structure", () => {
+    const { stdout, code } = runKk(["index", "--project", PROJECT]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.project, PROJECT);
+    assert.equal(obj.modules_count, 1);
+    assert.equal(obj.pitfalls_count, 0);
+
+    const idxContent = readFileSync(join(PROJECT_KNOWLEDGE, "_index.md"), "utf8");
+    assert.ok(idxContent.includes("## Core"));
+    assert.ok(idxContent.includes("[ds.md](modules/ds.md)"));
+    assert.ok(idxContent.includes("<!-- last-indexed: "));
+  });
+
+  it("fixes missing frontmatter and reports in fixed_frontmatter", () => {
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "legacy.md"),
+      "# 遗留模块\n\n正文\n",
+    );
+    const { stdout } = runKk(["index", "--project", PROJECT]);
+    const obj = JSON.parse(stdout);
+    assert.ok(obj.fixed_frontmatter.includes("modules/legacy.md"));
+    const fixed = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "legacy.md"), "utf8");
+    assert.ok(fixed.startsWith("---\n"));
+    assert.ok(fixed.includes("type: module"));
+  });
+});
