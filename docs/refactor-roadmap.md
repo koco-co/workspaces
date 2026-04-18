@@ -1,6 +1,6 @@
 # qa-flow 重构 Roadmap
 
-> 最后更新：2026-04-19（phase 4 完成）
+> 最后更新：2026-04-19（phase 5 完成）
 > 本文档为整轮重构的索引入口。每阶段独立 spec → plan → 实施 → smoke → commit 循环。
 
 ---
@@ -24,7 +24,7 @@
 | **3** | UI 自动化（目标 1.3） | ✅ DONE | [`2026-04-18-ui-autotest-evolution-design.md`](refactor/specs/2026-04-18-ui-autotest-evolution-design.md) | pattern-analyzer-agent + 步骤 5.5 共性收敛、Allure 完全替换 monocart、session 多项目隔离、helpers 拆 5 文件、686 测试绿 |
 | **3.5** | skill 重排 | ✅ DONE | [`2026-04-18-skill-reorganization-design.md`](refactor/specs/2026-04-18-skill-reorganization-design.md) | 删 `code-analysis`；新增 `hotfix-case-gen` / `bug-report` / `conflict-report`；三个 skill 各自内化信息不足前置守卫；`qa-flow` 菜单按频率重排；runtime 辅助（hooks / model-tiers / zentao plugin / templates footer）全部同步；686 测试绿 |
 | **4** | MD 用例策略矩阵（目标 1.2） | ✅ DONE | [`2026-04-18-md-case-strategy-matrix-design.md`](refactor/specs/2026-04-18-md-case-strategy-matrix-design.md) | 4 维信号探针（signal-probe.ts）+ 5 策略派发（strategy-router.ts）+ probe 节点（10 节点 workflow）+ knowledge 注入 writer-context-builder + S5 外转到 hotfix-case-gen；plan.md frontmatter 新增 strategy 字段、qa-state 新增 strategy_resolution；785 测试绿 |
-| **5** | 横切基础设施 | ⏳ PENDING | — | 断点续传强化、CLI 统一封装调研、`.env` 重组、Anthropic 最佳实践对齐 |
+| **5** | 横切基础设施 | ✅ DONE | [`2026-04-19-cross-cutting-infrastructure-design.md`](refactor/specs/2026-04-19-cross-cutting-infrastructure-design.md) | `lib/cli-runner.ts` 工厂（commander 封装 + initEnv + logger + onError）；27/28 CLI 迁移（`report-to-pdf` 保留）；`.env` 三段式（`.env` + `.env.envs` + `.env.local`）；`env-schema` 增 `validateActiveEnv`；state.ts 多环境隔离（`.qa-state-{slug}-{env}.json`）+ 自动迁移 + plan.md 仲裁；`logger.ts` 提升 `initLogLevel` 为 public API（LOG_LEVEL 支持）；821 测试绿 |
 | **6** | 命名迁移 + README + 架构图 | ⏳ PENDING | — | `historys → history` 等批量改名、README 中英同步、drawio 架构图 |
 
 ---
