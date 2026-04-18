@@ -28,6 +28,8 @@
     "@biomejs/biome": "^2.0.0",
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.5.2",
+    "allure-commandline": "^2.27.0",
+    "allure-playwright": "^2.15.0",
     "monocart-reporter": "^2.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.0"
