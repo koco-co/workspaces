@@ -161,17 +161,31 @@ const envLabel = (
   process.env.ACTIVE_ENV ?? process.env.QA_ACTIVE_ENV ?? "default"
 ).toLowerCase();
 
+const projectLabel = process.env.QA_PROJECT ?? "dataAssets";
+const defaultOutput = `.auth/${projectLabel}/session-${envLabel}.json`;
+
 const program = new Command();
 
 program
   .name("session-login")
   .description("检查或创建 Playwright 登录 session")
   .requiredOption("--url <url>", "目标系统 URL")
-  .option("--output <path>", "session.json 输出路径", `.auth/session-${envLabel}.json`)
+  .option("--project <name>", "项目名（影响 output 默认路径）", projectLabel)
+  .option("--output <path>", "session.json 输出路径", defaultOutput)
   .option("--force", "强制重新登录，忽略现有 session")
   .parse(process.argv);
 
-const opts = program.opts<{ url: string; output: string; force?: boolean }>();
+const opts = program.opts<{
+  url: string;
+  project: string;
+  output: string;
+  force?: boolean;
+}>();
+
+// 当用户传了 --project 但没传 --output，重新计算 output
+if (opts.project !== projectLabel && opts.output === defaultOutput) {
+  opts.output = `.auth/${opts.project}/session-${envLabel}.json`;
+}
 
 async function main(): Promise<void> {
   const { url, output, force } = opts;
