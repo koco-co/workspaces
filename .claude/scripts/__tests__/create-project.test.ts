@@ -236,3 +236,150 @@ describe("create-project scan", () => {
     assert.equal(data.missing_gitkeeps.length, 0);
   });
 });
+
+describe("create-project create --confirmed", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  it("materialises full skeleton end-to-end", () => {
+    const { stdout, code } = runCp([
+      "create",
+      "--project",
+      "fresh",
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.project, "fresh");
+    assert.equal(data.registered_config, true);
+    assert.equal(data.index_generated, true);
+    assert.ok(data.index_path.endsWith("knowledge/_index.md"));
+
+    const projDir = join(WORKSPACE_DIR, "fresh");
+    for (const d of [
+      "prds",
+      "xmind",
+      "archive",
+      "issues",
+      "historys",
+      "reports",
+      "tests",
+      "rules",
+      "knowledge",
+      "knowledge/modules",
+      "knowledge/pitfalls",
+      ".repos",
+      ".temp",
+    ]) {
+      assert.ok(existsSync(join(projDir, d)), `dir missing: ${d}`);
+    }
+    assert.ok(existsSync(join(projDir, "prds", ".gitkeep")));
+    assert.ok(existsSync(join(projDir, "knowledge", "modules", ".gitkeep")));
+    const rulesReadme = readFileSync(
+      join(projDir, "rules", "README.md"),
+      "utf8",
+    );
+    assert.match(rulesReadme, /# fresh 项目级规则/);
+    const overview = readFileSync(
+      join(projDir, "knowledge", "overview.md"),
+      "utf8",
+    );
+    assert.match(overview, /# fresh 业务概览/);
+    assert.ok(existsSync(join(projDir, "knowledge", "_index.md")));
+    const indexContent = readFileSync(
+      join(projDir, "knowledge", "_index.md"),
+      "utf8",
+    );
+    assert.match(indexContent, /last-indexed/);
+    const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
+    assert.deepEqual(cfg.projects.fresh, { repo_profiles: {} });
+  });
+
+  it("is idempotent: second run returns skipped=true and does not touch disk", () => {
+    runCp(["create", "--project", "again", "--confirmed"]);
+    const overviewPath = join(
+      WORKSPACE_DIR,
+      "again",
+      "knowledge",
+      "overview.md",
+    );
+    const before = readFileSync(overviewPath, "utf8");
+
+    const { stdout, code } = runCp([
+      "create",
+      "--project",
+      "again",
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.skipped, true);
+    const after = readFileSync(overviewPath, "utf8");
+    assert.equal(after, before, "overview.md must not change on second run");
+  });
+
+  it("preserves user-edited files during partial repair", () => {
+    runCp(["create", "--project", "partial", "--confirmed"]);
+    const overviewPath = join(
+      WORKSPACE_DIR,
+      "partial",
+      "knowledge",
+      "overview.md",
+    );
+    // Write content with a frontmatter block so knowledge-keeper index will not
+    // auto-fix it — the test intent is to verify create-project does NOT
+    // overwrite existing files, not to freeze the exact byte content.
+    const userContent =
+      "---\ntitle: user-customised\ntype: overview\ntags: []\nconfidence: high\nsource: \"\"\nupdated: 2026-04-18\n---\n\n# user-customised content";
+    writeFileSync(overviewPath, userContent);
+    rmSync(join(WORKSPACE_DIR, "partial", "knowledge", "modules"), {
+      recursive: true,
+    });
+
+    const { stdout, code } = runCp([
+      "create",
+      "--project",
+      "partial",
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.ok(Array.isArray(data.created_dirs));
+    assert.ok(data.created_dirs.some((p: string) => p.endsWith("knowledge/modules")));
+    const content = readFileSync(overviewPath, "utf8");
+    // create-project must not have replaced user content with the template
+    assert.ok(
+      !content.includes("partial 业务概览"),
+      "overview.md must not be overwritten with template content",
+    );
+    assert.ok(
+      content.includes("user-customised"),
+      "overview.md must still contain user content",
+    );
+  });
+
+  it("registers config.json alongside other existing projects", () => {
+    writeFileSync(
+      CONFIG_PATH,
+      JSON.stringify(
+        {
+          projects: {
+            prior: { repo_profiles: { foo: { repos: [] } } },
+          },
+          otherKey: "keep",
+        },
+        null,
+        2,
+      ),
+    );
+    const { code } = runCp(["create", "--project", "newOne", "--confirmed"]);
+    assert.equal(code, 0);
+    const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
+    assert.deepEqual(cfg.projects.prior, {
+      repo_profiles: { foo: { repos: [] } },
+    });
+    assert.deepEqual(cfg.projects.newOne, { repo_profiles: {} });
+    assert.equal(cfg.otherKey, "keep");
+  });
+});

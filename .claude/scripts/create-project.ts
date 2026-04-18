@@ -6,18 +6,22 @@
  * Actions: scan | create | clone-repo
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { initEnv } from "./lib/env.ts";
 import {
   configJsonPath,
   diffProjectSkeleton,
+  mergeProjectConfig,
+  renderTemplate,
+  SKELETON_SPEC,
   TEMPLATE_ROOT_REL,
   validateProjectName,
 } from "./lib/create-project.ts";
-import { projectDir } from "./lib/paths.ts";
+import { knowledgeDir, projectDir } from "./lib/paths.ts";
 
 initEnv();
 
@@ -141,8 +145,86 @@ function runCreate(project: string, dryRun: boolean, confirmed: boolean): void {
     );
   }
 
-  // Confirmed path: Task 8 implements
-  fail("create --confirmed not yet implemented (Task 8)");
+  const result = applyCreate(project);
+  process.stdout.write(
+    JSON.stringify({ project, ...result }, null, 2) + "\n",
+  );
+}
+
+function applyCreate(project: string): {
+  created_dirs: string[];
+  created_files: string[];
+  created_gitkeeps: string[];
+  registered_config: boolean;
+  index_generated: boolean;
+  index_path: string;
+} {
+  const projDir = projectDir(project);
+  const tplRoot = resolve(repoRoot(), TEMPLATE_ROOT_REL);
+  const diff = diffProjectSkeleton(projDir, tplRoot);
+
+  const created_dirs: string[] = [];
+  for (const rel of diff.missing_dirs) {
+    const abs = join(projDir, rel);
+    mkdirSync(abs, { recursive: true });
+    created_dirs.push(abs);
+  }
+
+  const created_gitkeeps: string[] = [];
+  for (const rel of diff.missing_gitkeeps) {
+    const abs = join(projDir, rel);
+    writeFileSync(abs, "");
+    created_gitkeeps.push(abs);
+  }
+
+  const created_files: string[] = [];
+  for (const rel of diff.missing_files) {
+    const src = join(tplRoot, SKELETON_SPEC.template_files[rel]);
+    const dst = join(projDir, rel);
+    mkdirSync(dirname(dst), { recursive: true });
+    const raw = readFileSync(src, "utf8");
+    writeFileSync(dst, renderTemplate(raw, { project }));
+    created_files.push(dst);
+  }
+
+  // config.json merge
+  const cfgPath = configJsonPath();
+  const existing = existsSync(cfgPath)
+    ? (JSON.parse(readFileSync(cfgPath, "utf8")) as Record<string, unknown>)
+    : {};
+  const { merged, added } = mergeProjectConfig(existing, project);
+  writeFileSync(cfgPath, JSON.stringify(merged, null, 2) + "\n");
+
+  // Invoke knowledge-keeper index
+  const indexPath = join(knowledgeDir(project), "_index.md");
+  const kk = spawnSync(
+    "bun",
+    [
+      "run",
+      ".claude/scripts/knowledge-keeper.ts",
+      "index",
+      "--project",
+      project,
+    ],
+    {
+      cwd: repoRoot(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  if (kk.status !== 0) {
+    process.stderr.write(kk.stderr || "");
+    fail(`knowledge-keeper index failed (exit ${kk.status})`);
+  }
+
+  return {
+    created_dirs,
+    created_files,
+    created_gitkeeps,
+    registered_config: added,
+    index_generated: existsSync(indexPath),
+    index_path: indexPath,
+  };
 }
 
 const program = new Command();
