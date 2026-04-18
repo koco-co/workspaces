@@ -121,6 +121,14 @@ export interface ContentTerm {
   alias: string;
 }
 
+/** Row parsed from the terms.md markdown table. */
+export interface TermRow {
+  term: string;
+  zh: string;
+  desc: string;
+  alias: string;
+}
+
 export interface ContentOverview {
   section: string;
   body: string;
