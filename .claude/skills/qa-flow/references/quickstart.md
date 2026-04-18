@@ -98,7 +98,7 @@
 | PRD 原始文件 | `workspace/{{project}}/prds/YYYYMM/`    | 输入：需求文档           |
 | XMind 输出   | `workspace/{{project}}/xmind/YYYYMM/`   | 输出：思维导图           |
 | Archive MD   | `workspace/{{project}}/archive/YYYYMM/` | 输出：归档 Markdown      |
-| 历史原始资料 | `workspace/{{project}}/historys/`       | 来自 CSV/JSON 的导入数据 |
+| 历史原始资料 | `workspace/{{project}}/history/`        | 来自 CSV/JSON 的导入数据 |
 | 线上问题用例 | `workspace/{{project}}/issues/`         | 禅道 Bug 转化的用例      |
 | 分析报告     | `workspace/{{project}}/reports/`        | 报错分析 HTML 报告       |
 | 图片库       | `workspace/{{project}}/images/`         | 需求文档中引用的截图     |

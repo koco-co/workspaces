@@ -29,7 +29,7 @@ workspace/
 │   ├── archive/         # Archive Markdown 归档
 │   ├── issues/          # Hotfix 用例
 │   ├── reports/         # 分析报告
-│   ├── historys/        # 历史数据
+│   ├── history/         # 历史数据
 │   ├── tests/           # Playwright 自动化脚本
 │   ├── rules/            # 项目级规则（覆盖全局）
 │   ├── knowledge/        # 项目级业务知识库

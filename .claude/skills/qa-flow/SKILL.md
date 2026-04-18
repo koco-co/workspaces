@@ -67,7 +67,7 @@ argument-hint: "[init | 功能编号 | 关键词]"
 帮我分析这个报错
 {{ZENTAO_BASE_URL}}/zentao/bug-view-138845.html   # 自动触发 Hotfix 用例生成
 生成测试用例 https://lanhuapp.com/web/#/item/project/...
-标准化归档 workspace/{{project}}/historys/旧用例.xmind
+标准化归档 workspace/{{project}}/history/旧用例.xmind
 ```
 
 更多示例见 `.claude/skills/qa-flow/references/quickstart.md`

@@ -2,7 +2,7 @@
 
 **Phase**: 6 · 命名迁移 + README 同步 + drawio 架构图（roadmap §阶段 6）
 **Date**: 2026-04-19
-**Status**: Draft — awaiting user review
+**Status**: Approved — 2026-04-19 decisions merged (§9.2)
 **Parent Roadmap**: [`../../refactor-roadmap.md`](../../refactor-roadmap.md)
 **Upstream**:
 - Phase 0 信息架构 ([`2026-04-17-knowledge-architecture-design.md`](./2026-04-17-knowledge-architecture-design.md))
@@ -501,23 +501,15 @@ commit 11: docs(diagrams): update ui-autotest.drawio with pattern-analyzer + all
 | 脏数据 `workspace/historys/信永中和/` 归并方向错误 | spec §5.1 明确询问用户确认后再操作；默认方案可退出 |
 | 新 `横切基础设施` 章节内容与 phase 5 spec 脱节 | 翻译 spec §4 内容，引用原文关键词 |
 
-### 9.2 开放问题（留给用户 review 或 plan 阶段）
+### 9.2 开放问题（已决议）
 
-1. **脏数据 `workspace/historys/信永中和/` 归并方向**：
-   - A：迁入 `workspace/xyzh/history/legacy-信永中和/`（推荐，保留数据）
-   - B：打入 `workspace/.trash/`（若不再需要）
-   - C：直接 `git rm`（决绝，需用户明确同意）
-2. **PNG/SVG 是否本轮一并重导**：
-   - 选项 A：AI 仅改 `.drawio`，PNG/SVG 下次用户手工导
-   - 选项 B：若用户本地有 drawio-cli，spec 附自动化命令
-3. **README 新增`横切基础设施`放在哪**：
-   - 建议放 `项目结构` 之后、`脚本 CLI 参考` 之前
-   - 或单独顶层章节与 `工作流详解` 平级
-4. **`create-project` repair 触发时机**：
-   - 选项 A：仅在用户显式跑 `/qa-flow init` 选「修复项目」时触发
-   - 选项 B：任何 skill 检测到 `historys/` 存在时 log warn + 暗示用户触发修复
-5. **英文 README 是否使用 `legacy/` 而非 `history/`**：
-   - 根据翻译习惯，`history` 直译自然；无特殊原因保留 `history`
+用户 review 后 2026-04-19 决议如下：
+
+1. **脏数据 `workspace/historys/信永中和/` 归并方向** → **A**：`git mv` 到 `workspace/xyzh/history/legacy-信永中和/`，保留数据可追溯
+2. **PNG/SVG 是否本轮一并重导** → **A**：AI 仅改 `.drawio` XML；PNG/SVG 由用户之后用 draw.io Desktop 手工导出，避免 AI 渲染偏差影响外宣质量。commit 附提示
+3. **`横切基础设施` 章节位置** → 放在 `插件系统` 之后、`项目结构` 之前。插件系统 + 横切基础设施构成「内部能力」段落，再接物理落点
+4. **`create-project` repair 触发时机** → **A**：仅显式触发（`/qa-flow init` → 修复项目）。与 `feedback_orchestrator_no_debug` 偏好一致，不做被动自动修改
+5. **英文命名** → 保留 `history`，直译自然
 
 ### 9.3 可选扩展（从 phase 5 §9 延续，暂不启动）
 
