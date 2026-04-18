@@ -39,6 +39,7 @@ interface QaState {
   updated_at: string;
   cached_parse_result?: unknown;
   source_mtime?: string;
+  strategy_resolution?: unknown;  // SignalProfile → StrategyResolution output
 }
 
 function stateFilePath(project: string, prdSlug: string): string {
@@ -180,6 +181,8 @@ program
       process.exit(1);
     }
 
+    const { strategy_resolution, ...nodeData } = data;
+
     const existingOutput = (state.node_outputs[opts.node] ?? {}) as Record<
       string,
       unknown
@@ -192,9 +195,10 @@ program
         : [...state.completed_nodes, opts.node],
       node_outputs: {
         ...state.node_outputs,
-        [opts.node]: { ...existingOutput, ...data },
+        [opts.node]: { ...existingOutput, ...nodeData },
       },
       updated_at: nowIso(),
+      ...(strategy_resolution !== undefined ? { strategy_resolution } : {}),
     };
 
     try {

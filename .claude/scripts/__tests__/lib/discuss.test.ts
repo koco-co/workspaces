@@ -8,10 +8,12 @@ import {
   KnowledgeDropped,
   parsePlan,
   PLAN_VERSION,
+  setStrategyInPlan,
   shouldObsolete,
   validatePlanSchema,
   __internal,
 } from "../../lib/discuss.ts";
+import type { StrategyResolution } from "../../lib/strategy-router.ts";
 
 const FIXED_NOW = new Date("2026-04-18T10:30:00+08:00");
 const LATER_NOW = new Date("2026-04-18T11:00:00+08:00");
@@ -341,6 +343,68 @@ describe("shouldObsolete", () => {
     const plan = new Date("2026-04-18T12:00:00+08:00");
     const prd = new Date("2026-04-18T12:06:00+08:00");
     assert.equal(shouldObsolete(plan, prd), true);
+  });
+});
+
+// ============================================================================
+// setStrategyInPlan
+// ============================================================================
+
+const sampleResolution: StrategyResolution = {
+  strategy_id: "S3",
+  strategy_name: "历史回归",
+  signal_profile: {
+    prd_richness: "rich",
+    source_availability: "full",
+    history_coverage: "strong",
+    testability: "high",
+  },
+  overrides: {},
+  resolved_at: "2026-04-18T10:00:00+08:00",
+};
+
+describe("setStrategyInPlan", () => {
+  it("writes strategy into frontmatter on a fresh plan (no strategy)", () => {
+    const plan = buildInitialPlan(baseInput);
+    const updated = setStrategyInPlan(plan, sampleResolution, FIXED_NOW);
+    const parsed = parsePlan(updated);
+    assert.ok(parsed.frontmatter.strategy !== undefined, "strategy should be set");
+    const resolution = JSON.parse(parsed.frontmatter.strategy!);
+    assert.equal(resolution.strategy_id, "S3");
+    assert.equal(resolution.strategy_name, "历史回归");
+  });
+
+  it("overwrites existing strategy on subsequent call", () => {
+    const plan = buildInitialPlan(baseInput);
+    const firstResolution: StrategyResolution = { ...sampleResolution, strategy_id: "S1", strategy_name: "完整型" };
+    const firstUpdated = setStrategyInPlan(plan, firstResolution, FIXED_NOW);
+    const secondResolution: StrategyResolution = { ...sampleResolution, strategy_id: "S3", strategy_name: "历史回归" };
+    const secondUpdated = setStrategyInPlan(firstUpdated, secondResolution, LATER_NOW);
+    const parsed = parsePlan(secondUpdated);
+    const resolution = JSON.parse(parsed.frontmatter.strategy!);
+    assert.equal(resolution.strategy_id, "S3", "strategy should be replaced, not appended");
+  });
+
+  it("updates updated_at when strategy is set", () => {
+    const plan = buildInitialPlan(baseInput);
+    const updated = setStrategyInPlan(plan, sampleResolution, LATER_NOW);
+    const parsed = parsePlan(updated);
+    assert.equal(parsed.frontmatter.updated_at, "2026-04-18T11:00:00+08:00");
+    assert.notEqual(parsed.frontmatter.updated_at, parsed.frontmatter.created_at);
+  });
+
+  it("preserves clarifications and summary through strategy write", () => {
+    const plan = buildInitialPlan(baseInput);
+    const { plan: withClarify } = appendClarificationToPlan(
+      plan,
+      blockingClarification(),
+      FIXED_NOW,
+    );
+    const updated = setStrategyInPlan(withClarify, sampleResolution, LATER_NOW);
+    const parsed = parsePlan(updated);
+    assert.equal(parsed.clarifications.length, 1);
+    assert.equal(parsed.clarifications[0].id, "Q1");
+    assert.ok(parsed.frontmatter.strategy !== undefined);
   });
 });
 

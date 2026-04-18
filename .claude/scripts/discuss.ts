@@ -24,6 +24,7 @@ import {
   completePlanText,
   KnowledgeDropped,
   parsePlan,
+  setStrategyInPlan,
   validatePlanSchema,
 } from "./lib/discuss.ts";
 import { parseFrontMatter } from "./lib/frontmatter.ts";
@@ -307,6 +308,44 @@ function runReset(opts: { project: string; prd: string }): void {
 }
 
 // ============================================================================
+// set-strategy
+// ============================================================================
+
+function runSetStrategy(opts: {
+  project: string;
+  prd: string;
+  strategyResolution: string;
+}): void {
+  let raw: string;
+  if (opts.strategyResolution.startsWith("@")) {
+    const filePath = opts.strategyResolution.slice(1);
+    if (!existsSync(filePath)) {
+      fail(`Strategy resolution file not found: ${filePath}`);
+    }
+    raw = readFileSync(filePath, "utf8");
+  } else {
+    raw = opts.strategyResolution;
+  }
+
+  let resolution;
+  try {
+    resolution = JSON.parse(raw);
+  } catch (err) {
+    fail(`invalid strategy resolution JSON: ${String(err)}`);
+  }
+
+  const { planAbs } = resolvePlanPath(opts.project, opts.prd);
+  if (!existsSync(planAbs)) {
+    fail(`plan not found: ${planAbs}. Run 'discuss init' first.`);
+  }
+
+  const planRaw = readFileSync(planAbs, "utf8");
+  const updated = setStrategyInPlan(planRaw, resolution, new Date());
+  writeFileSync(planAbs, updated);
+  process.stdout.write(JSON.stringify({ ok: true, path: planAbs }) + "\n");
+}
+
+// ============================================================================
 // CLI wiring
 // ============================================================================
 
@@ -359,6 +398,16 @@ program
   .requiredOption("--project <name>", "项目名")
   .requiredOption("--prd <path>", "PRD 文件路径")
   .action((opts) => runReset(opts));
+
+program
+  .command("set-strategy")
+  .description("Write strategy resolution into plan.md frontmatter")
+  .requiredOption("--project <name>", "项目名")
+  .requiredOption("--prd <path>", "PRD 文件路径")
+  .requiredOption("--strategy-resolution <json>", "StrategyResolution JSON or @<path>")
+  .action((opts: { project: string; prd: string; strategyResolution: string }) =>
+    runSetStrategy(opts),
+  );
 
 program.parseAsync(process.argv).catch((err) => {
   fail(`Unhandled error: ${(err as Error).message}`);

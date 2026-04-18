@@ -2,6 +2,8 @@
 // 文件结构：frontmatter YAML 子集 + Markdown 章节 + §3 machine-readable JSON code-fence。
 // parsePlan 仅消费 frontmatter + §3 JSON；其他章节（§2 §4 §5 §6）为渲染视图，写入时 regenerate。
 
+import type { StrategyResolution } from "./strategy-router.ts";
+
 export const PLAN_VERSION = 1;
 
 export type PlanStatus = "discussing" | "ready" | "obsolete";
@@ -31,6 +33,7 @@ export interface PlanFrontmatter {
   auto_defaulted_count: number;
   resume_anchor: ResumeAnchor;
   knowledge_dropped: KnowledgeDropped[];
+  strategy?: string;  // inline JSON string
 }
 
 export interface ClarifyOption {
@@ -110,6 +113,10 @@ function renderFrontmatter(fm: PlanFrontmatter): string {
       lines.push(`  - type: ${k.type}`);
       lines.push(`    name: ${k.name}`);
     }
+  }
+  if (fm.strategy !== undefined) {
+    const escaped = fm.strategy.replace(/'/g, "''");
+    lines.push(`strategy: '${escaped}'`);
   }
   lines.push("---");
   return lines.join("\n");
@@ -231,6 +238,9 @@ function parseFrontmatter(raw: string): {
         break;
       case "resume_anchor":
         fm.resume_anchor = value as ResumeAnchor;
+        break;
+      case "strategy":
+        fm.strategy = value.replace(/''/g, "'");
         break;
     }
     i++;
@@ -567,6 +577,18 @@ export function validatePlanSchema(fm: Partial<PlanFrontmatter>): {
     errors.push(`invalid resume_anchor: ${fm.resume_anchor}`);
   }
   return { valid: errors.length === 0, errors };
+}
+
+export function setStrategyInPlan(
+  raw: string,
+  resolution: StrategyResolution,
+  now: Date,
+): string {
+  const parsed = parsePlan(raw);
+  const fm = { ...parsed.frontmatter };
+  fm.strategy = JSON.stringify(resolution);
+  fm.updated_at = toIsoOffset(now);
+  return renderPlan(fm, parsed.clarifications, parsed.summary);
 }
 
 export function shouldObsolete(planMtime: Date, prdMtime: Date): boolean {

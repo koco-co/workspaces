@@ -593,6 +593,96 @@ describe("state.ts — cached_parse_result and source_mtime", () => {
   });
 });
 
+describe("state.ts — strategy_resolution", () => {
+  it("update with strategy_resolution in --data promotes it to root level", () => {
+    const slug = `strategy-root-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+
+    const resolution = {
+      strategy_id: "S3",
+      strategy_name: "历史回归",
+      signal_profile: {},
+      overrides: {},
+      resolved_at: "2026-04-18T10:00:00+08:00",
+    };
+
+    const { stdout, code } = runState([
+      "update",
+      "--project", "dataAssets",
+      "--prd-slug", slug,
+      "--node", "probe",
+      "--data", JSON.stringify({ strategy_resolution: resolution, foo: "bar" }),
+    ]);
+
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & { strategy_resolution?: unknown };
+    // strategy_resolution should be at root level
+    assert.ok(state.strategy_resolution !== undefined, "strategy_resolution should be at root level");
+    const sr = state.strategy_resolution as { strategy_id: string };
+    assert.equal(sr.strategy_id, "S3");
+    // foo should be in node_outputs.probe, not at root
+    const probeOutput = state.node_outputs.probe as { foo: string };
+    assert.equal(probeOutput.foo, "bar");
+    // strategy_resolution should NOT be in node_outputs.probe
+    const probeOutputRaw = state.node_outputs.probe as Record<string, unknown>;
+    assert.equal(probeOutputRaw.strategy_resolution, undefined, "strategy_resolution should not be in node_outputs");
+  });
+
+  it("resume returns state containing strategy_resolution", () => {
+    const slug = `strategy-resume-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+
+    const resolution = {
+      strategy_id: "S1",
+      strategy_name: "完整型",
+      signal_profile: {},
+      overrides: {},
+      resolved_at: "2026-04-18T10:00:00+08:00",
+    };
+
+    runState([
+      "update",
+      "--project", "dataAssets",
+      "--prd-slug", slug,
+      "--node", "probe",
+      "--data", JSON.stringify({ strategy_resolution: resolution }),
+    ]);
+
+    const { stdout, code } = runState(["resume", "--project", "dataAssets", "--prd-slug", slug]);
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & { strategy_resolution?: unknown };
+    assert.ok(state.strategy_resolution !== undefined, "resume should return strategy_resolution");
+    const sr = state.strategy_resolution as { strategy_id: string };
+    assert.equal(sr.strategy_id, "S1");
+  });
+
+  it("old state without strategy_resolution field → resume returns without crashing", () => {
+    const slug = `strategy-old-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+
+    // A simple update without strategy_resolution
+    runState([
+      "update",
+      "--project", "dataAssets",
+      "--prd-slug", slug,
+      "--node", "transform",
+      "--data", JSON.stringify({ parsed: true }),
+    ]);
+
+    const { stdout, code } = runState(["resume", "--project", "dataAssets", "--prd-slug", slug]);
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & { strategy_resolution?: unknown };
+    // strategy_resolution should be undefined (not present in old state)
+    assert.equal(state.strategy_resolution, undefined, "old state should have undefined strategy_resolution");
+  });
+});
+
 describe("state.ts clean", () => {
   it("deletes state file and returns cleaned=true", () => {
     const slug = `clean-test-${Date.now()}`;

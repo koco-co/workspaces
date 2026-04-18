@@ -328,3 +328,73 @@ describe("discuss reset", () => {
     assert.match(stderr, /Plan not found/);
   });
 });
+
+describe("discuss set-strategy", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  const sampleResolution = {
+    strategy_id: "S3",
+    strategy_name: "历史回归",
+    signal_profile: {
+      prd_richness: "rich",
+      source_availability: "full",
+      history_coverage: "strong",
+      testability: "high",
+    },
+    overrides: {},
+    resolved_at: "2026-04-18T10:00:00+08:00",
+  };
+
+  it("writes strategy into plan.md frontmatter after init", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout, code } = runCli([
+      "set-strategy",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--strategy-resolution",
+      JSON.stringify(sampleResolution),
+    ]);
+    assert.equal(code, 0);
+    const result = JSON.parse(stdout);
+    assert.equal(result.ok, true);
+    assert.ok(typeof result.path === "string");
+
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /strategy:/);
+    assert.match(raw, /S3/);
+  });
+
+  it("fails with exit != 0 when plan does not exist (no init)", () => {
+    // No init — plan.md is absent
+    const { code, stderr } = runCli([
+      "set-strategy",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--strategy-resolution",
+      JSON.stringify(sampleResolution),
+    ]);
+    assert.notEqual(code, 0);
+    assert.match(stderr, /plan not found/i);
+  });
+
+  it("rejects invalid strategy resolution JSON", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { code, stderr } = runCli([
+      "set-strategy",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--strategy-resolution",
+      "{not valid json",
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /invalid strategy resolution JSON/);
+  });
+});
