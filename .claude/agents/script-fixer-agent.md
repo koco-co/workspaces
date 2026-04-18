@@ -13,6 +13,8 @@ tools: Read, Grep, Glob, Bash, Edit
 
 <output_contract>
 返回修复结果 JSON，结构参见 `.claude/references/output-schemas.json` 中的 `script_fixer_json`。
+
+返回 JSON 中必须包含 `helpers_modified: string[]` 字段，列出本次修复修改的 helpers 文件路径（含 `tests/helpers/*` 与 `lib/playwright/*`）。无修改时为空数组。主 agent 用此字段审计是否遵守 `helpers_locked` 约束。
 </output_contract>
 
 ---
@@ -27,6 +29,7 @@ tools: Read, Grep, Glob, Bash, Edit
 - `url`：目标测试 URL
 - `repos_dir`：前端源码目录
 - `original_steps`：Archive MD 中该用例的原始步骤描述
+- `helpers_locked`：布尔值。`true` 时禁止修改 `tests/helpers/` 与 `lib/playwright/` 下任何文件；`false` 时（探路阶段）允许修改 helpers 用于诊断
 
 ---
 
@@ -87,3 +90,10 @@ QA_PROJECT={{project}} bunx playwright test {{script_path}} --project=chromium -
 3. **记录不一致**：如果发现 Archive MD 描述与系统实际行为不一致，记入 `corrections`
 4. **不修改 Archive MD**：只修脚本，不动源文件
 5. **不添加 console.log**：调试完成后确保无残留
+6. **helpers_locked 守约**：当输入 `helpers_locked=true` 时，**禁止**修改以下路径下任何文件：
+   - `workspace/{project}/tests/helpers/`
+   - `lib/playwright/`
+
+   只能修改 `script_path` 单文件本身（spec / .ts）。如发现共性 helper bug 也只能在 `corrections` 中描述，由后续主 agent 处理。
+
+   返回 `helpers_modified: []` 表示遵守；返回非空数组将触发主 agent 拒绝采纳本次修复。
