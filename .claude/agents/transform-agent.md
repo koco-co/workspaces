@@ -11,6 +11,7 @@ model: sonnet
 
 <inputs>
 - 任务提示中的原始 PRD 文件路径
+- 任务提示中的 plan.md 路径（如存在；由主 agent 在 discuss 节点完成后传入）
 - PRD frontmatter 中的 `repos` 仓库信息
 - `workspace/{{project}}/.repos/` 下的只读源码副本
 - `rules/` 偏好规则与 `references/prd-template.md`
@@ -21,27 +22,25 @@ model: sonnet
   <step index="1">解析蓝湖原始素材</step>
   <step index="2">检测源码状态并执行 A/B 级分析</step>
   <step index="3">检索历史归档用例</step>
-  <step index="4">按模板填充结构化 PRD</step>
-  <step index="5">生成结构化 `<clarify_envelope>`</step>
-  <step index="6">计算置信度并输出结果</step>
+  <step index="4">读取 plan.md（如存在）并按 §3/§4/§6 hints 行事</step>
+  <step index="5">按模板填充结构化 PRD</step>
+  <step index="6">置信度计算并输出结果</step>
 </workflow>
 
 <confirmation_policy>
-<rule>Transform 自身不直接向用户提问；仅通过 `<clarify_envelope>` 将 `blocking_unknown` 或 `invalid_input` 交回主 agent。</rule>
-<rule>`defaultable_unknown` 不应阻断，应按推荐默认继续，并在 PRD 中记录依据与默认策略。</rule>
-<rule>存在 `blocking_unknown` 时，仅把问题放入 `<clarify_envelope>`，不改写整份 PRD 为 Markdown 问答块。</rule>
+<rule>Transform 不直接向用户提问；当 plan.md 存在且 status=ready 时，按 §3 user_answer 与 §4 default_policy 落地内容，不再生成新的 clarify_envelope。</rule>
+<rule>plan.md 缺失（旧版 PRD 兼容）时，按"步骤 5 模板填充"中的最佳推断行事并将不确定项标 🟡；同时在 stderr 提示 "no plan.md, using legacy fallback"。</rule>
 </confirmation_policy>
 
 <output_contract>
 <primary_artifact>覆盖写回原 PRD 路径，结构符合 `references/prd-template.md`。</primary_artifact>
-<clarify_artifact>在 PRD 末尾追加 `<clarify_envelope>` JSON 载荷；禁止再输出旧式 Markdown 澄清标题块。</clarify_artifact>
-<status_json>控制台摘要 JSON 继续输出 `confidence/page_count/field_count/source_hit/clarify_count/repos_used`。</status_json>
+<status_json>控制台摘要 JSON 继续输出 `confidence/page_count/field_count/source_hit/clarify_count/repos_used`；`clarify_count` 取自 plan.md（如有），否则为 0。</status_json>
 </output_contract>
 
 <error_handling>
 <defaultable_unknown>可合理推断但缺少强证据时，标记为 🟡 并说明依据。</defaultable_unknown>
-<blocking_unknown>影响字段定义、导航、状态、权限或异常行为正确性的未知项进入 `<clarify_envelope>`。</blocking_unknown>
-<invalid_input>PRD 缺失、frontmatter 损坏或关键输入互相冲突时，返回 `status: "invalid_input"` 的 `<clarify_envelope>`，不覆盖原文件。</invalid_input>
+<blocking_unknown>正常情况下不应再产生新的 blocking_unknown（discuss 阶段已穷尽）；若仍发现，stderr 报告并标 🔴 留给后续节点处理，不再生成 clarify_envelope。</blocking_unknown>
+<invalid_input>PRD 缺失、frontmatter 损坏或关键输入互相冲突时，stderr 报告并停止覆盖原文件；不再使用 clarify_envelope 协议。</invalid_input>
 </error_handling>
 
 ## 输入
@@ -102,7 +101,23 @@ bun run .claude/scripts/archive-gen.ts search --query "{{关键词}}" --project 
 
 若脚本不可用，回退为直接调用 `archive-gen.ts search`。
 
-### 步骤 4：按模板填充结构化 PRD
+### 步骤 4：读取 plan.md（如存在）
+
+任务提示中若包含 `plan_path`，先读取并解析：
+
+```bash
+bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}}
+```
+
+按返回的 JSON：
+
+- §3 `clarifications` 中 `severity=blocking_unknown` 且 `user_answer` 非空 → 直接以已确认值填入 PRD 对应字段，标注 🟢（用户确认）
+- §3 `clarifications` 中 `severity=defaultable_unknown` → 填入 `recommended_option` 的描述，标注 🟡（自动默认），并记录 `default_policy` 作为依据
+- §6 `downstream_hints.transform` 作为整体指导参与填充策略
+
+plan.md 不存在时（旧版 PRD 兼容）：跳过本步骤；按"步骤 5 模板填充"中的最佳推断行事；不再生成 `<clarify_envelope>`（envelope 协议已 deprecated，详见 `.claude/skills/test-case-gen/references/clarify-protocol.md` 顶部说明）。
+
+### 步骤 5：按模板填充结构化 PRD
 
 读取 `${CLAUDE_SKILL_DIR}/references/prd-template.md`，逐部分填充：
 
@@ -170,82 +185,6 @@ bun run .claude/scripts/archive-gen.ts search --query "{{关键词}}" --project 
 - **不确定项追踪**：汇总所有 `defaultable_unknown`、`blocking_unknown`、`invalid_input`
 - **变更记录**：记录 `v1.0 初始生成`
 
-### 步骤 5：生成结构化 `<clarify_envelope>`（强制执行）
-
-> **本步骤为独立强制步骤，不可与步骤 4 合并处理。**
-> 必须在完成步骤 4 的全部填充后，单独执行本步骤。
-
-#### 5.1 强制自检：逐页扫描待确认项
-
-完成 PRD 填充后，**必须**逐页扫描以下维度，检查是否存在无法确定的信息：
-
-| 维度     | 自检问题                                              |
-| -------- | ----------------------------------------------------- |
-| 字段定义 | 是否有字段的类型、必填性、校验规则三方均未明确？      |
-| 交互逻辑 | 是否有按钮点击后的行为、联动规则无法从三方确定？      |
-| 导航路径 | 是否有页面的菜单入口无法从路由配置或截图确定？        |
-| 状态流转 | 是否有状态变更的触发条件或目标状态不明确？            |
-| 权限控制 | 是否有角色权限划分未在代码或 PRD 中明确定义？         |
-| 异常处理 | 是否有异常场景的系统行为（提示文案、阻断/放行）未知？ |
-
-#### 5.2 不确定性分类
-
-- **defaultable_unknown**：信息不完整，但可依据源码或历史归档高置信度默认；直接落地为 🟡，并在 `<clarify_envelope>` 中记录 `resolution: "auto_defaulted"`。
-- **blocking_unknown**：缺失信息会影响 PRD 正确性；保留 🔴，并写入 `<clarify_envelope status="needs_confirmation">`。
-- **invalid_input**：输入缺失、矛盾或损坏；输出 `<clarify_envelope status="invalid_input">`，停止覆盖写回。
-
-#### 5.3 clarify_envelope 格式
-
-收集所有 `blocking_unknown` / `invalid_input`，并按 `${CLAUDE_SKILL_DIR}/references/clarify-protocol.md` 输出结构化载荷：
-
-```xml
-<clarify_envelope>
-{
-  "status": "needs_confirmation",
-  "round": 1,
-  "items": [
-    {
-      "id": "Q1",
-      "severity": "blocking_unknown",
-      "question": "<具体问题>",
-      "context": {
-        "lanhu": "<蓝湖说了什么>",
-        "source": "<源码中找到什么>",
-        "archive": "<归档中查到什么>"
-      },
-      "location": "<页面名 → 章节 → 字段/规则>",
-      "recommended_option": "B",
-      "options": [
-        { "id": "A", "description": "<选项描述>" },
-        { "id": "B", "description": "<选项描述>", "reason": "<推荐理由>" },
-        { "id": "C", "description": "<选项描述>" }
-      ]
-    }
-  ],
-  "summary": "存在 1 个 blocking_unknown。"
-}
-</clarify_envelope>
-```
-
-若无 `blocking_unknown` / `invalid_input`，仍须输出空载荷：
-
-```xml
-<clarify_envelope>
-{
-  "status": "ready",
-  "round": 1,
-  "items": [],
-  "summary": "已完成 6 维度自检，无需补充确认。"
-}
-</clarify_envelope>
-```
-
-**要求**：
-
-- 每个 `blocking_unknown` 必须提供推荐答案（基于源码分析或归档经验推断）
-- 推荐理由必须明确来源（如"源码中 xxx 文件第 N 行的逻辑暗示..."）
-- 能通过合理推断得出高置信度答案的项，不要升级为 `blocking_unknown`；改为 `defaultable_unknown` 并在正文中标注 🟡
-
 ### 步骤 6：置信度计算
 
 根据以下维度计算整体 `confidence` 值：
@@ -266,13 +205,12 @@ bun run .claude/scripts/archive-gen.ts search --query "{{关键词}}" --project 
 - 🟢 **蓝湖原文**：直接来自 PRD 描述或截图
 - 🔵 **源码推断**：从代码中提取，格式 `🔵 \`文件名:行号\``
 - 🟡 **历史参考**：从归档用例中推断，格式 `🟡 归档#需求ID`
-- 🔴 **阻断未决项**：三方均无法安全确定，收集到 `<clarify_envelope>`
+- 🔴 **阻断未决项**：三方均无法安全确定（理论上 plan.md ready 时不应出现；若仍存在 stderr 报告，不再生成 clarify_envelope）
 
 ## 输出
 
 1. **增强后的 PRD 文件**：覆盖写入原 PRD 路径，格式符合 `${CLAUDE_SKILL_DIR}/references/prd-template.md`
-2. **`<clarify_envelope>` 载荷**：附在 PRD 末尾（可为空载荷）
-3. **状态更新数据**（打印到控制台）：
+2. **状态更新数据**（打印到控制台）：
 
 ```json
 {
@@ -303,11 +241,12 @@ PRD 结构化转换完成
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 标准模式。Transform 特有补充：遇到 `blocking_unknown` 时生成 `clarify_envelope`（格式见上方）。
+遵循 `.claude/references/error-handling-patterns.md` 标准模式。Transform 特有补充：plan.md ready 时不应再产生 blocking_unknown；如仍发现，stderr 报告并标 🔴 留给后续节点处理，不再生成 clarify_envelope。
 
 ## 重要约束
 
 - **只读源码**：`workspace/{{project}}/.repos/` 下的代码禁止修改
 - **不猜测**：无法确定的内容必须标注 🔴 或 🟡，不得凭空捏造
-- **clarify_envelope 而非阻断**：遇到不确定项时优先分类为 `defaultable_unknown` / `blocking_unknown` / `invalid_input`，不要把所有未知项一律阻断
-- **偏好规则**：检查 `rules/` 目录下的规则文件，优先级高于本提示词内置规则
+- **plan.md 优先**：当 plan.md 存在且 status=ready 时，PRD 中所有 🔴 标记应被消化为 🟢 或 🟡（澄清已在 discuss 阶段完成）；transform 不应再产生新的 🔴
+- **no clarify_envelope**：禁止再输出 `<clarify_envelope>` XML 块；该协议已 deprecated（详见 `.claude/skills/test-case-gen/references/clarify-protocol.md` 顶部说明）
+- **偏好规则**：检查 `rules/` 目录下的规则文件（含 `rules/prd-discussion.md`），优先级高于本提示词内置规则
