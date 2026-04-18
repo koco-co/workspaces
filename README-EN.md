@@ -24,10 +24,12 @@ From requirements to test cases, from bug analysis to UI automation — all-in-o
 <br />
 
 ```
-PRD / Lanhu / historical cases ── /test-case-gen ──> XMind (A) + Archive MD (B)
-Error logs / conflicts / Zentao ─ /code-analysis ──> HTML reports / Hotfix cases
-Existing XMind ────────────────── /xmind-editor ────> Preview → Confirm → Write
-Archive MD + URL ──────────────── /ui-autotest ─────> Self-healing regression → Reports / Notifications
+PRD / Lanhu / historical cases ── /test-case-gen ─────> XMind (A) + Archive MD (B)
+Archive MD + URL ──────────────── /ui-autotest ────────> Self-healing regression → Reports / Notifications
+Existing XMind ────────────────── /xmind-editor ───────> Preview → Confirm → Write
+Zentao bug URL ────────────────── /hotfix-case-gen ────> Hotfix Archive MD
+Backend/frontend error logs ───── /bug-report ─────────> HTML bug report
+Git conflict snippet ──────────── /conflict-report ────> HTML merge-conflict report
 ```
 
 </div>
@@ -43,7 +45,7 @@ Archive MD + URL ──────────────── /ui-autotest �
 - [Quick Start](#quick-start)
 - [Workflow Details](#workflow-details)
   - [Test Case Generation](#1-test-case-generation-test-case-gen)
-  - [Code Analysis](#2-code-analysis-code-analysis)
+  - [Hotfix / Bug / Conflict Analysis](#2-hotfix--bug--conflict-analysis)
   - [XMind Editor](#3-xmind-editor-xmind-editor)
   - [UI Automation](#4-ui-automation-ui-autotest)
 - [Plugin System](#plugin-system)
@@ -80,8 +82,8 @@ Archive MD + URL ──────────────── /ui-autotest �
 qa-flow uses a **Router + Skill + Agent + Plugin Hook** architecture:
 
 - **qa-flow Router** — Entry routing layer; first-run, no-project, or `/qa-flow init` requests are routed to `setup`
-- **7 Skills** — `qa-flow` / `setup` / `test-case-gen` / `code-analysis` / `xmind-editor` / `ui-autotest` / `playwright-cli`
-- **5 primary user workflows** — `setup`, `test-case-gen`, `code-analysis`, `xmind-editor`, `ui-autotest`
+- **11 Skills** — `qa-flow` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
+- **7 primary user workflows** — `test-case-gen`, `ui-autotest`, `xmind-editor`, `hotfix-case-gen`, `bug-report`, `conflict-report`, plus `setup`
 - **13 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill
 - **Cross-cutting capabilities** — project-level rules, breakpoint resume, read-only source repos, and plugin hooks span the workflow
 - **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright assets
@@ -245,50 +247,43 @@ RS1: Confirm XMind → RS2: Parse → RS3: Locate Archive MD → RS4: Preview or
 
 ---
 
-### 2. Code Analysis (`/code-analysis`)
+### 2. Hotfix / Bug / Conflict Analysis
 
-Transforms error logs, merge conflicts, or Zentao bug links into structured HTML reports or Hotfix test cases.
+The former `code-analysis` umbrella has been split along business boundaries into three focused skills with precise pre-guards and independent trigger words. The underlying agents are unchanged:
 
-#### Routing
+| Skill                                 | Input signal                                                 | Dispatched agent                                                    | Output                                             |
+| ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- | -------------------------------------------------- |
+| **`/hotfix-case-gen`**                | Zentao Bug URL (containing `bug-view-`) or raw Bug ID        | `hotfix-case-agent`                                                 | `workspace/<project>/issues/YYYYMM/hotfix_*.md`    |
+| **`/bug-report`**                     | Java stack traces / HTTP errors / frontend console errors    | `backend-bug-agent` (backend) / `frontend-bug-agent` (frontend)     | `workspace/<project>/reports/bugs/YYYYMMDD/*.html` |
+| **`/conflict-report`**                | Snippet containing `<<<<<<< HEAD` / `=======` / `>>>>>>>`    | `conflict-agent`                                                    | `workspace/<project>/reports/conflicts/YYYYMMDD/*.html` |
 
-![Code Analysis Routing](assets/diagrams/code-analysis.svg)
+#### Two-Gate Policy
 
-#### 5 Modes (Priority-based)
-
-| Priority | Mode                  | Signal                                     | Output                |
-| -------- | --------------------- | ------------------------------------------ | --------------------- |
-| P1       | **Hotfix Case**       | Zentao Bug URL                             | MD test case          |
-| P2       | **Merge Conflict**    | `<<<<<<< HEAD` markers                     | HTML conflict report  |
-| P3       | **Backend Bug**       | Java stack trace, `Exception`, `Caused by` | HTML bug report       |
-| P4       | **Frontend Bug**      | `TypeError`, `ChunkLoadError`, React error | HTML bug report       |
-| P5       | **Insufficient Info** | Vague description                          | Information checklist |
-
-#### Processing Pipeline
-
-```
-Signal detection → Mode routing → reference/sync confirmation → AI analysis → report / Hotfix output → optional notification
-```
+`bug-report` / `hotfix-case-gen` follow a **two-gate** policy when source code access is required:
 
 - **Gate 1** — Confirm repo / branch / path before source reference or repo sync
 - **Gate 2** — If `.env` or branch mapping should be written back, preview it and confirm separately
 
+`conflict-report` operates directly on the pasted conflict snippet — no source sync required.
+
 #### Usage
 
 ```bash
-# Paste error logs directly
-帮我分析这个报错
-
-# Zentao Bug URL triggers Hotfix case generation
+# Paste a Zentao Bug URL to auto-trigger Hotfix case generation
 {{ZENTAO_BASE_URL}}/zentao/bug-view-{{bug_id}}.html
+
+# Paste a stack trace — auto-routes to backend or frontend analysis
+帮我分析这个报错
+<Exception in thread "main" java.lang.NullPointerException ... / TypeError: Cannot read ...>
+
+# Paste a git conflict snippet
+分析冲突
+<<<<<<< HEAD
+...
+=======
+...
+>>>>>>>
 ```
-
-#### Output Directories
-
-| Type             | Path                                              |
-| ---------------- | ------------------------------------------------- |
-| Bug Reports      | `workspace/<project>/reports/bugs/YYYYMMDD/`      |
-| Conflict Reports | `workspace/<project>/reports/conflicts/YYYYMMDD/` |
-| Hotfix Cases     | `workspace/<project>/issues/YYYYMM/`              |
 
 ---
 
@@ -362,7 +357,7 @@ Transforms Archive MD test cases into Playwright TypeScript scripts, executes by
 | Plugin     | Hook                 | Function                                            | Activation                                          |
 | ---------- | -------------------- | --------------------------------------------------- | --------------------------------------------------- |
 | **lanhu**  | `test-case-gen:init` | Crawl PRD documents and screenshots from Lanhu URLs | Configure `LANHU_COOKIE` in `.env`                  |
-| **zentao** | `code-analysis:init` | Read Zentao bug details and related information     | Configure `ZENTAO_BASE_URL` + credentials in `.env` |
+| **zentao** | `hotfix-case-gen:init` | Read Zentao bug details and related information   | Configure `ZENTAO_BASE_URL` + credentials in `.env` |
 | **notify** | `*:output`           | DingTalk / Feishu / WeCom / Email notifications     | Configure any channel's Webhook or SMTP in `.env`   |
 
 ### Lifecycle Hooks
@@ -418,9 +413,12 @@ qa-flow/
 │       ├── setup/                # 6-step initialization wizard
 │       ├── test-case-gen/        # Test case generation orchestrator
 │       │   └── references/       # Format specs & protocols
-│       ├── code-analysis/        # Bug / conflict analysis orchestrator
-│       │   └── references/       # Env vs code guidance
+│       ├── create-project/       # Project skeleton creation / repair
 │       ├── xmind-editor/         # Local XMind editing
+│       ├── hotfix-case-gen/      # Hotfix case generation (Zentao-driven)
+│       ├── bug-report/           # Bug report generation (backend/frontend auto-routing)
+│       ├── conflict-report/      # Merge-conflict analysis
+│       ├── knowledge-keeper/     # Business knowledge base read/write
 │       ├── ui-autotest/          # Playwright UI automation orchestrator
 │       │   └── scripts/          # parse-cases / merge-specs / session-login
 │       └── playwright-cli/       # Playwright CLI integration

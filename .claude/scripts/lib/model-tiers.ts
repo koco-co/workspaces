@@ -31,7 +31,9 @@ export const MODEL_RECOMMENDATIONS: Record<string, AgentModelConfig> = {
     description: "PRD 增强（图片识别、要点提取）",
   },
   writer: { tier: "sonnet", description: "测试用例编写 Sub-Agent" },
-  "code-analysis": { tier: "sonnet", description: "代码分析与 Bug 报告" },
+  "bug-report": { tier: "sonnet", description: "Bug 报告分析（后端/前端）" },
+  "conflict-report": { tier: "sonnet", description: "合并冲突分析" },
+  "hotfix-case-gen": { tier: "sonnet", description: "Hotfix 用例生成" },
   standardize: { tier: "sonnet", description: "历史用例标准化" },
 
   // 复杂推理 → Opus (最深推理能力)

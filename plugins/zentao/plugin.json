@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "env_required": ["ZENTAO_BASE_URL", "ZENTAO_ACCOUNT", "ZENTAO_PASSWORD"],
   "hooks": {
-    "code-analysis:init": "input-adapter"
+    "hotfix-case-gen:init": "input-adapter"
   },
   "commands": {
     "fetch": "bun run plugins/zentao/fetch.ts --bug-id {{bug_id}} --output {{output_dir}}"

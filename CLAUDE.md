@@ -6,14 +6,16 @@
 
 ## 功能索引
 
-| 命令             | 功能            |
-| ---------------- | --------------- |
-| `/qa-flow`       | 功能菜单        |
-| `/qa-flow init`  | 环境初始化      |
-| `/test-case-gen` | 生成测试用例    |
-| `/code-analysis` | 分析报错/冲突   |
-| `/xmind-editor`  | 编辑 XMind 用例 |
-| `/ui-autotest`   | UI 自动化测试   |
+| 命令               | 功能             |
+| ------------------ | ---------------- |
+| `/qa-flow`         | 功能菜单         |
+| `/qa-flow init`    | 环境初始化       |
+| `/test-case-gen`   | 生成测试用例     |
+| `/ui-autotest`     | UI 自动化测试    |
+| `/xmind-editor`    | 编辑 XMind 用例  |
+| `/hotfix-case-gen` | 生成 Hotfix 用例 |
+| `/bug-report`      | 分析 Bug 报告    |
+| `/conflict-report` | 分析合并冲突     |
 
 ## 多项目工作区
 

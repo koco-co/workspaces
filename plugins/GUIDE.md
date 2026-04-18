@@ -41,8 +41,12 @@ plugins/
 |-----------|---------|
 | `test-case-gen:init` | 测试用例生成开始前 |
 | `test-case-gen:output` | 测试用例生成完成后 |
-| `code-analysis:init` | 代码分析开始前 |
-| `code-analysis:output` | 代码分析完成后 |
+| `hotfix-case-gen:init` | Hotfix 用例生成开始前 |
+| `hotfix-case-gen:output` | Hotfix 用例生成完成后 |
+| `bug-report:init` | Bug 报告生成开始前 |
+| `bug-report:output` | Bug 报告生成完成后 |
+| `conflict-report:init` | 合并冲突分析开始前 |
+| `conflict-report:output` | 合并冲突分析完成后 |
 | `*:output` | 任何 skill 完成后（通配符） |
 
 ## 安全注意事项
