@@ -8,8 +8,8 @@
         <mxCell id="input_container" value="Inputs / 输入" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="40" y="30" width="1520" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="pipeline_container" value="9-step Flow / 9 步流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
-          <mxGeometry x="40" y="170" width="1520" height="180" as="geometry" />
+        <mxCell id="pipeline_container" value="10-step Flow (incl. 5.5 pattern-analyzer) / 10 步流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="1520" height="220" as="geometry" />
         </mxCell>
         <mxCell id="support_container" value="Repair Loop &amp; Outputs / 修复回路与产物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="40" y="390" width="1520" height="260" as="geometry" />
@@ -34,7 +34,7 @@
         <mxCell id="step2" value="2. Select scope&#xa;smoke / full / custom" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;strokeWidth=1.6;shadow=1;fontColor=#92400E;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="225" y="230" width="145" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="step3" value="3. Session prep&#xa;session-login.ts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.6;shadow=1;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="step3" value="3. Session prep&#xa;session-login.ts&#xa;per ACTIVE_ENV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.6;shadow=1;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="390" y="230" width="145" height="90" as="geometry" />
         </mxCell>
         <mxCell id="step4" value="4. Generate scripts&#xa;≤ 5 sub-agents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
@@ -42,6 +42,9 @@
         </mxCell>
         <mxCell id="step5" value="5. Verify &amp; repair&#xa;per-case self-heal loop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;strokeWidth=1.6;shadow=1;fontColor=#155E75;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="720" y="230" width="145" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="step5_5" value="5.5 Pattern analysis&#xa;pattern-analyzer-agent&#xa;→ shared helpers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+          <mxGeometry x="720" y="335" width="145" height="50" as="geometry" />
         </mxCell>
         <mxCell id="step6" value="6. Merge specs&#xa;merge-specs.ts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.6;shadow=1;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="885" y="230" width="145" height="90" as="geometry" />
@@ -72,7 +75,7 @@
         <mxCell id="out_tests" value="Generated specs&#xa;workspace/&lt;project&gt;/tests/YYYYMM/&lt;suite&gt;/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.5;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="140" y="555" width="230" height="74" as="geometry" />
         </mxCell>
-        <mxCell id="out_report" value="Playwright HTML&#xa;reports/playwright/YYYYMM/&lt;suite&gt;/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.5;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="out_report" value="Allure HTML report&#xa;reports/allure/YYYYMM/&lt;suite&gt;/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.5;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="430" y="555" width="250" height="74" as="geometry" />
         </mxCell>
         <mxCell id="out_bug" value="Bug report&#xa;reports/bugs/YYYYMM/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;strokeWidth=1.5;fontColor=#92400E;fontStyle=1;arcSize=18;" vertex="1" parent="1">
@@ -95,6 +98,12 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_4_5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#64748B;strokeWidth=1.5;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="step4" target="step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_5_55" value="on recurring fails" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#8B5CF6;strokeWidth=1.3;dashed=1;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="step5" target="step5_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_55_6" value="helpers" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#8B5CF6;strokeWidth=1.3;dashed=1;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="step5_5" target="step6">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_5_6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#64748B;strokeWidth=1.5;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="step5" target="step6">
