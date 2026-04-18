@@ -16,12 +16,16 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname } from "node:path";
+import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
+import { parsePlan } from "./lib/discuss.ts";
+import { getEnv } from "./lib/env.ts";
+import { planPath, repoRoot } from "./lib/paths.ts";
 import { projectPath } from "./lib/paths.ts";
 
 type RunMode = "normal" | "quick";
@@ -41,7 +45,22 @@ interface QaState {
   strategy_resolution?: unknown;
 }
 
-function stateFilePath(project: string, prdSlug: string): string {
+export function activeEnvSuffix(): string {
+  const raw = getEnv("ACTIVE_ENV");
+  if (!raw || raw.trim() === "") return "default";
+  return raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function stateFilePath(project: string, prdSlug: string, env?: string): string {
+  const envSuffix = env ?? activeEnvSuffix();
+  return projectPath(
+    project,
+    ".temp",
+    `.qa-state-${prdSlug}-${envSuffix}.json`,
+  );
+}
+
+function legacyStateFilePath(project: string, prdSlug: string): string {
   return projectPath(project, ".temp", `.qa-state-${prdSlug}.json`);
 }
 
@@ -49,7 +68,25 @@ function slugFromPrd(prdPath: string): string {
   return basename(prdPath, ".md");
 }
 
+function migrateLegacyStateIfPresent(
+  project: string,
+  prdSlug: string,
+): { migrated: boolean; from?: string; to?: string } {
+  const legacy = legacyStateFilePath(project, prdSlug);
+  const target = stateFilePath(project, prdSlug);
+  if (!existsSync(legacy) || existsSync(target)) {
+    return { migrated: false };
+  }
+  mkdirSync(dirname(target), { recursive: true });
+  renameSync(legacy, target);
+  process.stderr.write(
+    `[state] INFO : migrated legacy state file ${basename(legacy)} → ${basename(target)}\n`,
+  );
+  return { migrated: true, from: legacy, to: target };
+}
+
 function readState(project: string, prdSlug: string): QaState | null {
+  migrateLegacyStateIfPresent(project, prdSlug);
   const filePath = stateFilePath(project, prdSlug);
   if (!existsSync(filePath)) return null;
   try {
@@ -180,6 +217,63 @@ function runUpdate(opts: {
   }
 }
 
+function derivePlanPath(project: string, prd: string): string | null {
+  const abs = isAbsolute(prd) ? prd : resolve(repoRoot(), prd);
+  const fileName = basename(abs);
+  if (!fileName.endsWith(".md")) return null;
+  const slug = fileName.slice(0, -3);
+  const yyyymm = basename(dirname(abs));
+  if (!/^\d{6}$/.test(yyyymm)) return null;
+  return planPath(project, yyyymm, slug);
+}
+
+/**
+ * Hydrate `strategy_resolution` from plan.md frontmatter.
+ *
+ * plan.md is the authoritative source for strategy (git-tracked, human-editable).
+ * qa-state keeps a runtime copy; on resume, plan.md wins if present.
+ *
+ * Returns { state, hydratedFrom } where hydratedFrom is "plan" | "qa-state" | "none".
+ */
+export function hydrateStrategyFromPlan(
+  state: QaState,
+): { state: QaState; hydratedFrom: "plan" | "qa-state" | "none" } {
+  if (!state.prd || !state.project) {
+    return {
+      state,
+      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+    };
+  }
+  const planAbs = derivePlanPath(state.project, state.prd);
+  if (!planAbs || !existsSync(planAbs)) {
+    return {
+      state,
+      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+    };
+  }
+  try {
+    const raw = readFileSync(planAbs, "utf8");
+    const parsed = parsePlan(raw);
+    const inline = parsed.frontmatter.strategy;
+    if (!inline) {
+      return {
+        state,
+        hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+      };
+    }
+    const fromPlan = JSON.parse(inline) as unknown;
+    return {
+      state: { ...state, strategy_resolution: fromPlan },
+      hydratedFrom: "plan",
+    };
+  } catch {
+    return {
+      state,
+      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+    };
+  }
+}
+
 function runResume(opts: { project: string; prdSlug: string }): void {
   const state = readState(opts.project, opts.prdSlug);
   if (!state) {
@@ -201,6 +295,14 @@ function runResume(opts: { project: string; prdSlug: string }): void {
       // PRD file not accessible — leave cache as-is
     }
   }
+
+  const { state: hydrated, hydratedFrom } = hydrateStrategyFromPlan(resolved);
+  if (hydratedFrom === "plan") {
+    process.stderr.write(
+      `[state] INFO : hydrated strategy_resolution from plan.md\n`,
+    );
+  }
+  resolved = hydrated;
 
   process.stdout.write(`${JSON.stringify(resolved, null, 2)}\n`);
 }

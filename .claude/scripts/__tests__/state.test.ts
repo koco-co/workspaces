@@ -38,6 +38,7 @@ function runState(
         encoding: "utf8",
         env: {
           ...process.env,
+          ACTIVE_ENV: "default",
           WORKSPACE_DIR: join(TMP_DIR, "workspace"),
           ...extraEnv,
         },
@@ -54,7 +55,11 @@ function runState(
   }
 }
 
-function stateFilePath(project: string, slug: string): string {
+function stateFilePath(project: string, slug: string, env = "default"): string {
+  return join(workspaceTempForProject(project), `.qa-state-${slug}-${env}.json`);
+}
+
+function legacyStateFilePath(project: string, slug: string): string {
   return join(workspaceTempForProject(project), `.qa-state-${slug}.json`);
 }
 
@@ -729,5 +734,242 @@ describe("state.ts clean", () => {
 
     const result = JSON.parse(stdout) as { path: string };
     assert.ok(typeof result.path === "string" && result.path.length > 0);
+  });
+});
+
+describe("state.ts — plan.md strategy hydration", () => {
+  function writePlanWithStrategy(
+    project: string,
+    slug: string,
+    strategyJson: string | null,
+  ): string {
+    const yyyymm = "202604";
+    const plansDir = join(TMP_DIR, "workspace", project, "prds", yyyymm);
+    mkdirSync(plansDir, { recursive: true });
+    const planPath = join(plansDir, `${slug}.plan.md`);
+    const strategyLine =
+      strategyJson === null
+        ? ""
+        : `strategy: '${strategyJson.replace(/'/g, "''")}'\n`;
+    const fm = `---
+plan_version: 1
+prd_slug: ${slug}
+prd_path: workspace/${project}/prds/${yyyymm}/${slug}.md
+project: ${project}
+requirement_id: ""
+requirement_name: "${slug}"
+created_at: 2026-04-18T10:00:00+08:00
+updated_at: 2026-04-18T10:00:00+08:00
+status: ready
+discussion_rounds: 0
+clarify_count: 0
+auto_defaulted_count: 0
+resume_anchor: discuss-completed
+knowledge_dropped: []
+${strategyLine}---
+
+# ${slug}
+
+<!-- summary:begin -->
+empty
+<!-- summary:end -->
+
+<!-- clarifications-data:begin -->
+\`\`\`json
+[]
+\`\`\`
+<!-- clarifications-data:end -->
+`;
+    writeFileSync(planPath, fm, "utf8");
+    return planPath;
+  }
+
+  it("hydrate strategy from plan.md when present", () => {
+    const slug = `hydrate-plan-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+    // set initial strategy via update
+    runState([
+      "update",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+      "--node",
+      "probe",
+      "--data",
+      JSON.stringify({
+        strategy_resolution: { strategy_id: "S4", strategy_name: "保守兜底" },
+      }),
+    ]);
+
+    // user manually edits plan.md: change to S1
+    const planStrategy = JSON.stringify({
+      strategy_id: "S1",
+      strategy_name: "完整型",
+      signal_profile: {},
+      overrides: {},
+      resolved_at: "2026-04-18T10:00:00+08:00",
+    });
+    writePlanWithStrategy("dataAssets", slug, planStrategy);
+
+    const { stdout, code } = runState([
+      "resume",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+    ]);
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & {
+      strategy_resolution?: { strategy_id?: string };
+    };
+    // plan.md is authoritative: S1 overrides qa-state's S4
+    assert.equal(state.strategy_resolution?.strategy_id, "S1");
+  });
+
+  it("fall back to qa-state strategy when plan.md has no strategy field", () => {
+    const slug = `hydrate-fallback-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+    runState([
+      "update",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+      "--node",
+      "probe",
+      "--data",
+      JSON.stringify({
+        strategy_resolution: { strategy_id: "S3", strategy_name: "历史回归" },
+      }),
+    ]);
+
+    // plan.md exists but no strategy
+    writePlanWithStrategy("dataAssets", slug, null);
+
+    const { stdout, code } = runState([
+      "resume",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+    ]);
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & {
+      strategy_resolution?: { strategy_id?: string };
+    };
+    assert.equal(state.strategy_resolution?.strategy_id, "S3");
+  });
+
+  it("no plan.md and no qa-state strategy → strategy_resolution undefined", () => {
+    const slug = `hydrate-none-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+
+    const { stdout, code } = runState([
+      "resume",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+    ]);
+    assert.equal(code, 0);
+    const state = JSON.parse(stdout) as QaState & {
+      strategy_resolution?: unknown;
+    };
+    assert.equal(state.strategy_resolution, undefined);
+  });
+});
+
+describe("state.ts — multi-env isolation", () => {
+  it("same slug under different ACTIVE_ENV writes to distinct files", () => {
+    const slug = `env-iso-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(
+      ["init", "--prd", prd, "--project", "dataAssets"],
+      { ACTIVE_ENV: "ci63" },
+    );
+    runState(
+      ["init", "--prd", prd, "--project", "dataAssets"],
+      { ACTIVE_ENV: "ltqcdev" },
+    );
+
+    assert.ok(
+      existsSync(stateFilePath("dataAssets", slug, "ci63")),
+      "ci63 file should exist",
+    );
+    assert.ok(
+      existsSync(stateFilePath("dataAssets", slug, "ltqcdev")),
+      "ltqcdev file should exist",
+    );
+  });
+
+  it("ACTIVE_ENV with mixed case normalizes to lowercase kebab", () => {
+    const slug = `env-case-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    runState(
+      ["init", "--prd", prd, "--project", "dataAssets"],
+      { ACTIVE_ENV: "My Test Env" },
+    );
+
+    assert.ok(
+      existsSync(stateFilePath("dataAssets", slug, "my-test-env")),
+      "file should use normalized 'my-test-env' suffix",
+    );
+  });
+
+  it("unset ACTIVE_ENV uses 'default' suffix", () => {
+    const slug = `env-default-${Date.now()}`;
+    const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
+
+    // default runState already sets ACTIVE_ENV=default
+    runState(["init", "--prd", prd, "--project", "dataAssets"]);
+
+    assert.ok(
+      existsSync(stateFilePath("dataAssets", slug, "default")),
+      "file should use 'default' suffix when ACTIVE_ENV unset",
+    );
+  });
+
+  it("legacy non-suffixed state file is migrated to env-suffixed on resume", () => {
+    const slug = `legacy-migrate-${Date.now()}`;
+    const legacyPath = legacyStateFilePath("dataAssets", slug);
+    const targetPath = stateFilePath("dataAssets", slug, "default");
+
+    // Write a legacy-shape state file directly
+    const legacyState = {
+      project: "dataAssets",
+      prd: `workspace/dataAssets/prds/202604/${slug}.md`,
+      mode: "normal",
+      current_node: "init",
+      completed_nodes: [],
+      node_outputs: {},
+      writers: {},
+      created_at: "2026-04-01T00:00:00.000Z",
+      updated_at: "2026-04-01T00:00:00.000Z",
+    };
+    const tempDir = workspaceTempForProject("dataAssets");
+    mkdirSync(tempDir, { recursive: true });
+    writeFileSync(legacyPath, JSON.stringify(legacyState, null, 2), "utf8");
+
+    // Resume triggers migration
+    const { code } = runState([
+      "resume",
+      "--project",
+      "dataAssets",
+      "--prd-slug",
+      slug,
+    ]);
+
+    assert.equal(code, 0);
+    assert.ok(!existsSync(legacyPath), "legacy file should be gone after migration");
+    assert.ok(existsSync(targetPath), "new env-suffixed file should exist");
   });
 });
