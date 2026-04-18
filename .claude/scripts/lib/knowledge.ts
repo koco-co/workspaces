@@ -292,6 +292,12 @@ export function autoFixFrontmatter(
   if (parsed.frontmatter !== null) {
     return { fixed: false, content: rawContent };
   }
+  // If the file already has a frontmatter block (starts with ---), leave it
+  // alone — lint will report the missing fields. Only inject frontmatter when
+  // the file has no block at all (phase-0 templates).
+  if (rawContent.startsWith("---\n") || rawContent.startsWith("---\r\n")) {
+    return { fixed: false, content: rawContent };
+  }
 
   let type: Frontmatter["type"];
   if (filePath.includes("/modules/")) type = "module";
@@ -366,6 +372,16 @@ export function lintChecks(_project: string, knowledgeDirPath: string): LintResu
 
       if (parsed.frontmatter === null) {
         errors.push({ file: relPath, rule: "missing-frontmatter-field", detail: "all fields" });
+        // Best-effort: if file has a frontmatter block with a `type:` line
+        // that disagrees with the directory, still flag type-dir-mismatch.
+        const typeMatch = raw.match(/^type:\s*(\S+)\s*$/m);
+        if (typeMatch && typeMatch[1] !== expectedType) {
+          errors.push({
+            file: relPath,
+            rule: "type-dir-mismatch",
+            detail: `expected ${expectedType}, got ${typeMatch[1]}`,
+          });
+        }
         continue;
       }
       const fm = parsed.frontmatter;

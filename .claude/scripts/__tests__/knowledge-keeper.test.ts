@@ -546,3 +546,85 @@ describe("write/update auto-triggers index", () => {
     assert.notEqual(beforeTs, afterTs, "last-indexed should change");
   });
 });
+
+describe("lint action", () => {
+  before(() => {
+    resetFixture();
+    // Create a module with all errors
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "Bad_Name.md"),
+      `---
+type: pitfall
+tags: []
+confidence: high
+source: ""
+updated: 2026-04-17
+---
+body`,
+    );
+    // Ensure _index.md exists (otherwise orphan warning would fire always)
+    runKk(["index", "--project", PROJECT]);
+  });
+
+  it("reports errors and exits 1 for violations", () => {
+    const { stdout, code } = runKk(["lint", "--project", PROJECT]);
+    assert.equal(code, 1, `expected exit 1, got ${code}. stdout=${stdout}`);
+    const obj = JSON.parse(stdout);
+    assert.ok(obj.errors.length >= 2, `expected >= 2 errors. got: ${JSON.stringify(obj.errors)}`);
+    const rules = obj.errors.map((e: { rule: string }) => e.rule);
+    assert.ok(rules.includes("non-kebab-case-name"));
+    assert.ok(rules.includes("type-dir-mismatch"));
+  });
+
+  it("returns exit 2 when only warnings", () => {
+    // Clean errors; introduce orphan/empty-tags warning only
+    rmSync(join(PROJECT_KNOWLEDGE, "modules", "Bad_Name.md"));
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "notag.md"),
+      `---
+title: notag
+type: module
+tags: []
+confidence: high
+source: "x"
+updated: 2026-04-17
+---
+body`,
+    );
+    // Do NOT run index so orphan warning fires
+    rmSync(join(PROJECT_KNOWLEDGE, "_index.md"), { force: true });
+
+    const { stdout, code } = runKk(["lint", "--project", PROJECT]);
+    assert.equal(code, 2, `expected exit 2 (warnings). got ${code}. stdout=${stdout}`);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.errors.length, 0);
+    assert.ok(obj.warnings.length >= 1);
+  });
+
+  it("exit 0 when clean", () => {
+    // Remove all artifacts + rebuild index
+    rmSync(join(PROJECT_KNOWLEDGE, "modules", "notag.md"), { force: true });
+    runKk(["index", "--project", PROJECT]);
+    const { stdout, code } = runKk(["lint", "--project", PROJECT]);
+    assert.equal(code, 0, `expected exit 0. stdout=${stdout}`);
+  });
+
+  it("--strict upgrades warnings to errors", () => {
+    // Reintroduce warning-only file
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "warn-only.md"),
+      `---
+title: warn
+type: module
+tags: []
+confidence: high
+source: "x"
+updated: 2026-04-17
+---
+body`,
+    );
+    rmSync(join(PROJECT_KNOWLEDGE, "_index.md"), { force: true });
+    const { code } = runKk(["lint", "--project", PROJECT, "--strict"]);
+    assert.equal(code, 1);
+  });
+});

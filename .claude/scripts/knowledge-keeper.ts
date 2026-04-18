@@ -13,6 +13,7 @@ import { initEnv } from "./lib/env.ts";
 import {
   autoFixFrontmatter,
   confidenceGate,
+  lintChecks,
   parseContentJson,
   parseFrontmatter,
   renderIndex,
@@ -658,6 +659,26 @@ program
         2,
       ) + "\n",
     );
+  });
+
+program
+  .command("lint")
+  .description("Health check for knowledge files")
+  .requiredOption("--project <name>", "Project name")
+  .option("--strict", "Treat warnings as errors")
+  .action((opts: { project: string; strict?: boolean }) => {
+    const kdir = knowledgeDir(opts.project);
+    const result = lintChecks(opts.project, kdir);
+    const output = { project: opts.project, ...result };
+    process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+
+    if (result.errors.length > 0) {
+      process.exit(1);
+    }
+    if (result.warnings.length > 0) {
+      process.exit(opts.strict ? 1 : 2);
+    }
+    process.exit(0);
   });
 
 program.parseAsync(process.argv).catch((err) => {
