@@ -279,3 +279,148 @@ body`,
     assert.ok(fixed.includes("type: module"));
   });
 });
+
+describe("write --type term", () => {
+  before(resetFixture);
+
+  it("dry-run does not persist", () => {
+    const { stdout, code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "term",
+      "--content", JSON.stringify({ term: "XYZ", zh: "测试术语", desc: "", alias: "" }),
+      "--confidence", "high",
+      "--dry-run",
+    ]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.equal(obj.dry_run, true);
+    const terms = readFileSync(join(PROJECT_KNOWLEDGE, "terms.md"), "utf8");
+    assert.ok(!terms.includes("XYZ"), "terms.md should not contain XYZ after dry-run");
+  });
+
+  it("high confidence real write persists term row", () => {
+    const { stdout, code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "term",
+      "--content", JSON.stringify({ term: "XYZ", zh: "术语 X", desc: "说明", alias: "x" }),
+      "--confidence", "high",
+    ]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.ok(obj.file.endsWith("terms.md"));
+    const terms = readFileSync(join(PROJECT_KNOWLEDGE, "terms.md"), "utf8");
+    assert.ok(terms.includes("| XYZ | 术语 X | 说明 | x |"));
+  });
+
+  it("medium without --confirmed fails", () => {
+    const { code, stderr } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "term",
+      "--content", JSON.stringify({ term: "M", zh: "m", desc: "", alias: "" }),
+      "--confidence", "medium",
+    ]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("--confirmed"));
+  });
+
+  it("low always fails", () => {
+    const { code, stderr } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "term",
+      "--content", JSON.stringify({ term: "L", zh: "l", desc: "", alias: "" }),
+      "--confidence", "low",
+      "--confirmed",
+    ]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("Low"));
+  });
+});
+
+describe("write --type overview", () => {
+  before(resetFixture);
+
+  it("replaces a section body", () => {
+    const { code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "overview",
+      "--content", JSON.stringify({ section: "产品定位", body: "企业级数据资产平台", mode: "replace" }),
+      "--confidence", "high",
+    ]);
+    assert.equal(code, 0);
+    const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
+    assert.ok(ov.includes("企业级数据资产平台"));
+    assert.ok(!ov.includes("占位。\n"));
+  });
+
+  it("appends to a section body", () => {
+    const { code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "overview",
+      "--content", JSON.stringify({ section: "主流程", body: "\n新增一条流程说明", mode: "append" }),
+      "--confidence", "high",
+    ]);
+    assert.equal(code, 0);
+    const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
+    assert.ok(ov.includes("新增一条流程说明"));
+  });
+});
+
+describe("write --type module", () => {
+  before(resetFixture);
+
+  it("creates a new module file with frontmatter", () => {
+    const { stdout, code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "module",
+      "--content", JSON.stringify({ name: "data-source", title: "数据源", tags: ["ds"], body: "正文", source: "" }),
+      "--confidence", "high",
+    ]);
+    assert.equal(code, 0);
+    const obj = JSON.parse(stdout);
+    assert.ok(obj.file.endsWith("modules/data-source.md"));
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "data-source.md"), "utf8");
+    assert.ok(content.startsWith("---\n"));
+    assert.ok(content.includes("title: 数据源"));
+    assert.ok(content.includes("正文"));
+  });
+
+  it("refuses to overwrite existing file without --overwrite", () => {
+    const { code, stderr } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "module",
+      "--content", JSON.stringify({ name: "data-source", title: "覆盖尝试", tags: [], body: "new", source: "" }),
+      "--confidence", "high",
+    ]);
+    assert.notEqual(code, 0);
+    assert.ok(stderr.includes("File exists"));
+  });
+
+  it("allows overwrite with --overwrite", () => {
+    const { code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "module",
+      "--content", JSON.stringify({ name: "data-source", title: "已覆盖", tags: ["new"], body: "new body", source: "" }),
+      "--confidence", "high",
+      "--overwrite",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "data-source.md"), "utf8");
+    assert.ok(content.includes("title: 已覆盖"));
+  });
+});
+
+describe("write --type pitfall", () => {
+  before(resetFixture);
+
+  it("creates a pitfall file", () => {
+    const { code } = runKk([
+      "write", "--project", PROJECT,
+      "--type", "pitfall",
+      "--content", JSON.stringify({ name: "dom-drift", title: "DOM 漂移", tags: ["ui"], body: "详情", source: "" }),
+      "--confidence", "high",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "pitfalls", "dom-drift.md"), "utf8");
+    assert.ok(content.includes("type: pitfall"));
+  });
+});

@@ -6,16 +6,24 @@
  * Actions: read-core | read-module | read-pitfall | write | update | index | lint
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { Command } from "commander";
 import { initEnv } from "./lib/env.ts";
 import {
   autoFixFrontmatter,
+  confidenceGate,
+  parseContentJson,
   parseFrontmatter,
   renderIndex,
   searchPitfalls,
+  serializeFrontmatter,
   todayIso,
+  type ContentModule,
+  type ContentOverview,
+  type ContentPitfall,
+  type ContentTerm,
+  type Frontmatter,
   type IndexData,
   type IndexEntry,
   type TermRow,
@@ -168,6 +176,98 @@ function writeIndexFile(projectName: string): {
   };
 }
 
+function renderTermRow(t: ContentTerm): string {
+  return `| ${t.term} | ${t.zh} | ${t.desc} | ${t.alias} |`;
+}
+
+function upsertOverviewSection(
+  body: string,
+  section: string,
+  newBody: string,
+  mode: "append" | "replace",
+): string {
+  const lines = body.split("\n");
+  const headingRe = new RegExp(`^##\\s+${escapeRegex(section)}\\s*$`);
+
+  let startIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (headingRe.test(lines[i])) {
+      startIdx = i;
+      break;
+    }
+  }
+
+  if (startIdx === -1) {
+    // Append a new section at the end
+    const trailingNewline = body.endsWith("\n") ? "" : "\n";
+    return `${body}${trailingNewline}\n## ${section}\n\n${newBody}\n`;
+  }
+
+  // Find next heading (## or #) to define section end
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    if (/^#{1,2}\s+/.test(lines[i])) {
+      endIdx = i;
+      break;
+    }
+  }
+
+  const before = lines.slice(0, startIdx + 1);
+  const after = lines.slice(endIdx);
+
+  if (mode === "replace") {
+    // Replace section body with blank line + newBody + blank line before next section
+    const newSection = ["", newBody, ""];
+    return [...before, ...newSection, ...after].join("\n");
+  }
+
+  // append mode: keep existing body, append newBody at the end of the section
+  const existing = lines.slice(startIdx + 1, endIdx);
+  // Trim trailing empty lines before appending, then re-add one blank separator
+  let tailTrim = existing.length;
+  while (tailTrim > 0 && existing[tailTrim - 1].trim() === "") tailTrim--;
+  const trimmedExisting = existing.slice(0, tailTrim);
+  const appended = [...trimmedExisting, newBody, ""];
+  return [...before, ...appended, ...after].join("\n");
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function upsertTermRow(body: string, newRow: string, term: string): string {
+  const lines = body.split("\n");
+  const rowPrefix = `| ${term} |`;
+
+  let replacedIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trimStart().startsWith(rowPrefix)) {
+      replacedIdx = i;
+      break;
+    }
+  }
+
+  if (replacedIdx !== -1) {
+    return [...lines.slice(0, replacedIdx), newRow, ...lines.slice(replacedIdx + 1)].join("\n");
+  }
+
+  // Find last table row (| ... |) and insert after it
+  let lastRowIdx = -1;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const t = lines[i].trim();
+    if (t.startsWith("|") && t.endsWith("|")) {
+      lastRowIdx = i;
+      break;
+    }
+  }
+  if (lastRowIdx === -1) {
+    // No table, just append
+    const trailingNewline = body.endsWith("\n") ? "" : "\n";
+    return `${body}${trailingNewline}${newRow}\n`;
+  }
+  return [...lines.slice(0, lastRowIdx + 1), newRow, ...lines.slice(lastRowIdx + 1)].join("\n");
+}
+
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
 const program = new Command();
@@ -303,6 +403,135 @@ program
     const result = writeIndexFile(opts.project);
     process.stdout.write(
       JSON.stringify({ project: opts.project, ...result }, null, 2) + "\n",
+    );
+  });
+
+program
+  .command("write")
+  .description("Write knowledge entry (term/overview/module/pitfall)")
+  .requiredOption("--project <name>", "Project name")
+  .requiredOption("--type <type>", "Entry type: term|overview|module|pitfall")
+  .requiredOption("--content <json>", "Content as JSON string")
+  .option("--confidence <level>", "Confidence: high|medium|low", "medium")
+  .option("--confirmed", "Confirm medium-confidence write", false)
+  .option("--dry-run", "Preview without writing", false)
+  .option("--overwrite", "Allow overwriting existing module/pitfall file", false)
+  .action((opts: {
+    project: string;
+    type: string;
+    content: string;
+    confidence: string;
+    confirmed: boolean;
+    dryRun: boolean;
+    overwrite: boolean;
+  }) => {
+    const gate = confidenceGate(opts.confidence, opts.confirmed);
+    if (!gate.allowed) {
+      process.stderr.write(`[knowledge-keeper] ${gate.reason}\n`);
+      process.exit(1);
+    }
+
+    const today = todayIso();
+    let targetPath = "";
+    let beforeContent = "";
+    let afterContent = "";
+
+    if (opts.type === "term") {
+      const parsed = parseContentJson<ContentTerm>("term", opts.content);
+      targetPath = knowledgePath(opts.project, "terms.md");
+      beforeContent = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+      const file = parseFrontmatter(beforeContent);
+      const existingFm = file.frontmatter;
+      const newFm: Frontmatter = existingFm
+        ? { ...existingFm, updated: today }
+        : {
+            title: `${opts.project} 术语表`,
+            type: "term",
+            tags: [],
+            confidence: "high",
+            source: "",
+            updated: today,
+          };
+      const baseBody = existingFm
+        ? file.body
+        : `\n# ${newFm.title}\n\n| 术语 | 中文 | 解释 | 别名 |\n|---|---|---|---|\n`;
+      const newBody = upsertTermRow(baseBody, renderTermRow(parsed), parsed.term);
+      afterContent = serializeFrontmatter(newFm) + newBody;
+    } else if (opts.type === "overview") {
+      const parsed = parseContentJson<ContentOverview>("overview", opts.content);
+      targetPath = knowledgePath(opts.project, "overview.md");
+      beforeContent = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+      const file = parseFrontmatter(beforeContent);
+      const existingFm = file.frontmatter;
+      const newFm: Frontmatter = existingFm
+        ? { ...existingFm, updated: today }
+        : {
+            title: `${opts.project} 业务概览`,
+            type: "overview",
+            tags: [],
+            confidence: "high",
+            source: "",
+            updated: today,
+          };
+      const baseBody = existingFm ? file.body : `\n# ${newFm.title}\n`;
+      const newBody = upsertOverviewSection(baseBody, parsed.section, parsed.body, parsed.mode);
+      afterContent = serializeFrontmatter(newFm) + newBody;
+    } else if (opts.type === "module" || opts.type === "pitfall") {
+      const parsed = parseContentJson<ContentModule | ContentPitfall>(opts.type, opts.content);
+      const subdir = opts.type === "module" ? "modules" : "pitfalls";
+      targetPath = knowledgePath(opts.project, subdir, `${parsed.name}.md`);
+      const exists = existsSync(targetPath);
+      if (exists && !opts.overwrite) {
+        process.stderr.write(`[knowledge-keeper] File exists: ${targetPath} (use --overwrite)\n`);
+        process.exit(1);
+      }
+      beforeContent = exists ? readFileSync(targetPath, "utf8") : "";
+      const newFm: Frontmatter = {
+        title: parsed.title,
+        type: opts.type === "module" ? "module" : "pitfall",
+        tags: parsed.tags,
+        confidence: opts.confidence as Frontmatter["confidence"],
+        source: parsed.source,
+        updated: today,
+      };
+      afterContent = serializeFrontmatter(newFm) + "\n" + parsed.body + (parsed.body.endsWith("\n") ? "" : "\n");
+    } else {
+      process.stderr.write(`[knowledge-keeper] Unknown type: ${opts.type}\n`);
+      process.exit(1);
+    }
+
+    if (opts.dryRun) {
+      process.stdout.write(
+        JSON.stringify(
+          {
+            dry_run: true,
+            action: "write",
+            type: opts.type,
+            file: targetPath,
+            before: beforeContent,
+            after: afterContent,
+          },
+          null,
+          2,
+        ) + "\n",
+      );
+      return;
+    }
+
+    mkdirSync(dirname(targetPath), { recursive: true });
+    writeFileSync(targetPath, afterContent);
+    process.stdout.write(
+      JSON.stringify(
+        {
+          action: "write",
+          type: opts.type,
+          file: targetPath,
+          before: beforeContent,
+          after: afterContent,
+        },
+        null,
+        2,
+      ) + "\n",
     );
   });
 
