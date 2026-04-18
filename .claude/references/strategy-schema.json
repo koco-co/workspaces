@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Strategy Matrix Schema",
+  "definitions": {
+    "SignalLevel": {
+      "enum": ["strong", "weak", "missing"]
+    },
+    "StrategyId": {
+      "enum": ["S1", "S2", "S3", "S4", "S5"]
+    },
+    "SignalProfile": {
+      "type": "object",
+      "required": ["source", "prd", "history", "knowledge", "probed_at", "project", "prd_path"],
+      "properties": {
+        "source": { "$ref": "#/definitions/SignalEntry" },
+        "prd": { "$ref": "#/definitions/SignalEntry" },
+        "history": { "$ref": "#/definitions/SignalEntry" },
+        "knowledge": { "$ref": "#/definitions/SignalEntry" },
+        "probed_at": { "type": "string", "format": "date-time" },
+        "project": { "type": "string" },
+        "prd_path": { "type": "string" }
+      }
+    },
+    "SignalEntry": {
+      "type": "object",
+      "required": ["level", "evidence"],
+      "properties": {
+        "level": { "$ref": "#/definitions/SignalLevel" },
+        "evidence": { "type": "object" }
+      }
+    },
+    "StrategyResolution": {
+      "type": "object",
+      "required": ["strategy_id", "strategy_name", "signal_profile", "overrides", "resolved_at"],
+      "properties": {
+        "strategy_id": { "$ref": "#/definitions/StrategyId" },
+        "strategy_name": { "type": "string" },
+        "signal_profile": { "$ref": "#/definitions/SignalProfile" },
+        "overrides": {
+          "type": "object",
+          "properties": {
+            "transform": { "type": "object" },
+            "analyze": { "type": "object" },
+            "writer": { "type": "object" },
+            "review": { "type": "object" },
+            "thresholds": { "type": "object" }
+          }
+        },
+        "resolved_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}
