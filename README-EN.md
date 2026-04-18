@@ -61,8 +61,8 @@ Git conflict snippet ──────────── /conflict-report ─�
 
 | Feature                         | Description                                                                                                    |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **7 Skills / 5 Core Workflows** | `qa-flow` Router + `setup` + 5 primary execution workflows from initialization to delivery                     |
-| **13-Agent Architecture**       | Specialized agents declare model/tools in frontmatter and are dispatched by Skills based on task complexity    |
+| **11 Skills / 6 Core Workflows** | `qa-flow` Router + `setup` + `create-project` + 6 primary execution workflows covering init, generation, analysis, editing, diagnostics, and regression |
+| **15-Agent Architecture**        | Specialized agents declare model/tools in frontmatter and are dispatched by Skills based on task complexity; includes `pattern-analyzer-agent` / `script-fixer-agent` |
 | **Project-Scoped Workspace**    | All artifacts are written into `workspace/&lt;project&gt;/...`, keeping projects isolated                      |
 | **A/B Artifact Contract**       | XMind / intermediate artifacts use Contract A; Archive MD / display titles use Contract B                      |
 | **Preview-before-Write**        | XMind `patch` / `add` / `delete` always run `--dry-run` first, then require confirmation                       |
@@ -83,10 +83,10 @@ qa-flow uses a **Router + Skill + Agent + Plugin Hook** architecture:
 
 - **qa-flow Router** — Entry routing layer; first-run, no-project, or `/qa-flow init` requests are routed to `setup`
 - **11 Skills** — `qa-flow` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
-- **7 primary user workflows** — `test-case-gen`, `ui-autotest`, `xmind-editor`, `hotfix-case-gen`, `bug-report`, `conflict-report`, plus `setup`
-- **13 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill
-- **Cross-cutting capabilities** — project-level rules, breakpoint resume, read-only source repos, and plugin hooks span the workflow
-- **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright assets
+- **6 primary user workflows** — `test-case-gen`, `ui-autotest`, `xmind-editor`, `hotfix-case-gen`, `bug-report`, `conflict-report` (`setup` + `create-project` are bootstrap workflows)
+- **15 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill; includes Phase 3's `pattern-analyzer-agent`
+- **Cross-cutting capabilities** — CLI Runner factory, three-tier `.env`, multi-environment `qa-state` isolation, `plan.md` arbitration, `LOG_LEVEL` logging, project-level rules, read-only source repos, plugin hooks
+- **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright + Allure assets
 
 </details>
 
@@ -164,7 +164,7 @@ The current user-facing trigger phrases are Chinese-first; the examples below ar
 修改用例 "Verify export only exports filtered results"
 
 # Standardize legacy XMind / CSV into Archive MD
-标准化归档 workspace/<project>/historys/legacy-cases.xmind
+标准化归档 workspace/<project>/history/legacy-cases.xmind
 
 # UI automation test
 UI自动化测试 {{requirement_name}} https://your-app.example.com
@@ -185,17 +185,20 @@ Transforms PRD / Story documents into structured XMind and Archive Markdown test
 
 ![Test Case Generation Pipeline](assets/diagrams/test-case-gen.svg)
 
-#### 7 Nodes
+#### 10 Nodes
 
-| Node | Name          | Description                                                                | Key Scripts                               |
-| ---- | ------------- | -------------------------------------------------------------------------- | ----------------------------------------- |
-| 1    | **init**      | Parse input, restore state, and load project/plugin context                | `state.ts`, `plugin-loader.ts`            |
-| 2    | **transform** | Source code analysis + PRD structuring, with structured `clarify_envelope` | `repo-profile.ts`, `repo-sync.ts`         |
-| 3    | **enhance**   | Image recognition, frontmatter normalization, and health pre-check         | `image-compress.ts`, `prd-frontmatter.ts` |
-| 4    | **analyze**   | Historical case retrieval + QA brainstorming &rarr; test point checklist   | `archive-gen.ts search`                   |
-| 5    | **write**     | Parallel Writer Sub-Agents generate Contract A cases by module             | Parallel sub-agents                       |
-| 6    | **review**    | Quality-gate review (threshold < 15% / 15-40% / > 40%), up to 2 rounds     | Quality gate                              |
-| 7    | **output**    | Generate XMind (A) + Archive MD (B), send notifications, and clean state   | `xmind-gen.ts`, `archive-gen.ts`          |
+| Node | Name           | Description                                                                        | Key Scripts                                           |
+| ---- | -------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1    | **init**       | Parse input, restore state, and load project/plugin context                        | `state.ts`, `plugin-loader.ts`, `rule-loader.ts`      |
+| 2    | **discuss**    | Orchestrator-hosted requirements discussion; persists `plan.md`                    | `discuss.ts`, `plan.ts`                               |
+| 3    | **probe**      | 4-dimension signal probe (bug / regression / feature-magnitude / reuse-score)      | `signal-probe.ts`                                     |
+| 4    | **strategy**   | 5-strategy dispatch (S1–S5; S5 routes to `hotfix-case-gen`)                        | `strategy-router.ts`                                  |
+| 5    | **transform**  | Source code analysis + PRD structuring, with structured `clarify_envelope`         | `repo-profile.ts`, `repo-sync.ts`                     |
+| 6    | **enhance**    | Image recognition, frontmatter normalization, and health pre-check                 | `image-compress.ts`, `prd-frontmatter.ts`             |
+| 7    | **analyze**    | Historical case retrieval + QA brainstorming → test point checklist (w/ knowledge) | `archive-gen.ts search`, `writer-context-builder.ts`  |
+| 8    | **write**      | Parallel Writer Sub-Agents generate Contract A cases by module                     | Parallel sub-agents                                   |
+| 9    | **review**     | Quality-gate review (threshold < 15% / 15–40% / > 40%), up to 2 rounds             | Quality gate                                          |
+| 10   | **output**     | Generate XMind (A) + Archive MD (B), send notifications, and clean state           | `xmind-gen.ts`, `archive-gen.ts`                      |
 
 #### Quality Gate (Review Node)
 
@@ -319,15 +322,16 @@ Transforms Archive MD test cases into Playwright TypeScript scripts, executes by
 
 | Step | Name                   | Description                                                                     |
 | ---- | ---------------------- | ------------------------------------------------------------------------------- |
-| 1    | **Parse Input**        | Extract `md_path` and `url`, parse Archive MD via `parse-cases.ts`              |
-| 2    | **Select Scope**       | Only prompt when scope is unclear: smoke / full / custom                        |
-| 3    | **Session Prep**       | Check/create login session via `session-login.ts`                               |
-| 4    | **Script Generation**  | Up to 5 parallel Sub-Agents generate `.ts` code blocks                          |
-| 5    | **Per-case Verify**    | Each script is executed individually and self-healed for up to 3 rounds         |
-| 6    | **Merge Specs**        | `merge-specs.ts` assembles `smoke.spec.ts` and `full.spec.ts`                   |
-| 7    | **Run Regression**     | `bunx playwright test` executes the merged smoke / full specs                   |
-| 8    | **Process Results**    | Generate Playwright reports, bug reports, and Archive MD correction suggestions |
-| 9    | **Send Notifications** | Plugin sends pass/fail summary via IM                                           |
+| 1    | **Parse Input**        | Extract `md_path` and `url`, parse Archive MD via `parse-cases.ts`                     |
+| 2    | **Select Scope**       | Only prompt when scope is unclear: smoke / full / custom                               |
+| 3    | **Session Prep**       | Check/create login session via `session-login.ts` (isolated per `ACTIVE_ENV`)          |
+| 4    | **Script Generation**  | Up to 5 parallel Sub-Agents generate `.ts` code blocks                                 |
+| 5    | **Per-case Verify**    | Each script is executed individually and self-healed for up to 3 rounds                |
+| 5.5  | **Pattern Analysis**   | `pattern-analyzer-agent` extracts shared helpers from recurring failures               |
+| 6    | **Merge Specs**        | `merge-specs.ts` assembles `smoke.spec.ts` and `full.spec.ts`                          |
+| 7    | **Run Regression**     | `bunx playwright test` executes the merged smoke / full specs                          |
+| 8    | **Process Results**    | Generate **Allure reports**, bug reports, and Archive MD correction suggestions        |
+| 9    | **Send Notifications** | Plugin sends pass/fail summary via IM                                                  |
 
 #### Test Scope
 
@@ -343,7 +347,7 @@ Transforms Archive MD test cases into Playwright TypeScript scripts, executes by
 | ------------------- | ------------------------------------------------------------- |
 | Temporary UI blocks | `workspace/<project>/.temp/ui-blocks/`                        |
 | E2E specs           | `workspace/<project>/tests/YYYYMM/<suite_name>/`              |
-| Playwright reports  | `workspace/<project>/reports/playwright/YYYYMM/<suite_name>/` |
+| Allure reports      | `workspace/<project>/reports/allure/YYYYMM/<suite_name>/`     |
 | Bug reports         | `workspace/<project>/reports/bugs/YYYYMM/`                    |
 
 ---
@@ -389,12 +393,49 @@ Create a `plugin.json` under `plugins/<plugin-name>/`:
 
 ---
 
+## Cross-cutting Infrastructure
+
+Phase 5 consolidated CLI / config / state / logging into four shared channels. New scripts inherit these capabilities automatically — no boilerplate duplication.
+
+### CLI Runner Factory
+
+`.claude/scripts/lib/cli-runner.ts` exposes `createCli({ name, description, commands })`. 27 of the 28 CLI scripts use the factory, getting for free:
+
+- Three-tier `.env` preload via `initEnv()`
+- `createLogger(name)` injection
+- Standard error-exit protocol (stderr + `exitCode 1`)
+- `LOG_LEVEL` environment variable awareness
+
+### Three-tier `.env`
+
+| File           | Role                                                                         | Git status                         |
+| -------------- | ---------------------------------------------------------------------------- | ---------------------------------- |
+| `.env`         | Core config + plugin credentials (DingTalk / Lanhu / Zentao / SMTP, etc.)    | gitignore (has `.env.example`)     |
+| `.env.envs`    | Multi-environment segments (`ACTIVE_ENV` / `LTQCDEV_*` / `CI63_*` / …)       | gitignore (has `.env.envs.example`) |
+| `.env.local`   | User-local overrides (temporary tokens / cookies)                            | gitignore (no template)            |
+
+Merge order (later wins): `process.env > .env.local > .env.envs > .env`.
+
+### Multi-environment State Isolation
+
+`qa-state` filename carries an `ACTIVE_ENV` suffix: `workspace/<project>/.temp/.qa-state-<slug>-<env>.json`.
+
+- Multiple Claude Code instances can run different environments concurrently without interference
+- `resume` treats `plan.md` frontmatter as the authoritative source for `strategy_resolution` hydration
+- Legacy un-suffixed files are migrated automatically on first `resume`
+
+### LOG_LEVEL
+
+Set `LOG_LEVEL=debug` / `info` / `warn` / `error` to control verbosity at runtime. `cli-runner` calls `initLogLevel()` automatically.
+
+---
+
 ## Project Structure
 
 ```text
 qa-flow/
 ├── .claude/
-│   ├── agents/                   # 13 standalone agent definitions
+│   ├── agents/                   # 15 standalone agent definitions
 │   ├── scripts/                  # Core TypeScript CLI scripts
 │   │   ├── state.ts              # Breakpoint/resume state management
 │   │   ├── xmind-gen.ts          # XMind file generation
@@ -432,8 +473,8 @@ qa-flow/
 │   │   ├── xmind/                # Generated XMind files
 │   │   ├── archive/              # Archive Markdown test cases
 │   │   ├── issues/               # Hotfix test cases
-│   │   ├── historys/             # Legacy CSV / XMind inputs
-│   │   ├── reports/              # Bug / conflict / Playwright reports
+│   │   ├── history/              # Legacy CSV / XMind inputs
+│   │   ├── reports/              # Bug / conflict / Allure reports
 │   │   ├── tests/                # Generated Playwright specs
 │   │   ├── rules/               # Project-level rule overrides
 │   │   ├── knowledge/           # Project-level business knowledge base
@@ -462,26 +503,34 @@ qa-flow/
 
 ## Script CLI Reference
 
-All scripts are located at `.claude/scripts/`, executed with `bun run`:
+All scripts are located at `.claude/scripts/`. They share a unified entry factory (`lib/cli-runner.ts`) and are executed with `bun run`:
 
-| Script               | Commands                                       | Description                                          |
-| -------------------- | ---------------------------------------------- | ---------------------------------------------------- |
-| `state.ts`           | `init` / `resume` / `update` / `clean`         | Breakpoint state init, resume, update, and cleanup   |
-| `xmind-gen.ts`       | `--input <json> --output <dir>`                | Generate XMind files from JSON intermediate format   |
-| `xmind-edit.ts`      | `search` / `show` / `patch` / `add` / `delete` | XMind test case CRUD                                 |
-| `archive-gen.ts`     | `--input <json> --output <dir>` / `search`     | Generate Archive MD or keyword search                |
-| `image-compress.ts`  | `--dir <dir>`                                  | Batch image compression (>2000px auto-resize)        |
-| `plugin-loader.ts`   | `check` / `notify`                             | Plugin availability check and notification dispatch  |
-| `repo-sync.ts`       | `--url <url> --branch <branch>`                | Source repo branch sync/clone                        |
-| `repo-profile.ts`    | `match` / `save` / `sync-profile`              | Smart matching between requirements and source repos |
-| `prd-frontmatter.ts` | `--file <path>`                                | PRD frontmatter normalization                        |
-| `config.ts`          | (no args)                                      | Read `.env` and output project configuration         |
+| Script                      | Commands                                          | Description                                            |
+| --------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
+| `state.ts`                  | `init` / `resume` / `update` / `clean`            | Breakpoint state (isolated per `ACTIVE_ENV`)           |
+| `plan.ts`                   | `read` / `write-strategy` / `hydrate`             | `plan.md` frontmatter read/write and arbitration       |
+| `discuss.ts`                | `start` / `close`                                 | Orchestrator-hosted requirements discussion session    |
+| `signal-probe.ts`           | `run` / `cache-read`                              | 4-dimension signal probe                               |
+| `strategy-router.ts`        | `resolve`                                         | 5-strategy dispatch (S1–S5)                            |
+| `writer-context-builder.ts` | `--module <name>`                                 | Writer context assembly with knowledge injection       |
+| `xmind-gen.ts`              | `--input <json> --output <dir>`                   | Generate XMind files from JSON intermediate format     |
+| `xmind-edit.ts`             | `search` / `show` / `patch` / `add` / `delete`    | XMind test case CRUD                                   |
+| `archive-gen.ts`            | `--input <json> --output <dir>` / `search`        | Generate Archive MD or keyword search                  |
+| `knowledge-keeper.ts`       | `index` / `read` / `write`                        | Business knowledge base index, read, and write         |
+| `rule-loader.ts`            | `load --project <name>`                           | Two-tier rule loader (global + project)                |
+| `create-project.ts`         | `scan` / `create` / `clone-repo`                  | Project skeleton creation/repair, source repo clone    |
+| `image-compress.ts`         | `--dir <dir>`                                     | Batch image compression (>2000px auto-resize)          |
+| `plugin-loader.ts`          | `check` / `notify`                                | Plugin availability check and notification dispatch    |
+| `repo-sync.ts`              | `--url <url> --branch <branch>`                   | Source repo branch sync/clone                          |
+| `repo-profile.ts`           | `match` / `save` / `sync-profile`                 | Smart matching between requirements and source repos   |
+| `prd-frontmatter.ts`        | `--file <path>`                                   | PRD frontmatter normalization                          |
+| `config.ts`                 | (no args)                                         | Read `.env` and output project configuration           |
 
 ---
 
 ## Configuration
 
-Copy `.env.example` to `.env` and configure:
+Copy `.env.example` to `.env`; for multi-environment setups also copy `.env.envs.example` to `.env.envs`.
 
 ### Core Settings
 
@@ -489,6 +538,26 @@ Copy `.env.example` to `.env` and configure:
 | --------------- | -------- | ------------------------------------------------- |
 | `WORKSPACE_DIR` | No       | Workspace directory name, defaults to `workspace` |
 | `SOURCE_REPOS`  | No       | Source repo Git URLs (comma-separated)            |
+
+### Multi-environment (`ACTIVE_ENV`)
+
+`.env.envs` holds credentials for multiple environments. Switch via `ACTIVE_ENV`:
+
+| Variable               | Required | Description                                                    |
+| ---------------------- | -------- | -------------------------------------------------------------- |
+| `ACTIVE_ENV`           | Yes      | Active environment slug (e.g., `ltqcdev` / `ci63` / `ci78`)    |
+| `{ENV}_BASE_URL`       | Yes      | Web entrypoint for that environment (e.g., `CI63_BASE_URL`)    |
+| `{ENV}_USERNAME`       | No       | Account for that environment                                   |
+| `{ENV}_PASSWORD`       | No       | Password for that environment                                  |
+| `{ENV}_COOKIE`         | No       | Session cookie (reused by UI automation)                       |
+
+Switch environments by editing `.env.envs` directly, or inject via shell:
+
+```bash
+ACTIVE_ENV=ci63 bun run .claude/scripts/state.ts resume --project dataAssets --prd-slug myPrd
+```
+
+`qa-state` filenames include the `-{env}` suffix so parallel instances never collide.
 
 ### Plugin: Lanhu
 

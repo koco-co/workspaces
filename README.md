@@ -71,8 +71,8 @@
 
 | 特性                            | 说明                                                                                 |
 | ------------------------------- | ------------------------------------------------------------------------------------ |
-| **7 个 Skill / 5 个核心工作流** | `qa-flow` Router + `setup` + 5 个核心执行工作流，覆盖初始化、生成、分析、编辑和回归  |
-| **13 Agent 架构**               | 独立 Agent 通过 frontmatter 声明 model/tools，按复杂度动态匹配 haiku / sonnet / opus |
+| **11 个 Skill / 6 个核心工作流** | `qa-flow` Router + `setup` + `create-project` + 6 个核心执行工作流，覆盖初始化、生成、分析、编辑、Bug/冲突诊断和回归 |
+| **15 Agent 架构**              | 独立 Agent 通过 frontmatter 声明 model/tools，按复杂度动态匹配 haiku / sonnet / opus；含 pattern-analyzer 等动态派发 |
 | **项目级工作区**                | 所有产物统一输出到 `workspace/&lt;project&gt;/...`，多项目互不污染                   |
 | **A/B 双契约**                  | XMind / intermediate 使用 Contract A；Archive MD / 展示标题使用 Contract B           |
 | **写前预览**                    | XMind `patch` / `add` / `delete` 统一先 `--dry-run` 预览，再确认真实写入             |
@@ -93,10 +93,10 @@ qa-flow 采用 **Router + Skill + Agent + Plugin Hook** 分层架构：
 
 - **qa-flow Router** — 入口路由层；首次使用、无项目或 `/qa-flow init` 会优先路由到 `setup`
 - **11 个 Skill** — `qa-flow` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
-- **7 个核心用户工作流** — `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` + `setup`
-- **13 个独立 Agent** — 每个 Agent 通过 frontmatter 声明 model/tools，由 Skill 作为编排器调度
-- **Cross-cutting 能力** — 项目级规则、断点续传、只读源码副本、Plugin Hooks 贯穿全流程
-- **Project-scoped Output** — 统一输出到 `workspace/<project>/`，支持 XMind / Archive MD / HTML 报告 / Playwright 产物
+- **6 个核心用户工作流** — `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report`（`setup` + `create-project` 为初始化工作流）
+- **15 个独立 Agent** — 每个 Agent 通过 frontmatter 声明 model/tools，由 Skill 作为编排器调度；含 Phase 3 新增 `pattern-analyzer-agent` / `script-fixer-agent`
+- **Cross-cutting 能力** — CLI Runner 工厂、三段式 `.env`、多环境 `qa-state` 隔离、`plan.md` 仲裁、`LOG_LEVEL` 日志分级、项目级规则、只读源码副本、Plugin Hooks
+- **Project-scoped Output** — 统一输出到 `workspace/<project>/`，支持 XMind / Archive MD / HTML 报告 / Playwright + Allure 产物
 
 </details>
 
@@ -172,7 +172,7 @@ cp .env.example .env
 修改用例 "验证导出仅导出当前筛选结果"
 
 # 标准化历史 XMind / CSV 为 Archive MD
-标准化归档 workspace/<project>/historys/旧用例.xmind
+标准化归档 workspace/<project>/history/旧用例.xmind
 
 # UI 自动化测试
 UI自动化测试 {{需求名称}} https://your-app.example.com
@@ -193,17 +193,20 @@ UI自动化测试 {{需求名称}} https://your-app.example.com
 
 ![Test Case Generation Pipeline](assets/diagrams/test-case-gen.svg)
 
-#### 7 个节点
+#### 10 个节点
 
-| 节点 | 名称          | 说明                                                            | 关键脚本                                  |
-| ---- | ------------- | --------------------------------------------------------------- | ----------------------------------------- |
-| 1    | **init**      | 解析输入、恢复状态、加载项目/插件上下文                         | `state.ts`, `plugin-loader.ts`            |
-| 2    | **transform** | 源码分析 + PRD 结构化，使用结构化 `clarify_envelope` 表达阻断项 | `repo-profile.ts`, `repo-sync.ts`         |
-| 3    | **enhance**   | 图片识别、frontmatter 标准化、健康度预检                        | `image-compress.ts`, `prd-frontmatter.ts` |
-| 4    | **analyze**   | 历史用例检索 + QA 头脑风暴 &rarr; 测试点清单                    | `archive-gen.ts search`                   |
-| 5    | **write**     | 按模块拆分并行 Writer Sub-Agents 生成 Contract A 用例           | Parallel sub-agents                       |
-| 6    | **review**    | 质量门控审查（阈值 < 15% / 15-40% / > 40%），最多 2 轮          | Quality gate                              |
-| 7    | **output**    | 生成 XMind（A）+ Archive MD（B）、发送通知并清理状态            | `xmind-gen.ts`, `archive-gen.ts`          |
+| 节点 | 名称           | 说明                                                                   | 关键脚本                                              |
+| ---- | -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1    | **init**       | 解析输入、恢复状态、加载项目/插件上下文                                | `state.ts`, `plugin-loader.ts`, `rule-loader.ts`      |
+| 2    | **discuss**    | 主 agent 主持需求讨论，落盘 `plan.md`，对齐范围与策略                  | `discuss.ts`, `plan.ts`                               |
+| 3    | **probe**      | 4 维信号探针（bug / regression / feature-magnitude / reuse-score）     | `signal-probe.ts`                                     |
+| 4    | **strategy**   | 5 策略派发（S1–S5，S5 外转 `hotfix-case-gen`）                          | `strategy-router.ts`                                  |
+| 5    | **transform**  | 源码分析 + PRD 结构化，使用结构化 `clarify_envelope` 表达阻断项        | `repo-profile.ts`, `repo-sync.ts`                     |
+| 6    | **enhance**    | 图片识别、frontmatter 标准化、健康度预检                               | `image-compress.ts`, `prd-frontmatter.ts`             |
+| 7    | **analyze**    | 历史用例检索 + QA 头脑风暴 → 测试点清单（含 `knowledge` 注入）         | `archive-gen.ts search`, `writer-context-builder.ts`  |
+| 8    | **write**      | 按模块拆分并行 Writer Sub-Agents 生成 Contract A 用例                  | Parallel sub-agents                                   |
+| 9    | **review**     | 质量门控审查（阈值 < 15% / 15–40% / > 40%），最多 2 轮                 | Quality gate                                          |
+| 10   | **output**     | 生成 XMind（A）+ Archive MD（B）、发送通知并清理状态                   | `xmind-gen.ts`, `archive-gen.ts`                      |
 
 #### 质量门控 (Review 节点)
 
@@ -327,15 +330,16 @@ code-analysis 的一体化路由已按业务边界拆成三个专职 skill，触
 
 | 步骤 | 名称         | 说明                                                                     |
 | ---- | ------------ | ------------------------------------------------------------------------ |
-| 1    | **解析输入** | 提取 `md_path` 和 `url`，通过 `parse-cases.ts` 解析 Archive MD           |
-| 2    | **执行范围** | 仅在范围未明确时确认 smoke / full / custom                               |
-| 3    | **会话准备** | 通过 `session-login.ts` 检查/创建登录 session                            |
-| 4    | **脚本生成** | 最多 5 个并行 Sub-Agents 生成 `.ts` 代码块                               |
-| 5    | **逐条自测** | 每条脚本单独执行验证，失败时最多 3 轮自修复                              |
-| 6    | **合并脚本** | `merge-specs.ts` 合并为 `smoke.spec.ts` 和 `full.spec.ts`                |
-| 7    | **执行回归** | `bunx playwright test` 执行合并后的 smoke / full spec                    |
-| 8    | **结果处理** | 生成 Playwright 报告、Bug 报告，并输出 Archive MD 校正建议（默认不写回） |
-| 9    | **发送通知** | 通过 Plugin 发送通过/失败摘要                                            |
+| 1    | **解析输入**     | 提取 `md_path` 和 `url`，通过 `parse-cases.ts` 解析 Archive MD           |
+| 2    | **执行范围**     | 仅在范围未明确时确认 smoke / full / custom                               |
+| 3    | **会话准备**     | 通过 `session-login.ts` 检查/创建登录 session（按 `ACTIVE_ENV` 隔离）    |
+| 4    | **脚本生成**     | 最多 5 个并行 Sub-Agents 生成 `.ts` 代码块                               |
+| 5    | **逐条自测**     | 每条脚本单独执行验证，失败时最多 3 轮自修复                              |
+| 5.5  | **共性收敛**     | `pattern-analyzer-agent` 归纳失败共性、抽出共享 helpers，避免重复修复    |
+| 6    | **合并脚本**     | `merge-specs.ts` 合并为 `smoke.spec.ts` 和 `full.spec.ts`                |
+| 7    | **执行回归**     | `bunx playwright test` 执行合并后的 smoke / full spec                    |
+| 8    | **结果处理**     | 生成 **Allure 报告**、Bug 报告，并输出 Archive MD 校正建议（默认不写回） |
+| 9    | **发送通知**     | 通过 Plugin 发送通过/失败摘要                                            |
 
 #### 测试范围
 
@@ -351,7 +355,7 @@ code-analysis 的一体化路由已按业务边界拆成三个专职 skill，触
 | -------------------- | ------------------------------------------------------------- |
 | 临时代码块           | `workspace/<project>/.temp/ui-blocks/`                        |
 | E2E 用例脚本         | `workspace/<project>/tests/YYYYMM/<suite_name>/`              |
-| Playwright HTML 报告 | `workspace/<project>/reports/playwright/YYYYMM/<suite_name>/` |
+| Allure HTML 报告     | `workspace/<project>/reports/allure/YYYYMM/<suite_name>/`     |
 | Bug 报告             | `workspace/<project>/reports/bugs/YYYYMM/`                    |
 
 ---
@@ -397,12 +401,49 @@ code-analysis 的一体化路由已按业务边界拆成三个专职 skill，触
 
 ---
 
+## 横切基础设施
+
+Phase 5 收敛了 CLI / 配置 / 状态 / 日志四条横切通道，新增脚本直接继承这些能力，无需重复实现 boilerplate。
+
+### CLI Runner 工厂
+
+`.claude/scripts/lib/cli-runner.ts` 提供 `createCli({ name, description, commands })`，28 个 CLI 脚本中 27 个统一经由工厂构建入口，自动获得：
+
+- `initEnv()` 三段式 `.env` 预加载
+- `createLogger(name)` 注入日志实例
+- 错误退出协议（stderr + `exitCode 1`）
+- `LOG_LEVEL` 环境变量感知
+
+### .env 三段式
+
+| 文件           | 职责                                                         | git 状态                    |
+| -------------- | ------------------------------------------------------------ | --------------------------- |
+| `.env`         | 核心配置 + 插件凭证（DINGTALK / LANHU / ZENTAO / SMTP 等）   | gitignore（有 `.env.example`） |
+| `.env.envs`    | 多环境段（`ACTIVE_ENV` / `LTQCDEV_*` / `CI63_*` / `CI78_*`） | gitignore（有 `.env.envs.example`） |
+| `.env.local`   | 用户本地覆盖（临时 token / cookie）                          | gitignore（无模板）         |
+
+加载优先级：`process.env > .env.local > .env.envs > .env`（高者胜）。
+
+### 多环境 State 隔离
+
+`qa-state` 文件名附加 `ACTIVE_ENV` 后缀：`workspace/<project>/.temp/.qa-state-<slug>-<env>.json`。
+
+- 多 CC 实例并行跑不同环境互不污染
+- `resume` 时以 `plan.md` frontmatter 为权威源 hydrate `strategy_resolution`
+- 旧版无后缀文件首次 resume 时自动迁移
+
+### LOG_LEVEL 分级
+
+`LOG_LEVEL=debug` / `info` / `warn` / `error` 运行时切换日志级别。`cli-runner` 入口自动调用 `initLogLevel()`。
+
+---
+
 ## 项目结构
 
 ```text
 qa-flow/
 ├── .claude/
-│   ├── agents/                   # 13 个独立 Agent 定义（frontmatter: model/tools）
+│   ├── agents/                   # 15 个独立 Agent 定义（frontmatter: model/tools）
 │   │   ├── transform-agent.md    #   PRD 结构化（sonnet）
 │   │   ├── enhance-agent.md      #   图片识别 / 增强（sonnet）
 │   │   ├── analyze-agent.md      #   测试点分析（opus）
@@ -415,6 +456,8 @@ qa-flow/
 │   │   ├── conflict-agent.md     #   合并冲突分析（sonnet）
 │   │   ├── hotfix-case-agent.md  #   Hotfix 用例生成（sonnet）
 │   │   ├── script-writer-agent.md #  Playwright 脚本生成（sonnet）
+│   │   ├── script-fixer-agent.md #   Playwright 脚本自修复（sonnet）
+│   │   ├── pattern-analyzer-agent.md # 共性收敛/抽取 helpers（opus）
 │   │   └── bug-reporter-agent.md #   Bug 报告生成（haiku）
 │   ├── scripts/                  # 核心 TypeScript CLI 脚本
 │   │   ├── state.ts              # 断点续传状态管理（含文件锁）
@@ -460,7 +503,7 @@ qa-flow/
 │   │   ├── xmind/                # XMind 输出（YYYYMM/）
 │   │   ├── archive/              # 归档 Markdown（YYYYMM/）
 │   │   ├── issues/               # 线上问题用例
-│   │   ├── historys/             # 历史 CSV / XMind 原始资料
+│   │   ├── history/              # 历史 CSV / XMind 原始资料
 │   │   ├── reports/              # Bug / 冲突 / Playwright 报告
 │   │   ├── tests/                # Playwright 生成脚本
 │   │   ├── rules/               # 项目级规则（覆盖全局）
@@ -490,26 +533,34 @@ qa-flow/
 
 ## 脚本 CLI 参考
 
-所有脚本位于 `.claude/scripts/`，使用 `bun run` 执行：
+所有脚本位于 `.claude/scripts/`，统一通过 `lib/cli-runner.ts` 工厂创建入口，使用 `bun run` 执行：
 
-| 脚本                 | 核心子命令                                     | 说明                               |
-| -------------------- | ---------------------------------------------- | ---------------------------------- |
-| `state.ts`           | `init` / `resume` / `update` / `clean`         | 断点状态初始化、续传、更新与清理   |
-| `xmind-gen.ts`       | `--input <json> --output <dir>`                | 从 JSON 中间格式生成 XMind 文件    |
-| `xmind-edit.ts`      | `search` / `show` / `patch` / `add` / `delete` | XMind 用例增删改查                 |
-| `archive-gen.ts`     | `--input <json> --output <dir>` / `search`     | 生成 Archive MD 或关键词搜索       |
-| `image-compress.ts`  | `--dir <dir>`                                  | 批量压缩图片（超 2000px 自动缩放） |
-| `plugin-loader.ts`   | `check` / `notify`                             | 插件可用性检测与通知调度           |
-| `repo-sync.ts`       | `--url <url> --branch <branch>`                | 源码仓库分支同步/克隆              |
-| `repo-profile.ts`    | `match` / `save` / `sync-profile`              | 需求与源码仓库智能匹配             |
-| `prd-frontmatter.ts` | `--file <path>`                                | PRD frontmatter 标准化             |
-| `config.ts`          | (无参数)                                       | 读取 `.env` 输出项目配置           |
+| 脚本                        | 核心子命令                                          | 说明                                       |
+| --------------------------- | --------------------------------------------------- | ------------------------------------------ |
+| `state.ts`                  | `init` / `resume` / `update` / `clean`              | 断点状态管理（按 `ACTIVE_ENV` 隔离）       |
+| `plan.ts`                   | `read` / `write-strategy` / `hydrate`               | `plan.md` frontmatter 读写与仲裁           |
+| `discuss.ts`                | `start` / `close`                                   | 主 agent 主持的需求讨论会话                |
+| `signal-probe.ts`           | `run` / `cache-read`                                | 4 维信号探针（bug/regression/mag/reuse）   |
+| `strategy-router.ts`        | `resolve`                                           | 5 策略派发（S1–S5）                        |
+| `writer-context-builder.ts` | `--module <name>`                                   | Writer 上下文组装（含 knowledge 注入）     |
+| `xmind-gen.ts`              | `--input <json> --output <dir>`                     | 从 JSON 中间格式生成 XMind                 |
+| `xmind-edit.ts`             | `search` / `show` / `patch` / `add` / `delete`      | XMind 用例增删改查                         |
+| `archive-gen.ts`            | `--input <json> --output <dir>` / `search`          | 生成 Archive MD 或关键词搜索               |
+| `knowledge-keeper.ts`       | `index` / `read` / `write`                          | 业务知识库索引、读写                       |
+| `rule-loader.ts`            | `load --project <name>`                             | 双层规则加载（全局 + 项目级）              |
+| `create-project.ts`         | `scan` / `create` / `clone-repo`                    | 项目骨架创建与补齐、源码仓库克隆           |
+| `image-compress.ts`         | `--dir <dir>`                                       | 批量压缩图片（超 2000px 自动缩放）         |
+| `plugin-loader.ts`          | `check` / `notify`                                  | 插件可用性检测与通知调度                   |
+| `repo-sync.ts`              | `--url <url> --branch <branch>`                     | 源码仓库分支同步/克隆                      |
+| `repo-profile.ts`           | `match` / `save` / `sync-profile`                   | 需求与源码仓库智能匹配                     |
+| `prd-frontmatter.ts`        | `--file <path>`                                     | PRD frontmatter 标准化                     |
+| `config.ts`                 | (无参数)                                            | 读取 `.env` 输出项目配置                   |
 
 ---
 
 ## 环境配置
 
-复制 `.env.example` 为 `.env` 并配置：
+复制 `.env.example` 为 `.env` 并配置；如需多环境切换，另行复制 `.env.envs.example` 为 `.env.envs`。
 
 ### 核心配置
 
@@ -517,6 +568,26 @@ qa-flow/
 | --------------- | ---- | ------------------------------ |
 | `WORKSPACE_DIR` | 否   | 工作区目录名，默认 `workspace` |
 | `SOURCE_REPOS`  | 否   | 源码仓库 Git URL（逗号分隔）   |
+
+### 多环境（ACTIVE_ENV）
+
+`.env.envs` 存放多套环境凭证，通过 `ACTIVE_ENV` 切换当前激活环境：
+
+| 变量                   | 必填 | 说明                                                        |
+| ---------------------- | ---- | ----------------------------------------------------------- |
+| `ACTIVE_ENV`           | 是   | 激活环境 slug（如 `ltqcdev` / `ci63` / `ci78`），小写 kebab |
+| `{ENV}_BASE_URL`       | 是   | 对应环境的 Web 入口（如 `CI63_BASE_URL`）                   |
+| `{ENV}_USERNAME`       | 否   | 对应环境的账号                                              |
+| `{ENV}_PASSWORD`       | 否   | 对应环境的密码                                              |
+| `{ENV}_COOKIE`         | 否   | 对应环境的 session cookie（UI 自动化复用）                  |
+
+切换环境时直接改 `.env.envs` 中的 `ACTIVE_ENV`，或通过 shell 注入：
+
+```bash
+ACTIVE_ENV=ci63 bun run .claude/scripts/state.ts resume --project dataAssets --prd-slug myPrd
+```
+
+`qa-state` 文件名会附加 `-{env}` 后缀，多实例并行不互扰。
 
 ### 插件: 蓝湖
 
