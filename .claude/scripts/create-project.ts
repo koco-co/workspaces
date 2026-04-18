@@ -21,7 +21,7 @@ import {
   TEMPLATE_ROOT_REL,
   validateProjectName,
 } from "./lib/create-project.ts";
-import { knowledgeDir, projectDir } from "./lib/paths.ts";
+import { knowledgeDir, parseGitUrl, projectDir, reposDir } from "./lib/paths.ts";
 
 initEnv();
 
@@ -227,6 +227,57 @@ function applyCreate(project: string): {
   };
 }
 
+function runCloneRepo(project: string, url: string, branch: string): void {
+  const nameCheck = validateProjectName(project);
+  if (!nameCheck.valid) {
+    fail(`Invalid project name: ${nameCheck.error}`);
+  }
+  const projDir = projectDir(project);
+  if (!existsSync(projDir)) {
+    fail(`Project not found: ${project}. Run 'create' first.`);
+  }
+
+  const { group, repo } = parseGitUrl(url);
+  if (!group || !repo) {
+    fail(`Cannot parse git URL: ${url}`);
+  }
+  const targetDir = join(reposDir(project), group, repo);
+  if (existsSync(targetDir)) {
+    fail(`Repo already cloned: ${targetDir}`);
+  }
+
+  mkdirSync(dirname(targetDir), { recursive: true });
+  const args = ["clone"];
+  if (branch) {
+    args.push("--branch", branch, "--single-branch");
+  }
+  args.push(url, targetDir);
+  const result = spawnSync("git", args, {
+    cwd: repoRoot(),
+    env: process.env,
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    process.stderr.write(result.stderr || "");
+    fail(`git clone failed (exit ${result.status})`);
+  }
+
+  process.stdout.write(
+    JSON.stringify(
+      {
+        project,
+        url,
+        group,
+        repo,
+        branch: branch || "main",
+        local_path: targetDir,
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+}
+
 const program = new Command();
 program
   .name("create-project")
@@ -250,5 +301,17 @@ program
   .action((opts: { project: string; dryRun?: boolean; confirmed?: boolean }) => {
     runCreate(opts.project, opts.dryRun === true, opts.confirmed === true);
   });
+
+program
+  .command("clone-repo")
+  .description("克隆源码仓库到项目 .repos 目录")
+  .requiredOption("--project <name>", "项目名")
+  .requiredOption("--url <git-url>", "Git URL")
+  .option("--branch <branch>", "分支（默认 main）", "")
+  .action(
+    (opts: { project: string; url: string; branch?: string }) => {
+      runCloneRepo(opts.project, opts.url, opts.branch ?? "");
+    },
+  );
 
 program.parse(process.argv);

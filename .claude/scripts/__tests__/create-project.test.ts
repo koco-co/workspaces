@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -381,5 +381,73 @@ describe("create-project create --confirmed", () => {
     });
     assert.deepEqual(cfg.projects.newOne, { repo_profiles: {} });
     assert.equal(cfg.otherKey, "keep");
+  });
+});
+
+describe("create-project clone-repo", () => {
+  const BARE_DIR = join(TMP, "bare");
+  const BARE_REPO = join(BARE_DIR, "demo.git");
+
+  before(() => {
+    resetFixture();
+    mkdirSync(BARE_DIR, { recursive: true });
+    execSync(`git init --bare "${BARE_REPO}"`);
+    const wt = join(TMP, "seed-wt");
+    execSync(`git init "${wt}"`);
+    execSync(
+      `cd "${wt}" && git config user.email test@local && git config user.name test && echo hello > a.txt && git add a.txt && git commit -m seed && git branch -M main && git remote add origin "file://${BARE_REPO}" && git push origin main`,
+      { shell: "/bin/bash" },
+    );
+    rmSync(wt, { recursive: true, force: true });
+  });
+
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => {
+    const barePreserve = readFileSync(CONFIG_PATH, "utf8");
+    void barePreserve;
+  });
+
+  it("rejects if project does not exist", () => {
+    rmSync(join(WORKSPACE_DIR, "noproj"), { recursive: true, force: true });
+    const { stderr, code } = runCp([
+      "clone-repo",
+      "--project",
+      "noproj",
+      "--url",
+      `file://${BARE_REPO}`,
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /project not found|does not exist/i);
+  });
+
+  it("clones bare repo into .repos/<group>/<repo>", () => {
+    runCp(["create", "--project", "withRepo", "--confirmed"]);
+
+    const { stdout, code } = runCp([
+      "clone-repo",
+      "--project",
+      "withRepo",
+      "--url",
+      `file://${BARE_REPO}`,
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.project, "withRepo");
+    assert.equal(data.repo, "demo");
+    assert.equal(data.branch, "main");
+    assert.ok(data.local_path.endsWith("/demo"));
+    assert.ok(existsSync(join(data.local_path, ".git")), "cloned .git exists");
+  });
+
+  it("rejects when repo already cloned at target path", () => {
+    const { stderr, code } = runCp([
+      "clone-repo",
+      "--project",
+      "withRepo",
+      "--url",
+      `file://${BARE_REPO}`,
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /already cloned/i);
   });
 });
