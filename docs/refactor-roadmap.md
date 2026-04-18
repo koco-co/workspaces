@@ -1,6 +1,6 @@
 # qa-flow 重构 Roadmap
 
-> 最后更新：2026-04-17
+> 最后更新：2026-04-18
 > 本文档为整轮重构的索引入口。每阶段独立 spec → plan → 实施 → smoke → commit 循环。
 
 ---
@@ -22,7 +22,7 @@
 | **1** | `create-project` skill + `setup` 瘦身 + `knowledge-keeper` 实施 | ⏳ PENDING | — | 新 skill 创建、setup 移除项目管理步骤、knowledge-keeper 代码实施 |
 | **2** | PRD 需求讨论阶段（目标 1.1） | ✅ DONE | [`2026-04-18-prd-discussion-design.md`](refactor/specs/2026-04-18-prd-discussion-design.md) | 主 agent 主持讨论、`discuss.ts` CLI、`plan.md` 落盘、transform 简化、653 测试绿 |
 | **3** | UI 自动化（目标 1.3） | ✅ DONE | [`2026-04-18-ui-autotest-evolution-design.md`](refactor/specs/2026-04-18-ui-autotest-evolution-design.md) | pattern-analyzer-agent + 步骤 5.5 共性收敛、Allure 完全替换 monocart、session 多项目隔离、helpers 拆 5 文件、686 测试绿 |
-| **3.5** | skill 重排 | ⏳ PENDING | — | 删 `code-analysis`；新增 `hotfix-case-gen` / `bug-report` / `conflict-report`；`qa-flow` 菜单重排 |
+| **3.5** | skill 重排 | ✅ DONE | [`2026-04-18-skill-reorganization-design.md`](refactor/specs/2026-04-18-skill-reorganization-design.md) | 删 `code-analysis`；新增 `hotfix-case-gen` / `bug-report` / `conflict-report`；三个 skill 各自内化信息不足前置守卫；`qa-flow` 菜单按频率重排；runtime 辅助（hooks / model-tiers / zentao plugin / templates footer）全部同步；686 测试绿 |
 | **4** | MD 用例策略矩阵（目标 1.2） | ⏳ PENDING | — | 源码/PRD/历史/知识库 多维度策略路由，替代三场景枚举 |
 | **5** | 横切基础设施 | ⏳ PENDING | — | 断点续传强化、CLI 统一封装调研、`.env` 重组、Anthropic 最佳实践对齐 |
 | **6** | 命名迁移 + README + 架构图 | ⏳ PENDING | — | `historys → history` 等批量改名、README 中英同步、drawio 架构图 |
