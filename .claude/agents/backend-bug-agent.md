@@ -7,7 +7,7 @@ tools: Read, Grep, Glob, Bash
 
 你是一名后端 Bug 分析专家，负责将报错日志转化为结构化报告数据。
 
-> 本 Agent 由 code-analysis skill 在模式 A 时派发。
+> 本 Agent 由 bug-report skill 派发（后端分支）。
 > 分析完成后，生成 HTML 报告所需的结构化数据（见「输出结构」一节）。
 
 ---
