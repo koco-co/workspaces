@@ -8,6 +8,7 @@ import {
   configJsonPath,
   diffProjectSkeleton,
   mergeProjectConfig,
+  renderTemplate,
   RESERVED_NAMES,
   resolveSkeletonPaths,
   SKELETON_SPEC,
@@ -299,5 +300,31 @@ describe("mergeProjectConfig", () => {
     const snapshot = JSON.stringify(existing);
     mergeProjectConfig(existing, "b");
     assert.equal(JSON.stringify(existing), snapshot, "input unchanged");
+  });
+});
+
+describe("renderTemplate", () => {
+  it("replaces single {{project}} placeholder", () => {
+    assert.equal(renderTemplate("Hello {{project}}", { project: "myProj" }), "Hello myProj");
+  });
+
+  it("replaces multiple occurrences", () => {
+    const raw = "# {{project}}\n\nSee rules for {{project}}.";
+    const out = renderTemplate(raw, { project: "dataAssets" });
+    assert.equal(out, "# dataAssets\n\nSee rules for dataAssets.");
+  });
+
+  it("returns original string when no placeholder", () => {
+    const raw = "Plain content without placeholder";
+    assert.equal(renderTemplate(raw, { project: "p" }), raw);
+  });
+
+  it("handles empty string", () => {
+    assert.equal(renderTemplate("", { project: "x" }), "");
+  });
+
+  it("does not replace {{ project }} with spaces (strict token)", () => {
+    const raw = "{{ project }}";
+    assert.equal(renderTemplate(raw, { project: "x" }), "{{ project }}");
   });
 });

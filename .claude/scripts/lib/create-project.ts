@@ -211,3 +211,7 @@ export function mergeProjectConfig(
     added: true,
   };
 }
+
+export function renderTemplate(raw: string, vars: { project: string }): string {
+  return raw.split("{{project}}").join(vars.project);
+}
