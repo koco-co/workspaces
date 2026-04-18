@@ -180,3 +180,34 @@ export function diffProjectSkeleton(
     skeleton_complete,
   };
 }
+
+export interface ConfigMergeResult {
+  merged: Record<string, unknown>;
+  added: boolean;
+}
+
+export function mergeProjectConfig(
+  existing: Record<string, unknown>,
+  projectName: string,
+): ConfigMergeResult {
+  const projects = (existing.projects as Record<string, unknown> | undefined) ?? {};
+  if (Object.prototype.hasOwnProperty.call(projects, projectName)) {
+    return {
+      merged: {
+        ...existing,
+        projects: { ...projects },
+      },
+      added: false,
+    };
+  }
+  return {
+    merged: {
+      ...existing,
+      projects: {
+        ...projects,
+        [projectName]: { repo_profiles: {} },
+      },
+    },
+    added: true,
+  };
+}

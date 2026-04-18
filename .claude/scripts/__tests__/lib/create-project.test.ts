@@ -7,6 +7,7 @@ import { after, before, describe, it } from "node:test";
 import {
   configJsonPath,
   diffProjectSkeleton,
+  mergeProjectConfig,
   RESERVED_NAMES,
   resolveSkeletonPaths,
   SKELETON_SPEC,
@@ -230,5 +231,73 @@ describe("diffProjectSkeleton", () => {
     assert.equal(diff.skeleton_complete, false);
     mkdirSync(join(FULL_PROJ, "knowledge", "modules"), { recursive: true });
     writeFileSync(join(FULL_PROJ, "knowledge", "modules", ".gitkeep"), "");
+  });
+});
+
+describe("mergeProjectConfig", () => {
+  it("adds project to empty config", () => {
+    const { merged, added } = mergeProjectConfig({}, "newProj");
+    assert.equal(added, true);
+    assert.deepEqual(merged, {
+      projects: { newProj: { repo_profiles: {} } },
+    });
+  });
+
+  it("adds project alongside existing projects", () => {
+    const existing = {
+      projects: {
+        dataAssets: { repo_profiles: { 岚图: { repos: [] } } },
+      },
+    };
+    const { merged, added } = mergeProjectConfig(existing, "newProj");
+    assert.equal(added, true);
+    assert.deepEqual(
+      (merged as any).projects.dataAssets.repo_profiles,
+      { 岚图: { repos: [] } },
+      "existing project untouched",
+    );
+    assert.deepEqual(
+      (merged as any).projects.newProj,
+      { repo_profiles: {} },
+      "new project registered",
+    );
+  });
+
+  it("skips when project already registered", () => {
+    const existing = {
+      projects: {
+        existProj: { repo_profiles: { foo: { repos: [{ path: "a" }] } } },
+      },
+    };
+    const { merged, added } = mergeProjectConfig(existing, "existProj");
+    assert.equal(added, false);
+    assert.deepEqual(
+      (merged as any).projects.existProj.repo_profiles,
+      { foo: { repos: [{ path: "a" }] } },
+      "existing repo_profiles preserved",
+    );
+  });
+
+  it("preserves top-level keys outside projects", () => {
+    const existing = { otherField: "keepme", projects: {} };
+    const { merged } = mergeProjectConfig(existing, "x");
+    assert.equal((merged as any).otherField, "keepme");
+  });
+
+  it("handles missing projects key", () => {
+    const existing = { someOtherField: 1 };
+    const { merged, added } = mergeProjectConfig(existing, "y");
+    assert.equal(added, true);
+    assert.ok("projects" in merged);
+    assert.deepEqual((merged as any).projects, {
+      y: { repo_profiles: {} },
+    });
+  });
+
+  it("does not mutate the input (immutability)", () => {
+    const existing = { projects: { a: { repo_profiles: {} } } };
+    const snapshot = JSON.stringify(existing);
+    mergeProjectConfig(existing, "b");
+    assert.equal(JSON.stringify(existing), snapshot, "input unchanged");
   });
 });
