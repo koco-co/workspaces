@@ -52,7 +52,7 @@ after(() => {
 
 describe("image-compress --help", () => {
   it("outputs usage information", () => {
-    const { stdout, stderr, code } = run(["--help"]);
+    const { stdout, stderr, code } = run(["compress", "--help"]);
     const output = stdout + stderr;
     assert.equal(code, 0);
     assert.match(output, /image-compress|Compress/i);

@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 import { repoRoot } from "./lib/paths.ts";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -185,117 +185,118 @@ function writerIdToKebab(writerId: string): string {
 
 // ─── Command ───────────────────────────────────────────────────────────────────
 
-const program = new Command("writer-context-builder");
-program.description("按模块切分 PRD，为每个 writer 构建精简上下文");
+function runBuild(opts: {
+  prd: string;
+  testPoints: string;
+  writerId: string;
+  rules?: string;
+  strategyId: string;
+  knowledgeInjection: string;
+  project?: string;
+}): void {
+  const prdPath = resolve(opts.prd);
+  const tpPath = resolve(opts.testPoints);
 
-const buildCmd = program
-  .command("build")
-  .description("Build writer context for a specific module")
-  .requiredOption("--prd <path>", "Path to the PRD Markdown file")
-  .requiredOption("--test-points <path>", "Path to the test-points JSON file")
-  .requiredOption("--writer-id <module>", "Module name (fuzzy-matched against PRD ## headings)")
-  .option("--rules <path>", "Optional path to merged rules JSON")
-  .option("--strategy-id <id>", "Strategy id from router", "S1")
-  .option("--knowledge-injection <mode>", "read-core|read-module|none", "read-core")
-  .option("--project <name>", "Project name (for knowledge-keeper)")
-  .action(
-    (opts: {
-      prd: string;
-      testPoints: string;
-      writerId: string;
-      rules?: string;
-      strategyId: string;
-      knowledgeInjection: string;
-      project?: string;
-    }) => {
-      const prdPath = resolve(opts.prd);
-      const tpPath = resolve(opts.testPoints);
+  // Read PRD
+  let prdContent: string;
+  try {
+    prdContent = readFileSync(prdPath, "utf8");
+  } catch {
+    process.stderr.write(`Error: cannot read PRD file "${prdPath}"\n`);
+    process.exit(1);
+  }
 
-      // Read PRD
-      let prdContent: string;
-      try {
-        prdContent = readFileSync(prdPath, "utf8");
-      } catch {
-        process.stderr.write(`Error: cannot read PRD file "${prdPath}"\n`);
-        process.exit(1);
-      }
+  // Read test-points
+  let testPointsJson: TestPointsJson;
+  try {
+    const raw = readFileSync(tpPath, "utf8");
+    testPointsJson = JSON.parse(raw) as TestPointsJson;
+  } catch {
+    process.stderr.write(`Error: cannot read test-points file "${tpPath}"\n`);
+    process.exit(1);
+  }
 
-      // Read test-points
-      let testPointsJson: TestPointsJson;
-      try {
-        const raw = readFileSync(tpPath, "utf8");
-        testPointsJson = JSON.parse(raw) as TestPointsJson;
-      } catch {
-        process.stderr.write(`Error: cannot read test-points file "${tpPath}"\n`);
-        process.exit(1);
-      }
+  // Read rules (optional)
+  let rules: Record<string, unknown> = {};
+  if (opts.rules) {
+    try {
+      const raw = readFileSync(resolve(opts.rules), "utf8");
+      rules = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      // Non-fatal: fall back to empty rules
+      rules = {};
+    }
+  }
 
-      // Read rules (optional)
-      let rules: Record<string, unknown> = {};
-      if (opts.rules) {
-        try {
-          const raw = readFileSync(resolve(opts.rules), "utf8");
-          rules = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          // Non-fatal: fall back to empty rules
-          rules = {};
-        }
-      }
+  // Split PRD into modules and find matching section
+  const modules = splitPrdIntoModules(prdContent);
+  const matched = findMatchingModule(modules, opts.writerId);
 
-      // Split PRD into modules and find matching section
-      const modules = splitPrdIntoModules(prdContent);
-      const matched = findMatchingModule(modules, opts.writerId);
+  let modulePrdSection: string;
+  let testPoints: unknown[];
+  let fallback: boolean;
 
-      let modulePrdSection: string;
-      let testPoints: unknown[];
-      let fallback: boolean;
+  if (matched !== null) {
+    modulePrdSection = matched.content;
+    testPoints = filterTestPoints(testPointsJson, opts.writerId);
+    fallback = false;
+  } else {
+    // Fallback: return full PRD text
+    modulePrdSection = prdContent.trimEnd();
+    testPoints = [];
+    fallback = true;
+  }
 
-      if (matched !== null) {
-        modulePrdSection = matched.content;
-        testPoints = filterTestPoints(testPointsJson, opts.writerId);
-        fallback = false;
-      } else {
-        // Fallback: return full PRD text
-        modulePrdSection = prdContent.trimEnd();
-        testPoints = [];
-        fallback = true;
-      }
-
-      // Build knowledge payload
-      let knowledge: KnowledgePayload = {};
-      if (opts.knowledgeInjection === "none") {
-        knowledge = {};
-      } else if (opts.project) {
-        if (opts.knowledgeInjection === "read-core") {
-          const core = readKnowledgeCore(opts.project);
-          if (core) knowledge = { core };
-        } else if (opts.knowledgeInjection === "read-module") {
-          const core = readKnowledgeCore(opts.project);
-          const moduleKebab = writerIdToKebab(opts.writerId);
-          const mod = readKnowledgeModule(opts.project, moduleKebab);
-          knowledge = {
-            ...(core ? { core } : {}),
-            ...(mod ? { module: mod } : {}),
-          };
-        }
-      }
-      // else (!opts.project && knowledge-injection !== "none") → knowledge = {}, no error
-
-      const context: WriterContext = {
-        writer_id: opts.writerId,
-        module_prd_section: modulePrdSection,
-        test_points: testPoints,
-        rules,
-        strategy_id: opts.strategyId ?? "S1",
-        knowledge,
-        fallback,
+  // Build knowledge payload
+  let knowledge: KnowledgePayload = {};
+  if (opts.knowledgeInjection === "none") {
+    knowledge = {};
+  } else if (opts.project) {
+    if (opts.knowledgeInjection === "read-core") {
+      const core = readKnowledgeCore(opts.project);
+      if (core) knowledge = { core };
+    } else if (opts.knowledgeInjection === "read-module") {
+      const core = readKnowledgeCore(opts.project);
+      const moduleKebab = writerIdToKebab(opts.writerId);
+      const mod = readKnowledgeModule(opts.project, moduleKebab);
+      knowledge = {
+        ...(core ? { core } : {}),
+        ...(mod ? { module: mod } : {}),
       };
+    }
+  }
+  // else (!opts.project && knowledge-injection !== "none") → knowledge = {}, no error
 
-      process.stdout.write(`${JSON.stringify(context, null, 2)}\n`);
+  const context: WriterContext = {
+    writer_id: opts.writerId,
+    module_prd_section: modulePrdSection,
+    test_points: testPoints,
+    rules,
+    strategy_id: opts.strategyId ?? "S1",
+    knowledge,
+    fallback,
+  };
+
+  process.stdout.write(`${JSON.stringify(context, null, 2)}\n`);
+}
+
+createCli({
+  name: "writer-context-builder",
+  description: "按模块切分 PRD，为每个 writer 构建精简上下文",
+  commands: [
+    {
+      name: "build",
+      description: "Build writer context for a specific module",
+      options: [
+        { flag: "--prd <path>", description: "Path to the PRD Markdown file", required: true },
+        { flag: "--test-points <path>", description: "Path to the test-points JSON file", required: true },
+        { flag: "--writer-id <module>", description: "Module name (fuzzy-matched against PRD ## headings)", required: true },
+        { flag: "--rules <path>", description: "Optional path to merged rules JSON" },
+        { flag: "--strategy-id <id>", description: "Strategy id from router", defaultValue: "S1" },
+        { flag: "--knowledge-injection <mode>", description: "read-core|read-module|none", defaultValue: "read-core" },
+        { flag: "--project <name>", description: "Project name (for knowledge-keeper)" },
+      ],
+      action: runBuild,
     },
-  );
-
-// Silence unused variable warning
-void buildCmd;
-
-program.parse(process.argv);
+  ],
+}).parse(process.argv);

@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 import JSZip from "jszip";
 import { repoRoot, validateFilePath } from "./lib/paths.ts";
 import { loadXmindRules } from "./lib/rules.ts";
@@ -721,40 +721,14 @@ function archiveToJson(
 
 // ─── CLI ─────────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  const program = new Command();
-
-  program
-    .name("xmind-gen")
-    .description(
-      "Convert intermediate JSON or Archive Markdown to .xmind files",
-    )
-    .requiredOption(
-      "--input <path>",
-      "Path to input JSON, MD file, or directory of MD files",
-    )
-    .option(
-      "--output <path>",
-      "Path to output .xmind file (auto-derived for MD input)",
-    )
-    .option("--mode <mode>", "Write mode: create | append | replace", "create")
-    .option("--project <name>", "Project name for XMind root node", "数栈测试")
-    .option(
-      "--version <ver>",
-      "PRD version (e.g. 6.4.9) for root title template",
-    )
-    .option("--json-only", "Only output intermediate JSON (MD input only)")
-    .parse(process.argv);
-
-  const opts = program.opts<{
-    input: string;
-    output?: string;
-    mode: string;
-    project: string;
-    version?: string;
-    jsonOnly?: boolean;
-  }>();
-
+async function runGenerate(opts: {
+  input: string;
+  output?: string;
+  mode: string;
+  project: string;
+  version?: string;
+  jsonOnly?: boolean;
+}): Promise<void> {
   const mode = opts.mode as WriteMode;
   if (!["create", "append", "replace"].includes(mode)) {
     process.stderr.write(
@@ -845,6 +819,43 @@ async function main(): Promise<void> {
   };
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+async function main(): Promise<void> {
+  createCli({
+    name: "xmind-gen",
+    description:
+      "Convert intermediate JSON or Archive Markdown to .xmind files",
+    rootAction: {
+      options: [
+        {
+          flag: "--input <path>",
+          description: "Path to input JSON, MD file, or directory of MD files",
+          required: true,
+        },
+        {
+          flag: "--output <path>",
+          description: "Path to output .xmind file (auto-derived for MD input)",
+        },
+        {
+          flag: "--mode <mode>",
+          description: "Write mode: create | append | replace",
+          defaultValue: "create",
+        },
+        {
+          flag: "--project <name>",
+          description: "Project name for XMind root node",
+          defaultValue: "数栈测试",
+        },
+        {
+          flag: "--version <ver>",
+          description: "PRD version (e.g. 6.4.9) for root title template",
+        },
+        { flag: "--json-only", description: "Only output intermediate JSON (MD input only)" },
+      ],
+      action: runGenerate,
+    },
+  }).parseAsync(process.argv);
 }
 
 async function processMdFile(

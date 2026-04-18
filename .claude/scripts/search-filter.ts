@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,27 +134,25 @@ async function runFilter(opts: {
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const program = new Command();
-
-  program
-    .name("search-filter")
-    .description("Deduplicate, sort, and truncate archive search results");
-
-  program
-    .command("filter")
-    .description(
-      "Filter archive search results: deduplicate by suite_name, sort by case_count desc, truncate to top-N",
-    )
-    .option("--input <file>", "Path to JSON file with search results (default: stdin)")
-    .option("--top <n>", "Maximum number of results to return", "5")
-    .action(
-      async (opts: { input?: string; top: string }) => {
-        const topN = parseInt(opts.top, 10);
-        await runFilter({ input: opts.input, top: topN });
+  createCli({
+    name: "search-filter",
+    description: "Deduplicate, sort, and truncate archive search results",
+    commands: [
+      {
+        name: "filter",
+        description:
+          "Filter archive search results: deduplicate by suite_name, sort by case_count desc, truncate to top-N",
+        options: [
+          { flag: "--input <file>", description: "Path to JSON file with search results (default: stdin)" },
+          { flag: "--top <n>", description: "Maximum number of results to return", defaultValue: "5" },
+        ],
+        action: async (opts: { input?: string; top: string }) => {
+          const topN = parseInt(opts.top, 10);
+          await runFilter({ input: opts.input, top: topN });
+        },
       },
-    );
-
-  program.parse(process.argv);
+    ],
+  }).parseAsync(process.argv);
 }
 
 main().catch((err) => {

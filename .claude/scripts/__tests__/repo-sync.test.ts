@@ -29,7 +29,7 @@ function run(args: string[]): { stdout: string; stderr: string; code: number } {
 
 describe("repo-sync --help", () => {
   it("outputs usage information", () => {
-    const { stdout, stderr, code } = run(["--help"]);
+    const { stdout, stderr, code } = run(["sync", "--help"]);
     const output = stdout + stderr;
     assert.equal(code, 0);
     assert.match(output, /repo-sync|Clone|update/i);

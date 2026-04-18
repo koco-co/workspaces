@@ -12,7 +12,7 @@
 
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 import JSZip from "jszip";
 import { repoRoot, validateFilePath } from "./lib/paths.ts";
 
@@ -505,93 +505,96 @@ async function cmdDelete(opts: {
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const program = new Command();
-
-  program
-    .name("xmind-edit")
-    .description(
+  createCli({
+    name: "xmind-edit",
+    description:
       "Search, view, patch, add, and delete test cases in .xmind files",
-    );
-
-  program
-    .command("search <query>")
-    .description(
-      "Search for test cases by keyword across all .xmind files in a directory",
-    )
-    .option("--project <name>", "Project name (e.g. dataAssets)")
-    .option("--dir <dir>", "Directory to search in (overrides project default)")
-    .option("--limit <n>", "Maximum number of results", "20")
-    .action(async (query: string, opts: { project?: string; dir?: string; limit?: string }) => {
-      await cmdSearch(query, {
-        dir: opts.dir,
-        project: opts.project,
-        limit: Number(opts.limit ?? 20),
-      });
-    });
-
-  program
-    .command("show")
-    .description("Show full details of a test case in a specific .xmind file")
-    .option("--project <name>", "Project name (unused, for consistency)")
-    .requiredOption("--file <path>", "Path to the .xmind file")
-    .requiredOption("--title <query>", "Title query to find the test case")
-    .action(async (opts: { file: string; title: string }) => {
-      await cmdShow(opts);
-    });
-
-  program
-    .command("patch")
-    .description("Patch a test case (merge provided fields, keep others)")
-    .option("--project <name>", "Project name (unused, for consistency)")
-    .requiredOption("--file <path>", "Path to the .xmind file")
-    .requiredOption("--title <query>", "Title query to find the test case")
-    .requiredOption("--case-json <json>", "JSON with fields to update")
-    .option("--dry-run", "Preview the patch without modifying the file")
-    .action(
-      async (opts: {
-        file: string;
-        title: string;
-        caseJson: string;
-        dryRun?: boolean;
-      }) => {
-        await cmdPatch(opts);
+    commands: [
+      {
+        name: "search",
+        description:
+          "Search for test cases by keyword across all .xmind files in a directory",
+        arguments: [
+          { name: "query", description: "Keyword to search for", required: true },
+        ],
+        options: [
+          { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+          { flag: "--dir <dir>", description: "Directory to search in (overrides project default)" },
+          { flag: "--limit <n>", description: "Maximum number of results", defaultValue: "20" },
+        ],
+        action: async (opts: { query: string; project?: string; dir?: string; limit?: string }) => {
+          await cmdSearch(opts.query, {
+            dir: opts.dir,
+            project: opts.project,
+            limit: Number(opts.limit ?? 20),
+          });
+        },
       },
-    );
-
-  program
-    .command("add")
-    .description("Add a new test case under a parent topic")
-    .option("--project <name>", "Project name (unused, for consistency)")
-    .requiredOption("--file <path>", "Path to the .xmind file")
-    .requiredOption("--parent <query>", "Title query to find the parent topic")
-    .requiredOption("--case-json <json>", "JSON of the new test case")
-    .option("--dry-run", "Preview the new case without modifying the file")
-    .action(
-      async (opts: {
-        file: string;
-        parent: string;
-        caseJson: string;
-        dryRun?: boolean;
-      }) => {
-        await cmdAdd(opts);
+      {
+        name: "show",
+        description: "Show full details of a test case in a specific .xmind file",
+        options: [
+          { flag: "--project <name>", description: "Project name (unused, for consistency)" },
+          { flag: "--file <path>", description: "Path to the .xmind file", required: true },
+          { flag: "--title <query>", description: "Title query to find the test case", required: true },
+        ],
+        action: async (opts: { file: string; title: string }) => {
+          await cmdShow(opts);
+        },
       },
-    );
-
-  program
-    .command("delete")
-    .description("Delete a test case from a .xmind file")
-    .option("--project <name>", "Project name (unused, for consistency)")
-    .requiredOption("--file <path>", "Path to the .xmind file")
-    .requiredOption("--title <query>", "Title query to find the test case")
-    .option(
-      "--dry-run",
-      "Show what would be deleted without modifying the file",
-    )
-    .action(async (opts: { file: string; title: string; dryRun?: boolean }) => {
-      await cmdDelete(opts);
-    });
-
-  await program.parseAsync(process.argv);
+      {
+        name: "patch",
+        description: "Patch a test case (merge provided fields, keep others)",
+        options: [
+          { flag: "--project <name>", description: "Project name (unused, for consistency)" },
+          { flag: "--file <path>", description: "Path to the .xmind file", required: true },
+          { flag: "--title <query>", description: "Title query to find the test case", required: true },
+          { flag: "--case-json <json>", description: "JSON with fields to update", required: true },
+          { flag: "--dry-run", description: "Preview the patch without modifying the file" },
+        ],
+        action: async (opts: {
+          file: string;
+          title: string;
+          caseJson: string;
+          dryRun?: boolean;
+        }) => {
+          await cmdPatch(opts);
+        },
+      },
+      {
+        name: "add",
+        description: "Add a new test case under a parent topic",
+        options: [
+          { flag: "--project <name>", description: "Project name (unused, for consistency)" },
+          { flag: "--file <path>", description: "Path to the .xmind file", required: true },
+          { flag: "--parent <query>", description: "Title query to find the parent topic", required: true },
+          { flag: "--case-json <json>", description: "JSON of the new test case", required: true },
+          { flag: "--dry-run", description: "Preview the new case without modifying the file" },
+        ],
+        action: async (opts: {
+          file: string;
+          parent: string;
+          caseJson: string;
+          dryRun?: boolean;
+        }) => {
+          await cmdAdd(opts);
+        },
+      },
+      {
+        name: "delete",
+        description: "Delete a test case from a .xmind file",
+        options: [
+          { flag: "--project <name>", description: "Project name (unused, for consistency)" },
+          { flag: "--file <path>", description: "Path to the .xmind file", required: true },
+          { flag: "--title <query>", description: "Title query to find the test case", required: true },
+          { flag: "--dry-run", description: "Show what would be deleted without modifying the file" },
+        ],
+        action: async (opts: { file: string; title: string; dryRun?: boolean }) => {
+          await cmdDelete(opts);
+        },
+      },
+    ],
+  }).parseAsync(process.argv);
 }
 
 main().catch((err) => {

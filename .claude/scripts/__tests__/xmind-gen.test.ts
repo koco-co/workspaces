@@ -61,10 +61,10 @@ after(() => {
 
 describe("xmind-gen.ts --help", () => {
   it("outputs usage information", () => {
-    const { stdout, stderr, code } = run(["--help"]);
+    const { stdout, stderr, code } = run(["generate", "--help"]);
     const output = stdout + stderr;
     assert.equal(code, 0);
-    assert.match(output, /xmind-gen/);
+    assert.match(output, /xmind-gen|Convert/);
     assert.match(output, /--input/);
     assert.match(output, /--output/);
     assert.match(output, /--mode/);

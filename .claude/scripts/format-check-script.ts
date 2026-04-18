@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -386,29 +386,32 @@ function checkArchive(filePath: string): CheckOutput {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-const program = new Command();
+function runCheck(opts: { input: string }): void {
+  const inputPath = opts.input;
+  if (!existsSync(inputPath)) {
+    process.stderr.write(`Error: File not found: ${inputPath}\n`);
+    process.exit(1);
+  }
+  try {
+    const output = checkArchive(inputPath);
+    process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+  } catch (err) {
+    process.stderr.write(`Error: ${String(err)}\n`);
+    process.exit(1);
+  }
+}
 
-program
-  .name("format-check-script")
-  .description("Archive MD 格式规则确定性检查");
-
-program
-  .command("check")
-  .description("检查 Archive MD 文件的格式规则")
-  .requiredOption("--input <path>", "Archive MD 文件路径")
-  .action((opts: { input: string }) => {
-    const inputPath = opts.input;
-    if (!existsSync(inputPath)) {
-      process.stderr.write(`Error: File not found: ${inputPath}\n`);
-      process.exit(1);
-    }
-    try {
-      const output = checkArchive(inputPath);
-      process.stdout.write(JSON.stringify(output, null, 2) + "\n");
-    } catch (err) {
-      process.stderr.write(`Error: ${String(err)}\n`);
-      process.exit(1);
-    }
-  });
-
-program.parse(process.argv);
+createCli({
+  name: "format-check-script",
+  description: "Archive MD 格式规则确定性检查",
+  commands: [
+    {
+      name: "check",
+      description: "检查 Archive MD 文件的格式规则",
+      options: [
+        { flag: "--input <path>", description: "Archive MD 文件路径", required: true },
+      ],
+      action: runCheck,
+    },
+  ],
+}).parse(process.argv);

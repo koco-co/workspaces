@@ -15,10 +15,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
-import { Command } from "commander";
 import JSZip from "jszip";
+import { createCli } from "./lib/cli-runner.ts";
 import { buildMarkdown, todayString } from "./lib/frontmatter.ts";
-import { getEnv } from "./lib/env.ts";
 import { currentYYYYMM, repoRoot, validateFilePath } from "./lib/paths.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1431,71 +1430,74 @@ async function convertFile(
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const program = new Command("history-convert");
-program
-  .description("Convert historical CSV/XMind files to Archive Markdown")
-  .requiredOption("--path <file-or-dir>", "File or directory to convert")
-  .requiredOption("--project <name>", "Project name (e.g. dataAssets)")
-  .option("--module <key>", "Filter files by module name keyword")
-  .option("--version <ver>", "PRD version (e.g. v6.4.8)")
-  .option("--detect", "Scan only, report what would be converted (no write)")
-  .option("--force", "Overwrite existing archive files")
-  .option("--no-split", "Merge all L1 nodes into a single archive file instead of splitting by L1")
-  .action(
-    async (opts: {
-      path: string;
-      project: string;
-      module?: string;
-      version?: string;
-      detect?: boolean;
-      force?: boolean;
-      split?: boolean;
-    }) => {
-      const inputPath = validateFilePath(opts.path, [repoRoot()]);
-      const detect = opts.detect === true;
-      const force = opts.force === true;
-      const noSplit = opts.split === false;
-      const prdVersion = opts.version;
+async function runConvert(opts: {
+  path: string;
+  project: string;
+  module?: string;
+  version?: string;
+  detect?: boolean;
+  force?: boolean;
+  split?: boolean;
+}): Promise<void> {
+  const inputPath = validateFilePath(opts.path, [repoRoot()]);
+  const detect = opts.detect === true;
+  const force = opts.force === true;
+  const noSplit = opts.split === false;
+  const prdVersion = opts.version;
 
-      // Collect files to process
-      let files: string[] = [];
-      if (!existsSync(inputPath)) {
-        process.stderr.write(`Error: path not found: "${inputPath}"\n`);
-        process.exit(1);
-      }
+  // Collect files to process
+  let files: string[] = [];
+  if (!existsSync(inputPath)) {
+    process.stderr.write(`Error: path not found: "${inputPath}"\n`);
+    process.exit(1);
+  }
 
-      const stat = statSync(inputPath);
-      if (stat.isDirectory()) {
-        files = scanDirectory(inputPath, opts.module);
-      } else {
-        files = [inputPath];
-      }
+  const stat = statSync(inputPath);
+  if (stat.isDirectory()) {
+    files = scanDirectory(inputPath, opts.module);
+  } else {
+    files = [inputPath];
+  }
 
-      if (detect) {
-        const entries: DetectEntry[] = files.map((f) => ({
-          path: f,
-          type: extname(f).toLowerCase() === ".csv" ? "csv" : "xmind",
-          outputDir: computeOutputDir(opts.project),
-        }));
-        process.stdout.write(`${JSON.stringify(entries, null, 2)}\n`);
-        return;
-      }
+  if (detect) {
+    const entries: DetectEntry[] = files.map((f) => ({
+      path: f,
+      type: extname(f).toLowerCase() === ".csv" ? "csv" : "xmind",
+      outputDir: computeOutputDir(opts.project),
+    }));
+    process.stdout.write(`${JSON.stringify(entries, null, 2)}\n`);
+    return;
+  }
 
-      const results: FileConvertResult[] = [];
-      for (const f of files) {
-        const fileResults = await convertFile(f, force, opts.project, prdVersion, noSplit);
-        results.push(...fileResults);
-      }
+  const results: FileConvertResult[] = [];
+  for (const f of files) {
+    const fileResults = await convertFile(f, force, opts.project, prdVersion, noSplit);
+    results.push(...fileResults);
+  }
 
-      const out: ConvertOutput = {
-        converted: results.filter((r) => r.status === "converted").length,
-        skipped: results.filter((r) => r.status === "skipped").length,
-        failed: results.filter((r) => r.status === "failed").length,
-        files: results,
-      };
+  const out: ConvertOutput = {
+    converted: results.filter((r) => r.status === "converted").length,
+    skipped: results.filter((r) => r.status === "skipped").length,
+    failed: results.filter((r) => r.status === "failed").length,
+    files: results,
+  };
 
-      process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
-    },
-  );
+  process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+}
 
-program.parseAsync(process.argv);
+createCli({
+  name: "history-convert",
+  description: "Convert historical CSV/XMind files to Archive Markdown",
+  rootAction: {
+    options: [
+      { flag: "--path <file-or-dir>", description: "File or directory to convert", required: true },
+      { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
+      { flag: "--module <key>", description: "Filter files by module name keyword" },
+      { flag: "--version <ver>", description: "PRD version (e.g. v6.4.8)" },
+      { flag: "--detect", description: "Scan only, report what would be converted (no write)" },
+      { flag: "--force", description: "Overwrite existing archive files" },
+      { flag: "--no-split", description: "Merge all L1 nodes into a single archive file instead of splitting by L1" },
+    ],
+    action: runConvert,
+  },
+}).parseAsync(process.argv);

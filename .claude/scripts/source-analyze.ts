@@ -7,7 +7,7 @@
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,32 +182,38 @@ function analyzeRepo(repoPath: string, keywords: string[]): AnalyzeOutput {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-const program = new Command("source-analyze");
-program.description("批量搜索源码仓库，返回结构化分析结果");
+function runAnalyze(opts: { repo: string; keywords: string }): void {
+  const keywords = opts.keywords
+    .split(",")
+    .map((k) => k.trim())
+    .filter((k) => k.length > 0);
 
-program
-  .command("analyze")
-  .description("Analyze a repo directory for keyword matches")
-  .requiredOption("--repo <path>", "Path to the source code repository")
-  .requiredOption("--keywords <keywords>", "Comma-separated list of keywords to search")
-  .action((opts: { repo: string; keywords: string }) => {
-    const keywords = opts.keywords
-      .split(",")
-      .map((k) => k.trim())
-      .filter((k) => k.length > 0);
+  let result: AnalyzeOutput;
+  try {
+    result = analyzeRepo(opts.repo, keywords);
+  } catch (error) {
+    process.stderr.write(
+      `[source-analyze] Error: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    process.exit(1);
+    return;
+  }
 
-    let result: AnalyzeOutput;
-    try {
-      result = analyzeRepo(opts.repo, keywords);
-    } catch (error) {
-      process.stderr.write(
-        `[source-analyze] Error: ${error instanceof Error ? error.message : String(error)}\n`,
-      );
-      process.exit(1);
-      return;
-    }
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
 
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  });
-
-program.parse(process.argv);
+createCli({
+  name: "source-analyze",
+  description: "批量搜索源码仓库，返回结构化分析结果",
+  commands: [
+    {
+      name: "analyze",
+      description: "Analyze a repo directory for keyword matches",
+      options: [
+        { flag: "--repo <path>", description: "Path to the source code repository", required: true },
+        { flag: "--keywords <keywords>", description: "Comma-separated list of keywords to search", required: true },
+      ],
+      action: runAnalyze,
+    },
+  ],
+}).parse(process.argv);

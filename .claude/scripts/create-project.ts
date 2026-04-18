@@ -10,8 +10,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Command } from "commander";
-import { initEnv } from "./lib/env.ts";
+import { createCli } from "./lib/cli-runner.ts";
 import {
   configJsonPath,
   diffProjectSkeleton,
@@ -22,8 +21,6 @@ import {
   validateProjectName,
 } from "./lib/create-project.ts";
 import { knowledgeDir, parseGitUrl, projectDir, reposDir } from "./lib/paths.ts";
-
-initEnv();
 
 function repoRoot(): string {
   return resolve(fileURLToPath(import.meta.url), "../../..");
@@ -278,40 +275,43 @@ function runCloneRepo(project: string, url: string, branch: string): void {
   );
 }
 
-const program = new Command();
-program
-  .name("create-project")
-  .description("创建新项目或补齐残缺项目骨架")
-  .version("1.0.0");
-
-program
-  .command("scan")
-  .description("扫描项目骨架与目标态的差异")
-  .requiredOption("--project <name>", "项目名")
-  .action((opts: { project: string }) => {
-    runScan(opts.project);
-  });
-
-program
-  .command("create")
-  .description("创建或补齐项目骨架")
-  .requiredOption("--project <name>", "项目名")
-  .option("--dry-run", "预览将要创建的内容，不落盘")
-  .option("--confirmed", "真实执行写入")
-  .action((opts: { project: string; dryRun?: boolean; confirmed?: boolean }) => {
-    runCreate(opts.project, opts.dryRun === true, opts.confirmed === true);
-  });
-
-program
-  .command("clone-repo")
-  .description("克隆源码仓库到项目 .repos 目录")
-  .requiredOption("--project <name>", "项目名")
-  .requiredOption("--url <git-url>", "Git URL")
-  .option("--branch <branch>", "分支（默认 main）", "")
-  .action(
-    (opts: { project: string; url: string; branch?: string }) => {
-      runCloneRepo(opts.project, opts.url, opts.branch ?? "");
+createCli({
+  name: "create-project",
+  description: "创建新项目或补齐残缺项目骨架",
+  commands: [
+    {
+      name: "scan",
+      description: "扫描项目骨架与目标态的差异",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+      ],
+      action: (opts: { project: string }) => {
+        runScan(opts.project);
+      },
     },
-  );
-
-program.parse(process.argv);
+    {
+      name: "create",
+      description: "创建或补齐项目骨架",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--dry-run", description: "预览将要创建的内容，不落盘" },
+        { flag: "--confirmed", description: "真实执行写入" },
+      ],
+      action: (opts: { project: string; dryRun?: boolean; confirmed?: boolean }) => {
+        runCreate(opts.project, opts.dryRun === true, opts.confirmed === true);
+      },
+    },
+    {
+      name: "clone-repo",
+      description: "克隆源码仓库到项目 .repos 目录",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--url <git-url>", description: "Git URL", required: true },
+        { flag: "--branch <branch>", description: "分支（默认 main）", defaultValue: "" },
+      ],
+      action: (opts: { project: string; url: string; branch?: string }) => {
+        runCloneRepo(opts.project, opts.url, opts.branch ?? "");
+      },
+    },
+  ],
+}).parse(process.argv);

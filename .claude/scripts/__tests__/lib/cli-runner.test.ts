@@ -189,6 +189,117 @@ describe("createCli", () => {
     assert.equal(process.env["__CLI_RUNNER_TEST_SENTINEL__"], undefined);
   });
 
+  it("supports rootAction with positional arguments", async () => {
+    const { createCli } = await import("../../lib/cli-runner.ts");
+    const captured: Record<string, unknown>[] = [];
+
+    const program = createCli({
+      name: "root-tool",
+      description: "root",
+      initEnv: false,
+      rootAction: {
+        arguments: [{ name: "source", description: "source path", required: true }],
+        options: [{ flag: "-o, --output <p>", description: "out" }],
+        action: (opts) => {
+          captured.push(opts);
+        },
+      },
+    });
+
+    await program.parseAsync(["node", "root-tool", "input.html", "-o", "out.pdf"]);
+    assert.equal(captured.length, 1);
+    assert.equal((captured[0] as { source: string }).source, "input.html");
+    assert.equal((captured[0] as { output: string }).output, "out.pdf");
+  });
+
+  it("supports rootAction without positional arguments (flag-only root CLI)", async () => {
+    const { createCli } = await import("../../lib/cli-runner.ts");
+    const captured: Record<string, unknown>[] = [];
+
+    const program = createCli({
+      name: "flag-only",
+      description: "no positional",
+      initEnv: false,
+      rootAction: {
+        options: [{ flag: "--url <u>", description: "url", required: true }],
+        action: (opts) => {
+          captured.push(opts);
+        },
+      },
+    });
+
+    await program.parseAsync(["node", "flag-only", "--url", "http://x"]);
+    assert.equal((captured[0] as { url: string }).url, "http://x");
+  });
+
+  it("supports subcommand with positional argument", async () => {
+    const { createCli } = await import("../../lib/cli-runner.ts");
+    const captured: Record<string, unknown>[] = [];
+
+    const program = createCli({
+      name: "pos-tool",
+      description: "pos",
+      initEnv: false,
+      commands: [
+        {
+          name: "search",
+          description: "search for keyword",
+          arguments: [{ name: "query", description: "search query", required: true }],
+          options: [
+            { flag: "--project <p>", description: "project", required: true },
+          ],
+          action: (opts) => {
+            captured.push(opts);
+          },
+        },
+      ],
+    });
+
+    await program.parseAsync([
+      "node",
+      "pos-tool",
+      "search",
+      "hello",
+      "--project",
+      "dataAssets",
+    ]);
+    assert.equal((captured[0] as { query: string }).query, "hello");
+    assert.equal((captured[0] as { project: string }).project, "dataAssets");
+  });
+
+  it("supports hybrid (rootAction + commands) — subcommands take precedence", async () => {
+    const { createCli } = await import("../../lib/cli-runner.ts");
+    const log: string[] = [];
+
+    const program = createCli({
+      name: "hybrid",
+      description: "hybrid",
+      initEnv: false,
+      rootAction: {
+        options: [{ flag: "--url <u>", description: "url" }],
+        action: () => {
+          log.push("root");
+        },
+      },
+      commands: [
+        {
+          name: "named",
+          description: "named sub",
+          action: () => {
+            log.push("named");
+          },
+        },
+      ],
+    });
+
+    await program.parseAsync(["node", "hybrid", "named"]);
+    assert.deepEqual(log, ["named"]);
+
+    log.length = 0;
+    await program.parseAsync(["node", "hybrid", "--url", "http://x"]);
+    assert.deepEqual(log, ["root"]);
+  });
+
   it("applies LOG_LEVEL env var to logger", async () => {
     process.env["LOG_LEVEL"] = "error";
     const { createCli } = await import("../../lib/cli-runner.ts");

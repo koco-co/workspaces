@@ -66,7 +66,7 @@ after(() => {
 
 describe("history-convert --help", () => {
   it("outputs usage information", () => {
-    const { stdout, stderr, code } = run(["--help"]);
+    const { stdout, stderr, code } = run(["convert", "--help"]);
     const output = stdout + stderr;
     assert.equal(code, 0);
     assert.match(output, /history-convert|Convert/i);

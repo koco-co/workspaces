@@ -9,7 +9,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { readFileSync } from "node:fs";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -533,17 +533,16 @@ if (import.meta.main) {
   const REPO_ROOT = resolve(import.meta.dirname, "../..");
   const WORKSPACE_ROOT = join(REPO_ROOT, "workspace");
 
-  const program = new Command();
-
-  program
-    .name("migrate-helpers-split")
-    .description(
+  createCli({
+    name: "migrate-helpers-split",
+    description:
       "Split workspace/{project}/tests/helpers/test-setup.ts into 5 focused files",
-    )
-    .option("--project <name>", "Project name (e.g. dataAssets)")
-    .option("--dry-run", "Preview without writing any files", false)
-    .action(
-      (opts: { project?: string; dryRun: boolean }) => {
+    rootAction: {
+      options: [
+        { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+        { flag: "--dry-run", description: "Preview without writing any files", defaultValue: false },
+      ],
+      action: (opts: { project?: string; dryRun: boolean }) => {
         try {
           const project = opts.project ?? "dataAssets";
           const result = runSplit({
@@ -559,7 +558,6 @@ if (import.meta.main) {
           process.exit(1);
         }
       },
-    );
-
-  program.parse(process.argv);
+    },
+  }).parse(process.argv);
 }

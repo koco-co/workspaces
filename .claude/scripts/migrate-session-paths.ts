@@ -23,7 +23,7 @@ import {
   statSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 interface MigrationResult {
   readonly source: string;
@@ -119,40 +119,40 @@ export function applyMigration(
 }
 
 if (import.meta.main) {
-  const program = new Command();
-
-  program
-    .name("migrate-session-paths")
-    .description(
+  createCli({
+    name: "migrate-session-paths",
+    description:
       "Migrate .auth/session-*.json (legacy) to .auth/{project}/session-*.json (multi-project layout)",
-    )
-    .option("--project <name>", "Target project (default: auto-detect)")
-    .option("--dry-run", "Print migration plan without applying", false)
-    .action((opts: { project?: string; dryRun: boolean }) => {
-      let project: string;
-      try {
-        project = resolveProject(opts);
-      } catch (err) {
-        process.stderr.write(`[migrate-session-paths] ${err}\n`);
-        process.exit(1);
-      }
+    rootAction: {
+      options: [
+        { flag: "--project <name>", description: "Target project (default: auto-detect)" },
+        { flag: "--dry-run", description: "Print migration plan without applying", defaultValue: false },
+      ],
+      action: (opts: { project?: string; dryRun: boolean }) => {
+        let project: string;
+        try {
+          project = resolveProject(opts);
+        } catch (err) {
+          process.stderr.write(`[migrate-session-paths] ${err}\n`);
+          process.exit(1);
+        }
 
-      const authDir = join(repoRoot(), ".auth");
-      const plan = planMigration(authDir, project);
+        const authDir = join(repoRoot(), ".auth");
+        const plan = planMigration(authDir, project);
 
-      if (plan.length === 0) {
+        if (plan.length === 0) {
+          process.stdout.write(
+            `${JSON.stringify({ project, migrations: [], message: "no legacy session files" }, null, 2)}\n`,
+          );
+          return;
+        }
+
+        const results = applyMigration(plan, { dryRun: opts.dryRun });
+
         process.stdout.write(
-          `${JSON.stringify({ project, migrations: [], message: "no legacy session files" }, null, 2)}\n`,
+          `${JSON.stringify({ project, migrations: results }, null, 2)}\n`,
         );
-        return;
-      }
-
-      const results = applyMigration(plan, { dryRun: opts.dryRun });
-
-      process.stdout.write(
-        `${JSON.stringify({ project, migrations: results }, null, 2)}\n`,
-      );
-    });
-
-  program.parse(process.argv);
+      },
+    },
+  }).parse(process.argv);
 }

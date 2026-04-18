@@ -7,7 +7,7 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 import type { IntermediateJson, TestCase, TestStep } from "./lib/types.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -187,53 +187,56 @@ function applyFixes(
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-const program = new Command();
+function runFix(opts: { input: string; issues: string; output: string }): void {
+  const inputPath = resolve(opts.input);
+  const issuesPath = resolve(opts.issues);
+  const outputPath = resolve(opts.output);
 
-program
-  .name("auto-fixer")
-  .description("对 reviewer 审查发现的规则性问题执行自动修正");
+  let writerData: IntermediateJson;
+  let issuesData: IssuesJson;
 
-program
-  .command("fix")
-  .description("执行自动修正")
-  .requiredOption("--input <path>", "writer JSON 输入路径")
-  .requiredOption("--issues <path>", "issues JSON 输入路径")
-  .requiredOption("--output <path>", "修正后 JSON 输出路径")
-  .action((opts: { input: string; issues: string; output: string }) => {
-    const inputPath = resolve(opts.input);
-    const issuesPath = resolve(opts.issues);
-    const outputPath = resolve(opts.output);
+  try {
+    writerData = JSON.parse(readFileSync(inputPath, "utf8")) as IntermediateJson;
+  } catch (error) {
+    process.stderr.write(`Error reading writer JSON: ${error}\n`);
+    process.exit(1);
+  }
 
-    let writerData: IntermediateJson;
-    let issuesData: IssuesJson;
+  try {
+    issuesData = JSON.parse(readFileSync(issuesPath, "utf8")) as IssuesJson;
+  } catch (error) {
+    process.stderr.write(`Error reading issues JSON: ${error}\n`);
+    process.exit(1);
+  }
 
-    try {
-      writerData = JSON.parse(readFileSync(inputPath, "utf8")) as IntermediateJson;
-    } catch (error) {
-      process.stderr.write(`Error reading writer JSON: ${error}\n`);
-      process.exit(1);
-    }
+  const { result, report } = applyFixes(writerData, issuesData);
 
-    try {
-      issuesData = JSON.parse(readFileSync(issuesPath, "utf8")) as IssuesJson;
-    } catch (error) {
-      process.stderr.write(`Error reading issues JSON: ${error}\n`);
-      process.exit(1);
-    }
+  try {
+    writeFileSync(outputPath, JSON.stringify(result, null, 2), "utf8");
+  } catch (error) {
+    process.stderr.write(`Error writing output: ${error}\n`);
+    process.exit(1);
+  }
 
-    const { result, report } = applyFixes(writerData, issuesData);
+  process.stdout.write(JSON.stringify(report) + "\n");
+}
 
-    try {
-      writeFileSync(outputPath, JSON.stringify(result, null, 2), "utf8");
-    } catch (error) {
-      process.stderr.write(`Error writing output: ${error}\n`);
-      process.exit(1);
-    }
-
-    process.stdout.write(JSON.stringify(report) + "\n");
-  });
-
-program.parseAsync(process.argv).catch((err) => {
+createCli({
+  name: "auto-fixer",
+  description: "对 reviewer 审查发现的规则性问题执行自动修正",
+  commands: [
+    {
+      name: "fix",
+      description: "执行自动修正",
+      options: [
+        { flag: "--input <path>", description: "writer JSON 输入路径", required: true },
+        { flag: "--issues <path>", description: "issues JSON 输入路径", required: true },
+        { flag: "--output <path>", description: "修正后 JSON 输出路径", required: true },
+      ],
+      action: runFix,
+    },
+  ],
+}).parseAsync(process.argv).catch((err) => {
   process.stderr.write(`Fatal: ${err}\n`);
   process.exit(1);
 });

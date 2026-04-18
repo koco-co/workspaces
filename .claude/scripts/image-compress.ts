@@ -3,14 +3,14 @@
  * image-compress.ts — Compress images larger than max size using macOS `sips`.
  *
  * Usage:
- *   bun run .claude/scripts/image-compress.ts --dir <path> [--max-size 2000] [--dry-run]
+ *   bun run .claude/scripts/image-compress.ts compress --dir <path> [--max-size 2000] [--dry-run]
  *   bun run .claude/scripts/image-compress.ts --help
  */
 
 import { execSync } from "node:child_process";
 import { readdirSync, statSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -81,59 +81,72 @@ function scanImageFiles(dir: string): string[] {
   }
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Action ───────────────────────────────────────────────────────────────────
 
-const program = new Command("image-compress");
-program
-  .description("Compress images larger than max size using macOS sips")
-  .requiredOption(
-    "--dir <path>",
-    "Directory to scan for images (non-recursive)",
-  )
-  .option("--max-size <pixels>", "Maximum dimension in pixels", "2000")
-  .option("--dry-run", "Only report what would be compressed, don't write")
-  .action((opts: { dir: string; maxSize: string; dryRun?: boolean }) => {
-    if (!isSipsAvailable()) {
-      const out: SipsUnavailableOutput = {
-        error: "sips not available on this platform",
-        skipped: true,
-      };
-      process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
-      process.exit(0);
-    }
-
-    const maxSize = Number.parseInt(opts.maxSize, 10);
-    const dryRun = opts.dryRun === true;
-    const files = scanImageFiles(opts.dir);
-
-    let processed = 0;
-    let skipped = 0;
-    const results: FileResult[] = [];
-
-    for (const filePath of files) {
-      const dims = getImageDimensions(filePath);
-      if (!dims) {
-        skipped++;
-        continue;
-      }
-
-      const { width, height } = dims;
-      const original = `${width}x${height}`;
-
-      if (width > maxSize || height > maxSize) {
-        if (!dryRun) {
-          compressImage(filePath, maxSize);
-        }
-        processed++;
-        results.push({ path: filePath, original, action: "compressed" });
-      } else {
-        skipped++;
-        results.push({ path: filePath, original, action: "skipped" });
-      }
-    }
-
-    const out: Output = { processed, skipped, files: results };
+function runCompress(opts: { dir: string; maxSize: string; dryRun?: boolean }): void {
+  if (!isSipsAvailable()) {
+    const out: SipsUnavailableOutput = {
+      error: "sips not available on this platform",
+      skipped: true,
+    };
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
-  });
+    process.exit(0);
+  }
 
-program.parse(process.argv);
+  const maxSize = Number.parseInt(opts.maxSize, 10);
+  const dryRun = opts.dryRun === true;
+  const files = scanImageFiles(opts.dir);
+
+  let processed = 0;
+  let skipped = 0;
+  const results: FileResult[] = [];
+
+  for (const filePath of files) {
+    const dims = getImageDimensions(filePath);
+    if (!dims) {
+      skipped++;
+      continue;
+    }
+
+    const { width, height } = dims;
+    const original = `${width}x${height}`;
+
+    if (width > maxSize || height > maxSize) {
+      if (!dryRun) {
+        compressImage(filePath, maxSize);
+      }
+      processed++;
+      results.push({ path: filePath, original, action: "compressed" });
+    } else {
+      skipped++;
+      results.push({ path: filePath, original, action: "skipped" });
+    }
+  }
+
+  const out: Output = { processed, skipped, files: results };
+  process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
+}
+
+createCli({
+  name: "image-compress",
+  description: "Compress images larger than max size using macOS sips",
+  rootAction: {
+    options: [
+      {
+        flag: "--dir <path>",
+        description: "Directory to scan for images (non-recursive)",
+        required: true,
+      },
+      {
+        flag: "--max-size <pixels>",
+        description: "Maximum dimension in pixels",
+        defaultValue: "2000",
+      },
+      {
+        flag: "--dry-run",
+        description: "Only report what would be compressed, don't write",
+      },
+    ],
+    action: runCompress,
+  },
+}).parse(process.argv);

@@ -7,8 +7,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { Command } from "commander";
-import { initEnv } from "./lib/env.ts";
+import { createCli } from "./lib/cli-runner.ts";
 import { getEnv } from "./lib/env.ts";
 import { repoRoot, projectRulesDir } from "./lib/paths.ts";
 
@@ -90,21 +89,22 @@ function loadRules(projectName: string): RuleMap {
   return mergeRuleMaps(globalRules, projectRules);
 }
 
-initEnv();
+function runLoad(opts: { project: string }): void {
+  const merged = loadRules(opts.project);
+  process.stdout.write(JSON.stringify(merged, null, 2) + "\n");
+}
 
-const program = new Command();
-
-program
-  .name("rule-loader")
-  .description("Load and merge multi-level rules, output JSON");
-
-program
-  .command("load")
-  .description("Load rules for a project and output merged JSON to stdout")
-  .requiredOption("--project <name>", "Project name")
-  .action((opts: { project: string }) => {
-    const merged = loadRules(opts.project);
-    process.stdout.write(JSON.stringify(merged, null, 2) + "\n");
-  });
-
-program.parse(process.argv);
+createCli({
+  name: "rule-loader",
+  description: "Load and merge multi-level rules, output JSON",
+  commands: [
+    {
+      name: "load",
+      description: "Load rules for a project and output merged JSON to stdout",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+      ],
+      action: runLoad,
+    },
+  ],
+}).parse(process.argv);

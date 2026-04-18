@@ -3,14 +3,14 @@
  * config.ts — Outputs merged workspace config JSON to stdout.
  *
  * Usage:
- *   bun run .claude/scripts/config.ts
+ *   bun run .claude/scripts/config.ts show
  *   bun run .claude/scripts/config.ts --help
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Command } from "commander";
-import { getEnv, initEnv } from "./lib/env.ts";
+import { createCli } from "./lib/cli-runner.ts";
+import { getEnv } from "./lib/env.ts";
 import { pluginsDir, repoRoot } from "./lib/paths.ts";
 import { loadAllPlugins } from "./lib/plugin-utils.ts";
 
@@ -71,8 +71,6 @@ function readProjectConfigs(): Record<string, ProjectConfig> {
 }
 
 function buildConfig(): ConfigOutput {
-  initEnv();
-
   const workspaceDir = getEnv("WORKSPACE_DIR") ?? "workspace";
   const sourceReposRaw = getEnv("SOURCE_REPOS") ?? "";
   const sourceRepos = sourceReposRaw
@@ -91,22 +89,21 @@ function buildConfig(): ConfigOutput {
   };
 }
 
-const program = new Command();
+function runShow(): void {
+  try {
+    const config = buildConfig();
+    process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
+  } catch (err) {
+    process.stderr.write(`[config] error: ${err}\n`);
+    process.exit(1);
+  }
+}
 
-program
-  .name("config")
-  .description(
+createCli({
+  name: "config",
+  description:
     "Output merged workspace config JSON (reads .env + scans plugins/)",
-  )
-  .helpOption("-h, --help", "Display help information")
-  .action(() => {
-    try {
-      const config = buildConfig();
-      process.stdout.write(`${JSON.stringify(config, null, 2)}\n`);
-    } catch (err) {
-      process.stderr.write(`[config] error: ${err}\n`);
-      process.exit(1);
-    }
-  });
-
-program.parse(process.argv);
+  rootAction: {
+    action: () => runShow(),
+  },
+}).parse(process.argv);

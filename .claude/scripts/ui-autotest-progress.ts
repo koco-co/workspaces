@@ -12,8 +12,7 @@
 
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { Command } from "commander";
-import { initEnv } from "./lib/env.ts";
+import { createCli } from "./lib/cli-runner.ts";
 import { tempDir } from "./lib/paths.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -173,419 +172,415 @@ function writeProgress(project: string, suiteName: string, progress: Progress, e
 
 // ── Commander ────────────────────────────────────────────────────────────────
 
-const program = new Command();
+function runCreate(opts: {
+  project: string;
+  suite: string;
+  archive: string;
+  url: string;
+  priorities: string;
+  outputDir: string;
+  cases: string;
+  env?: string;
+}): void {
+  let rawCases: Record<string, { title: string; priority: string }>;
+  try {
+    rawCases = JSON.parse(opts.cases) as Record<
+      string,
+      { title: string; priority: string }
+    >;
+  } catch {
+    process.stderr.write(`[ui-autotest-progress:create] invalid --cases JSON\n`);
+    process.exit(1);
+  }
 
-program
-  .name("ui-autotest-progress")
-  .description("UI 自动化测试断点续传状态管理")
-  .helpOption("-h, --help", "Display help information");
-
-// ── create ────────────────────────────────────────────────────────────────────
-
-program
-  .command("create")
-  .description("Create a new progress file for a test suite")
-  .requiredOption("--project <name>", "Project name (e.g. dataAssets)")
-  .requiredOption("--suite <name>", "Test suite name")
-  .requiredOption("--archive <path>", "Archive MD path")
-  .requiredOption("--url <url>", "Target URL for testing")
-  .option("--priorities <csv>", "Comma-separated priorities to run", "P0")
-  .option("--output-dir <dir>", "Output directory for test scripts", "tests/")
-  .requiredOption("--cases <json>", "JSON map of case id → {title, priority}")
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action(
-    (opts: {
-      project: string;
-      suite: string;
-      archive: string;
-      url: string;
-      priorities: string;
-      outputDir: string;
-      cases: string;
-      env?: string;
-    }) => {
-      initEnv();
-
-      let rawCases: Record<string, { title: string; priority: string }>;
-      try {
-        rawCases = JSON.parse(opts.cases) as Record<
-          string,
-          { title: string; priority: string }
-        >;
-      } catch {
-        process.stderr.write(`[ui-autotest-progress:create] invalid --cases JSON\n`);
-        process.exit(1);
-      }
-
-      const now = nowIso();
-      const cases: Record<string, CaseState> = Object.fromEntries(
-        Object.entries(rawCases).map(([id, { title, priority }]) => [
-          id,
-          {
-            title,
-            priority,
-            generated: false,
-            script_path: null,
-            test_status: "pending" as TestStatus,
-            attempts: 0,
-            error_history: [],
-          } satisfies CaseState,
-        ]),
-      );
-
-      const progress: Progress = {
-        version: 1,
-        suite_name: opts.suite,
-        ...(opts.env ? { env: opts.env } : {}),
-        archive_md: opts.archive,
-        url: opts.url,
-        selected_priorities: opts.priorities.split(",").map((p) => p.trim()),
-        output_dir: opts.outputDir,
-        started_at: now,
-        updated_at: now,
-        current_step: 4,
-        preconditions_ready: false,
-        cases,
-        merge_status: "pending",
-      };
-
-      try {
-        writeProgress(opts.project, opts.suite, progress, opts.env);
-        process.stdout.write(`${JSON.stringify(progress, null, 2)}\n`);
-      } catch (err) {
-        process.stderr.write(`[ui-autotest-progress:create] error: ${err}\n`);
-        process.exit(1);
-      }
-    },
+  const now = nowIso();
+  const cases: Record<string, CaseState> = Object.fromEntries(
+    Object.entries(rawCases).map(([id, { title, priority }]) => [
+      id,
+      {
+        title,
+        priority,
+        generated: false,
+        script_path: null,
+        test_status: "pending" as TestStatus,
+        attempts: 0,
+        error_history: [],
+      } satisfies CaseState,
+    ]),
   );
 
-// ── update ────────────────────────────────────────────────────────────────────
+  const progress: Progress = {
+    version: 1,
+    suite_name: opts.suite,
+    ...(opts.env ? { env: opts.env } : {}),
+    archive_md: opts.archive,
+    url: opts.url,
+    selected_priorities: opts.priorities.split(",").map((p) => p.trim()),
+    output_dir: opts.outputDir,
+    started_at: now,
+    updated_at: now,
+    current_step: 4,
+    preconditions_ready: false,
+    cases,
+    merge_status: "pending",
+  };
 
-program
-  .command("update")
-  .description("Update a field in the progress file")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--suite <name>", "Test suite name")
-  .option("--case <id>", "Case ID to update (omit for top-level field)")
-  .requiredOption("--field <name>", "Field name to update")
-  .requiredOption("--value <val>", "New value")
-  .option("--error <msg>", "Error message to append to error_history (only used when field=test_status and value=failed)")
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action(
-    (opts: {
-      project: string;
-      suite: string;
-      case?: string;
-      field: string;
-      value: string;
-      error?: string;
-      env?: string;
-    }) => {
-      initEnv();
-
-      // Guard: reject direct writes to structured fields that must be managed via flags
-      if (opts.field === "last_error" || opts.field === "error_history") {
-        process.stderr.write(
-          `[ui-autotest-progress:update] "${opts.field}" cannot be set directly. Use --field test_status --value failed --error "<msg>" to append to error_history, or resume --retry-failed to clear.\n`,
-        );
-        process.exit(1);
-      }
-
-      const progress = readProgress(opts.project, opts.suite, opts.env);
-      if (!progress) {
-        process.stderr.write(
-          `[ui-autotest-progress:update] progress file not found for suite "${opts.suite}"\n`,
-        );
-        process.exit(1);
-      }
-
-      // Type coercion
-      const coerce = (field: string, raw: string): unknown => {
-        if (["generated", "preconditions_ready"].includes(field)) return raw === "true";
-        if (["current_step", "attempts"].includes(field)) return Number(raw);
-        if (field === "convergence_status") {
-          const allowed = ["skipped", "active", "completed"];
-          if (!allowed.includes(raw)) {
-            throw new Error(`convergence_status must be one of ${allowed.join(",")}`);
-          }
-          return raw;
-        }
-        if (field === "convergence") {
-          let parsed: unknown;
-          try {
-            parsed = JSON.parse(raw);
-          } catch (err) {
-            throw new Error(`convergence must be valid JSON: ${(err as Error).message}`);
-          }
-          if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("convergence must be a JSON object");
-          }
-          return parsed;
-        }
-        if (raw === "null") return null;
-        return raw;
-      };
-
-      let coercedValue: unknown = undefined;
-      try {
-        coercedValue = coerce(opts.field, opts.value);
-      } catch (err) {
-        process.stderr.write(`[ui-autotest-progress:update] ${(err as Error).message}\n`);
-        process.exit(1);
-      }
-
-      let updated: Progress;
-
-      if (opts.case !== undefined) {
-        const caseId = opts.case;
-        const existing = progress.cases[caseId];
-        if (!existing) {
-          process.stderr.write(
-            `[ui-autotest-progress:update] case "${caseId}" not found\n`,
-          );
-          process.exit(1);
-        }
-
-        // Auto-increment attempts when test_status set to running
-        const extraCaseFields: Partial<CaseState> =
-          opts.field === "test_status" && opts.value === "running"
-            ? { attempts: existing.attempts + 1 }
-            : {};
-
-        // Append to error_history when status set to failed and --error is provided
-        const errorHistoryFields: Partial<CaseState> =
-          opts.field === "test_status" && opts.value === "failed" && opts.error !== undefined
-            ? {
-                error_history: [
-                  ...existing.error_history,
-                  { at: nowIso(), message: opts.error },
-                ],
-              }
-            : {};
-
-        const updatedCase: CaseState = {
-          ...existing,
-          [opts.field]: coercedValue,
-          ...extraCaseFields,
-          ...errorHistoryFields,
-        };
-
-        updated = {
-          ...progress,
-          cases: {
-            ...progress.cases,
-            [caseId]: updatedCase,
-          },
-          updated_at: nowIso(),
-        };
-      } else {
-        updated = {
-          ...progress,
-          [opts.field]: coercedValue,
-          updated_at: nowIso(),
-        };
-      }
-
-      try {
-        writeProgress(opts.project, opts.suite, updated, opts.env);
-        process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
-      } catch (err) {
-        process.stderr.write(`[ui-autotest-progress:update] error: ${err}\n`);
-        process.exit(1);
-      }
-    },
-  );
-
-// ── read ──────────────────────────────────────────────────────────────────────
-
-program
-  .command("read")
-  .description("Read and output current progress JSON")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--suite <name>", "Test suite name")
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action((opts: { project: string; suite: string; env?: string }) => {
-    initEnv();
-
-    const progress = readProgress(opts.project, opts.suite, opts.env);
-    if (!progress) {
-      process.stderr.write(
-        `[ui-autotest-progress:read] progress file not found for suite "${opts.suite}"\n`,
-      );
-      process.exit(1);
-    }
-
+  try {
+    writeProgress(opts.project, opts.suite, progress, opts.env);
     process.stdout.write(`${JSON.stringify(progress, null, 2)}\n`);
-  });
+  } catch (err) {
+    process.stderr.write(`[ui-autotest-progress:create] error: ${err}\n`);
+    process.exit(1);
+  }
+}
 
-// ── summary ───────────────────────────────────────────────────────────────────
+function runUpdate(opts: {
+  project: string;
+  suite: string;
+  case?: string;
+  field: string;
+  value: string;
+  error?: string;
+  env?: string;
+}): void {
+  // Guard: reject direct writes to structured fields that must be managed via flags
+  if (opts.field === "last_error" || opts.field === "error_history") {
+    process.stderr.write(
+      `[ui-autotest-progress:update] "${opts.field}" cannot be set directly. Use --field test_status --value failed --error "<msg>" to append to error_history, or resume --retry-failed to clear.\n`,
+    );
+    process.exit(1);
+  }
 
-program
-  .command("summary")
-  .description("Output aggregated counts and status for a suite")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--suite <name>", "Test suite name")
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action((opts: { project: string; suite: string; env?: string }) => {
-    initEnv();
+  const progress = readProgress(opts.project, opts.suite, opts.env);
+  if (!progress) {
+    process.stderr.write(
+      `[ui-autotest-progress:update] progress file not found for suite "${opts.suite}"\n`,
+    );
+    process.exit(1);
+  }
 
-    const progress = readProgress(opts.project, opts.suite, opts.env);
-    if (!progress) {
+  // Type coercion
+  const coerce = (field: string, raw: string): unknown => {
+    if (["generated", "preconditions_ready"].includes(field)) return raw === "true";
+    if (["current_step", "attempts"].includes(field)) return Number(raw);
+    if (field === "convergence_status") {
+      const allowed = ["skipped", "active", "completed"];
+      if (!allowed.includes(raw)) {
+        throw new Error(`convergence_status must be one of ${allowed.join(",")}`);
+      }
+      return raw;
+    }
+    if (field === "convergence") {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (err) {
+        throw new Error(`convergence must be valid JSON: ${(err as Error).message}`);
+      }
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("convergence must be a JSON object");
+      }
+      return parsed;
+    }
+    if (raw === "null") return null;
+    return raw;
+  };
+
+  let coercedValue: unknown = undefined;
+  try {
+    coercedValue = coerce(opts.field, opts.value);
+  } catch (err) {
+    process.stderr.write(`[ui-autotest-progress:update] ${(err as Error).message}\n`);
+    process.exit(1);
+  }
+
+  let updated: Progress;
+
+  if (opts.case !== undefined) {
+    const caseId = opts.case;
+    const existing = progress.cases[caseId];
+    if (!existing) {
       process.stderr.write(
-        `[ui-autotest-progress:summary] progress file not found for suite "${opts.suite}"\n`,
+        `[ui-autotest-progress:update] case "${caseId}" not found\n`,
       );
       process.exit(1);
     }
 
-    const caseList = Object.values(progress.cases);
-    const countByStatus = (status: TestStatus): number =>
-      caseList.filter((c) => c.test_status === status).length;
+    // Auto-increment attempts when test_status set to running
+    const extraCaseFields: Partial<CaseState> =
+      opts.field === "test_status" && opts.value === "running"
+        ? { attempts: existing.attempts + 1 }
+        : {};
 
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const expired = Date.now() - new Date(progress.updated_at).getTime() > SEVEN_DAYS_MS;
+    // Append to error_history when status set to failed and --error is provided
+    const errorHistoryFields: Partial<CaseState> =
+      opts.field === "test_status" && opts.value === "failed" && opts.error !== undefined
+        ? {
+            error_history: [
+              ...existing.error_history,
+              { at: nowIso(), message: opts.error },
+            ],
+          }
+        : {};
 
-    const summary = {
-      suite_name: progress.suite_name,
-      ...(progress.env ? { env: progress.env } : {}),
-      current_step: progress.current_step,
-      preconditions_ready: progress.preconditions_ready,
-      merge_status: progress.merge_status,
-      total: caseList.length,
-      generated: caseList.filter((c) => c.generated).length,
-      passed: countByStatus("passed"),
-      failed: countByStatus("failed"),
-      running: countByStatus("running"),
-      pending: countByStatus("pending"),
-      expired,
-      updated_at: progress.updated_at,
+    const updatedCase: CaseState = {
+      ...existing,
+      [opts.field]: coercedValue,
+      ...extraCaseFields,
+      ...errorHistoryFields,
     };
 
-    process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
-  });
-
-// ── reset ─────────────────────────────────────────────────────────────────────
-
-program
-  .command("reset")
-  .description("Delete the progress file for a suite")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--suite <name>", "Test suite name")
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action((opts: { project: string; suite: string; env?: string }) => {
-    initEnv();
-
-    const filePath = progressFilePath(opts.project, opts.suite, opts.env);
-    const envSuffix = opts.env ? `-${opts.env.toLowerCase()}` : "";
-    const aliasPath = `${dirname(filePath)}/ui-autotest-progress-alias-${asciiSlugify(opts.suite)}${envSuffix}.json`;
-
-    try {
-      if (existsSync(filePath)) {
-        rmSync(filePath);
-      }
-      // W6: also remove the alias file if it exists
-      try {
-        if (existsSync(aliasPath)) {
-          rmSync(aliasPath);
-        }
-      } catch (aliasErr: unknown) {
-        const code = (aliasErr as NodeJS.ErrnoException).code;
-        if (code !== "ENOENT") throw aliasErr;
-      }
-      process.stdout.write(
-        `${JSON.stringify({ reset: true, path: filePath }, null, 2)}\n`,
-      );
-    } catch (err) {
-      process.stderr.write(`[ui-autotest-progress:reset] error: ${err}\n`);
-      process.exit(1);
-    }
-  });
-
-// ── resume ────────────────────────────────────────────────────────────────────
-
-program
-  .command("resume")
-  .description("Sanitize progress for resumption (reset running → pending, validate script_path)")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--suite <name>", "Test suite name")
-  .option("--retry-failed", "Also reset failed cases to pending", false)
-  .option("--env <name>", "环境标识（如 ci63、ltqcdev）")
-  .action((opts: { project: string; suite: string; retryFailed: boolean; env?: string }) => {
-    initEnv();
-
-    const progress = readProgress(opts.project, opts.suite, opts.env);
-    if (!progress) {
-      process.stderr.write(
-        `[ui-autotest-progress:resume] progress file not found for suite "${opts.suite}"\n`,
-      );
-      process.exit(1);
-    }
-
-    // If source_mtime is set, compare with actual archive file mtime.
-    // If different, the archive has changed — clear cached_parse_result.
-    let baseProgress: Progress = progress;
-    if (progress.source_mtime && progress.archive_md) {
-      try {
-        const actualMtime = statSync(progress.archive_md).mtime.toISOString();
-        if (actualMtime !== progress.source_mtime) {
-          baseProgress = { ...progress, cached_parse_result: undefined };
-        }
-      } catch {
-        // Archive file not accessible — leave cache as-is
-      }
-    }
-
-    const sanitizedCases: Record<string, CaseState> = Object.fromEntries(
-      Object.entries(baseProgress.cases).map(([id, c]) => {
-        let updated: CaseState = c;
-
-        // 1. Reset running → pending
-        if (updated.test_status === "running") {
-          updated = { ...updated, test_status: "pending" };
-        }
-
-        // 2. Reset failed → pending if --retry-failed
-        if (opts.retryFailed && updated.test_status === "failed") {
-          updated = { ...updated, test_status: "pending", attempts: 0, error_history: [] };
-        }
-
-        // 3. Validate script_path: if generated but file missing, reset
-        if (
-          updated.generated === true &&
-          updated.script_path !== null &&
-          !existsSync(updated.script_path)
-        ) {
-          updated = { ...updated, generated: false, script_path: null };
-        }
-
-        return [id, updated];
-      }),
-    );
-
-    const sanitized: Progress = {
-      ...baseProgress,
-      cases: sanitizedCases,
+    updated = {
+      ...progress,
+      cases: {
+        ...progress.cases,
+        [caseId]: updatedCase,
+      },
       updated_at: nowIso(),
     };
+  } else {
+    updated = {
+      ...progress,
+      [opts.field]: coercedValue,
+      updated_at: nowIso(),
+    };
+  }
 
-    try {
-      writeProgress(opts.project, opts.suite, sanitized, opts.env);
-      process.stdout.write(`${JSON.stringify(sanitized, null, 2)}\n`);
-    } catch (err) {
-      process.stderr.write(`[ui-autotest-progress:resume] error: ${err}\n`);
-      process.exit(1);
+  try {
+    writeProgress(opts.project, opts.suite, updated, opts.env);
+    process.stdout.write(`${JSON.stringify(updated, null, 2)}\n`);
+  } catch (err) {
+    process.stderr.write(`[ui-autotest-progress:update] error: ${err}\n`);
+    process.exit(1);
+  }
+}
+
+function runRead(opts: { project: string; suite: string; env?: string }): void {
+  const progress = readProgress(opts.project, opts.suite, opts.env);
+  if (!progress) {
+    process.stderr.write(
+      `[ui-autotest-progress:read] progress file not found for suite "${opts.suite}"\n`,
+    );
+    process.exit(1);
+  }
+
+  process.stdout.write(`${JSON.stringify(progress, null, 2)}\n`);
+}
+
+function runSummary(opts: { project: string; suite: string; env?: string }): void {
+  const progress = readProgress(opts.project, opts.suite, opts.env);
+  if (!progress) {
+    process.stderr.write(
+      `[ui-autotest-progress:summary] progress file not found for suite "${opts.suite}"\n`,
+    );
+    process.exit(1);
+  }
+
+  const caseList = Object.values(progress.cases);
+  const countByStatus = (status: TestStatus): number =>
+    caseList.filter((c) => c.test_status === status).length;
+
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const expired = Date.now() - new Date(progress.updated_at).getTime() > SEVEN_DAYS_MS;
+
+  const summary = {
+    suite_name: progress.suite_name,
+    ...(progress.env ? { env: progress.env } : {}),
+    current_step: progress.current_step,
+    preconditions_ready: progress.preconditions_ready,
+    merge_status: progress.merge_status,
+    total: caseList.length,
+    generated: caseList.filter((c) => c.generated).length,
+    passed: countByStatus("passed"),
+    failed: countByStatus("failed"),
+    running: countByStatus("running"),
+    pending: countByStatus("pending"),
+    expired,
+    updated_at: progress.updated_at,
+  };
+
+  process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+}
+
+function runReset(opts: { project: string; suite: string; env?: string }): void {
+  const filePath = progressFilePath(opts.project, opts.suite, opts.env);
+  const envSuffix = opts.env ? `-${opts.env.toLowerCase()}` : "";
+  const aliasPath = `${dirname(filePath)}/ui-autotest-progress-alias-${asciiSlugify(opts.suite)}${envSuffix}.json`;
+
+  try {
+    if (existsSync(filePath)) {
+      rmSync(filePath);
     }
-  });
+    // W6: also remove the alias file if it exists
+    try {
+      if (existsSync(aliasPath)) {
+        rmSync(aliasPath);
+      }
+    } catch (aliasErr: unknown) {
+      const code = (aliasErr as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw aliasErr;
+    }
+    process.stdout.write(
+      `${JSON.stringify({ reset: true, path: filePath }, null, 2)}\n`,
+    );
+  } catch (err) {
+    process.stderr.write(`[ui-autotest-progress:reset] error: ${err}\n`);
+    process.exit(1);
+  }
+}
 
-// ── suite-slug ────────────────────────────────────────────────────────────────
+function runResume(opts: { project: string; suite: string; retryFailed: boolean; env?: string }): void {
+  const progress = readProgress(opts.project, opts.suite, opts.env);
+  if (!progress) {
+    process.stderr.write(
+      `[ui-autotest-progress:resume] progress file not found for suite "${opts.suite}"\n`,
+    );
+    process.exit(1);
+  }
 
-program
-  .command("suite-slug")
-  .description("Print ASCII-safe slug for a suite name (used for ui-blocks subdir)")
-  .requiredOption("--suite <name>", "Test suite name")
-  .action((opts: { suite: string }) => {
-    process.stdout.write(slugify(opts.suite));
-  });
+  // If source_mtime is set, compare with actual archive file mtime.
+  // If different, the archive has changed — clear cached_parse_result.
+  let baseProgress: Progress = progress;
+  if (progress.source_mtime && progress.archive_md) {
+    try {
+      const actualMtime = statSync(progress.archive_md).mtime.toISOString();
+      if (actualMtime !== progress.source_mtime) {
+        baseProgress = { ...progress, cached_parse_result: undefined };
+      }
+    } catch {
+      // Archive file not accessible — leave cache as-is
+    }
+  }
+
+  const sanitizedCases: Record<string, CaseState> = Object.fromEntries(
+    Object.entries(baseProgress.cases).map(([id, c]) => {
+      let updated: CaseState = c;
+
+      // 1. Reset running → pending
+      if (updated.test_status === "running") {
+        updated = { ...updated, test_status: "pending" };
+      }
+
+      // 2. Reset failed → pending if --retry-failed
+      if (opts.retryFailed && updated.test_status === "failed") {
+        updated = { ...updated, test_status: "pending", attempts: 0, error_history: [] };
+      }
+
+      // 3. Validate script_path: if generated but file missing, reset
+      if (
+        updated.generated === true &&
+        updated.script_path !== null &&
+        !existsSync(updated.script_path)
+      ) {
+        updated = { ...updated, generated: false, script_path: null };
+      }
+
+      return [id, updated];
+    }),
+  );
+
+  const sanitized: Progress = {
+    ...baseProgress,
+    cases: sanitizedCases,
+    updated_at: nowIso(),
+  };
+
+  try {
+    writeProgress(opts.project, opts.suite, sanitized, opts.env);
+    process.stdout.write(`${JSON.stringify(sanitized, null, 2)}\n`);
+  } catch (err) {
+    process.stderr.write(`[ui-autotest-progress:resume] error: ${err}\n`);
+    process.exit(1);
+  }
+}
+
+function runSuiteSlug(opts: { suite: string }): void {
+  process.stdout.write(slugify(opts.suite));
+}
 
 if (import.meta.main) {
-  program.parse(process.argv);
+  createCli({
+    name: "ui-autotest-progress",
+    description: "UI 自动化测试断点续传状态管理",
+    commands: [
+      {
+        name: "create",
+        description: "Create a new progress file for a test suite",
+        options: [
+          { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--archive <path>", description: "Archive MD path", required: true },
+          { flag: "--url <url>", description: "Target URL for testing", required: true },
+          { flag: "--priorities <csv>", description: "Comma-separated priorities to run", defaultValue: "P0" },
+          { flag: "--output-dir <dir>", description: "Output directory for test scripts", defaultValue: "tests/" },
+          { flag: "--cases <json>", description: "JSON map of case id → {title, priority}", required: true },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runCreate,
+      },
+      {
+        name: "update",
+        description: "Update a field in the progress file",
+        options: [
+          { flag: "--project <name>", description: "Project name", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--case <id>", description: "Case ID to update (omit for top-level field)" },
+          { flag: "--field <name>", description: "Field name to update", required: true },
+          { flag: "--value <val>", description: "New value", required: true },
+          { flag: "--error <msg>", description: "Error message to append to error_history (only used when field=test_status and value=failed)" },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runUpdate,
+      },
+      {
+        name: "read",
+        description: "Read and output current progress JSON",
+        options: [
+          { flag: "--project <name>", description: "Project name", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runRead,
+      },
+      {
+        name: "summary",
+        description: "Output aggregated counts and status for a suite",
+        options: [
+          { flag: "--project <name>", description: "Project name", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runSummary,
+      },
+      {
+        name: "reset",
+        description: "Delete the progress file for a suite",
+        options: [
+          { flag: "--project <name>", description: "Project name", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runReset,
+      },
+      {
+        name: "resume",
+        description: "Sanitize progress for resumption (reset running → pending, validate script_path)",
+        options: [
+          { flag: "--project <name>", description: "Project name", required: true },
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+          { flag: "--retry-failed", description: "Also reset failed cases to pending", defaultValue: false },
+          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+        ],
+        action: runResume,
+      },
+      {
+        name: "suite-slug",
+        description: "Print ASCII-safe slug for a suite name (used for ui-blocks subdir)",
+        options: [
+          { flag: "--suite <name>", description: "Test suite name", required: true },
+        ],
+        action: runSuiteSlug,
+      },
+    ],
+  }).parse(process.argv);
 }

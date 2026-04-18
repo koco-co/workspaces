@@ -22,9 +22,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 import { outputJson, errorExit } from "./lib/cli.ts";
-import { initEnv } from "./lib/env.ts";
 import { tempDir } from "./lib/paths.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -211,244 +210,242 @@ function isValidWorkflow(workflow: string): workflow is WorkflowType {
 
 // ── Commander ────────────────────────────────────────────────────────────────
 
-const program = new Command();
+function runCreate(opts: {
+  project: string;
+  workflow: string;
+  inputs: string;
+  planId?: string;
+  stateFile?: string;
+}): void {
+  if (!isValidWorkflow(opts.workflow)) {
+    errorExit(`[plan:create] unknown workflow "${opts.workflow}". Available: ${Object.keys(STEP_TEMPLATES).join(", ")}`);
+  }
 
-program
-  .name("plan")
-  .description("Workflow execution plan management for qa-flow")
-  .helpOption("-h, --help", "Display help information");
+  let inputs: Record<string, unknown>;
+  try {
+    inputs = JSON.parse(opts.inputs) as Record<string, unknown>;
+  } catch {
+    errorExit(`[plan:create] invalid --inputs JSON: ${opts.inputs}`);
+  }
 
-// ── create ───────────────────────────────────────────────────────────────────
+  const planId = opts.planId ?? generatePlanId(opts.workflow, inputs);
+  const now = nowIso();
 
-program
-  .command("create")
-  .description("Create a new plan for a workflow")
-  .requiredOption("--project <name>", "Project name (e.g. dataAssets)")
-  .requiredOption("--workflow <type>", "Workflow type (test-case-gen | ui-autotest)")
-  .option("--inputs <json>", "JSON object of workflow inputs", "{}")
-  .option("--plan-id <id>", "Custom plan ID (auto-generated if omitted)")
-  .option("--state-file <path>", "Path to associated state file")
-  .action((opts: {
-    project: string;
+  const plan: Plan = {
+    version: 1,
+    workflow: opts.workflow,
+    project: opts.project,
+    plan_id: planId,
+    inputs,
+    steps: buildSteps(opts.workflow),
+    created_at: now,
+    updated_at: now,
+    ...(opts.stateFile ? { state_file: opts.stateFile } : {}),
+  };
+
+  writePlan(opts.project, planId, plan);
+  const mdPath = writeMd(opts.project, planId, plan);
+
+  outputJson({ ...plan, _md_path: mdPath });
+}
+
+function runUpdate(opts: {
+  project: string;
+  planId: string;
+  step: string;
+  status: string;
+  metadata: string;
+}): void {
+  const plan = readPlan(opts.project, opts.planId);
+  if (!plan) {
+    errorExit(`[plan:update] plan "${opts.planId}" not found`);
+  }
+
+  const validStatuses: StepStatus[] = ["pending", "in_progress", "completed", "skipped"];
+  if (!validStatuses.includes(opts.status as StepStatus)) {
+    errorExit(`[plan:update] invalid status "${opts.status}". Available: ${validStatuses.join(", ")}`);
+  }
+
+  const stepIndex = plan.steps.findIndex((s) => s.id === opts.step);
+  if (stepIndex === -1) {
+    errorExit(`[plan:update] step "${opts.step}" not found in plan "${opts.planId}"`);
+  }
+
+  let metadata: Record<string, unknown>;
+  try {
+    metadata = JSON.parse(opts.metadata) as Record<string, unknown>;
+  } catch {
+    errorExit(`[plan:update] invalid --metadata JSON: ${opts.metadata}`);
+  }
+
+  const now = nowIso();
+  const existingStep = plan.steps[stepIndex];
+  const newStatus = opts.status as StepStatus;
+
+  const updatedStep: PlanStep = {
+    ...existingStep,
+    status: newStatus,
+    started_at: newStatus === "in_progress" && !existingStep.started_at
+      ? now
+      : existingStep.started_at,
+    completed_at: newStatus === "completed" || newStatus === "skipped"
+      ? now
+      : existingStep.completed_at,
+    metadata: Object.keys(metadata).length > 0
+      ? { ...(existingStep.metadata ?? {}), ...metadata }
+      : existingStep.metadata,
+  };
+
+  const updatedSteps = plan.steps.map((s, i) => i === stepIndex ? updatedStep : s);
+
+  const updated: Plan = {
+    ...plan,
+    steps: updatedSteps,
+    updated_at: now,
+  };
+
+  writePlan(opts.project, opts.planId, updated);
+  writeMd(opts.project, opts.planId, updated);
+
+  outputJson(updated);
+}
+
+function runSummary(opts: { project: string; planId: string }): void {
+  const plan = readPlan(opts.project, opts.planId);
+  if (!plan) {
+    errorExit(`[plan:summary] plan "${opts.planId}" not found`);
+  }
+
+  const total = plan.steps.length;
+  const countByStatus = (status: StepStatus): number =>
+    plan.steps.filter((s) => s.status === status).length;
+
+  const completed = countByStatus("completed");
+  const inProgress = countByStatus("in_progress");
+  const pending = countByStatus("pending");
+  const skipped = countByStatus("skipped");
+
+  const currentStep = plan.steps.find((s) => s.status === "in_progress")
+    ?? plan.steps.find((s) => s.status === "pending");
+
+  const summary = {
+    plan_id: plan.plan_id,
+    workflow: plan.workflow,
+    project: plan.project,
+    total,
+    completed,
+    in_progress: inProgress,
+    pending,
+    skipped,
+    progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,
+    current_step: currentStep ? { id: currentStep.id, name: currentStep.name } : null,
+    created_at: plan.created_at,
+    updated_at: plan.updated_at,
+  };
+
+  outputJson(summary);
+}
+
+function runRender(opts: { project: string; planId: string }): void {
+  const plan = readPlan(opts.project, opts.planId);
+  if (!plan) {
+    errorExit(`[plan:render] plan "${opts.planId}" not found`);
+  }
+
+  const mdPath = writeMd(opts.project, opts.planId, plan);
+  outputJson({ rendered: true, path: mdPath });
+}
+
+function runList(opts: { project: string; workflow?: string }): void {
+  const dir = tempDir(opts.project);
+  if (!existsSync(dir)) {
+    outputJson([]);
+    return;
+  }
+
+  const files = readdirSync(dir).filter((f) => f.startsWith("plan-") && f.endsWith(".json"));
+
+  const plans: Array<{
+    plan_id: string;
     workflow: string;
-    inputs: string;
-    planId?: string;
-    stateFile?: string;
-  }) => {
-    initEnv();
+    progress_pct: number;
+    updated_at: string;
+  }> = [];
 
-    if (!isValidWorkflow(opts.workflow)) {
-      errorExit(`[plan:create] unknown workflow "${opts.workflow}". Available: ${Object.keys(STEP_TEMPLATES).join(", ")}`);
-    }
-
-    let inputs: Record<string, unknown>;
+  for (const file of files) {
     try {
-      inputs = JSON.parse(opts.inputs) as Record<string, unknown>;
+      const plan = JSON.parse(readFileSync(join(dir, file), "utf8")) as Plan;
+      if (opts.workflow && plan.workflow !== opts.workflow) continue;
+
+      const completed = plan.steps.filter((s) => s.status === "completed").length;
+      plans.push({
+        plan_id: plan.plan_id,
+        workflow: plan.workflow,
+        progress_pct: plan.steps.length > 0 ? Math.round((completed / plan.steps.length) * 100) : 0,
+        updated_at: plan.updated_at,
+      });
     } catch {
-      errorExit(`[plan:create] invalid --inputs JSON: ${opts.inputs}`);
+      // skip corrupted files
     }
+  }
 
-    const planId = opts.planId ?? generatePlanId(opts.workflow, inputs);
-    const now = nowIso();
+  outputJson(plans);
+}
 
-    const plan: Plan = {
-      version: 1,
-      workflow: opts.workflow,
-      project: opts.project,
-      plan_id: planId,
-      inputs,
-      steps: buildSteps(opts.workflow),
-      created_at: now,
-      updated_at: now,
-      ...(opts.stateFile ? { state_file: opts.stateFile } : {}),
-    };
-
-    writePlan(opts.project, planId, plan);
-    const mdPath = writeMd(opts.project, planId, plan);
-
-    outputJson({ ...plan, _md_path: mdPath });
-  });
-
-// ── update ───────────────────────────────────────────────────────────────────
-
-program
-  .command("update")
-  .description("Update a step status in an existing plan")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--plan-id <id>", "Plan ID")
-  .requiredOption("--step <id>", "Step ID (e.g. step-1)")
-  .requiredOption("--status <status>", "New status (pending | in_progress | completed | skipped)")
-  .option("--metadata <json>", "JSON to merge into step metadata", "{}")
-  .action((opts: {
-    project: string;
-    planId: string;
-    step: string;
-    status: string;
-    metadata: string;
-  }) => {
-    initEnv();
-
-    const plan = readPlan(opts.project, opts.planId);
-    if (!plan) {
-      errorExit(`[plan:update] plan "${opts.planId}" not found`);
-    }
-
-    const validStatuses: StepStatus[] = ["pending", "in_progress", "completed", "skipped"];
-    if (!validStatuses.includes(opts.status as StepStatus)) {
-      errorExit(`[plan:update] invalid status "${opts.status}". Available: ${validStatuses.join(", ")}`);
-    }
-
-    const stepIndex = plan.steps.findIndex((s) => s.id === opts.step);
-    if (stepIndex === -1) {
-      errorExit(`[plan:update] step "${opts.step}" not found in plan "${opts.planId}"`);
-    }
-
-    let metadata: Record<string, unknown>;
-    try {
-      metadata = JSON.parse(opts.metadata) as Record<string, unknown>;
-    } catch {
-      errorExit(`[plan:update] invalid --metadata JSON: ${opts.metadata}`);
-    }
-
-    const now = nowIso();
-    const existingStep = plan.steps[stepIndex];
-    const newStatus = opts.status as StepStatus;
-
-    const updatedStep: PlanStep = {
-      ...existingStep,
-      status: newStatus,
-      started_at: newStatus === "in_progress" && !existingStep.started_at
-        ? now
-        : existingStep.started_at,
-      completed_at: newStatus === "completed" || newStatus === "skipped"
-        ? now
-        : existingStep.completed_at,
-      metadata: Object.keys(metadata).length > 0
-        ? { ...(existingStep.metadata ?? {}), ...metadata }
-        : existingStep.metadata,
-    };
-
-    const updatedSteps = plan.steps.map((s, i) => i === stepIndex ? updatedStep : s);
-
-    const updated: Plan = {
-      ...plan,
-      steps: updatedSteps,
-      updated_at: now,
-    };
-
-    writePlan(opts.project, opts.planId, updated);
-    writeMd(opts.project, opts.planId, updated);
-
-    outputJson(updated);
-  });
-
-// ── summary ──────────────────────────────────────────────────────────────────
-
-program
-  .command("summary")
-  .description("Output aggregated progress summary for a plan")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--plan-id <id>", "Plan ID")
-  .action((opts: { project: string; planId: string }) => {
-    initEnv();
-
-    const plan = readPlan(opts.project, opts.planId);
-    if (!plan) {
-      errorExit(`[plan:summary] plan "${opts.planId}" not found`);
-    }
-
-    const total = plan.steps.length;
-    const countByStatus = (status: StepStatus): number =>
-      plan.steps.filter((s) => s.status === status).length;
-
-    const completed = countByStatus("completed");
-    const inProgress = countByStatus("in_progress");
-    const pending = countByStatus("pending");
-    const skipped = countByStatus("skipped");
-
-    const currentStep = plan.steps.find((s) => s.status === "in_progress")
-      ?? plan.steps.find((s) => s.status === "pending");
-
-    const summary = {
-      plan_id: plan.plan_id,
-      workflow: plan.workflow,
-      project: plan.project,
-      total,
-      completed,
-      in_progress: inProgress,
-      pending,
-      skipped,
-      progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,
-      current_step: currentStep ? { id: currentStep.id, name: currentStep.name } : null,
-      created_at: plan.created_at,
-      updated_at: plan.updated_at,
-    };
-
-    outputJson(summary);
-  });
-
-// ── render ───────────────────────────────────────────────────────────────────
-
-program
-  .command("render")
-  .description("Re-generate the MD file from current plan JSON")
-  .requiredOption("--project <name>", "Project name")
-  .requiredOption("--plan-id <id>", "Plan ID")
-  .action((opts: { project: string; planId: string }) => {
-    initEnv();
-
-    const plan = readPlan(opts.project, opts.planId);
-    if (!plan) {
-      errorExit(`[plan:render] plan "${opts.planId}" not found`);
-    }
-
-    const mdPath = writeMd(opts.project, opts.planId, plan);
-    outputJson({ rendered: true, path: mdPath });
-  });
-
-// ── list ─────────────────────────────────────────────────────────────────────
-
-program
-  .command("list")
-  .description("List all plans for a project")
-  .requiredOption("--project <name>", "Project name")
-  .option("--workflow <type>", "Filter by workflow type")
-  .action((opts: { project: string; workflow?: string }) => {
-    initEnv();
-
-    const dir = tempDir(opts.project);
-    if (!existsSync(dir)) {
-      outputJson([]);
-      return;
-    }
-
-    const files = readdirSync(dir).filter((f) => f.startsWith("plan-") && f.endsWith(".json"));
-
-    const plans: Array<{
-      plan_id: string;
-      workflow: string;
-      progress_pct: number;
-      updated_at: string;
-    }> = [];
-
-    for (const file of files) {
-      try {
-        const plan = JSON.parse(readFileSync(join(dir, file), "utf8")) as Plan;
-        if (opts.workflow && plan.workflow !== opts.workflow) continue;
-
-        const completed = plan.steps.filter((s) => s.status === "completed").length;
-        plans.push({
-          plan_id: plan.plan_id,
-          workflow: plan.workflow,
-          progress_pct: plan.steps.length > 0 ? Math.round((completed / plan.steps.length) * 100) : 0,
-          updated_at: plan.updated_at,
-        });
-      } catch {
-        // skip corrupted files
-      }
-    }
-
-    outputJson(plans);
-  });
-
-program.parse(process.argv);
+createCli({
+  name: "plan",
+  description: "Workflow execution plan management for qa-flow",
+  commands: [
+    {
+      name: "create",
+      description: "Create a new plan for a workflow",
+      options: [
+        { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
+        { flag: "--workflow <type>", description: "Workflow type (test-case-gen | ui-autotest)", required: true },
+        { flag: "--inputs <json>", description: "JSON object of workflow inputs", defaultValue: "{}" },
+        { flag: "--plan-id <id>", description: "Custom plan ID (auto-generated if omitted)" },
+        { flag: "--state-file <path>", description: "Path to associated state file" },
+      ],
+      action: runCreate,
+    },
+    {
+      name: "update",
+      description: "Update a step status in an existing plan",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--plan-id <id>", description: "Plan ID", required: true },
+        { flag: "--step <id>", description: "Step ID (e.g. step-1)", required: true },
+        { flag: "--status <status>", description: "New status (pending | in_progress | completed | skipped)", required: true },
+        { flag: "--metadata <json>", description: "JSON to merge into step metadata", defaultValue: "{}" },
+      ],
+      action: runUpdate,
+    },
+    {
+      name: "summary",
+      description: "Output aggregated progress summary for a plan",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--plan-id <id>", description: "Plan ID", required: true },
+      ],
+      action: runSummary,
+    },
+    {
+      name: "render",
+      description: "Re-generate the MD file from current plan JSON",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--plan-id <id>", description: "Plan ID", required: true },
+      ],
+      action: runRender,
+    },
+    {
+      name: "list",
+      description: "List all plans for a project",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--workflow <type>", description: "Filter by workflow type" },
+      ],
+      action: runList,
+    },
+  ],
+}).parse(process.argv);

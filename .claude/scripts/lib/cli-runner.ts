@@ -9,6 +9,14 @@ export interface CliOption {
   defaultValue?: unknown;
 }
 
+export interface CliArgument {
+  name: string;
+  description: string;
+  required?: boolean;
+  variadic?: boolean;
+  defaultValue?: unknown;
+}
+
 export interface CliContext {
   log: Logger;
   cwd: string;
@@ -18,13 +26,21 @@ export interface CliCommandSpec<T = Record<string, unknown>> {
   name: string;
   description: string;
   options?: CliOption[];
+  arguments?: CliArgument[];
+  action: (opts: T, ctx: CliContext) => void | Promise<void>;
+}
+
+export interface CliRootActionSpec<T = Record<string, unknown>> {
+  options?: CliOption[];
+  arguments?: CliArgument[];
   action: (opts: T, ctx: CliContext) => void | Promise<void>;
 }
 
 export interface CliConfig {
   name: string;
   description: string;
-  commands: CliCommandSpec[];
+  commands?: CliCommandSpec[];
+  rootAction?: CliRootActionSpec;
   initEnv?: boolean;
   onError?: (err: unknown, ctx: CliContext) => void;
 }
@@ -54,6 +70,22 @@ function attachOption(cmd: Command, opt: CliOption): void {
   cmd.option(opt.flag, opt.description);
 }
 
+function formatArgument(arg: CliArgument): string {
+  const required = arg.required !== false;
+  const suffix = arg.variadic === true ? "..." : "";
+  if (required) return `<${arg.name}${suffix}>`;
+  return `[${arg.name}${suffix}]`;
+}
+
+function attachArgument(cmd: Command, arg: CliArgument): void {
+  const token = formatArgument(arg);
+  if (arg.defaultValue !== undefined) {
+    cmd.argument(token, arg.description, arg.defaultValue as string);
+    return;
+  }
+  cmd.argument(token, arg.description);
+}
+
 function defaultErrorHandler(log: Logger) {
   return (err: unknown) => {
     const msg = err instanceof Error ? err.message : String(err);
@@ -62,8 +94,40 @@ function defaultErrorHandler(log: Logger) {
   };
 }
 
+function buildActionHandler(
+  argumentsSpec: ReadonlyArray<CliArgument>,
+  action: (opts: Record<string, unknown>, ctx: CliContext) => void | Promise<void>,
+  ctx: CliContext,
+  onError: (err: unknown, ctx: CliContext) => void,
+): (...args: unknown[]) => Promise<void> {
+  return async (...actionArgs: unknown[]) => {
+    // commander passes: (positional1, positional2, ..., opts, command)
+    const positionals =
+      argumentsSpec.length > 0 ? actionArgs.slice(0, argumentsSpec.length) : [];
+    const optsIdx = argumentsSpec.length;
+    const rawOpts = (actionArgs[optsIdx] ?? {}) as Record<string, unknown>;
+
+    const merged: Record<string, unknown> = { ...rawOpts };
+    for (let i = 0; i < argumentsSpec.length; i += 1) {
+      const key = argumentsSpec[i].name;
+      merged[key] = positionals[i];
+    }
+
+    try {
+      await action(merged, ctx);
+    } catch (err) {
+      onError(err, ctx);
+    }
+  };
+}
+
 /**
  * Build a commander program with uniform initEnv, logger, and error wrapping.
+ *
+ * Supports three shapes:
+ *  - `commands`: classic subcommand dispatch (e.g. `state init --prd ...`)
+ *  - `rootAction`: root-level action, for single-purpose tools (e.g. `xmind-gen --input ...`)
+ *  - Both: root action runs when no subcommand matches (hybrid tools like `repo-sync`)
  *
  * Caller chooses `.parse(process.argv)` (sync) or `.parseAsync(process.argv)` (async).
  * For any async action, caller must use `.parseAsync`.
@@ -81,18 +145,28 @@ export function createCli(config: CliConfig): Command {
   const program = new Command();
   program.name(config.name).description(config.description).showHelpAfterError();
 
-  for (const cmdSpec of config.commands) {
+  if (config.rootAction) {
+    const { arguments: args, options, action } = config.rootAction;
+    for (const arg of args ?? []) {
+      attachArgument(program, arg);
+    }
+    for (const opt of options ?? []) {
+      attachOption(program, opt);
+    }
+    program.action(buildActionHandler(args ?? [], action, ctx, onError));
+  }
+
+  for (const cmdSpec of config.commands ?? []) {
     const cmd = program.command(cmdSpec.name).description(cmdSpec.description);
+    for (const arg of cmdSpec.arguments ?? []) {
+      attachArgument(cmd, arg);
+    }
     for (const opt of cmdSpec.options ?? []) {
       attachOption(cmd, opt);
     }
-    cmd.action(async (opts: Record<string, unknown>) => {
-      try {
-        await cmdSpec.action(opts as never, ctx);
-      } catch (err) {
-        onError(err, ctx);
-      }
-    });
+    cmd.action(
+      buildActionHandler(cmdSpec.arguments ?? [], cmdSpec.action, ctx, onError),
+    );
   }
 
   return program;
