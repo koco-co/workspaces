@@ -69,6 +69,82 @@ function runScan(project: string): void {
   process.stdout.write(JSON.stringify(out, null, 2) + "\n");
 }
 
+interface CreatePlan {
+  dirs: string[];
+  files: string[];
+  gitkeeps: string[];
+}
+
+function computeCreatePlan(project: string): {
+  plan: CreatePlan;
+  skeleton_complete: boolean;
+  config_registered: boolean;
+} {
+  const projDir = projectDir(project);
+  const tplRoot = resolve(repoRoot(), TEMPLATE_ROOT_REL);
+  const diff = diffProjectSkeleton(projDir, tplRoot);
+  return {
+    plan: {
+      dirs: diff.missing_dirs,
+      files: diff.missing_files,
+      gitkeeps: diff.missing_gitkeeps,
+    },
+    skeleton_complete: diff.skeleton_complete,
+    config_registered: isProjectRegistered(project),
+  };
+}
+
+function runCreate(project: string, dryRun: boolean, confirmed: boolean): void {
+  const nameCheck = validateProjectName(project);
+  if (!nameCheck.valid) {
+    fail(`Invalid project name: ${nameCheck.error}`);
+  }
+
+  const { plan, skeleton_complete, config_registered } = computeCreatePlan(project);
+
+  if (skeleton_complete && config_registered) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          skipped: true,
+          project,
+          message: "已完整，无需补齐",
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    return;
+  }
+
+  if (dryRun) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          dry_run: true,
+          project,
+          will_create: plan,
+          will_register: !config_registered,
+          will_call_index: true,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    return;
+  }
+
+  if (!confirmed) {
+    fail(
+      "Add --confirmed to apply. Run with --dry-run to preview.",
+      2,
+    );
+  }
+
+  // Confirmed path: Task 8 implements
+  fail("create --confirmed not yet implemented (Task 8)");
+}
+
 const program = new Command();
 program
   .name("create-project")
@@ -81,6 +157,16 @@ program
   .requiredOption("--project <name>", "项目名")
   .action((opts: { project: string }) => {
     runScan(opts.project);
+  });
+
+program
+  .command("create")
+  .description("创建或补齐项目骨架")
+  .requiredOption("--project <name>", "项目名")
+  .option("--dry-run", "预览将要创建的内容，不落盘")
+  .option("--confirmed", "真实执行写入")
+  .action((opts: { project: string; dryRun?: boolean; confirmed?: boolean }) => {
+    runCreate(opts.project, opts.dryRun === true, opts.confirmed === true);
   });
 
 program.parse(process.argv);

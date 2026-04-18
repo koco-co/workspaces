@@ -50,6 +50,100 @@ function resetFixture(): void {
   writeFileSync(CONFIG_PATH, JSON.stringify({ projects: {} }, null, 2));
 }
 
+describe("create-project create --dry-run", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  it("returns will_create plan without touching disk", () => {
+    const { stdout, code } = runCp([
+      "create",
+      "--project",
+      "newProj",
+      "--dry-run",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.dry_run, true);
+    assert.equal(data.will_register, true);
+    assert.equal(data.will_call_index, true);
+    assert.ok(Array.isArray(data.will_create.dirs));
+    assert.ok(Array.isArray(data.will_create.files));
+    assert.ok(Array.isArray(data.will_create.gitkeeps));
+    assert.equal(data.will_create.dirs.length, 13);
+    // Disk must remain untouched
+    assert.equal(existsSync(join(WORKSPACE_DIR, "newProj")), false);
+    // Config must remain unchanged
+    const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
+    assert.deepEqual(cfg, { projects: {} });
+  });
+
+  it("dry-run rejects invalid name with exit 1", () => {
+    const { stderr, code } = runCp([
+      "create",
+      "--project",
+      "1bad",
+      "--dry-run",
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /Invalid project name/);
+  });
+
+  it("dry-run on complete project returns skipped=true", () => {
+    const projDir = join(WORKSPACE_DIR, "complete");
+    for (const d of [
+      "prds",
+      "xmind",
+      "archive",
+      "issues",
+      "historys",
+      "reports",
+      "tests",
+      "rules",
+      "knowledge",
+      "knowledge/modules",
+      "knowledge/pitfalls",
+      ".repos",
+      ".temp",
+    ]) mkdirSync(join(projDir, d), { recursive: true });
+    for (const g of [
+      "prds",
+      "xmind",
+      "archive",
+      "issues",
+      "historys",
+      "reports",
+      "tests",
+      "knowledge/modules",
+      "knowledge/pitfalls",
+      ".repos",
+      ".temp",
+    ]) writeFileSync(join(projDir, g, ".gitkeep"), "");
+    writeFileSync(join(projDir, "rules", "README.md"), "# complete");
+    writeFileSync(join(projDir, "knowledge", "overview.md"), "# complete");
+    writeFileSync(join(projDir, "knowledge", "terms.md"), "# complete");
+    writeFileSync(
+      CONFIG_PATH,
+      JSON.stringify({ projects: { complete: { repo_profiles: {} } } }, null, 2),
+    );
+    const { stdout, code } = runCp([
+      "create",
+      "--project",
+      "complete",
+      "--dry-run",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.skipped, true);
+  });
+
+  it("returns exit 2 when missing --confirmed and diff exists", () => {
+    const { stderr, code } = runCp(["create", "--project", "newProj"]);
+    assert.equal(code, 2);
+    assert.match(stderr, /--confirmed/);
+  });
+});
+
 describe("create-project scan", () => {
   before(() => resetFixture());
   after(() => rmSync(TMP, { recursive: true, force: true }));
