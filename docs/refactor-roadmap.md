@@ -1,6 +1,6 @@
 # qa-flow 重构 Roadmap
 
-> 最后更新：2026-04-19（phase 6 完成）
+> 最后更新：2026-04-19（phase 7 完成）
 > 本文档为整轮重构的索引入口。每阶段独立 spec → plan → 实施 → smoke → commit 循环。
 
 ---
@@ -19,13 +19,14 @@
 | # | 目标 | 状态 | Spec | 核心交付 |
 | --- | --- | --- | --- | --- |
 | **0** | 信息架构 + `rules/` 迁移 | ✅ DONE | [`2026-04-17-knowledge-architecture-design.md`](refactor/specs/2026-04-17-knowledge-architecture-design.md) | 三层边界定型、`preferences → rules` 迁移、`knowledge/` 空骨架、`knowledge-keeper` contract |
-| **1** | `create-project` skill + `setup` 瘦身 + `knowledge-keeper` 实施 | ⏳ PENDING | — | 新 skill 创建、setup 移除项目管理步骤、knowledge-keeper 代码实施 |
+| **1** | `create-project` skill + `setup` 瘦身 + `knowledge-keeper` 实施 | ✅ DONE | [`2026-04-17-knowledge-keeper-design.md`](refactor/specs/2026-04-17-knowledge-keeper-design.md) / [`2026-04-18-create-project-skill-design.md`](refactor/specs/2026-04-18-create-project-skill-design.md) / [`2026-04-19-phase1-completeness-audit-design.md`](refactor/specs/2026-04-19-phase1-completeness-audit-design.md) | 三子目标代码随 phase 0/6 合流落地；phase 7 补齐 smoke 验证与审计报告；init-wizard 文案修正；824 测试绿 |
 | **2** | PRD 需求讨论阶段（目标 1.1） | ✅ DONE | [`2026-04-18-prd-discussion-design.md`](refactor/specs/2026-04-18-prd-discussion-design.md) | 主 agent 主持讨论、`discuss.ts` CLI、`plan.md` 落盘、transform 简化、653 测试绿 |
 | **3** | UI 自动化（目标 1.3） | ✅ DONE | [`2026-04-18-ui-autotest-evolution-design.md`](refactor/specs/2026-04-18-ui-autotest-evolution-design.md) | pattern-analyzer-agent + 步骤 5.5 共性收敛、Allure 完全替换 monocart、session 多项目隔离、helpers 拆 5 文件、686 测试绿 |
 | **3.5** | skill 重排 | ✅ DONE | [`2026-04-18-skill-reorganization-design.md`](refactor/specs/2026-04-18-skill-reorganization-design.md) | 删 `code-analysis`；新增 `hotfix-case-gen` / `bug-report` / `conflict-report`；三个 skill 各自内化信息不足前置守卫；`qa-flow` 菜单按频率重排；runtime 辅助（hooks / model-tiers / zentao plugin / templates footer）全部同步；686 测试绿 |
 | **4** | MD 用例策略矩阵（目标 1.2） | ✅ DONE | [`2026-04-18-md-case-strategy-matrix-design.md`](refactor/specs/2026-04-18-md-case-strategy-matrix-design.md) | 4 维信号探针（signal-probe.ts）+ 5 策略派发（strategy-router.ts）+ probe 节点（10 节点 workflow）+ knowledge 注入 writer-context-builder + S5 外转到 hotfix-case-gen；plan.md frontmatter 新增 strategy 字段、qa-state 新增 strategy_resolution；785 测试绿 |
 | **5** | 横切基础设施 | ✅ DONE | [`2026-04-19-cross-cutting-infrastructure-design.md`](refactor/specs/2026-04-19-cross-cutting-infrastructure-design.md) | `lib/cli-runner.ts` 工厂（commander 封装 + initEnv + logger + onError）；27/28 CLI 迁移（`report-to-pdf` 保留）；`.env` 三段式（`.env` + `.env.envs` + `.env.local`）；`env-schema` 增 `validateActiveEnv`；state.ts 多环境隔离（`.qa-state-{slug}-{env}.json`）+ 自动迁移 + plan.md 仲裁；`logger.ts` 提升 `initLogLevel` 为 public API（LOG_LEVEL 支持）；821 测试绿 |
 | **6** | 命名迁移 + README + 架构图 | ✅ DONE | [`2026-04-19-naming-readme-diagrams-design.md`](refactor/specs/2026-04-19-naming-readme-diagrams-design.md) | `historys → history` 全仓统一 + legacy auto-rename；README 中英同步 phase 0-5 终态 + 新增「横切基础设施」章节；architecture / test-case-gen / ui-autotest drawio 重绘；删除 code-analysis 僵尸图；823 测试绿 |
+| **7** | Phase 1 完备性审计 | ✅ DONE | [`2026-04-19-phase1-completeness-audit-design.md`](refactor/specs/2026-04-19-phase1-completeness-audit-design.md) | Smoke 验证归档（knowledge-keeper / create-project / legacy historys 三链路）+ init-wizard `/using-qa-flow init` → `/qa-flow init` 文案补丁 + roadmap 状态对齐；整轮重构主干 0-7 闭环；824 测试绿 |
 
 ---
 
