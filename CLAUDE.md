@@ -54,18 +54,20 @@ workspace/
 
 qa-flow 的协作偏好、规则、业务知识分三层存放，职责互斥：
 
-| 层 | 路径 | 寿命 | 作用域 | 语义 | 典型内容 |
-|---|---|---|---|---|---|
-| **偏好（memory）** | `~/.claude/projects/.../memory/` | 长（跨项目） | 用户级 | AI 协作偏好 + 项目状态小便签 | `feedback_*`（AI 协作风格）、`project_*`（如"当前迭代 15695"） |
-| **规则（rules）** | `rules/` + `workspace/{project}/rules/` | 中（项目周期） | 项目 + 全局（双层） | 硬约束 | 用例编写规范、XMind 结构约束、格式/命名约定 |
-| **知识（knowledge）** | `workspace/{project}/knowledge/` | 短-中（业务迭代更新） | 仅项目级 | 业务知识库 | 主流程、术语表、业务规则、踩坑 |
+| 层                    | 路径                                    | 寿命                  | 作用域              | 语义                         | 典型内容                                                       |
+| --------------------- | --------------------------------------- | --------------------- | ------------------- | ---------------------------- | -------------------------------------------------------------- |
+| **偏好（memory）**    | `~/.claude/projects/.../memory/`        | 长（跨项目）          | 用户级              | AI 协作偏好 + 项目状态小便签 | `feedback_*`（AI 协作风格）、`project_*`（如"当前迭代 15695"） |
+| **规则（rules）**     | `rules/` + `workspace/{project}/rules/` | 中（项目周期）        | 项目 + 全局（双层） | 硬约束                       | 用例编写规范、XMind 结构约束、格式/命名约定                    |
+| **知识（knowledge）** | `workspace/{project}/knowledge/`        | 短-中（业务迭代更新） | 仅项目级            | 业务知识库                   | 主流程、术语表、业务规则、踩坑                                 |
 
 **边界判断口诀：**
+
 - 跨项目可复用的 AI 协作偏好 → memory
 - 项目内硬性编写/格式约束 → rules
 - 项目内业务事实（"是什么"、"怎么做业务"）→ knowledge
 
 **读写约束：**
+
 - `rules/` 通过 `bun run .claude/scripts/rule-loader.ts load --project {{project}}` 合并加载；主 agent 读、skill 读；AI 在 xmind-editor 等场景下可追加写入
 - `knowledge/` 由 `knowledge-keeper` skill（阶段 1 实施）统一读写；subagent 不得直接改文件
 - `memory/` 由 Claude Code 自动持久化；AI 主动写入
@@ -81,12 +83,12 @@ qa-flow 的协作偏好、规则、业务知识分三层存放，职责互斥：
 
 脚本和测试中**严禁**出现以下硬编码：
 
-| 类型 | 错误示例 | 正确做法 |
-| ---- | -------- | -------- |
-| 绝对路径 | `"/Users/poco/Projects/qa-flow"` | `join(import.meta.dirname, "../../..")` 或 `resolve(...)` 动态计算 |
-| 内部服务地址 | `"http://172.16.122.52"` | 从 `.env` 读取，如 `process.env.CI_BASE_URL` |
-| 账号密码 | `username: "admin@dtstack.com"` | 写入 `.env` 或配置文件，通过环境变量读取 |
-| Cookie/Token | `LANHU_COOKIE: "session=real_value"` | 测试中使用明确的占位假值（如 `"test-stub"`），生产值写入 `.env` |
+| 类型         | 错误示例                             | 正确做法                                                           |
+| ------------ | ------------------------------------ | ------------------------------------------------------------------ |
+| 绝对路径     | `"/Users/poco/Projects/qa-flow"`     | `join(import.meta.dirname, "../../..")` 或 `resolve(...)` 动态计算 |
+| 内部服务地址 | `"http://172.16.122.52"`             | 从 `.env` 读取，如 `process.env.CI_BASE_URL`                       |
+| 账号密码     | `username: "admin@dtstack.com"`      | 写入 `.env` 或配置文件，通过环境变量读取                           |
+| Cookie/Token | `LANHU_COOKIE: "session=real_value"` | 测试中使用明确的占位假值（如 `"test-stub"`），生产值写入 `.env`    |
 
 **检查时机**：每次新增或修改脚本/测试时，确认无硬编码绝对路径或凭证。
 **单元测试中的仓库根路径**：统一使用 `join(import.meta.dirname, "../../..")` 或 `resolve(import.meta.dirname, "../../..")` 获取，不得写死路径字符串。
