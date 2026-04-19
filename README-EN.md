@@ -101,19 +101,25 @@ qa-flow uses a **Router + Skill + Agent + Plugin Hook** architecture:
 
 ### Installation
 
+Recommended: hand the installation off to a Coding Agent (Claude Code / Cursor / Codex, etc.). After cloning the repo, **copy-paste** this prompt into your agent:
+
+```text
+Please read INSTALL.md in the repository root and follow its Execution Plan
+step by step to install and verify qa-flow. Stop immediately on any failure
+and report the error to me — do not silently downgrade or skip steps.
+```
+
+Manual install:
+
 ```bash
-# 1. Clone the repo
 git clone https://github.com/your-org/qa-flow.git
 cd qa-flow
-
-# 2. Install dependencies
 bun install
-
-# 3. Install Playwright skill (required for UI automation)
-bunx skills add playwright-cli
-
-# 4. Create environment config
 cp .env.example .env
+cp .env.envs.example .env.envs
+bun run .claude/scripts/config.ts            # config sanity check
+bun test ./.claude/scripts/__tests__          # must be all green
+bunx playwright install                       # only needed for UI automation
 ```
 
 ### Initialize

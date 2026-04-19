@@ -109,21 +109,26 @@ qa-flow 采用 **Router + Skill + Agent + Plugin Hook** 分层架构：
 - **Node.js** >= 22
 - **Claude Code CLI** — [安装指南](https://claude.com/claude-code)
 
-### 安装
+### 安装部署
+
+推荐交由 Coding Agent（Claude Code / Cursor / Codex 等）自动完成。克隆仓库后，在 Agent 中**复制粘贴**以下触发语：
+
+```text
+请阅读仓库根目录的 INSTALL.md，严格按照里面的 Execution Plan 为我安装并验证 qa-flow。
+任一步骤失败立即停下来告诉我错误，不要自行降级或跳过。
+```
+
+手工安装：
 
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/your-org/qa-flow.git
 cd qa-flow
-
-# 2. 安装依赖
 bun install
-
-# 3. 安装 Playwright skill（UI 自动化功能需要）
-bunx skills add playwright-cli
-
-# 4. 创建环境配置
 cp .env.example .env
+cp .env.envs.example .env.envs
+bun run .claude/scripts/config.ts            # 配置校验
+bun test ./.claude/scripts/__tests__          # 单元测试必须全绿
+bunx playwright install                       # 仅 UI 自动化场景需要
 ```
 
 ### 初始化

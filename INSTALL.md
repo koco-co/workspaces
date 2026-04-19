@@ -1,108 +1,107 @@
-# QAFlow 安装指南
+# QAFlow Installation Instructions (for Coding Agent)
 
-零摩擦的复制 → 粘贴 → AI 自主安装流程。本文档可整段复制给 Claude Code,由 AI 自动完成。
-
----
-
-## 1. 前置检查
-
-| 工具         | 最低版本 | 检查命令          | 缺失时执行                                |
-| ------------ | -------- | ----------------- | ----------------------------------------- |
-| Node.js      | >= 22.0  | `node --version`  | `nvm install 22 && nvm use 22`            |
-| Bun          | 任意     | `bun --version`   | `npm install -g bun`(或参考 https://bun.sh) |
-| Claude Code  | 最新     | `claude --version`| 参考 https://claude.com/claude-code        |
-| Git          | 任意     | `git --version`   | macOS: `brew install git`                 |
+> 本文档为 Coding Agent（Claude Code / Cursor / Codex 等）执行指令集，非用户手册。
+> 用户只需将整段内容或 README 中的触发语粘贴给 Agent 即可。Agent 读取本文后应严格按 §Execution Plan 步骤执行，每一步失败即停止并报告。
 
 ---
 
-## 2. 4 步安装
+## Role
+
+你是 QAFlow 的安装助手。目标：在用户当前终端会话中完成 QAFlow 的环境初始化，直至 `/qa-flow init` 可用。
+
+## Constraints
+
+- **不得跳过任何前置检查**；任一检查失败立即停止并输出具体错误与修复建议，不要尝试自动降级（如私自切换 Node 版本、改写 lockfile、禁用 hook）。
+- **不得修改 git 历史**、不得执行 `git push`、不得跨仓库操作。
+- **不得向 `.env` 写入真实凭证**；只允许 `cp .env.example .env` 创建占位文件，凭证由用户后续手工填写。
+- **不得触发 destructive 命令**（`rm -rf`、`--force`、`reset --hard` 等）。
+- **只读 `workspace/*/.repos/`**；如果已存在则跳过。
+- 所有命令必须在仓库根目录 `qa-flow/` 下执行；每步输出摘要（不要只说"已完成"）。
+
+## Prerequisites (检查并报告)
+
+| 工具        | 最低版本 | 检查命令           | 缺失处理                                  |
+| ----------- | -------- | ------------------ | ----------------------------------------- |
+| Node.js     | >= 22.0  | `node --version`   | 停止并提示用户执行 `nvm install 22`       |
+| Bun         | 任意     | `bun --version`    | 停止并提示 `npm install -g bun` 或 bun.sh |
+| Git         | 任意     | `git --version`    | 停止并提示用户自行安装                    |
+| Claude Code | 任意     | `claude --version` | 警告但不阻塞（可后续安装）                |
+
+## Execution Plan
+
+按顺序执行。每步失败立即停止并在对话中向用户报告。
+
+### Step 1 — 环境检查
+
+并行执行四个版本检查命令，整理为一张表格输出给用户。Node < 22 即视为失败。
+
+### Step 2 — 依赖安装
 
 ```bash
-# 1. 克隆仓库
-git clone https://github.com/your-org/qa-flow.git
-cd qa-flow
-
-# 2. 安装依赖(成功后会输出 "X packages installed")
 bun install
-
-# 3. 创建环境配置(凭证后续按需填写)
-cp .env.example .env
-cp .env.envs.example .env.envs   # 多环境时使用
-
-# 4. 安装 Playwright skill(UI 自动化必需,其他场景可跳过)
-bunx skills add playwright-cli
 ```
 
----
+预期输出含 `X packages installed`。若报 lock 冲突，不要自动清理，提示用户手动确认是否删除 `node_modules/` 与 `bun.lock`。
 
-## 3. 验证安装
+### Step 3 — 环境配置文件
 
 ```bash
-# 输出配置摘要,任何报错说明环境异常
-bun run .claude/scripts/config.ts
+[ -f .env ] || cp .env.example .env
+[ -f .env.envs ] || cp .env.envs.example .env.envs
+```
 
-# 运行单元测试,全绿表示框架完整
+仅创建占位，不写入真实值。
+
+### Step 4 — 配置校验
+
+```bash
+bun run .claude/scripts/config.ts
+```
+
+预期打印项目根、workspace 路径、已注册项目列表；任何堆栈报错即失败。
+
+### Step 5 — 单元测试
+
+```bash
 bun test ./.claude/scripts/__tests__
 ```
 
-预期输出:
-- `config.ts` 打印项目根、workspace 路径、已注册项目列表
-- `bun test` 显示 `XX pass | 0 fail`
+必须全绿（`0 fail`）。有失败立即报告具体用例名，不要重试。
 
----
+### Step 6 — (可选) Playwright
 
-## 4. 在 Claude Code 中初始化
+仅当用户明确要跑 UI 自动化时执行：
 
-打开 Claude Code 进入项目目录,输入:
-
-```
-/qa-flow init
+```bash
+bunx playwright install
 ```
 
-向导自动完成 4 步:环境检测 → 项目管理路由 → 插件配置 → 验证汇总。
+否则跳过，提示用户"UI 自动化场景再运行"。
 
-完成后即可使用 `/test-case-gen`、`/ui-autotest`、`/bug-report` 等指令。
+### Step 7 — 完成汇报
 
----
+向用户输出一张摘要表：
+- 各步骤状态（✅ / ❌）
+- 下一步动作：`在 Claude Code 中打开项目目录并输入 /qa-flow init`
+- 如需对接蓝湖 / 禅道 / IM 通知，提示用户手工编辑 `.env` 并参考 README 的「环境配置」章节
 
-## 5. 按需配置插件(可选)
+## Plugin Credentials (不要自动填写，仅提示)
 
-| 场景                | 必填 .env 变量                                     | 缺失时影响                |
-| ------------------- | -------------------------------------------------- | ------------------------- |
-| 蓝湖 PRD 导入       | `LANHU_COOKIE`                                     | 蓝湖 URL 输入立即报错     |
-| 禅道 Bug 链接       | `ZENTAO_BASE_URL`、`ZENTAO_ACCOUNT`、`ZENTAO_PASSWORD` | hotfix-case-gen 无法抓取  |
-| 钉钉/飞书/企业微信通知 | `DINGTALK_WEBHOOK_URL` 等                          | 跳过通知,流程不阻塞       |
-| SMTP 邮件通知       | `SMTP_HOST`、`SMTP_USER` 等                        | 跳过通知,流程不阻塞       |
+| 场景                 | `.env` 变量                                                  |
+| -------------------- | ------------------------------------------------------------ |
+| 蓝湖 PRD 导入        | `LANHU_COOKIE`                                               |
+| 禅道 Bug             | `ZENTAO_BASE_URL` / `ZENTAO_ACCOUNT` / `ZENTAO_PASSWORD`     |
+| 钉钉/飞书/企微通知   | `DINGTALK_WEBHOOK_URL` / `FEISHU_WEBHOOK_URL` / `WECOM_WEBHOOK_URL` |
+| SMTP 邮件            | `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` / `SMTP_TO` |
 
-获取蓝湖 Cookie 见 `tools/lanhu-mcp/GET-COOKIE-TUTORIAL.md`。
+## Failure Protocol
 
----
+遇到任何步骤失败：
+1. 停止后续步骤。
+2. 原样复述失败命令与 stderr 片段。
+3. 给出 1–2 条最可能的修复建议（不要超过 3 条，不要自行执行）。
+4. 等待用户决定。
 
-## 6. 常见问题
+## Done Criteria
 
-**`bun: command not found`** — 参考 https://bun.sh 安装,或执行 `npm install -g bun`。
-
-**`Node version too old`** — 安装 nvm 后执行 `nvm install 22 && nvm use 22`。
-
-**`bun install` 报 lock 冲突** — 删除 `node_modules/` 与 `bun.lock` 后重新执行。
-
-**`/qa-flow init` 找不到** — 确认在项目根目录打开 Claude Code,且 `.claude/skills/` 目录存在。
-
-**Playwright 浏览器未安装** — 执行 `bunx playwright install`(仅 UI 自动化场景)。
-
----
-
-## 7. 给 Coding Agent 的安装指令(整段复制)
-
-```text
-请按以下步骤为我安装 qa-flow:
-
-1. 验证 Node.js >= 22 与 Bun 已安装
-2. cd 到项目根目录,执行 `bun install`
-3. 复制 `.env.example` 为 `.env`,复制 `.env.envs.example` 为 `.env.envs`
-4. 执行 `bun run .claude/scripts/config.ts` 验证配置可加载
-5. 执行 `bun test ./.claude/scripts/__tests__` 验证全部通过
-6. 输出"安装完成"并提示我下一步在 Claude Code 中输入 `/qa-flow init`
-
-如果任何步骤失败,请停下来告诉我具体错误,不要尝试自动修复。
-```
+Step 1–5 全绿，Step 7 摘要已输出。用户回到 Claude Code 执行 `/qa-flow init` 能进入向导即视为安装完成。
