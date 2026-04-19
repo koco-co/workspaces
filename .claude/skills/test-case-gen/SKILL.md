@@ -17,9 +17,11 @@ argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
 ### 偏好预加载
 
 工作流启动时一次性加载偏好：
+
 ```bash
 bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{project}}/.temp/rules-merged.json
 ```
+
 后续节点通过此 JSON 传递规则给 sub-agent，不再各自读 `rules/` 目录。
 
 <precedence>
@@ -88,10 +90,10 @@ bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{
 
 ### 运行模式
 
-| 模式 | 触发 | 差异 |
-|------|------|------|
-| normal | 默认 | 完整 7 节点 + 复审 |
-| quick | `--quick` | 跳过复审，format-check 仅 1 轮 |
+| 模式   | 触发      | 差异                           |
+| ------ | --------- | ------------------------------ |
+| normal | 默认      | 完整 7 节点 + 复审             |
+| quick  | `--quick` | 跳过复审，format-check 仅 1 轮 |
 
 ---
 
@@ -103,18 +105,18 @@ bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{
 
 workflow 启动时（节点 1 开始前），使用 `TaskCreate` 一次性创建 10 个任务（含 discuss 与 format-check），按顺序设置 `addBlockedBy` 依赖：
 
-| 任务 subject                              | activeForm                           |
-| ----------------------------------------- | ------------------------------------ |
-| `init — 输入解析与环境准备`               | `解析输入与检测断点`                 |
-| `probe — 4 维信号探针与策略派发`          | `采集 4 维信号并路由策略`            |
-| `discuss — 主 agent 主持需求讨论`         | `主持需求讨论与 plan.md 落地`        |
-| `transform — 源码分析与 PRD 结构化`       | `分析源码与结构化 PRD`               |
-| `enhance — PRD 增强`                      | `增强 PRD（图片识别、要点提取）`     |
-| `analyze — 测试点规划`                    | `生成测试点清单`                     |
-| `write — 并行生成用例`                    | `派发 Writer 生成用例`               |
-| `review — 质量审查`                       | `执行质量审查与修正`                 |
-| `format-check — 格式合规检查`             | `检查格式合规性`                     |
-| `output — 产物生成`                       | `生成 XMind + Archive MD`            |
+| 任务 subject                        | activeForm                       |
+| ----------------------------------- | -------------------------------- |
+| `init — 输入解析与环境准备`         | `解析输入与检测断点`             |
+| `probe — 4 维信号探针与策略派发`    | `采集 4 维信号并路由策略`        |
+| `discuss — 主 agent 主持需求讨论`   | `主持需求讨论与 plan.md 落地`    |
+| `transform — 源码分析与 PRD 结构化` | `分析源码与结构化 PRD`           |
+| `enhance — PRD 增强`                | `增强 PRD（图片识别、要点提取）` |
+| `analyze — 测试点规划`              | `生成测试点清单`                 |
+| `write — 并行生成用例`              | `派发 Writer 生成用例`           |
+| `review — 质量审查`                 | `执行质量审查与修正`             |
+| `format-check — 格式合规检查`       | `检查格式合规性`                 |
+| `output — 产物生成`                 | `生成 XMind + Archive MD`        |
 
 **状态推进规则**：
 
@@ -324,7 +326,7 @@ bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}}
 按返回 `frontmatter.status` / `frontmatter.resume_anchor` 决定下游路由：
 
 - 不存在 / status=obsolete → 进入节点 1.5 discuss（init 模式）
-- status=discussing → 进入节点 1.5 discuss（恢复模式，从未答 Q* 续问）
+- status=discussing → 进入节点 1.5 discuss（恢复模式，从未答 Q\* 续问）
 - status=ready → **跳过节点 1.5 discuss，直接进入节点 2 transform**（并把 plan_path 作为 task prompt 传给 transform-agent）
 
 > 提示：`state.ts resume` 与 `discuss read` 互补 — 前者管"工作流上次跑到哪个节点"，后者管"需求讨论是否已落地"。两个独立判定后按各自结论行事。
@@ -455,7 +457,7 @@ stdout 输出 StrategyResolution JSON。
 按节点 1.2 的检测结果：
 
 - 全新讨论 → `bun run .claude/scripts/discuss.ts init --project {{project}} --prd {{prd_path}}`
-- 恢复 → `bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}}` 拿到已答清单 + 未答 Q*
+- 恢复 → `bun run .claude/scripts/discuss.ts read --project {{project}} --prd {{prd_path}}` 拿到已答清单 + 未答 Q\*
 
 ### 1.5.2 需求摘要（plan §1）
 

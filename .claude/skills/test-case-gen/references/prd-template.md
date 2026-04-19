@@ -3,9 +3,9 @@
 > 本模板由 transform 节点使用，将蓝湖原始素材 + 源码分析 + 归档参考转化为结构化 PRD。
 
 <uncertainty_model>
-  <defaultable_unknown>信息不完整，但可用源码或历史高置信度默认项继续，文中标记为 🟡 并记录默认策略。</defaultable_unknown>
-  <blocking_unknown>信息不足以安全落地，保留 🔴 并进入结构化 `<clarify_envelope>`。</blocking_unknown>
-  <invalid_input>输入缺失、损坏或彼此冲突，停止自动落地并返回 `<clarify_envelope status="invalid_input">`。</invalid_input>
+<defaultable_unknown>信息不完整，但可用源码或历史高置信度默认项继续，文中标记为 🟡 并记录默认策略。</defaultable_unknown>
+<blocking_unknown>信息不足以安全落地，保留 🔴 并进入结构化 `<clarify_envelope>`。</blocking_unknown>
+<invalid_input>输入缺失、损坏或彼此冲突，停止自动落地并返回 `<clarify_envelope status="invalid_input">`。</invalid_input>
 </uncertainty_model>
 
 ## 信息来源标注（四色标注）

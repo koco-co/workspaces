@@ -68,6 +68,7 @@ bun run .claude/scripts/knowledge-keeper.ts read-pitfall --project {{project}} -
    - 信息不足 → 走 low 升级流程（见 B3）
 
 3. **构造 content JSON**（按 type）：
+
    ```json
    // type=term: { "term": "...", "zh": "...", "desc": "...", "alias": "" }
    // type=overview: { "section": "...", "body": "...", "mode": "append"|"replace" }
@@ -75,6 +76,7 @@ bun run .claude/scripts/knowledge-keeper.ts read-pitfall --project {{project}} -
    ```
 
 4. **dry-run 预览**：
+
    ```bash
    bun run .claude/scripts/knowledge-keeper.ts write \
      --project {{project}} --type {{type}} \
@@ -86,6 +88,7 @@ bun run .claude/scripts/knowledge-keeper.ts read-pitfall --project {{project}} -
    - `confidence=medium`：AskUserQuestion 确认后带 `--confirmed` 真写
 
 6. **真实写入**：去掉 `--dry-run` 加 `--confirmed`（如为 medium）：
+
    ```bash
    bun run .claude/scripts/knowledge-keeper.ts write \
      --project {{project}} --type {{type}} \
@@ -101,6 +104,7 @@ bun run .claude/scripts/knowledge-keeper.ts read-pitfall --project {{project}} -
 ### B2. 覆盖已有 module/pitfall
 
 CLI 默认拒绝覆盖。选择：
+
 - **走 update**（推荐）：使用 `update` 命令精细改 frontmatter / body
 - **强制覆盖**：加 `--overwrite` flag（同时需要 `--confirmed`）
 
@@ -138,7 +142,7 @@ CLI 默认拒绝覆盖。选择：
 
 ## 场景 C：维护
 
-### C1. 刷新 _index.md
+### C1. 刷新 \_index.md
 
 ```bash
 bun run .claude/scripts/knowledge-keeper.ts index --project {{project}}
