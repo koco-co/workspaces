@@ -236,7 +236,7 @@ function runScan(): ScanResult {
     issues.push("node_modules/ not found — run: bun install");
   }
   if (!workspaceExists) {
-    issues.push("workspace/ directory not found — run: /using-qa-flow init");
+    issues.push("workspace/ directory not found — run: /qa-flow init");
   }
   if (!envConfigured) {
     issues.push(
@@ -284,7 +284,7 @@ function runVerify(): VerifyResult {
       status: scan.workspace_exists ? "pass" : "fail",
       detail: scan.workspace_exists
         ? "workspace/ 存在"
-        : "workspace/ 不存在，请运行 /using-qa-flow init",
+        : "workspace/ 不存在，请运行 /qa-flow init",
     },
     {
       name: ".env 配置",
