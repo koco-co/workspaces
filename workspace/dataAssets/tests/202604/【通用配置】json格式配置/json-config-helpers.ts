@@ -431,7 +431,11 @@ export async function searchKey(page: Page, keyword: string): Promise<void> {
   if (!(await searchInput.isVisible({ timeout: 3000 }).catch(() => false))) {
     return;
   }
-  await searchInput.clear();
+  // 直接 fill(keyword) 而不先 clear()：
+  // Ant Design Input.Search 的 onChange 只在 value 变为空时才触发 setSearchValue('')，
+  // 若先 clear() 再 fill()，会触发两次 React 状态更新（searchValue='' 和 searchValue=keyword），
+  // 导致两个并发 fetchTree 请求（空搜索 vs 目标搜索），后完成的空搜索会覆盖过滤结果，
+  // 造成表格显示空数据（暂无数据）的竞态问题。
   await searchInput.fill(keyword);
   await triggerSearch(page);
 }
