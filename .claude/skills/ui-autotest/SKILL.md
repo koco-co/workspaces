@@ -170,295 +170,42 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 ---
 
-## 步骤 0：偏好预加载
+## 步骤执行入口
 
-工作流启动时一次性加载偏好：
+各步骤的具体执行细节放在 `workflow/` 子目录，按需加载（节省上下文）：
 
-```bash
-bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{project}}/.temp/rules-merged.json
-```
+| 步骤    | 加载文件                                    |
+| ------- | ------------------------------------------- |
+| 0       | `workflow/step-0-preferences.md`            |
+| 1       | `workflow/step-1-parse-input.md`            |
+| 1.5     | `workflow/step-1.5-resume.md`               |
+| 2       | `workflow/step-2-scope.md`                  |
+| 3       | `workflow/step-3-login.md`                  |
+| 4       | `workflow/step-4-script-writer.md`          |
+| 5       | `workflow/step-5-test-fix.md`               |
+| 5.5     | `workflow/step-5.5-convergence.md`（条件）  |
+| 6       | `workflow/step-6-merge.md`                  |
+| 7       | `workflow/step-7-execute.md`                |
+| 8       | `workflow/step-8-result-processing.md`      |
+| 9       | `workflow/step-9-notify.md`                 |
 
-后续步骤通过此 JSON 传递规则给 sub-agent，不再各自读 `rules/` 目录。
+**执行约定**：
 
----
+- 步骤 5 结束后，若累计失败数 ≥ `convergence_threshold`，加载 step-5.5，否则跳过直达步骤 6。
+- 步骤 9 **必须由主 agent 亲自执行**（不派发 subagent），因为要用 `run_in_background` 启动常驻 allure 服务并读取 URL。
 
-## 步骤 1：解析输入
+### 步骤 5 失败用例的结果路径速查
 
-按照 `workflow/step-1-parse-input.md` 执行。该文件定义 Archive MD 解析、case_id 生成、suite_name 推导、断点续传检测。
+步骤 5 中某条用例经过 3 轮 sub-agent 修复仍无法通过时：
 
-## 步骤 1.5：断点续传检查
-
-**⏳ 自动检查**：在步骤 2 之前，检查是否存在未完成的进度：
-
-```bash
-bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite_name}}" --env "{{env}}"
-```
-
-**情况 A — 无进度文件**（命令 exit 1）：正常继续步骤 2。
-
-**情况 B — 有进度文件且 `merge_status === "completed"`**：
-
-```
-上次执行已全部完成。是否重新开始？
-1. 重新开始（清空进度）
-2. 取消
-```
-
-若选 1，执行 `bun run .claude/scripts/ui-autotest-progress.ts reset --project {{project}} --suite "{{suite_name}}" --env "{{env}}"` 后继续步骤 2。
-
-**情况 C — 有进度文件且未完成**：
-
-先执行 resume 清理中断状态：
-
-```bash
-bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --env "{{env}}"
-```
-
-然后读取 summary，向用户展示（步骤进度条 + 用例统计）：
-
-```
-检测到上次未完成的执行进度：
-
-套件：{{suite_name}}
-
-步骤进度：
-  ✓ 步骤 1   解析输入
-  ✓ 步骤 2   范围确认
-  ✓ 步骤 3   登录态准备
-  {{#each completedSteps as step}}✓ 步骤 {{step.id}}   {{step.name}}
-  {{/each}}➜ 步骤 {{current_step}}   {{current_step_name}}（中断于此）
-  {{#each pendingSteps as step}}░ 步骤 {{step.id}}   {{step.name}}
-  {{/each}}
-
-用例进度：{{passed}} 通过 · {{failed}} 失败 · {{pending}} 待执行（共 {{total}}）
-上次更新：{{updated_at}}
-{{#if expired}}⚠️ 上次进度已超过 7 天，环境可能已变化。建议选择「全部重新开始」。{{/if}}
-
-请选择：
-1. 继续执行（跳过已通过，从待执行的继续）
-2. 重试失败项（重跑失败用例，再继续待执行的）
-3. 全部重新开始（清空进度，从头来）
-```
-
-> 步骤名称参照 SKILL.md 顶部「主流程任务列表」(步骤 1-8)。`completedSteps` 为 ID < `current_step` 的步骤，`pendingSteps` 为 ID > `current_step` 的步骤。
-
-- 选 1：直接跳到 `current_step` 对应的步骤（4/5/6），已 passed 的用例自动跳过
-- 选 2：执行 `bun run .claude/scripts/ui-autotest-progress.ts resume --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --retry-failed`，然后跳到 `current_step`
-- 选 3：执行 `reset`，正常从步骤 2 继续
-
-> **恢复跳转规则**：恢复时直接跳到 `current_step` 对应的步骤。步骤 1~3（解析、范围、登录态）始终重新执行（它们很快且登录态需刷新），但从进度文件中恢复 `url`、`selected_priorities` 等参数，无需重新询问用户。
-
-## 步骤 2：执行范围确认（仅在范围未明确时提问）
-
-按 Task Schema 更新：将 `步骤 2` 标记为 `in_progress`。
-
-默认行为：
-
-- 若用户输入已明确给出执行范围或优先级，直接采用并继续
-- 若未明确，展示配置摘要并让用户选择执行范围
-
-```
-🧪 UI 自动化测试配置
-
-环境：{{env}}
-目标 URL：{{url}}
-用例文件：{{md_path}}
-用例总数：{{total}}（P0: {{p0}}, P1: {{p1}}, P2: {{p2}}）
-```
-
-仅在需要用户选择范围时，展示：
-
-```
-请选择执行范围：
-1. 冒烟测试（仅 P0，推荐先跑）
-2. 完整测试（P0+P1+P2）
-3. 自定义（指定优先级，如：P0,P1）
-
-请输入选项编号（默认 1）：
-```
-
-根据用户输入或默认策略确定 `selected_priorities`（默认 `["P0"]`）。
-
----
-
-按 Task Schema 更新：将 `步骤 2` 标记为 `completed`（subject: `步骤 2 — {{scope}} 模式，{{n}} 条用例`）。
-
-## 步骤 3：登录态准备
-
-按 Task Schema 更新：将 `步骤 3` 标记为 `in_progress`。
-
-**3.1 检查已有 session**
-
-```bash
-bun run .claude/skills/ui-autotest/scripts/session-login.ts --project {{project}} --url {{url}} --output .auth/{{project}}/session-{{env}}.json
-```
-
-若返回 `{ "valid": true }`，直接复用，跳过登录。
-
-**3.2 引导用户登录（session 无效时）**
-
-脚本会自动打开浏览器，提示用户：
-
-```
-浏览器已打开，请手动登录系统。
-登录完成后请回到此终端按 Enter 继续...
-```
-
-登录完成后，session 保存至 `.auth/session-{{env}}.json`。
-
----
-
-按 Task Schema 更新：将 `步骤 3` 标记为 `completed`（subject: `步骤 3 — 登录态就绪`）。
-
-## 步骤 4：脚本生成（Sub-Agent 并发）
-
-按照 `workflow/step-4-script-writer.md` 执行。该文件定义 sub-agent 并发契约、输入输出格式、脚本写入路径与 script-writer-agent 调用协议。
-
-## 步骤 5：逐条自测与修复（强制，不可跳过）
-
-按照 `workflow/step-5-test-fix.md` 执行。该文件定义 3 轮修复策略、script-fixer-agent 调用、Archive MD 反向写回时机、失败计数规则。
-
-**达到 `convergence_threshold` 阈值时**：step 5 结束后紧接执行 `workflow/step-5.5-convergence.md`（共性收敛），否则跳过步骤 5.5 直接进入步骤 6。
-
-### 3 轮修复仍失败的结果路径
-
-若某条用例经过 3 轮 sub-agent 修复仍无法通过：
-
-1. step 5 阶段：标记为「环境/平台问题」，从待合并列表中移除（不影响其他用例），不在此阶段生成 Bug 报告
-2. step 8 阶段：若 step 7 全量回归依然存在失败用例，自动派发 `bug-reporter-agent` 生成 Bug 报告
-3. **失败结果路径速查**（用户可据此快速定位）：
+1. 标记为「环境/平台问题」，从待合并列表中移除（不影响其他用例），不在此阶段生成 Bug 报告
+2. 若步骤 7 全量回归依然存在失败用例，步骤 8 自动派发 `bug-reporter-agent` 生成 Bug 报告
+3. **失败结果路径**（用户可据此快速定位）：
    - **HTML Bug 报告**：`workspace/{{project}}/reports/bugs/{{YYYYMM}}/ui-autotest-{{suite_name}}.html`
    - **失败用例脚本与日志**：`workspace/{{project}}/.temp/ui-blocks/{{suite_slug}}/` 下的 `.spec.ts` 与 stderr 文本
    - **Allure 报告（含截图、Console 日志、错误堆栈）**：`workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-report/index.html`
    - **进度状态**：`bun run .claude/scripts/ui-autotest-progress.ts summary --project {{project}} --suite "{{suite_name}}" --env "{{env}}"`
 4. 用户根据 HTML 报告与 Allure 截图判断：测试环境问题（数据/权限/网络）→ 修复环境后 `--retry-failed`；应用端 Bug → 已生成的 Bug 报告可直接交研发
-
-## 步骤 5.5：共性收敛（条件触发）
-
-按照 `workflow/step-5.5-convergence.md` 执行。仅在步骤 5 累计失败用例数 ≥ `convergence_threshold` 时触发，定义共性模式识别、helpers 固化、剩余用例回执策略。
-
-## 步骤 6：合并脚本
-
-按 Task Schema 更新：将 `步骤 6` 标记为 `in_progress`。
-
-> 仅合并步骤 5 中**验证通过**的脚本。
-
-```bash
-bun run .claude/skills/ui-autotest/scripts/merge-specs.ts \
-  --input workspace/{{project}}/.temp/ui-blocks/{{suite_slug}}/ \
-  --output workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/
-```
-
-> 提示：默认会执行 `tsc --noEmit` 对代码块做类型检查，如需跳过（调试时）可加 `--no-compile-check`。
-
-生成：
-
-- `smoke.spec.ts`：仅含 P0 用例（已验证通过）
-- `full.spec.ts`：含所有优先级用例（已验证通过）
-
-输出结果：
-
-```json
-{
-  "smoke_spec": "workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts",
-  "full_spec": "workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts",
-  "case_count": { "smoke": 5, "full": 20 },
-  "skipped": ["{{跳过的用例 id 列表}}"]
-}
-```
-
----
-
-按 Task Schema 更新：将 `步骤 6` 标记为 `completed`（subject: `步骤 6 — 合并 {{n}} 条脚本`）。
-
-**💾 进度持久化 — 合并完成**：
-
-```bash
-bun run .claude/scripts/ui-autotest-progress.ts update --project {{project}} --suite "{{suite_name}}" --env "{{env}}" --field merge_status --value completed
-```
-
-## 步骤 7：执行测试（全量回归）
-
-按 Task Schema 更新：将 `步骤 7` 标记为 `in_progress`。
-
-> 此步骤为合并后的全量回归验证，因步骤 5 已逐条验证通过，此处预期全部通过。
-
-根据执行范围选择 spec 文件：
-
-```bash
-# 冒烟测试
-ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
-  bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
-  --project=chromium
-
-# 完整测试
-ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
-  bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
-  --project=chromium
-
-# 生成 Allure HTML 报告（合并 / 回归后必跑）
-npx allure generate \
-  workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-results \
-  --output workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-report \
-  --clean
-```
-
-> 报告输出至 `workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/`，含 `allure-results/`（原始数据）和 `allure-report/`（HTML 入口 `index.html`）两个子目录。
-
-记录执行开始时间，计算 `duration`。
-
----
-
-按 Task Schema 更新：将 `步骤 7` 标记为 `completed`（subject: `步骤 7 — 回归完成，{{passed}}/{{total}} 通过`）。
-
-## 步骤 8：处理测试结果
-
-按照 `workflow/step-8-result-processing.md` 执行。该文件定义 Allure 报告解析、失败分类、Bug 报告生成入口、通知 payload 构造。
-
-## 步骤 9：启动 Allure 服务并发送通知
-
-按 Task Schema 更新：将 `步骤 9` 标记为 `in_progress`。
-
-> 本步骤必须由主 agent 亲自执行（不派发 subagent），以便用 Bash `run_in_background` 启动常驻服务并读取 URL。
-
-### 9.1 启动 Allure 在线报告（后台、绑定所有网卡）
-
-```bash
-# 选一个较稳定的端口（如 7999）；若被占用可改成其他未占用端口
-ALLURE_PORT=7999
-npx allure open \
-  workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-report \
-  --host 0.0.0.0 --port ${ALLURE_PORT}
-```
-
-- **必须使用** Bash 工具的 `run_in_background: true` 启动，进程常驻。
-- 启动后用 `BashOutput` 读取 stdout，提取形如 `Server started at <http://...>` 的日志作为基础 URL。
-- 若上一次 `/ui-autotest` 已占用该端口，先用 `KillShell` 终止旧 shell 再启动。
-
-### 9.2 构造可直接访问的链接
-
-- 获取本机局域网 IP（macOS）：`ipconfig getifaddr en0`（en0 为空则回退 `en1`）。
-- 最终 URL：`http://<LAN_IP>:${ALLURE_PORT}/`
-- 如环境设置了 `ALLURE_PUBLIC_BASE_URL`（可穿透/公网域名），优先使用该值并拼端口/路径。
-
-### 9.3 发送钉钉通知（带链接）
-
-```bash
-bun run .claude/scripts/plugin-loader.ts notify \
-  --event ui-test-completed \
-  --data '{
-    "passed": {{passed}},
-    "failed": {{failed}},
-    "specFiles": ["{{spec_file}}"],
-    "reportFile": "workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-report/index.html",
-    "reportURL": "http://{{lan_ip}}:{{allure_port}}/",
-    "duration": "{{duration}}"
-  }'
-```
-
-`reportURL` 会以 Markdown 链接形式出现在钉钉卡片 `🔗 在线查看` 行，点击即可直接访问。
-
-按 Task Schema 更新：将 `步骤 9` 标记为 `completed`（subject: `步骤 9 — 通知已发送，Allure 服务端口 {{allure_port}}`）。
 
 ---
 
