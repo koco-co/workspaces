@@ -22,9 +22,10 @@ test-results/
 playwright-report/
 .playwright-cli
 
-# ── 测试报告产物（Allure/Bug HTML，不入库） ─────────────
+# ── 测试报告产物（Allure/Bug/Playwright HTML，不入库） ──
 workspace/*/reports/allure/
 workspace/*/reports/bugs/
+workspace/*/reports/playwright/
 
 # ── 编译 / 构建产物 ─────────────────────────────────────
 dist/
