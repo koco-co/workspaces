@@ -28,7 +28,7 @@ async function importXlsx(
   filePath: string,
   duplicateRule: "重复则跳过" | "重复则覆盖更新" = "重复则跳过",
 ) {
-  await step(`导入xlsx (${duplicateRule})`, async () => {
+  await step(`步骤0: 执行导入操作（${duplicateRule}） → 导入流程提交完成`, async () => {
     await page.getByRole("button", { name: /^导\s*入$/ }).click();
     const modal = page.locator(".ant-modal:visible");
     await modal.waitFor({ state: "visible" });
