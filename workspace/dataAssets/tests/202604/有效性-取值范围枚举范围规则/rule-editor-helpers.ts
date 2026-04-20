@@ -12,7 +12,7 @@ import {
   DORIS3X_SOURCE_TYPE_NAME,
   getCurrentDatasource,
   injectProjectContext,
-  QUALITY_PROJECT_ID,
+  resolveEffectiveQualityProjectId,
 } from "./test-data";
 import {
   addOfflineRuleToPackage,
@@ -64,6 +64,7 @@ const RETRYABLE_HTTP_STATUS = new Set([502, 503, 504]);
 let cachedCompatibleMonitorDatasourcePayload: { data?: MonitorDatasourceItem[] } | null = null;
 
 type MonitorDatasourceItem = {
+  id?: string;
   dataSourceName?: string;
   dtCenterSourceName?: string;
   sourceTypeValue?: string;
@@ -139,92 +140,161 @@ async function requestJsonWithRetries<T>(
   throw lastError ?? new Error(`Request failed: ${requestUrl}`);
 }
 
+/**
+ * Pre-warms the monitor datasource cache by fetching the list via Node.js API (bypasses route
+ * handlers). This ensures the route handler always takes the fast-path on first browser request,
+ * preventing the browser from blocking while the slow API call runs in the handler.
+ */
+async function prewarmMonitorDatasourceCache(page: Page): Promise<void> {
+  if (cachedCompatibleMonitorDatasourcePayload) {
+    return; // already cached
+  }
+  const datasource = getCurrentDatasource();
+  const baseUrl = normalizeDataAssetsBaseUrl();
+  const shouldValidateSchema = datasource.preconditionType === "Doris";
+  const strippedDatabase = datasource.database.replace(/_test$/, "");
+  const schemaCandidates = [datasource.database, strippedDatabase].filter(
+    (v, i, a) => v && a.indexOf(v) === i,
+  );
+
+  // Try monitor/list first
+  const monitorListUrls = [
+    new URL("/dmetadata/v1/dataSource/monitor/list", baseUrl).toString(),
+    new URL("/dassets/v1/dataSource/monitor/list", baseUrl).toString(),
+  ];
+  for (const monitorUrl of monitorListUrls) {
+    const monitorResponse = await postProjectApi<{ data?: MonitorDatasourceItem[] }>(
+      page,
+      monitorUrl,
+      {},
+    ).catch(() => null);
+    const monitorItems = Array.isArray(monitorResponse?.data) ? monitorResponse!.data! : [];
+    if (monitorItems.length > 0) {
+      // For Doris: validate that at least one item has the required schema.
+      // If none do, we don't cache this result and instead look via pageQuery for the correct datasource.
+      if (shouldValidateSchema) {
+        let schemaValidItem: MonitorDatasourceItem | undefined;
+        for (const item of monitorItems) {
+          if (!item.id) continue;
+          const hasSchema = await getDatasourceSchemas(page, item.id)
+            .then((schemas) => schemas.some((s) => schemaCandidates.includes(s)))
+            .catch(() => false);
+          if (hasSchema) {
+            schemaValidItem = item;
+            break;
+          }
+        }
+        if (schemaValidItem) {
+          const patchedPayload = {
+            ...monitorResponse,
+            data: [patchCompatibleDorisSource(schemaValidItem)],
+          };
+          cachedCompatibleMonitorDatasourcePayload = patchedPayload;
+          process.stderr.write(
+            `[ruleset] monitor datasource cache primed from ${monitorUrl} (schema-validated: "${schemaValidItem.dataSourceName ?? schemaValidItem.dtCenterSourceName}").\n`,
+          );
+          return;
+        }
+        process.stderr.write(
+          `[ruleset] monitor datasource found in ${monitorUrl} but none have schema "${datasource.database}". Checking pageQuery.\n`,
+        );
+      } else {
+        const patchedPayload = {
+          ...monitorResponse,
+          data: monitorItems.map(patchCompatibleDorisSource),
+        };
+        cachedCompatibleMonitorDatasourcePayload = patchedPayload;
+        process.stderr.write(
+          `[ruleset] monitor datasource cache primed from ${monitorUrl} (${monitorItems.length} items).\n`,
+        );
+        return;
+      }
+    }
+  }
+
+  // monitor/list returned empty or no schema-valid item — try pageQuery fallback
+  const pageQueryUrl = new URL("/dassets/v1/dataSource/pageQuery", baseUrl).toString();
+  const pageQueryResponse = await postProjectApi<{
+    data?: { contentList?: MonitorDatasourceItem[] };
+  }>(page, pageQueryUrl, { current: 1, size: 200, search: "" }).catch(() => null);
+  const matchingItems = (pageQueryResponse?.data?.contentList ?? []).filter((item) =>
+    datasource.optionPattern.test(
+      `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
+    ),
+  );
+
+  let fallbackItem: MonitorDatasourceItem | undefined;
+  if (shouldValidateSchema) {
+    for (const item of matchingItems) {
+      if (!item.id) continue;
+      const hasSchema = await getDatasourceSchemas(page, item.id)
+        .then((schemas) => schemas.some((s) => schemaCandidates.includes(s)))
+        .catch(() => false);
+      if (hasSchema) {
+        fallbackItem = item;
+        process.stderr.write(
+          `[ruleset] pageQuery found schema-valid datasource "${item.dataSourceName ?? item.dtCenterSourceName}" (id=${item.id}).\n`,
+        );
+        break;
+      }
+    }
+    if (!fallbackItem) {
+      fallbackItem = matchingItems[0];
+      if (fallbackItem) {
+        process.stderr.write(
+          `[ruleset] WARN: no pageQuery datasource has schema "${datasource.database}". Using first match.\n`,
+        );
+      }
+    }
+  } else {
+    fallbackItem = matchingItems[0];
+  }
+
+  if (fallbackItem) {
+    const patchedPayload = { data: [patchCompatibleDorisSource(fallbackItem)] };
+    cachedCompatibleMonitorDatasourcePayload = patchedPayload;
+    process.stderr.write(
+      `[ruleset] monitor datasource cache primed from pageQuery fallback (${datasource.reportName}).\n`,
+    );
+    return;
+  }
+
+  // Nothing found — set empty sentinel so route handler still takes fast path (will pass through)
+  cachedCompatibleMonitorDatasourcePayload = { data: [] };
+  process.stderr.write(
+    `[ruleset] monitor datasource cache primed with empty sentinel (no matching datasource found).\n`,
+  );
+}
+
 export async function enableCompatibleMonitorDatasourceRouting(page: Page): Promise<void> {
   if (compatibleDorisRoutingPages.has(page)) {
     return;
   }
 
+  // Pre-warm the cache before registering the route handler so the handler always takes the
+  // fast path. Without this, concurrent browser XHR requests during page load would each
+  // trigger slow API calls inside the handler, blocking page rendering for many minutes.
+  await prewarmMonitorDatasourceCache(page);
+
   const handleCompatibleMonitorDatasourceRoute = async (route: import("@playwright/test").Route) => {
-    const requestUrl = route.request().url();
-    const headers = route.request().headers();
-    const requestBody = route.request().postDataJSON?.() ?? {};
-
-    try {
-      const payload = await requestJsonWithRetries<{ data?: MonitorDatasourceItem[] }>(
-        page,
-        requestUrl,
-        requestBody,
-        headers,
-      );
-
-      if (!Array.isArray(payload?.data)) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json;charset=UTF-8",
-          body: JSON.stringify(payload),
-        });
+    // Always take fast path — cache is guaranteed to be populated by prewarmMonitorDatasourceCache.
+    if (cachedCompatibleMonitorDatasourcePayload) {
+      const payload = cachedCompatibleMonitorDatasourcePayload;
+      // If cache has data, serve it; if empty sentinel, pass through to get real browser response.
+      if (Array.isArray(payload.data) && payload.data.length === 0) {
+        await route.continue();
         return;
       }
-
-      // When real monitor list is non-empty, patch and return it
-      if (payload.data.length > 0) {
-        const patchedPayload = {
-          ...payload,
-          data: payload.data.map((item: MonitorDatasourceItem) => patchCompatibleDorisSource(item)),
-        };
-        cachedCompatibleMonitorDatasourcePayload = patchedPayload;
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json;charset=UTF-8",
-          body: JSON.stringify(patchedPayload),
-        });
-        return;
-      }
-
-      // Real monitor list is empty — fall through to pageQuery fallback below
-      throw new Error("monitor list returned empty, trying pageQuery fallback");
-    } catch (error) {
-      const datasource = getCurrentDatasource();
-      const fallbackResponse = await requestJsonWithRetries<{
-        data?: { contentList?: MonitorDatasourceItem[] };
-      }>(
-        page,
-        new URL("/dassets/v1/dataSource/pageQuery", requestUrl).toString(),
-        {
-          current: 1,
-          size: 200,
-          search: "",
-        },
-        headers,
-      ).catch(() => null);
-      const fallbackItem = fallbackResponse?.data?.contentList?.find((item) =>
-        datasource.optionPattern.test(
-          `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
-        ),
-      );
-      if (fallbackItem) {
-        const patchedPayload = {
-          data: [patchCompatibleDorisSource(fallbackItem)],
-        };
-        cachedCompatibleMonitorDatasourcePayload = patchedPayload;
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json;charset=UTF-8",
-          body: JSON.stringify(patchedPayload),
-        });
-        return;
-      }
-      if (cachedCompatibleMonitorDatasourcePayload) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json;charset=UTF-8",
-          body: JSON.stringify(cachedCompatibleMonitorDatasourcePayload),
-        });
-        return;
-      }
-      // No fallback available — return the real (empty) response
-      await route.continue();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json;charset=UTF-8",
+        body: JSON.stringify(payload),
+      });
+      return;
     }
+
+    // Fallback (should not normally reach here after prewarm): pass through to avoid hanging.
+    await route.continue();
   };
 
   await page.route("**/dmetadata/v1/dataSource/monitor/list", handleCompatibleMonitorDatasourceRoute);
@@ -237,23 +307,74 @@ async function postProjectApi<T>(page: Page, path: string, body: unknown): Promi
   const requestUrl = /^https?:\/\//.test(path)
     ? path
     : new URL(path, normalizeDataAssetsBaseUrl()).toString();
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
   return requestJsonWithRetries<T>(page, requestUrl, body, {
     "content-type": "application/json;charset=UTF-8",
     "Accept-Language": "zh-CN",
-    "X-Valid-Project-ID": String(QUALITY_PROJECT_ID),
+    "X-Valid-Project-ID": String(effectiveProjectId),
   });
+}
+
+type DatasourceItem = {
+  id?: string;
+  dataSourceName?: string;
+  dtCenterSourceName?: string;
+  sourceTypeValue?: string;
+};
+
+/**
+ * Returns the list of schema names available for a datasource (via assets API).
+ * The API returns string[] directly in data field.
+ * Returns an empty array on error.
+ */
+async function getDatasourceSchemas(page: Page, datasourceId: string | number): Promise<string[]> {
+  try {
+    // The getAllSchema API returns data as string[] (schema names directly)
+    const result = await postProjectApi<{ data?: string[] | Array<{ name?: string; schemaName?: string }> }>(
+      page,
+      "/dassets/v1/dataSource/getAllSchema",
+      { sourceId: Number(datasourceId) },
+    );
+    const data = result.data ?? [];
+    if (data.length === 0) return [];
+    // Handle both string[] and object[] responses
+    if (typeof data[0] === "string") {
+      return (data as string[]).filter(Boolean);
+    }
+    return (data as Array<{ name?: string; schemaName?: string }>)
+      .map((s) => s.schemaName ?? s.name ?? "")
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Check if a datasource has any of the candidate schema names.
+ */
+async function datasourceHasCandidateSchema(
+  page: Page,
+  datasourceId: string | number,
+  schemaCandidates: string[],
+): Promise<boolean> {
+  const schemas = await getDatasourceSchemas(page, datasourceId);
+  return schemas.some((s) => schemaCandidates.includes(s));
 }
 
 async function ensureMonitorDatasource(page: Page): Promise<boolean> {
   const datasource = getCurrentDatasource();
+
+  // For Doris, we validate the found datasource has the expected schema(s).
+  // This prevents selecting the wrong Doris instance when multiple are available.
+  const strippedDatabase = datasource.database.replace(/_test$/, "");
+  const schemaCandidates = [datasource.database, strippedDatabase].filter(
+    (v, i, a) => v && a.indexOf(v) === i,
+  );
+  const shouldValidateSchema = datasource.preconditionType === "Doris";
+
   const listMonitorDatasources = async () =>
     postProjectApi<{
-      data?: Array<{
-        id?: string;
-        dataSourceName?: string;
-        dtCenterSourceName?: string;
-        sourceTypeValue?: string;
-      }>;
+      data?: DatasourceItem[];
     }>(page, "/dmetadata/v1/dataSource/monitor/list", {});
 
   const findMonitorDatasource = async () => {
@@ -266,14 +387,7 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
     );
   };
 
-  let existingMonitorDatasource:
-    | {
-        id?: string;
-        dataSourceName?: string;
-        dtCenterSourceName?: string;
-        sourceTypeValue?: string;
-      }
-    | undefined;
+  let existingMonitorDatasource: DatasourceItem | undefined;
   try {
     existingMonitorDatasource = await findMonitorDatasource();
   } catch (error) {
@@ -288,29 +402,69 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
   }
 
   if (existingMonitorDatasource) {
-    return false;
+    // Validate that the existing monitor datasource has the required schema (Doris only).
+    if (shouldValidateSchema && existingMonitorDatasource.id) {
+      const hasSchema = await datasourceHasCandidateSchema(
+        page,
+        existingMonitorDatasource.id,
+        schemaCandidates,
+      );
+      if (hasSchema) {
+        // The existing datasource is correct.
+        return false;
+      }
+      process.stderr.write(
+        `[ruleset] existing monitor datasource (id=${existingMonitorDatasource.id}) missing schema "${datasource.database}". Looking for a better one.\n`,
+      );
+      // Fall through to find and authorize the correct datasource.
+    } else {
+      return false;
+    }
   }
 
   const allDatasources = await postProjectApi<{
     data?: {
-      contentList?: Array<{
-        id?: string;
-        dataSourceName?: string;
-        dtCenterSourceName?: string;
-        sourceTypeValue?: string;
-      }>;
+      contentList?: DatasourceItem[];
     };
   }>(page, "/dassets/v1/dataSource/pageQuery", {
     current: 1,
     size: 200,
     search: "",
   });
-  const projectDatasource = (allDatasources.data?.contentList ?? []).find(
+
+  // For Doris: prefer the datasource that has the required schema over a random matching one.
+  const matchingDatasources = (allDatasources.data?.contentList ?? []).filter(
     (item) =>
       datasource.optionPattern.test(
         `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
       ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
   );
+
+  let projectDatasource: DatasourceItem | undefined;
+  if (shouldValidateSchema) {
+    for (const candidate of matchingDatasources) {
+      if (!candidate.id) continue;
+      const hasSchema = await datasourceHasCandidateSchema(page, candidate.id, schemaCandidates);
+      if (hasSchema) {
+        projectDatasource = candidate;
+        process.stderr.write(
+          `[ruleset] selected datasource "${candidate.dataSourceName ?? candidate.dtCenterSourceName}" (id=${candidate.id}) which has schema "${datasource.database}".\n`,
+        );
+        break;
+      }
+    }
+    if (!projectDatasource) {
+      // Fall back to first match if no schema match found
+      projectDatasource = matchingDatasources[0];
+      if (projectDatasource) {
+        process.stderr.write(
+          `[ruleset] WARN: no datasource with schema "${datasource.database}" found. Falling back to first match: "${projectDatasource.dataSourceName ?? projectDatasource.dtCenterSourceName}".\n`,
+        );
+      }
+    }
+  } else {
+    projectDatasource = matchingDatasources[0];
+  }
 
   if (!projectDatasource?.id) {
     throw new Error(
@@ -318,12 +472,13 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
     );
   }
 
+  const effectiveProjectIdForAuth = await resolveEffectiveQualityProjectId(page);
   const authResponse = await postProjectApi<{ success?: boolean; message?: string }>(
     page,
     "/dmetadata/v1/dataSource/authDataSourceToProject",
     {
       dataSourceId: Number(projectDatasource.id),
-      projectList: [QUALITY_PROJECT_ID],
+      projectList: [effectiveProjectIdForAuth],
     },
   );
   let alreadyAuthorized = false;
@@ -334,9 +489,12 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
     // Treat this as "already authorized" and skip the monitor list poll.
     if (/被规则所依赖|不能取消引入|already imported|already authorized/.test(errMsg)) {
       process.stderr.write(
-        `[ruleset] auth API returned "${errMsg}", treating as already authorized.\n`,
+        `[ruleset] auth API returned "${errMsg}", treating as already authorized — skipping reload.\n`,
       );
-      alreadyAuthorized = true;
+      // Return false so the caller does NOT trigger a page reload.
+      // The datasource is already in the monitor list; the route handler serves it from cache.
+      // An extra reload would reset the page to a loading state that may not recover.
+      return false;
     } else {
       throw new Error(
         errMsg || `Authorize ${datasource.reportName} datasource to project failed.`,
@@ -501,6 +659,7 @@ export function getRuleSetListRow(page: Page, rulesetName: string): Locator {
 
 async function postRuleSetApi<T>(page: Page, path: string, body: unknown): Promise<T> {
   let lastError: Error | null = null;
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     const response = await page.evaluate(
       async ({ requestPath, requestBody, projectId }) => {
@@ -524,7 +683,7 @@ async function postRuleSetApi<T>(page: Page, path: string, body: unknown): Promi
       {
         requestPath: path,
         requestBody: body,
-        projectId: QUALITY_PROJECT_ID,
+        projectId: effectiveProjectId,
       },
     );
 
@@ -593,12 +752,13 @@ export async function gotoRuleSetList(page: Page): Promise<void> {
     return;
   }
   await applyRuntimeCookies(page);
-  const targetUrl = buildDataAssetsUrl("/dq/ruleSet", QUALITY_PROJECT_ID);
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
+  const targetUrl = buildDataAssetsUrl("/dq/ruleSet", effectiveProjectId);
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     await page.goto(targetUrl, { waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(500);
-    await injectProjectContext(page, QUALITY_PROJECT_ID);
+    await injectProjectContext(page, effectiveProjectId);
     await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(1000);
@@ -631,12 +791,13 @@ export async function gotoRuleSetCreate(page: Page): Promise<void> {
   }
   await applyRuntimeCookies(page);
   await enableCompatibleMonitorDatasourceRouting(page);
-  const targetUrl = buildDataAssetsUrl("/dq/ruleSet/add", QUALITY_PROJECT_ID);
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
+  const targetUrl = buildDataAssetsUrl("/dq/ruleSet/add", effectiveProjectId);
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     await page.goto(targetUrl, { waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(500);
-    await injectProjectContext(page, QUALITY_PROJECT_ID);
+    await injectProjectContext(page, effectiveProjectId);
     await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(1000);
@@ -891,8 +1052,8 @@ export async function createRuleSetDraft(
   const datasource = getCurrentDatasource();
   await gotoRuleSetCreate(page);
   if (await ensureMonitorDatasource(page)) {
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
     await page.waitForTimeout(1000);
     await dismissIntroDialog(page);
   }
@@ -901,6 +1062,16 @@ export async function createRuleSetDraft(
     .locator(".ant-form-item")
     .filter({ hasText: /选择数据源/ })
     .first();
+  // Wait explicitly for the form item to appear (max 60s) so we fail fast instead of hanging.
+  const formItemVisible = await sourceFormItem.isVisible().catch(() => false);
+  if (!formItemVisible) {
+    const pageUrl = page.url();
+    const pageBodySnippet = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
+    process.stderr.write(
+      `[ruleset] waiting for "选择数据源" form item. url=${pageUrl} body[0:200]=${pageBodySnippet.slice(0, 200)}\n`,
+    );
+    await sourceFormItem.waitFor({ state: "visible", timeout: 60000 });
+  }
   await selectAntOptionWithRetry(
     page,
     sourceFormItem.locator(".ant-select").first(),
@@ -911,18 +1082,109 @@ export async function createRuleSetDraft(
     .locator(".ant-form-item")
     .filter({ hasText: /选择数据库/ })
     .first();
-  await selectAntOptionWithRetry(
-    page,
-    schemaFormItem.locator(".ant-select").first(),
-    datasource.database,
+  // Wait for schema form item to appear after datasource selection (it may load async)
+  await schemaFormItem.waitFor({ state: "visible", timeout: 30000 }).catch(() => undefined);
+  // Poll until the schema select shows at least one option before attempting selection
+  const schemaSelect = schemaFormItem.locator(".ant-select").first();
+  let schemaOptions: string[] = [];
+  for (let schemaWait = 0; schemaWait < 15; schemaWait += 1) {
+    // Click to open the dropdown and check option count
+    await schemaSelect.click().catch(() => undefined);
+    await page.waitForTimeout(800);
+    const dropdown = page.locator(".ant-select-dropdown:visible").last();
+    const currentOptions = await dropdown
+      .locator(".ant-select-item-option")
+      .evaluateAll((els) =>
+        els.map((el) => el.textContent?.trim()).filter((t): t is string => Boolean(t)),
+      )
+      .catch(() => [] as string[]);
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await page.waitForTimeout(300);
+    if (currentOptions.length > 0) {
+      schemaOptions = currentOptions;
+      process.stderr.write(
+        `[ruleset] schema dropdown loaded (attempt ${schemaWait + 1}): ${currentOptions.join(", ")}\n`,
+      );
+      break;
+    }
+    process.stderr.write(
+      `[ruleset] schema dropdown empty (attempt ${schemaWait + 1}/15), waiting...\n`,
+    );
+    if (schemaWait < 14) {
+      await page.waitForTimeout(2000);
+    }
+  }
+
+  // Build candidate schema names in order of preference:
+  // 1. Exact configured database name (e.g. "pw_test")
+  // 2. Stripped suffix variant (e.g. "pw" for "pw_test")
+  // Only include candidates that differ from each other.
+  const strippedDatabase = datasource.database.replace(/_test$/, "");
+  const schemaCandidates = [datasource.database, strippedDatabase].filter(
+    (v, i, a) => v && a.indexOf(v) === i,
   );
+  // If the exact name was already found in the visible options, skip the stripped fallback.
+  const effectiveCandidates =
+    schemaOptions.includes(datasource.database) ? [datasource.database] : schemaCandidates;
+
+  let schemaSelected = false;
+  for (const schemaCandidate of effectiveCandidates) {
+    try {
+      await selectAntOptionWithRetry(page, schemaSelect, schemaCandidate, 2);
+      if (schemaCandidate !== datasource.database) {
+        process.stderr.write(
+          `[ruleset] WARN: database "${datasource.database}" not found. Used fallback schema "${schemaCandidate}" instead.\n`,
+        );
+      }
+      schemaSelected = true;
+      break;
+    } catch {
+      process.stderr.write(
+        `[ruleset] schema candidate "${schemaCandidate}" not found in dropdown. Available (first page): ${schemaOptions.join(", ")}\n`,
+      );
+    }
+  }
+  if (!schemaSelected) {
+    throw new Error(
+      `Cannot select schema: none of ${schemaCandidates.join(", ")} found in dropdown. Available (first page): ${schemaOptions.join(", ")}`,
+    );
+  }
   await page.waitForTimeout(1000);
 
   const tableFormItem = page
     .locator(".ant-form-item")
     .filter({ hasText: /选择数据表/ })
     .first();
+  // Wait for table form item to appear after schema selection
+  await tableFormItem.waitFor({ state: "visible", timeout: 30000 }).catch(() => undefined);
   const tableSelect = tableFormItem.locator(".ant-select").first();
+  // Poll until the table select shows at least one option before attempting selection
+  let tableOptions: string[] = [];
+  for (let tableWait = 0; tableWait < 15; tableWait += 1) {
+    await tableSelect.click().catch(() => undefined);
+    await page.waitForTimeout(800);
+    const tableDropdown = page.locator(".ant-select-dropdown:visible").last();
+    tableOptions = await tableDropdown
+      .locator(".ant-select-item-option")
+      .evaluateAll((els) =>
+        els.map((el) => el.textContent?.trim()).filter((t): t is string => Boolean(t)),
+      )
+      .catch(() => [] as string[]);
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await page.waitForTimeout(300);
+    if (tableOptions.length > 0) {
+      process.stderr.write(
+        `[ruleset] table dropdown loaded (attempt ${tableWait + 1}): ${tableOptions.slice(0, 10).join(", ")}\n`,
+      );
+      break;
+    }
+    process.stderr.write(
+      `[ruleset] table dropdown empty (attempt ${tableWait + 1}/15), waiting...\n`,
+    );
+    if (tableWait < 14) {
+      await page.waitForTimeout(2000);
+    }
+  }
   let selectTableError: Error | null = null;
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
@@ -971,7 +1233,7 @@ async function tryOpenRuleSetRow(
     const targetRow = dataRows.filter({ hasText: rowText }).first();
     if (await targetRow.isVisible().catch(() => false)) {
       await targetRow.getByRole("button", { name: "编辑" }).click();
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
       await page.waitForTimeout(1000);
       await ensureMonitorRulesStep(page, requiredPackageNames);
       return true;
@@ -1170,18 +1432,57 @@ export async function configureRangeEnumRule(
     config.field,
     config.functionName,
   );
+  // Wait for the form to fully re-render after function selection.
+  await page.waitForTimeout(800);
   const functionSelects = functionRow.locator(".ant-select");
   const isEnumOnlyFunction = config.functionName === "枚举值";
 
+  // Detect form layout: VALUE_AND_ENUM renders valueRange.firstOperator at nth(1),
+  // while renderNormalFunction renders verifyType at nth(1).
+  // Probe nth(1) by opening it and checking available options.
+  let hasVerifyTypeAtNth1 = false;
+  if (!isEnumOnlyFunction) {
+    try {
+      await functionSelects.nth(1).click({ timeout: 3000 }).catch(() => undefined);
+      await page.waitForTimeout(300);
+      const probeDropdown = page.locator(".ant-select-dropdown:visible").last();
+      const probeOpts = await probeDropdown
+        .locator(".ant-select-item-option")
+        .evaluateAll((els) =>
+          els.map((el) => el.textContent?.trim()).filter((t): t is string => Boolean(t)),
+        )
+        .catch(() => [] as string[]);
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.waitForTimeout(200);
+      // verifyType options are "固定值" and/or "比例"; operator options contain ">" "<" "=" etc.
+      hasVerifyTypeAtNth1 = probeOpts.some((opt) => opt === "固定值" || opt === "比例");
+      if (hasVerifyTypeAtNth1) {
+        process.stderr.write(
+          `[ruleset] INFO: detected renderNormalFunction layout for "${config.functionName ?? "取值范围&枚举范围"}". ` +
+            `nth(1) is verifyType (options: ${probeOpts.join(", ")}). Using offset indices.\n`,
+        );
+      }
+    } catch {
+      // Detection failed — proceed with default indices.
+    }
+  }
+
   if (config.range?.firstOperator) {
-    await selectAntOption(page, functionSelects.nth(1), config.range.firstOperator);
+    if (hasVerifyTypeAtNth1) {
+      // renderNormalFunction layout: set verifyType="固定值" first, then operator at nth(2).
+      await selectAntOptionWithRetry(page, functionSelects.nth(1), "固定值", 2);
+      await page.waitForTimeout(300);
+      await selectAntOption(page, functionSelects.nth(2), config.range.firstOperator);
+    } else {
+      await selectAntOption(page, functionSelects.nth(1), config.range.firstOperator);
+    }
     await page.waitForTimeout(200);
   }
   if (config.range?.firstValue !== undefined) {
     await functionRow.getByPlaceholder("请输入数值").first().fill(config.range.firstValue);
     await page.waitForTimeout(200);
   }
-  if (config.range?.condition) {
+  if (config.range?.condition && !hasVerifyTypeAtNth1) {
     await functionRow
       .locator(".ant-radio-wrapper, .ant-radio-button-wrapper")
       .filter({ hasText: new RegExp(`^${config.range.condition}$`) })
@@ -1189,7 +1490,7 @@ export async function configureRangeEnumRule(
       .click();
     await page.waitForTimeout(200);
   }
-  if (config.range?.secondOperator) {
+  if (config.range?.secondOperator && !hasVerifyTypeAtNth1) {
     await selectAntOption(
       page,
       functionRow.locator(".ant-select").nth(2),
@@ -1197,12 +1498,12 @@ export async function configureRangeEnumRule(
     );
     await page.waitForTimeout(200);
   }
-  if (config.range?.secondValue !== undefined) {
+  if (config.range?.secondValue !== undefined && !hasVerifyTypeAtNth1) {
     await functionRow.getByPlaceholder("请输入数值").nth(1).fill(config.range.secondValue);
     await page.waitForTimeout(200);
   }
 
-  if (config.enumOperator) {
+  if (config.enumOperator && !hasVerifyTypeAtNth1) {
     await selectAntOption(
       page,
       functionSelects.nth(isEnumOnlyFunction ? 1 : 3),
@@ -1210,7 +1511,7 @@ export async function configureRangeEnumRule(
     );
     await page.waitForTimeout(200);
   }
-  if (config.enumValues?.length) {
+  if (config.enumValues?.length && !hasVerifyTypeAtNth1) {
     const enumInput = functionSelects
       .nth(isEnumOnlyFunction ? 2 : 4)
       .locator("input")
@@ -1223,7 +1524,7 @@ export async function configureRangeEnumRule(
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);
   }
-  if (config.relation) {
+  if (config.relation && !hasVerifyTypeAtNth1) {
     await functionRow
       .locator(".ant-radio-wrapper, .ant-radio-button-wrapper")
       .filter({ hasText: new RegExp(`^${config.relation}$`) })
@@ -1418,10 +1719,11 @@ export async function gotoRuleBase(page: Page): Promise<void> {
     return;
   }
   await applyRuntimeCookies(page);
-  const targetUrl = buildDataAssetsUrl("/dq/ruleBase", QUALITY_PROJECT_ID);
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
+  const targetUrl = buildDataAssetsUrl("/dq/ruleBase", effectiveProjectId);
   await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle");
-  await injectProjectContext(page, QUALITY_PROJECT_ID);
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
+  await injectProjectContext(page, effectiveProjectId);
 }
 
 export { isOfflineMode };

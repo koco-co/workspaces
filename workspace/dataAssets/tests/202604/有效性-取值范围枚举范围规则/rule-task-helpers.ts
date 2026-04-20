@@ -17,7 +17,7 @@ import {
 import {
   getCurrentDatasource,
   injectProjectContext,
-  QUALITY_PROJECT_ID,
+  resolveEffectiveQualityProjectId,
   resolveVariantName,
   runPreconditions,
 } from "./test-data";
@@ -322,14 +322,16 @@ function buildTaskApiUrl(path: string): string {
 }
 
 async function postTaskApi<T>(page: Page, path: string, body: unknown): Promise<T> {
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
   return postJsonApi<T>(page, buildTaskApiUrl(path), body, {
-    "X-Valid-Project-ID": String(QUALITY_PROJECT_ID),
+    "X-Valid-Project-ID": String(effectiveProjectId),
   });
 }
 
 async function postQualityReportApi<T>(page: Page, path: string, body: unknown): Promise<T> {
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
   return postJsonApi<T>(page, buildTaskApiUrl(path), body, {
-    "X-Valid-Project-ID": String(QUALITY_PROJECT_ID),
+    "X-Valid-Project-ID": String(effectiveProjectId),
   });
 }
 
@@ -470,6 +472,76 @@ function serializeImportedRule(
   return serializedRule;
 }
 
+/**
+ * When the deployed frontend uses renderNormalFunction for functionId=49 (VALUE_AND_ENUM),
+ * the saved expansion only contains basic operator/threshold (wrong format).
+ * This function patches the standardRuleList items to use the correct VALUE_AND_ENUM
+ * expansion format: { condition, valueRange, enumRange }.
+ *
+ * This is a workaround for environments where the VALUE_AND_ENUM-specific form
+ * (renderValueAndEnumFunction) is not deployed.
+ */
+function patchValueAndEnumExpansion(
+  rules: ReturnType<typeof serializeImportedRule>[],
+  ruleConfig: RangeEnumConfig | undefined,
+): ReturnType<typeof serializeImportedRule>[] {
+  if (!ruleConfig) return rules;
+
+  const VALUE_AND_ENUM_FUNCTION_ID = "49";
+  const relationToCondition = (relation: "且" | "或" | undefined): string =>
+    relation === "或" ? "OR" : "AND";
+  const rangeConditionToBackend = (cond: "且" | "或" | undefined): string =>
+    cond === "或" ? "OR" : "AND";
+
+  return rules.map((rule) => {
+    const standardRuleList = (rule.standardRuleList ?? rule.standardRules) as
+      | Array<Record<string, unknown>>
+      | undefined;
+    if (!Array.isArray(standardRuleList)) return rule;
+
+    const hasValueAndEnum = standardRuleList.some(
+      (item) => String(item.functionId) === VALUE_AND_ENUM_FUNCTION_ID,
+    );
+    if (!hasValueAndEnum) return rule;
+
+    const patchedStandardRuleList = standardRuleList.map((item) => {
+      if (String(item.functionId) !== VALUE_AND_ENUM_FUNCTION_ID) return item;
+
+      // Build valueRange from ruleConfig.range
+      const valueRange: Record<string, unknown> = {};
+      if (ruleConfig.range?.firstOperator) {
+        valueRange.firstOperator = ruleConfig.range.firstOperator;
+        valueRange.firstThreshold = ruleConfig.range.firstValue ?? "";
+      }
+      if (ruleConfig.range?.secondOperator) {
+        valueRange.condition = rangeConditionToBackend(ruleConfig.range.condition);
+        valueRange.secondOperator = ruleConfig.range.secondOperator;
+        valueRange.secondThreshold = ruleConfig.range.secondValue ?? "";
+      }
+
+      // Build enumRange from ruleConfig.enumOperator / enumValues
+      const enumRange: Record<string, unknown> = {};
+      if (ruleConfig.enumOperator) {
+        enumRange.operator = ruleConfig.enumOperator;
+        enumRange.threshold = (ruleConfig.enumValues ?? []).join(",");
+      }
+
+      // Top-level condition = relation between range and enum
+      const condition = relationToCondition(ruleConfig.relation);
+
+      const patchedExpansion = JSON.stringify({ condition, enumRange, valueRange });
+      process.stderr.write(`[task] patching VALUE_AND_ENUM expansion: ${patchedExpansion}\n`);
+
+      return {
+        ...item,
+        expansion: patchedExpansion,
+      };
+    });
+
+    return { ...rule, standardRuleList: patchedStandardRuleList };
+  });
+}
+
 async function getProjectDatasource(page: Page): Promise<Required<Pick<ProjectDatasourceRow, "id">> & ProjectDatasourceRow> {
   const datasource = getCurrentDatasource();
   const matchesCurrentDatasource = (item: ProjectDatasourceRow) =>
@@ -525,6 +597,7 @@ async function importTaskRulesFromPackage(
   packageIds: number[];
   ruleTypes: number[];
   rules: Record<string, unknown>[];
+  effectiveSchemaName: string;
 }> {
   const datasource = getCurrentDatasource();
   const seededDatasourceId = await (async () => {
@@ -606,26 +679,41 @@ async function importTaskRulesFromPackage(
     `[task] preparing package import for ${config.packageName} on ${config.tableName} (datasourceId=${primaryDataSourceId}, candidates=${candidateDataSourceIds.join(",")}).\n`,
   );
 
+  // Build schema name candidates (e.g. "pw_test" → ["pw_test", "pw"])
+  const strippedDbName = datasource.database.replace(/_test$/, "");
+  const schemaCandidates = [datasource.database, strippedDbName].filter(
+    (v, i, a) => v && a.indexOf(v) === i,
+  );
+
   let packageRow: RulePackageRow | undefined;
   let dataSourceId = primaryDataSourceId;
+  let effectiveSchemaName = datasource.database;
   outer: for (let attempt = 1; attempt <= 5; attempt += 1) {
     for (const candidateId of candidateDataSourceIds) {
-      const packageResponse =
-        (await postTaskApi<{
-          success?: boolean;
-          message?: string;
-          data?: RulePackageRow[];
-        }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
-          dataSourceId: candidateId,
-          tableName: config.tableName,
-          schemaName: datasource.database,
-        })) ?? {};
-      packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
-      // API returns `id` as the package row ID; `packageId` may be absent
-      const resolvedPackageId = packageRow?.packageId ?? packageRow?.id;
-      if (packageRow && resolvedPackageId) {
-        dataSourceId = candidateId;
-        break outer;
+      for (const schemaCandidate of schemaCandidates) {
+        const packageResponse =
+          (await postTaskApi<{
+            success?: boolean;
+            message?: string;
+            data?: RulePackageRow[];
+          }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
+            dataSourceId: candidateId,
+            tableName: config.tableName,
+            schemaName: schemaCandidate,
+          })) ?? {};
+        packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
+        // API returns `id` as the package row ID; `packageId` may be absent
+        const resolvedPackageId = packageRow?.packageId ?? packageRow?.id;
+        if (packageRow && resolvedPackageId) {
+          dataSourceId = candidateId;
+          effectiveSchemaName = schemaCandidate;
+          if (schemaCandidate !== datasource.database) {
+            process.stderr.write(
+              `[task] WARN: package found with fallback schema "${schemaCandidate}" (configured: "${datasource.database}").\n`,
+            );
+          }
+          break outer;
+        }
       }
     }
     process.stderr.write(
@@ -692,13 +780,21 @@ async function importTaskRulesFromPackage(
     );
   }
   process.stderr.write(`[task] imported ${importResponse.data.length} rules from ${config.packageName}.\n`);
+  process.stderr.write(`[task] raw rule data: ${JSON.stringify(importResponse.data[0] ?? {})}\n`);
+
+  const serializedRules = importResponse.data.map((rule) => serializeImportedRule(rule, config.weakenImportedRule));
+  process.stderr.write(`[task] serialized rule[0]: ${JSON.stringify(serializedRules[0] ?? {})}\n`);
+
+  // Patch VALUE_AND_ENUM expansion if deployed frontend used renderNormalFunction
+  const patchedRules = patchValueAndEnumExpansion(serializedRules, config.supportingRuleSet?.ruleConfig);
 
   return {
     dataSourceId,
     tableId,
     packageIds: [packageId],
     ruleTypes,
-    rules: importResponse.data.map((rule) => serializeImportedRule(rule, config.weakenImportedRule)),
+    rules: patchedRules,
+    effectiveSchemaName,
   };
 }
 
@@ -729,41 +825,50 @@ function buildMonitorReportParam(taskName: string) {
 
 async function createTaskViaApi(page: Page, taskName: string, config: TaskSetupConfig): Promise<void> {
   const actualTaskName = resolveTaskName(taskName);
-  const datasource = getCurrentDatasource();
   const importedPackage = await importTaskRulesFromPackage(page, config);
+  const monitorAddPayload = {
+    dataSourceId: importedPackage.dataSourceId,
+    tableName: config.tableName,
+    tableId: importedPackage.tableId,
+    schemaName: importedPackage.effectiveSchemaName,
+    ruleName: actualTaskName,
+    regularType: 0,
+    packageCount: 1,
+    jobBuildType: 2,
+    isRunOn: 0,
+    isSubscribe: 0,
+    partition: "",
+    partitionType: 0,
+    associatedTasks: [],
+    channelIds: [],
+    notifyUser: [],
+    webhook: "",
+    taskParams: "",
+    scheduleConf: "",
+    packageIds: importedPackage.packageIds,
+    ruleTypes: importedPackage.ruleTypes,
+    expansion: JSON.stringify({
+      openSample: 0,
+      sampleDto: {},
+      packageIds: importedPackage.packageIds,
+      ruleTypes: importedPackage.ruleTypes,
+    }),
+    rules: importedPackage.rules,
+    monitorReportParam: buildMonitorReportParam(taskName),
+  };
   process.stderr.write(`[task] creating ${actualTaskName} via monitor/add API.\n`);
+  process.stderr.write(`[task] monitor/add payload (no rules): ${JSON.stringify({ ...monitorAddPayload, rules: `[${importedPackage.rules.length} rules]` })}\n`);
+  process.stderr.write(`[task] monitor/add rules payload: ${JSON.stringify(importedPackage.rules)}\n`);
   const addResponse =
     (await postTaskApi<{
       success?: boolean;
       message?: string;
       data?: number | string;
       result?: number | string;
-    }>(page, "/dassets/v1/valid/monitor/add", {
-      dataSourceId: importedPackage.dataSourceId,
-      tableName: config.tableName,
-      tableId: importedPackage.tableId,
-      schemaName: datasource.database,
-      ruleName: actualTaskName,
-      regularType: 0,
-      packageCount: 1,
-      jobBuildType: 2,
-      isRunOn: 0,
-      isSubscribe: 0,
-      partition: "",
-      partitionType: 0,
-      associatedTasks: [],
-      channelIds: [],
-      notifyUser: [],
-      webhook: "",
-      taskParams: "",
-      scheduleConf: "",
-      packageIds: importedPackage.packageIds,
-      ruleTypes: importedPackage.ruleTypes,
-      rules: importedPackage.rules,
-      monitorReportParam: buildMonitorReportParam(taskName),
-    })) ?? {};
+    }>(page, "/dassets/v1/valid/monitor/add", monitorAddPayload)) ?? {};
 
   if (!addResponse.success) {
+    process.stderr.write(`[task] monitor/add FULL response: ${JSON.stringify(addResponse)}\n`);
     throw new Error(
       `Task API create failed for "${actualTaskName}": ${addResponse.message ?? "unknown error"}`,
     );
@@ -827,12 +932,13 @@ async function openQualityRoute(page: Page, path: string): Promise<void> {
     return;
   }
   await applyRuntimeCookies(page);
-  const targetUrl = buildDataAssetsUrl(path, QUALITY_PROJECT_ID);
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
+  const targetUrl = buildDataAssetsUrl(path, effectiveProjectId);
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     await page.goto(targetUrl, { waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(500);
-    await injectProjectContext(page, QUALITY_PROJECT_ID);
+    await injectProjectContext(page, effectiveProjectId);
     await page.reload({ waitUntil: "domcontentloaded" }).catch(() => undefined);
     await page.locator("body").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
     await page.waitForTimeout(1000);
@@ -865,7 +971,7 @@ export async function gotoValidationResults(page: Page): Promise<void> {
   }
   await openQualityRoute(page, "/dq/overview");
   await navigateViaMenu(page, ["数据质量", "校验结果查询"]);
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
   await page.waitForTimeout(1000);
 }
 
@@ -879,7 +985,7 @@ export async function gotoQualityReport(page: Page): Promise<void> {
   if (await generatedTab.isVisible().catch(() => false)) {
     await generatedTab.click();
   }
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
   await page.waitForTimeout(1000);
 }
 
@@ -910,24 +1016,34 @@ async function waitForRuleSetPackageIndexed(
     return;
   }
 
+  // Build schema name candidates (e.g. "pw_test" → ["pw_test", "pw"])
+  const strippedWaitDb = datasource.database.replace(/_test$/, "");
+  const waitSchemaCandidates = [datasource.database, strippedWaitDb].filter(
+    (v, i, a) => v && a.indexOf(v) === i,
+  );
+
   const deadline = Date.now() + timeoutMs;
   let checkedPackageId: number | null = null;
 
   while (Date.now() < deadline) {
     await page.waitForTimeout(10000);
 
-    // Find the package ID for the newly created rule set
-    const packageListResponse =
-      (await postTaskApi<{ success?: boolean; data?: RulePackageRow[] }>(
-        page,
-        "/dassets/v1/valid/monitorRulePackage/ruleSetList",
-        {
-          dataSourceId,
-          tableName,
-          schemaName: datasource.database,
-        },
-      ).catch(() => null)) ?? {};
-    const packageRow = (packageListResponse.data ?? []).find((item) => item.packageName === packageName);
+    // Find the package ID for the newly created rule set (try all schema name candidates)
+    let packageRow: RulePackageRow | undefined;
+    for (const schemaCandidate of waitSchemaCandidates) {
+      const packageListResponse =
+        (await postTaskApi<{ success?: boolean; data?: RulePackageRow[] }>(
+          page,
+          "/dassets/v1/valid/monitorRulePackage/ruleSetList",
+          {
+            dataSourceId,
+            tableName,
+            schemaName: schemaCandidate,
+          },
+        ).catch(() => null)) ?? {};
+      packageRow = (packageListResponse.data ?? []).find((item) => item.packageName === packageName);
+      if (packageRow) break;
+    }
     const resolvedId = packageRow?.packageId ?? packageRow?.id;
     if (!packageRow || !resolvedId) {
       process.stderr.write(`[ruleset] waitForIndexed: package "${packageName}" not yet visible in ruleSetList.\n`);
@@ -1134,7 +1250,7 @@ async function fillTaskBaseInfo(
     .first();
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await nextButton.click();
-    await page.waitForLoadState("networkidle").catch(() => undefined);
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
     await page.waitForTimeout(1500 * (attempt + 1));
     if (await rulePackageFormItem.isVisible({ timeout: 3000 }).catch(() => false)) {
       return;
@@ -1215,7 +1331,7 @@ async function importRulePackage(page: Page, packageName: string): Promise<void>
   await page.waitForTimeout(800);
 
   await page.getByRole("button", { name: "引入" }).click();
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
   await page.waitForTimeout(1500);
 
   await expect(page.locator(".ruleForm").first()).toBeVisible({ timeout: 10000 });
@@ -1237,7 +1353,7 @@ async function weakenImportedRule(page: Page): Promise<void> {
 async function completeTaskScheduleAndSave(page: Page, taskName: string): Promise<void> {
   const actualTaskName = resolveTaskName(taskName);
   await page.getByRole("button", { name: "下一步" }).last().click();
-  await page.waitForLoadState("networkidle");
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
   await page.waitForTimeout(1500);
 
   const packageCountInput = page

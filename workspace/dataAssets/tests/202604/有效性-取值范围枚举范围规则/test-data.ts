@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import type { Page } from "@playwright/test";
 import { setupPreconditions } from "../../helpers/preconditions";
-import { applyRuntimeCookies } from "../../helpers/test-setup";
+import { applyRuntimeCookies, normalizeDataAssetsBaseUrl } from "../../helpers/test-setup";
 
 export interface DatasourceConfig {
   readonly id: "sparkthrift2.x" | "doris3.x";
@@ -293,6 +293,12 @@ export function resolveVariantName(baseName: string, datasource = getCurrentData
   return `${baseName}_${datasource.cacheKey}`;
 }
 
+// Candidate batch project names to try when setting up preconditions.
+// Environments may use different naming conventions (e.g. "pw_test" in LTQC, "pw" in ltqcdev).
+const BATCH_PROJECT_CANDIDATES = [QUALITY_PROJECT_NAME, QUALITY_PROJECT_NAME.replace(/_test$/, "")].filter(
+  (v, i, a) => v && a.indexOf(v) === i,
+);
+
 export async function runPreconditions(
   page: Page,
   datasource = getCurrentDatasource(),
@@ -305,49 +311,57 @@ export async function runPreconditions(
   process.stderr.write(`[preconditions] Preparing ${datasource.reportName} tables...\n`);
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      await setupPreconditions(page, {
-        datasourceType: datasource.preconditionType,
-        tables: TABLE_DEFINITIONS.map((table) => ({
-          name: table.name,
-          sql: table.sqlByDatasource[datasource.id],
-        })),
-        projectName: QUALITY_PROJECT_NAME,
-        syncTimeout: 90,
-      });
+    // Try each candidate project name on every attempt
+    let lastAttemptError: Error | null = null;
+    for (const candidateProjectName of BATCH_PROJECT_CANDIDATES) {
+      try {
+        await setupPreconditions(page, {
+          datasourceType: datasource.preconditionType,
+          tables: TABLE_DEFINITIONS.map((table) => ({
+            name: table.name,
+            sql: table.sqlByDatasource[datasource.id],
+          })),
+          projectName: candidateProjectName,
+          syncTimeout: 90,
+        });
+        process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete (project="${candidateProjectName}").\n`);
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes("Metadata sync timed out")) {
+          process.stderr.write(
+            `[preconditions] ${datasource.reportName} metadata sync timed out, continuing with existing synced metadata.\n`,
+          );
+          process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
+          return;
+        }
+        const retryableError =
+          /HTTP (502|503|504)\b/.test(message) ||
+          /Timeout \d+ms exceeded/.test(message) ||
+          /net::ERR_/.test(message) ||
+          /ETIMEDOUT/.test(message) ||
+          /not found in offline development/.test(message) ||
+          /Datasource type .* not found in project/.test(message);
+        if (!retryableError) {
+          throw error;
+        }
+        lastAttemptError = error instanceof Error ? error : new Error(message);
+        process.stderr.write(
+          `[preconditions] ${datasource.reportName} project="${candidateProjectName}" hit error: ${message.slice(0, 100)}\n`,
+        );
+      }
+    }
+    if (attempt === 3) {
+      process.stderr.write(
+        `[preconditions] ${datasource.reportName} setup kept hitting transient errors, continuing with existing project metadata.\n`,
+      );
       process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
       return;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes("Metadata sync timed out")) {
-        process.stderr.write(
-          `[preconditions] ${datasource.reportName} metadata sync timed out, continuing with existing synced metadata.\n`,
-        );
-        process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
-        return;
-      }
-      const retryableError =
-        /HTTP (502|503|504)\b/.test(message) ||
-        /Timeout \d+ms exceeded/.test(message) ||
-        /net::ERR_/.test(message) ||
-        /ETIMEDOUT/.test(message) ||
-        /not found in offline development/.test(message) ||
-        /Datasource type .* not found in project/.test(message);
-      if (!retryableError) {
-        throw error;
-      }
-      if (attempt === 3) {
-        process.stderr.write(
-          `[preconditions] ${datasource.reportName} setup kept hitting transient errors, continuing with existing project metadata.\n`,
-        );
-        process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
-        return;
-      }
-      process.stderr.write(
-        `[preconditions] ${datasource.reportName} hit transient error, retrying setup (${attempt}/3)...\n`,
-      );
-      await page.waitForTimeout(3000 * attempt);
     }
+    process.stderr.write(
+      `[preconditions] ${datasource.reportName} hit transient error, retrying setup (${attempt}/3)...\n`,
+    );
+    await page.waitForTimeout(3000 * attempt);
   }
 }
 
@@ -358,4 +372,67 @@ export async function injectProjectContext(page: Page, projectId: number): Promi
   await page.evaluate((pid) => {
     sessionStorage.setItem("X-Valid-Project-ID", String(pid));
   }, projectId);
+}
+
+let _cachedEffectiveQualityProjectId: number | null = null;
+
+/**
+ * 动态解析当前环境可访问的质量项目 ID。
+ * 优先使用与 QUALITY_PROJECT_NAME 匹配的项目；若无法通过 API 解析，则回退到硬编码的 QUALITY_PROJECT_ID。
+ * 结果在测试运行期间缓存。
+ * 使用 Node.js API（page.context().request）而非 page.evaluate，确保在页面未导航时也能正常工作。
+ */
+export async function resolveEffectiveQualityProjectId(page: Page): Promise<number> {
+  if (_cachedEffectiveQualityProjectId !== null) {
+    return _cachedEffectiveQualityProjectId;
+  }
+
+  try {
+    const baseUrl = normalizeDataAssetsBaseUrl();
+    const requestUrl = new URL("/dassets/v1/valid/project/getProjects", baseUrl).toString();
+
+    const response = await page.context().request.post(requestUrl, {
+      data: {},
+      headers: {
+        "content-type": "application/json;charset=UTF-8",
+        "Accept-Language": "zh-CN",
+      },
+      timeout: 15_000,
+    });
+
+    if (response.ok()) {
+      const text = await response.text();
+      if (text.trim()) {
+        const json = JSON.parse(text) as {
+          data?: Array<{ id?: number | string; name?: string; projectName?: string }>;
+        };
+        const projects = json.data ?? [];
+        // Try to find by name first
+        const namedProject = projects.find((p) =>
+          (p.name ?? p.projectName ?? "").toLowerCase().includes(QUALITY_PROJECT_NAME.toLowerCase()),
+        );
+        const resolvedId = namedProject?.id
+          ? Number(namedProject.id)
+          : projects[0]?.id
+            ? Number(projects[0].id)
+            : null;
+
+        if (resolvedId !== null && Number.isFinite(resolvedId)) {
+          _cachedEffectiveQualityProjectId = resolvedId;
+          process.stderr.write(
+            `[quality-project] resolved effective project ID: ${_cachedEffectiveQualityProjectId} (hardcoded default: ${QUALITY_PROJECT_ID}).\n`,
+          );
+          return _cachedEffectiveQualityProjectId;
+        }
+      }
+    }
+  } catch {
+    // ignore errors, fall through to hardcoded default
+  }
+
+  _cachedEffectiveQualityProjectId = QUALITY_PROJECT_ID;
+  process.stderr.write(
+    `[quality-project] project ID resolution failed or returned no data, using hardcoded default: ${QUALITY_PROJECT_ID}.\n`,
+  );
+  return _cachedEffectiveQualityProjectId;
 }
