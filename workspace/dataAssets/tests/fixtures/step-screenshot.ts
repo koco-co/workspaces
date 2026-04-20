@@ -43,7 +43,6 @@ export type StepFn = (
 
 const HIGHLIGHT_STYLE =
   "outline: 3px solid red !important; outline-offset: 2px !important;";
-const STEP_BADGE_ID = "__qa_step_badge__";
 
 type StepCaptureState = {
   lastLocator?: Locator;
@@ -89,39 +88,6 @@ async function settleForScreenshot(page: Page): Promise<void> {
   ]);
 }
 
-async function renderStepBadge(page: Page, label: string): Promise<void> {
-  await page
-    .evaluate(
-      ({ id, text }) => {
-        document.getElementById(id)?.remove();
-        const badge = document.createElement("div");
-        badge.id = id;
-        badge.textContent = text;
-        Object.assign(badge.style, {
-          position: "fixed",
-          top: "12px",
-          right: "12px",
-          zIndex: "2147483647",
-          maxWidth: "320px",
-          padding: "6px 10px",
-          borderRadius: "6px",
-          border: "2px solid #ff0000",
-          background: "rgba(255,255,255,0.96)",
-          color: "#c40000",
-          fontSize: "12px",
-          fontWeight: "600",
-          lineHeight: "1.4",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          pointerEvents: "none",
-          whiteSpace: "normal",
-        });
-        document.body.appendChild(badge);
-      },
-      { id: STEP_BADGE_ID, text: label },
-    )
-    .catch(() => {});
-}
-
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
 function stripAnsi(text: string): string {
@@ -164,14 +130,6 @@ function truncate(text: string, max: number): string {
   return text.slice(0, max - 1) + "…";
 }
 
-async function clearStepBadge(page: Page): Promise<void> {
-  await page
-    .evaluate((id) => {
-      document.getElementById(id)?.remove();
-    }, STEP_BADGE_ID)
-    .catch(() => {});
-}
-
 export const test = base.extend<{ step: StepFn }>({
   step: async ({ page }, use, testInfo) => {
     let stepIndex = 0;
@@ -202,9 +160,6 @@ export const test = base.extend<{ step: StepFn }>({
           const passed = stepError === null;
           const icon = passed ? "✅" : "❌";
           const highlightTarget = highlight ?? captureState.lastLocator;
-          const badgeLabel = expected
-            ? `步骤-${idx} ${stepDesc} → ${expected}`
-            : `步骤-${idx} ${stepDesc}`;
 
           const shouldCapture =
             captureMode === "all" || (captureMode === "failed" && !passed);
@@ -229,7 +184,6 @@ export const test = base.extend<{ step: StepFn }>({
             ]);
           }
 
-          await renderStepBadge(page, badgeLabel);
           await settleForScreenshot(page);
 
           // 无论成功或失败都截图（加超时保护避免 screenshot 挂起）
@@ -252,7 +206,6 @@ export const test = base.extend<{ step: StepFn }>({
               new Promise<void>((resolve) => setTimeout(resolve, 2000)),
             ]);
           }
-          await clearStepBadge(page);
 
           if (screenshot) {
             const lines: string[] = [`${icon} 步骤-${idx}: ${stepDesc}`];
