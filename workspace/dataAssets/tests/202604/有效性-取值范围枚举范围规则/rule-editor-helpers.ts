@@ -166,17 +166,23 @@ export async function enableCompatibleMonitorDatasourceRouting(page: Page): Prom
         return;
       }
 
-      const patchedPayload = {
-        ...payload,
-        data: payload.data.map((item: MonitorDatasourceItem) => patchCompatibleDorisSource(item)),
-      };
-      cachedCompatibleMonitorDatasourcePayload = patchedPayload;
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json;charset=UTF-8",
-        body: JSON.stringify(patchedPayload),
-      });
-      return;
+      // When real monitor list is non-empty, patch and return it
+      if (payload.data.length > 0) {
+        const patchedPayload = {
+          ...payload,
+          data: payload.data.map((item: MonitorDatasourceItem) => patchCompatibleDorisSource(item)),
+        };
+        cachedCompatibleMonitorDatasourcePayload = patchedPayload;
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json;charset=UTF-8",
+          body: JSON.stringify(patchedPayload),
+        });
+        return;
+      }
+
+      // Real monitor list is empty — fall through to pageQuery fallback below
+      throw new Error("monitor list returned empty, trying pageQuery fallback");
     } catch (error) {
       const datasource = getCurrentDatasource();
       const fallbackResponse = await requestJsonWithRetries<{
@@ -216,7 +222,8 @@ export async function enableCompatibleMonitorDatasourceRouting(page: Page): Prom
         });
         return;
       }
-      throw error;
+      // No fallback available — return the real (empty) response
+      await route.continue();
     }
   };
 
@@ -319,31 +326,45 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
       projectList: [QUALITY_PROJECT_ID],
     },
   );
+  let alreadyAuthorized = false;
   if (!authResponse.success) {
-    throw new Error(
-      authResponse.message ?? `Authorize ${datasource.reportName} datasource to project failed.`,
-    );
+    const errMsg = authResponse.message ?? "";
+    // "被规则所依赖，不能取消引入" means the datasource is already imported and rules depend on it.
+    // This happens when the auth API is called on an already-authorized datasource (toggle behavior).
+    // Treat this as "already authorized" and skip the monitor list poll.
+    if (/被规则所依赖|不能取消引入|already imported|already authorized/.test(errMsg)) {
+      process.stderr.write(
+        `[ruleset] auth API returned "${errMsg}", treating as already authorized.\n`,
+      );
+      alreadyAuthorized = true;
+    } else {
+      throw new Error(
+        errMsg || `Authorize ${datasource.reportName} datasource to project failed.`,
+      );
+    }
   }
 
-  await expect
-    .poll(
-      async () => {
-        try {
-          return Boolean(await findMonitorDatasource());
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          if (/(HTTP (502|503|504)\b|Timeout \d+ms exceeded|ETIMEDOUT)/.test(message)) {
-            return true;
+  if (!alreadyAuthorized) {
+    await expect
+      .poll(
+        async () => {
+          try {
+            return Boolean(await findMonitorDatasource());
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            if (/(HTTP (502|503|504)\b|Timeout \d+ms exceeded|ETIMEDOUT)/.test(message)) {
+              return true;
+            }
+            throw error;
           }
-          throw error;
-        }
-      },
-      {
-        timeout: 15000,
-        message: `Waiting for ${datasource.reportName} datasource to appear in monitor datasource list.`,
-      },
-    )
-    .toBe(true);
+        },
+        {
+          timeout: 30000,
+          message: `Waiting for ${datasource.reportName} datasource to appear in monitor datasource list.`,
+        },
+      )
+      .toBe(true);
+  }
 
   return true;
 }

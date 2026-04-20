@@ -15,9 +15,9 @@ argument-hint: "[禅道 Bug URL | Bug ID]"
 </inputs>
 
 <pre_guard>
-  <hard_required>输入必须是禅道 Bug URL（含 `bug-view-{{bug_id}}`）或纯数字 Bug ID；否则请求用户提供链接或 ID，禁止进入后续步骤</hard_required>
-  <soft>`fix_branch` 缺失时通过 AskUserQuestion 补充；全部缺失时进入路径 B（见 E2）</soft>
-  <invalid_input>链接格式损坏 / 无法解析出 Bug ID → 立即返回输入无效，不进入 agent 派发</invalid_input>
+<hard_required>输入必须是禅道 Bug URL（含 `bug-view-{{bug_id}}`）或纯数字 Bug ID；否则请求用户提供链接或 ID，禁止进入后续步骤</hard_required>
+<soft>`fix_branch` 缺失时通过 AskUserQuestion 补充；全部缺失时进入路径 B（见 E2）</soft>
+<invalid_input>链接格式损坏 / 无法解析出 Bug ID → 立即返回输入无效，不进入 agent 派发</invalid_input>
 </pre_guard>
 
 <confirmation_policy>
@@ -41,13 +41,13 @@ argument-hint: "[禅道 Bug URL | Bug ID]"
 
 ## 工作流总览
 
-| 步骤 | 名称              | 职责                                              |
-| ---- | ----------------- | ------------------------------------------------- |
-| E1   | 抓取禅道 Bug 信息 | 调 zentao 插件，解析 bug_id/title/fix_branch 等   |
-| E2   | 源码同步          | fix_branch 自动同步（路径 A）/ 缺失时确认（路径 B）|
-| E3   | AI 分析           | 派发 `hotfix-case-agent`，返回 Archive Markdown   |
-| E4   | 输出用例文件      | 写入 `workspace/{{project}}/issues/YYYYMM/`       |
-| E5   | 发送通知          | 触发 plugin-loader notify 事件                    |
-| E6   | 完成摘要          | 状态展示，无需确认                                |
+| 步骤 | 名称              | 职责                                                |
+| ---- | ----------------- | --------------------------------------------------- |
+| E1   | 抓取禅道 Bug 信息 | 调 zentao 插件，解析 bug_id/title/fix_branch 等     |
+| E2   | 源码同步          | fix_branch 自动同步（路径 A）/ 缺失时确认（路径 B） |
+| E3   | AI 分析           | 派发 `hotfix-case-agent`，返回 Archive Markdown     |
+| E4   | 输出用例文件      | 写入 `workspace/{{project}}/issues/YYYYMM/`         |
+| E5   | 发送通知          | 触发 plugin-loader notify 事件                      |
+| E6   | 完成摘要          | 状态展示，无需确认                                  |
 
 完整执行细节详见 [`workflow/main.md`](workflow/main.md)。

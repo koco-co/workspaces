@@ -235,9 +235,16 @@ type RulePackageRow = {
   setId?: number | string;     // rule set ID
 };
 
-type RuleTypeRow = {
-  ruleType?: number | string;
-};
+// The ruleTypes API returns data as either:
+// - array of primitive values: ["3", "6", ...] (observed in production)
+// - array of objects with ruleType: [{ruleType: 3}, ...] (legacy format)
+type RuleTypeRow = (number | string) | { ruleType?: number | string };
+
+function parseRuleTypeValue(item: RuleTypeRow): number {
+  if (typeof item === "number") return item;
+  if (typeof item === "string") return Number(item);
+  return Number((item as { ruleType?: number | string }).ruleType);
+}
 
 type ImportedRuleRow = Record<string, unknown> & {
   standardRules?: Array<Record<string, unknown>>;
@@ -470,12 +477,20 @@ async function getProjectDatasource(page: Page): Promise<Required<Pick<ProjectDa
       `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
     ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? ""));
 
-  const monitorListResponse = await postTaskApi<{
-    data?: ProjectDatasourceRow[];
-  }>(page, "/dmetadata/v1/dataSource/monitor/list", {}).catch(() => null);
-  const monitorDatasource = (monitorListResponse?.data ?? []).find(matchesCurrentDatasource);
-  if (monitorDatasource?.id) {
-    return monitorDatasource as Required<Pick<ProjectDatasourceRow, "id">> & ProjectDatasourceRow;
+  // Try both monitor list endpoints — one may be intercepted by the compatibility routing
+  const monitorListEndpoints = [
+    "/dmetadata/v1/dataSource/monitor/list",
+    "/dassets/v1/dataSource/monitor/list",
+  ];
+  for (const endpoint of monitorListEndpoints) {
+    const monitorListResponse = await postTaskApi<{
+      data?: ProjectDatasourceRow[];
+    }>(page, endpoint, {}).catch(() => null);
+    const monitorDatasource = (monitorListResponse?.data ?? []).find(matchesCurrentDatasource);
+    if (monitorDatasource?.id) {
+      process.stderr.write(`[task] resolved datasource id ${monitorDatasource.id} from ${endpoint}.\n`);
+      return monitorDatasource as Required<Pick<ProjectDatasourceRow, "id">> & ProjectDatasourceRow;
+    }
   }
 
   const pageQueryResponse =
@@ -568,64 +583,96 @@ async function importTaskRulesFromPackage(
     }
     return null;
   })();
-  const dataSourceId =
+  const primaryDataSourceId =
     seededDatasourceId ??
     Number((await getProjectDatasource(page)).id);
-  if (!Number.isFinite(dataSourceId)) {
-    throw new Error(`Datasource id for ${datasource.reportName} is invalid: ${dataSourceId}`);
+  if (!Number.isFinite(primaryDataSourceId)) {
+    throw new Error(`Datasource id for ${datasource.reportName} is invalid: ${primaryDataSourceId}`);
   }
+
+  // Collect all candidate datasource IDs to try — monitor list IDs may differ from pageQuery IDs
+  const candidateDataSourceIds: number[] = [primaryDataSourceId];
+  for (const endpoint of ["/dmetadata/v1/dataSource/monitor/list", "/dassets/v1/dataSource/monitor/list"]) {
+    const resp = await postTaskApi<{ data?: ProjectDatasourceRow[] }>(page, endpoint, {}).catch(() => null);
+    for (const item of resp?.data ?? []) {
+      const id = Number(item.id);
+      if (Number.isFinite(id) && !candidateDataSourceIds.includes(id)) {
+        candidateDataSourceIds.push(id);
+      }
+    }
+  }
+
   process.stderr.write(
-    `[task] preparing package import for ${config.packageName} on ${config.tableName} (datasourceId=${dataSourceId}).\n`,
+    `[task] preparing package import for ${config.packageName} on ${config.tableName} (datasourceId=${primaryDataSourceId}, candidates=${candidateDataSourceIds.join(",")}).\n`,
   );
 
   let packageRow: RulePackageRow | undefined;
-  for (let attempt = 1; attempt <= 5; attempt += 1) {
-    const packageResponse =
-      (await postTaskApi<{
-        success?: boolean;
-        message?: string;
-        data?: RulePackageRow[];
-      }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
-        dataSourceId,
-        tableName: config.tableName,
-        schemaName: datasource.database,
-      })) ?? {};
-    packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
-    if (packageRow?.packageId) {
-      break;
+  let dataSourceId = primaryDataSourceId;
+  outer: for (let attempt = 1; attempt <= 5; attempt += 1) {
+    for (const candidateId of candidateDataSourceIds) {
+      const packageResponse =
+        (await postTaskApi<{
+          success?: boolean;
+          message?: string;
+          data?: RulePackageRow[];
+        }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
+          dataSourceId: candidateId,
+          tableName: config.tableName,
+          schemaName: datasource.database,
+        })) ?? {};
+      packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
+      // API returns `id` as the package row ID; `packageId` may be absent
+      const resolvedPackageId = packageRow?.packageId ?? packageRow?.id;
+      if (packageRow && resolvedPackageId) {
+        dataSourceId = candidateId;
+        break outer;
+      }
     }
     process.stderr.write(
-      `[task] ruleSetList attempt ${attempt}: package "${config.packageName}" not found for ${config.tableName} (datasourceId=${dataSourceId}, data=${JSON.stringify(packageResponse.data ?? null)}).\n`,
+      `[task] ruleSetList attempt ${attempt}: package "${config.packageName}" not found for ${config.tableName} (tried datasourceIds=${candidateDataSourceIds.join(",")}).\n`,
     );
     if (attempt < 5) {
       await page.waitForTimeout(3000 * attempt);
     }
   }
-  if (!packageRow?.packageId) {
+  const resolvedPackageId = packageRow?.packageId ?? packageRow?.id;
+  if (!packageRow || !resolvedPackageId) {
     throw new Error(
       `Task package "${config.packageName}" for table "${config.tableName}" was not found via API.`,
     );
   }
 
-  const packageId = Number(packageRow.packageId);
+  const packageId = Number(resolvedPackageId);
   const tableId = Number(packageRow.tableId);
   if (!Number.isFinite(packageId) || !Number.isFinite(tableId)) {
     throw new Error(
-      `Task package "${config.packageName}" returned invalid package/table ids: ${packageRow.packageId}/${packageRow.tableId}`,
+      `Task package "${config.packageName}" returned invalid package/table ids: ${resolvedPackageId}/${packageRow.tableId}`,
     );
   }
 
-  const ruleTypeResponse =
-    (await postTaskApi<{
-      success?: boolean;
-      message?: string;
-      data?: RuleTypeRow[];
-    }>(page, "/dassets/v1/valid/monitorRulePackage/ruleTypes", {
-      packageIdList: [packageId],
-    })) ?? {};
-  const ruleTypes = (ruleTypeResponse.data ?? [])
-    .map((item) => Number(item.ruleType))
-    .filter((value) => Number.isFinite(value));
+  let ruleTypes: number[] = [];
+  for (let ruleTypeAttempt = 1; ruleTypeAttempt <= 5; ruleTypeAttempt += 1) {
+    const ruleTypeResponse =
+      (await postTaskApi<{
+        success?: boolean;
+        message?: string;
+        data?: RuleTypeRow[];
+      }>(page, "/dassets/v1/valid/monitorRulePackage/ruleTypes", {
+        packageIdList: [packageId],
+      })) ?? {};
+    ruleTypes = (ruleTypeResponse.data ?? [])
+      .map((item) => parseRuleTypeValue(item))
+      .filter((value) => Number.isFinite(value));
+    if (ruleTypes.length > 0) {
+      break;
+    }
+    process.stderr.write(
+      `[task] ruleTypes attempt ${ruleTypeAttempt}: no rule types for packageId=${packageId}.\n`,
+    );
+    if (ruleTypeAttempt < 5) {
+      await page.waitForTimeout(3000 * ruleTypeAttempt);
+    }
+  }
   if (ruleTypes.length === 0) {
     throw new Error(`Task package "${config.packageName}" did not expose any rule types via API.`);
   }
@@ -845,6 +892,81 @@ async function ensureBaseData(page: Page): Promise<void> {
   preconditionReadyDatasources.add(datasource.cacheKey);
 }
 
+/**
+ * After creating a rule set, the server processes the package/rule records asynchronously.
+ * The `ruleTypes` API only returns results once the server has indexed the rules (~1-2 minutes).
+ * This function polls until the package is indexed or the timeout is exceeded.
+ */
+async function waitForRuleSetPackageIndexed(
+  page: Page,
+  tableName: string,
+  packageName: string,
+  timeoutMs = 180000,
+): Promise<void> {
+  const datasource = getCurrentDatasource();
+  const dataSourceId = Number((await getProjectDatasource(page).catch(() => null))?.id ?? NaN);
+  if (!Number.isFinite(dataSourceId)) {
+    process.stderr.write(`[ruleset] waitForIndexed: could not resolve datasource id, skipping wait.\n`);
+    return;
+  }
+
+  const deadline = Date.now() + timeoutMs;
+  let checkedPackageId: number | null = null;
+
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(10000);
+
+    // Find the package ID for the newly created rule set
+    const packageListResponse =
+      (await postTaskApi<{ success?: boolean; data?: RulePackageRow[] }>(
+        page,
+        "/dassets/v1/valid/monitorRulePackage/ruleSetList",
+        {
+          dataSourceId,
+          tableName,
+          schemaName: datasource.database,
+        },
+      ).catch(() => null)) ?? {};
+    const packageRow = (packageListResponse.data ?? []).find((item) => item.packageName === packageName);
+    const resolvedId = packageRow?.packageId ?? packageRow?.id;
+    if (!packageRow || !resolvedId) {
+      process.stderr.write(`[ruleset] waitForIndexed: package "${packageName}" not yet visible in ruleSetList.\n`);
+      continue;
+    }
+    const pkgId = Number(resolvedId);
+    checkedPackageId = pkgId;
+
+    let ruleTypeApiError: unknown = null;
+    const ruleTypeResponse =
+      (await postTaskApi<{ success?: boolean; data?: RuleTypeRow[] }>(
+        page,
+        "/dassets/v1/valid/monitorRulePackage/ruleTypes",
+        { packageIdList: [pkgId] },
+      ).catch((err) => { ruleTypeApiError = err; return null; })) ?? {};
+    if (ruleTypeApiError) {
+      process.stderr.write(
+        `[ruleset] waitForIndexed: ruleTypes API error: ${ruleTypeApiError instanceof Error ? ruleTypeApiError.message.slice(0, 200) : String(ruleTypeApiError).slice(0, 200)}\n`,
+      );
+    }
+    const ruleTypes = (ruleTypeResponse.data ?? [])
+      .map((item) => parseRuleTypeValue(item))
+      .filter((value) => Number.isFinite(value));
+
+    if (ruleTypes.length > 0) {
+      process.stderr.write(
+        `[ruleset] package "${packageName}" (id=${pkgId}) indexed successfully with ruleTypes=${JSON.stringify(ruleTypes)}.\n`,
+      );
+      return;
+    }
+    process.stderr.write(
+      `[ruleset] package "${packageName}" (id=${pkgId}) not yet indexed: ruleTypeResponse=${JSON.stringify(ruleTypeResponse).slice(0, 200)}\n`,
+    );
+  }
+  process.stderr.write(
+    `[ruleset] waitForIndexed timed out after ${timeoutMs}ms for package "${packageName}" (lastCheckedId=${checkedPackageId}). Proceeding anyway.\n`,
+  );
+}
+
 async function ensureSupportingRuleSet(
   page: Page,
   config: SupportingRuleSetConfig | undefined,
@@ -884,6 +1006,7 @@ async function ensureSupportingRuleSet(
       });
     if (!createFailed) {
       process.stderr.write(`[ruleset] create succeeded for ${config.tableName} (attempt ${createAttempt}).\n`);
+      await waitForRuleSetPackageIndexed(page, config.tableName, config.packageName);
       return;
     }
     if (createAttempt < 3) {
@@ -1816,7 +1939,7 @@ export async function waitForQualityReportRow(
 async function waitForGeneratedQualityReport(
   page: Page,
   taskName: string,
-  timeout = 300000,
+  timeout = 900000,
 ): Promise<void> {
   const reportName = getReportName(taskName);
   const deadline = Date.now() + timeout;
@@ -1860,7 +1983,7 @@ export async function ensureQualityReportsReady(page: Page, taskNames: string[])
     const actualTaskName = resolveTaskName(taskName);
     await ensureQualityReportConfig(page, taskName);
     if (!executedTasks.has(actualTaskName)) {
-      await executeTaskAndWaitForResult(page, taskName);
+      await executeTaskAndWaitForResult(page, taskName, 600000);
       executedTasks.add(actualTaskName);
     }
     if (readyQualityReports.has(actualTaskName)) {

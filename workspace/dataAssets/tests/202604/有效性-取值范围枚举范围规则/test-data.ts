@@ -330,7 +330,9 @@ export async function runPreconditions(
         /HTTP (502|503|504)\b/.test(message) ||
         /Timeout \d+ms exceeded/.test(message) ||
         /net::ERR_/.test(message) ||
-        /ETIMEDOUT/.test(message);
+        /ETIMEDOUT/.test(message) ||
+        /not found in offline development/.test(message) ||
+        /Datasource type .* not found in project/.test(message);
       if (!retryableError) {
         throw error;
       }

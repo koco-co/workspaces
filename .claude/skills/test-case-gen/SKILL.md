@@ -149,11 +149,11 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 本 skill 支持三个场景，init 节点根据输入识别后加载对应 workflow：
 
-| 场景                       | 触发词                                                                                            | 输入                          | 流程结构                                                                              | 读取文件                   |
-| -------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------- | -------------------------- |
-| `primary`（主生成）        | 生成测试用例、生成用例、写用例、为 \<需求名称\> 生成用例、test case、重新生成 xxx 模块、追加用例 | PRD 路径 / 蓝湖 URL / 模块重跑指令 | 7 节点：init → transform → enhance → analyze → write → review → output（含 discuss、format-check） | `workflow/main.md`         |
-| `standardize`（标准化归档） | 标准化归档、归档用例、转化用例、标准化 xmind、标准化 csv                                          | `.xmind` 或 `.csv` 文件       | 4 节点：parse → standardize → review → output                                         | `workflow/standardize.md`  |
-| `reverse_sync`（反向同步） | 同步 xmind、同步 XMind 文件、反向同步                                                              | XMind 文件 + 已有 Archive MD  | 5 节点：confirm_xmind → parse → locate_archive → preview_or_write → report            | `workflow/reverse-sync.md` |
+| 场景                        | 触发词                                                                                           | 输入                               | 流程结构                                                                                           | 读取文件                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------- |
+| `primary`（主生成）         | 生成测试用例、生成用例、写用例、为 \<需求名称\> 生成用例、test case、重新生成 xxx 模块、追加用例 | PRD 路径 / 蓝湖 URL / 模块重跑指令 | 7 节点：init → transform → enhance → analyze → write → review → output（含 discuss、format-check） | `workflow/main.md`         |
+| `standardize`（标准化归档） | 标准化归档、归档用例、转化用例、标准化 xmind、标准化 csv                                         | `.xmind` 或 `.csv` 文件            | 4 节点：parse → standardize → review → output                                                      | `workflow/standardize.md`  |
+| `reverse_sync`（反向同步）  | 同步 xmind、同步 XMind 文件、反向同步                                                            | XMind 文件 + 已有 Archive MD       | 5 节点：confirm_xmind → parse → locate_archive → preview_or_write → report                         | `workflow/reverse-sync.md` |
 
 `--quick` 参数对 `primary` 场景生效：跳过复审、format-check 仅 1 轮。
 

@@ -29,6 +29,7 @@ bun run .claude/scripts/create-project.ts scan --project {{name}}
 ```
 
 分支：
+
 - `valid_name=false` → 展示 `name_error`，回 A1
 - `exists=true` + `skeleton_complete=true` + `config_registered=true` → 跳到 B3
 - 其他 → 进 A3
@@ -36,6 +37,7 @@ bun run .claude/scripts/create-project.ts scan --project {{name}}
 ### A3. 展示 diff 表 + AskUserQuestion
 
 展示 markdown 表：
+
 ```
 目标项目：{{name}}
 状态：{{exists ? "已存在，将补齐" : "全新创建"}}
@@ -70,6 +72,7 @@ bun run .claude/scripts/create-project.ts create --project {{name}} --confirmed
 ### A6. clone-repo 循环
 
 每次 AskUserQuestion：
+
 ```
 请输入 Git URL：
 分支（默认 main）：

@@ -82,11 +82,11 @@ bun run .claude/skills/setup/scripts/init-wizard.ts scan
 
 ### 2.2 路由分支
 
-| 检测情况 | 提示文案 |
-|---|---|
-| `projects.length === 0` | 「未发现任何项目。运行 `/create-project` 创建首个项目（推荐 camelCase 短名，如 `dataAssets`）。」 |
+| 检测情况                                      | 提示文案                                                                                                                                |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `projects.length === 0`                       | 「未发现任何项目。运行 `/create-project` 创建首个项目（推荐 camelCase 短名，如 `dataAssets`）。」                                       |
 | `projects.length > 0` 且 `repos.length === 0` | 「已有项目：{{projects.join(', ')}}。如需挂载源码仓库供分析使用，运行 `/create-project clone-repo --project <name> --url <git-url>`。」 |
-| `projects.length > 0` 且 `repos.length > 0` | 「已有 {{projects.length}} 个项目、{{repos.length}} 个源码仓库。如需新增项目或仓库，使用 `/create-project`。」 |
+| `projects.length > 0` 且 `repos.length > 0`   | 「已有 {{projects.length}} 个项目、{{repos.length}} 个源码仓库。如需新增项目或仓库，使用 `/create-project`。」                          |
 
 ### 2.3 不阻塞
 
