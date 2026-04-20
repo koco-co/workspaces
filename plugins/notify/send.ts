@@ -166,6 +166,9 @@ function formatByEvent(
         `| ❌ 失败 | **${data.failed ?? "-"}** |`,
         `| 📊 通过率 | ${rate} |`,
         `| 📄 报告 | ${data.reportFile ?? "-"} |`,
+        ...(data.reportURL
+          ? [`| 🔗 在线查看 | [${data.reportURL}](${data.reportURL}) |`]
+          : []),
         "",
         `---`,
         `🕐 ${timestamp} · QAFlow`,
