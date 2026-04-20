@@ -172,22 +172,22 @@ workflow 启动时（步骤 1 开始前），使用 `TaskCreate` 一次性创建
 
 ## 步骤执行入口
 
-各步骤的具体执行细节放在 `workflow/` 子目录，按需加载（节省上下文）：
+各步骤的具体执行细节放在 `workflow/` 子目录，按需加载：
 
-| 步骤    | 加载文件                                    |
-| ------- | ------------------------------------------- |
-| 0       | `workflow/step-0-preferences.md`            |
-| 1       | `workflow/step-1-parse-input.md`            |
-| 1.5     | `workflow/step-1.5-resume.md`               |
-| 2       | `workflow/step-2-scope.md`                  |
-| 3       | `workflow/step-3-login.md`                  |
-| 4       | `workflow/step-4-script-writer.md`          |
-| 5       | `workflow/step-5-test-fix.md`               |
-| 5.5     | `workflow/step-5.5-convergence.md`（条件）  |
-| 6       | `workflow/step-6-merge.md`                  |
-| 7       | `workflow/step-7-execute.md`                |
-| 8       | `workflow/step-8-result-processing.md`      |
-| 9       | `workflow/step-9-notify.md`                 |
+| 步骤 | 加载文件                                   |
+| ---- | ------------------------------------------ |
+| 0    | `workflow/step-0-preferences.md`           |
+| 1    | `workflow/step-1-parse-input.md`           |
+| 1.5  | `workflow/step-1.5-resume.md`              |
+| 2    | `workflow/step-2-scope.md`                 |
+| 3    | `workflow/step-3-login.md`                 |
+| 4    | `workflow/step-4-script-writer.md`         |
+| 5    | `workflow/step-5-test-fix.md`              |
+| 5.5  | `workflow/step-5.5-convergence.md`（条件） |
+| 6    | `workflow/step-6-merge.md`                 |
+| 7    | `workflow/step-7-execute.md`               |
+| 8    | `workflow/step-8-result-processing.md`     |
+| 9    | `workflow/step-9-notify.md`                |
 
 **执行约定**：
 
