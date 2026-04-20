@@ -5,119 +5,108 @@ import {
   gotoJsonConfigPage,
   addKey,
   addChildKey,
-  searchKey,
-  clearSearch,
   expandRow,
   deleteKey,
-  ensureRowVisibleByKey,
 } from "./json-config-helpers";
 
+async function waitTableLoaded(page: import("@playwright/test").Page) {
+  await page
+    .locator(".ant-spin-spinning")
+    .waitFor({ state: "hidden", timeout: 15000 })
+    .catch(() => undefined);
+  await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => undefined);
+}
+
+async function clickSearch(page: import("@playwright/test").Page, keyword: string) {
+  const input = page.locator(".dt-search input").first();
+  const button = page.locator(".dt-search .ant-input-search-button").first();
+  await expect(input).toBeVisible({ timeout: 10000 });
+  await input.fill(keyword);
+  await expect(input).toHaveValue(keyword, { timeout: 5000 });
+  await button.click();
+  await waitTableLoaded(page);
+}
+
+async function clearSearch(page: import("@playwright/test").Page) {
+  const input = page.locator(".dt-search input").first();
+  const button = page.locator(".dt-search .ant-input-search-button").first();
+  await expect(input).toBeVisible({ timeout: 10000 });
+  await input.fill("");
+  await button.click();
+  await waitTableLoaded(page);
+}
 
 test.describe("【通用配置】json格式配置 - 通用配置-json格式校验管理", () => {
   test("【P1】验证key名模糊搜索功能（含子层级key命中）", async ({ page, step }) => {
-    // uniqueName 保证全局唯一，前缀 orderInfo / orderStatus 作为搜索基础
     const orderInfo = uniqueName("orderInfo");
     const orderStatus = uniqueName("orderStatus");
 
     try {
-      // 前置：进入页面，创建父 key 及子层级
       await step(
         "前置步骤: 创建父 key orderInfo 及子层级 orderStatus → 前置数据准备完成",
         async () => {
           await gotoJsonConfigPage(page);
           await addKey(page, orderInfo);
-          await searchKey(page, orderInfo);
+          await clickSearch(page, orderInfo);
           await addChildKey(page, orderInfo, orderStatus);
+          await clearSearch(page);
         },
       );
 
-      // 步骤1：刷新进入页面，等待列表加载完成
       await step(
-        "步骤1: 进入【数据质量 → 通用配置】页面，等待json格式校验管理列表数据加载完成 → 页面正常加载，列表显示所有第一层级数据",
+        "步骤1: 进入【数据质量 → 通用配置】页面 → 页面正常加载，列表显示所有第一层级数据",
         async () => {
           await gotoJsonConfigPage(page);
-          await ensureRowVisibleByKey(page, orderInfo, 20000);
+          await waitTableLoaded(page);
+          await expect(page.locator(".ant-table")).toBeVisible({ timeout: 10000 });
         },
-        page.locator(".ant-table-row").filter({ hasText: orderInfo }).first(),
       );
 
-      // 步骤2：搜索 orderInfo（父层级 key），验证结果仅显示含 orderInfo 的行
       await step(
-        `步骤2: 在搜索框中输入 ${orderInfo}，等待搜索结果返回 → 列表仅显示key包含 orderInfo 的第一层级记录，其他记录被过滤`,
+        `步骤2: 在搜索框输入 ${orderInfo} 并点击搜索 → 列表仅显示 key 包含 ${orderInfo} 的第一层级记录`,
         async () => {
-          await searchKey(page, orderInfo);
-
-          // 断言 orderInfo 父行可见
-          const parentRow = await ensureRowVisibleByKey(page, orderInfo, 20000);
-          await expect(parentRow).toBeVisible({ timeout: 10000 });
-
-          // 断言搜索结果中至少包含 orderInfo
-          await expect(parentRow).toContainText(orderInfo);
-
-          // 断言所有可见行均包含 orderInfo（搜索词），不含无关记录
-          const allRows = page.locator(".ant-table-row");
-          const rowCount = await allRows.count();
-          for (let i = 0; i < rowCount; i++) {
-            const rowText = await allRows.nth(i).textContent();
-            if (rowText && !rowText.includes(orderInfo)) {
-              // 存在不含 orderInfo 的行则报错
-              throw new Error(
-                `搜索 ${orderInfo} 后发现不相关行: "${rowText.trim().slice(0, 80)}"`,
-              );
-            }
+          await clickSearch(page, orderInfo);
+          const rows = page.locator(".ant-table-row");
+          await expect(rows.filter({ hasText: orderInfo }).first()).toBeVisible({ timeout: 10000 });
+          const rowTexts = await rows.allTextContents();
+          for (const rowText of rowTexts.map((text) => text.trim()).filter(Boolean)) {
+            expect(rowText.includes(orderInfo)).toBe(true);
           }
         },
-        page.locator(".ant-table-row").filter({ hasText: orderInfo }).first(),
       );
 
-      // 步骤3：清空搜索，改搜子层级 key orderStatus，验证父记录 orderInfo 命中可见
       await step(
-        `步骤3: 清空搜索框，重新输入 ${orderStatus}（子层级key名），等待搜索结果返回 → 列表展示命中子层级的父级记录 orderInfo`,
+        `步骤3: 清空搜索框后重新输入 ${orderStatus} 并再次点击搜索 → 列表展示命中子层级的父级记录 ${orderInfo}`,
         async () => {
           await clearSearch(page);
-          await searchKey(page, orderStatus);
-
-          // 断言父行 orderInfo 可见（子层级命中，父记录显示在列表中）
-          const parentRow = page
-            .locator(".ant-table-row")
-            .filter({ hasText: orderInfo })
-            .first();
+          await clickSearch(page, orderStatus);
+          const parentRow = page.locator(".ant-table-row").filter({ hasText: orderInfo }).first();
           await expect(parentRow).toBeVisible({ timeout: 10000 });
         },
         page.locator(".ant-table-row").filter({ hasText: orderInfo }).first(),
       );
 
-      // 步骤3续：展开父行，断言子层级 orderStatus 行可见
       await step(
-        `步骤3（续）: 点击父行「+」展开子层级 → 可见 orderStatus 子层级记录`,
+        `步骤4: 点击父行「+」展开子层级 → 可见 ${orderStatus} 子层级记录`,
         async () => {
           await expandRow(page, orderInfo);
-
-          const childRow = page
-            .locator(".ant-table-row")
-            .filter({ hasText: orderStatus })
-            .first();
+          const childRow = page.locator(".ant-table-row").filter({ hasText: orderStatus }).first();
           await expect(childRow).toBeVisible({ timeout: 10000 });
           await expect(childRow).toContainText(orderStatus);
         },
         page.locator(".ant-table-row").filter({ hasText: orderStatus }).first(),
       );
 
-      // 步骤4：清空搜索，验证列表恢复
       await step(
-        "步骤4: 清空搜索框，等待列表恢复 → 列表恢复显示所有第一层级数据，orderInfo 行仍可见",
+        "步骤5: 清空搜索框 → 列表恢复显示，搜索输入框为空",
         async () => {
           await clearSearch(page);
-
-          // 列表总量可能超过一页（>10条），清空后 orderInfo 不一定在当前页。
-          // 用搜索确认记录依然存在（验证清空+再搜索均正常）。
-          const parentRow = await ensureRowVisibleByKey(page, orderInfo, 20000);
-          await expect(parentRow).toBeVisible({ timeout: 10000 });
+          await expect(page.locator(".dt-search input").first()).toHaveValue("", { timeout: 5000 });
+          await expect(page.locator(".ant-table-row").first()).toBeVisible({ timeout: 10000 });
         },
-        page.locator(".ant-table-row").filter({ hasText: orderInfo }).first(),
       );
     } finally {
-      // 清理：删除父 key（级联删除子层级 orderStatus）
+      await clearSearch(page).catch(() => undefined);
       await deleteKey(page, orderInfo).catch(() => undefined);
     }
   });

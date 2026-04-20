@@ -1,9 +1,14 @@
 /**
  * 自定义 Playwright fixture：每个 test.step 自动截图
  *
- * 每步生成一个附件，命名格式：
- *   ✅ 步骤-1 {{操作描述}} 预期-1 {{预期内容}}
- *   ❌ 步骤-2 {{操作描述}} 预期-2 {{预期内容}}
+ * 每步生成一个附件，命名采用多行排版：
+ *   通过：
+ *     ✅ 步骤-1: {{操作描述}}
+ *     预期-1: {{预期内容}}
+ *   失败：
+ *     ❌ 步骤-2: {{操作描述}}
+ *     预期-2: {{预期内容}}
+ *     实际-2: {{断言失败摘要}}
  *
  * 步骤名称约定格式：
  *   "步骤N: {{操作描述}} → {{预期描述}}"
@@ -117,6 +122,48 @@ async function renderStepBadge(page: Page, label: string): Promise<void> {
     .catch(() => {});
 }
 
+const ANSI_RE = /\x1b\[[0-9;]*m/g;
+
+function stripAnsi(text: string): string {
+  return text.replace(ANSI_RE, "");
+}
+
+function summarizeActual(err: unknown): string {
+  if (!err) return "";
+  const raw =
+    err instanceof Error
+      ? stripAnsi(err.message ?? "")
+      : typeof err === "string"
+        ? stripAnsi(err)
+        : "";
+  if (!raw) return "";
+
+  // Playwright 断言错误典型形态：
+  //   Expected: ...\nReceived: ...
+  //   Expected string: "a"\nReceived string: "b"
+  //   Expected pattern: /.../\nReceived string: "..."
+  //   Timed out Xms waiting for expect(locator).toBeVisible()
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const receivedLine = lines.find((l) => /^Received[\s:]/i.test(l));
+  if (receivedLine) {
+    const val = receivedLine.replace(/^Received[^:]*:\s*/i, "");
+    return truncate(val, 200);
+  }
+
+  const timedOut = lines.find((l) => /^Timed out/i.test(l));
+  if (timedOut) {
+    return truncate(timedOut, 200);
+  }
+
+  // 其他错误：取首条非空行
+  return truncate(lines[0] ?? "", 200);
+}
+
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1) + "…";
+}
+
 async function clearStepBadge(page: Page): Promise<void> {
   await page
     .evaluate((id) => {
@@ -208,10 +255,17 @@ export const test = base.extend<{ step: StepFn }>({
           await clearStepBadge(page);
 
           if (screenshot) {
-            const label = expected
-              ? `${icon} 步骤-${idx} ${stepDesc} 预期-${idx} ${expected}`
-              : `${icon} 步骤-${idx} ${stepDesc}`;
-            await testInfo.attach(label, {
+            const lines: string[] = [`${icon} 步骤-${idx}: ${stepDesc}`];
+            if (expected) {
+              lines.push(`预期-${idx}: ${expected}`);
+            }
+            if (!passed) {
+              const actual = summarizeActual(stepError);
+              if (actual) {
+                lines.push(`实际-${idx}: ${actual}`);
+              }
+            }
+            await testInfo.attach(lines.join("\n"), {
               body: screenshot,
               contentType: "image/png",
             });
