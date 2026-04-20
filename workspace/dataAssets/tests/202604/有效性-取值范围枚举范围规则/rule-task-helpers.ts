@@ -228,9 +228,11 @@ type ProjectDatasourceRow = {
 };
 
 type RulePackageRow = {
-  packageId?: number | string;
+  id?: number | string;        // API field: package row ID (used as packageId in task create)
+  packageId?: number | string; // legacy alias — may not be present in API response
   packageName?: string;
   tableId?: number | string;
+  setId?: number | string;     // rule set ID
 };
 
 type RuleTypeRow = {
@@ -576,17 +578,29 @@ async function importTaskRulesFromPackage(
     `[task] preparing package import for ${config.packageName} on ${config.tableName} (datasourceId=${dataSourceId}).\n`,
   );
 
-  const packageResponse =
-    (await postTaskApi<{
-      success?: boolean;
-      message?: string;
-      data?: RulePackageRow[];
-    }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
-      dataSourceId,
-      tableName: config.tableName,
-      schemaName: datasource.database,
-    })) ?? {};
-  const packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
+  let packageRow: RulePackageRow | undefined;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const packageResponse =
+      (await postTaskApi<{
+        success?: boolean;
+        message?: string;
+        data?: RulePackageRow[];
+      }>(page, "/dassets/v1/valid/monitorRulePackage/ruleSetList", {
+        dataSourceId,
+        tableName: config.tableName,
+        schemaName: datasource.database,
+      })) ?? {};
+    packageRow = (packageResponse.data ?? []).find((item) => item.packageName === config.packageName);
+    if (packageRow?.packageId) {
+      break;
+    }
+    process.stderr.write(
+      `[task] ruleSetList attempt ${attempt}: package "${config.packageName}" not found for ${config.tableName} (datasourceId=${dataSourceId}, data=${JSON.stringify(packageResponse.data ?? null)}).\n`,
+    );
+    if (attempt < 5) {
+      await page.waitForTimeout(3000 * attempt);
+    }
+  }
   if (!packageRow?.packageId) {
     throw new Error(
       `Task package "${config.packageName}" for table "${config.tableName}" was not found via API.`,
@@ -853,20 +867,33 @@ async function ensureSupportingRuleSet(
   if (reuseExistingRuleSet) {
     return;
   }
-  await createRuleSetForTable(page, config.tableName, config.packageName, config.ruleConfig, "有效性校验")
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error);
-      if (
-        !/(HTTP (502|503|504)\b|Timeout \d+ms exceeded|ETIMEDOUT|Rule set create page is unavailable|waiting for locator\('.ant-form-item'.*选择数据源)/.test(
-          message,
-        )
-      ) {
-        throw error;
-      }
-      process.stderr.write(
-        `[ruleset] refresh for ${config.tableName} hit unstable page/network state, reusing existing rulesets.\n`,
-      );
-    });
+  const UNSTABLE_RULESET_RE =
+    /(HTTP (502|503|504)\b|Timeout \d+ms exceeded|ETIMEDOUT|Rule set create page is unavailable|waiting for locator\('.ant-form-item'.*选择数据源)/;
+  for (let createAttempt = 1; createAttempt <= 3; createAttempt += 1) {
+    let createFailed = false;
+    await createRuleSetForTable(page, config.tableName, config.packageName, config.ruleConfig, "有效性校验")
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!UNSTABLE_RULESET_RE.test(message)) {
+          throw error;
+        }
+        process.stderr.write(
+          `[ruleset] create attempt ${createAttempt} for ${config.tableName} hit unstable state: ${message.slice(0, 120)}. Will retry if possible.\n`,
+        );
+        createFailed = true;
+      });
+    if (!createFailed) {
+      process.stderr.write(`[ruleset] create succeeded for ${config.tableName} (attempt ${createAttempt}).\n`);
+      return;
+    }
+    if (createAttempt < 3) {
+      await page.waitForTimeout(3000 * createAttempt);
+      await gotoRuleSetList(page).catch(() => undefined);
+    }
+  }
+  process.stderr.write(
+    `[ruleset] all create attempts failed for ${config.tableName}, proceeding without guaranteed rule set.\n`,
+  );
 }
 
 async function deleteTasksByNames(page: Page, taskNames: string[]): Promise<void> {

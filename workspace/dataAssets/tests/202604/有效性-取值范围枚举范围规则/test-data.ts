@@ -264,7 +264,7 @@ function loadActiveDatasources(): readonly DatasourceConfig[] {
 export const ACTIVE_DATASOURCES = loadActiveDatasources();
 export const ALL_TABLES = TABLE_DEFINITIONS.map((table) => table.name) as readonly string[];
 
-export const QUALITY_PROJECT_ID = 87;
+export const QUALITY_PROJECT_ID = 90;
 export const QUALITY_PROJECT_NAME = "pw_test";
 
 if (process.env.QA_OFFLINE_MODE === "1") {
@@ -326,21 +326,25 @@ export async function runPreconditions(
         process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
         return;
       }
-      const retryableGateway = /HTTP (502|503|504)\b/.test(message);
-      if (!retryableGateway) {
+      const retryableError =
+        /HTTP (502|503|504)\b/.test(message) ||
+        /Timeout \d+ms exceeded/.test(message) ||
+        /net::ERR_/.test(message) ||
+        /ETIMEDOUT/.test(message);
+      if (!retryableError) {
         throw error;
       }
       if (attempt === 3) {
         process.stderr.write(
-          `[preconditions] ${datasource.reportName} setup kept hitting gateway errors, continuing with existing project metadata.\n`,
+          `[preconditions] ${datasource.reportName} setup kept hitting transient errors, continuing with existing project metadata.\n`,
         );
         process.stderr.write(`[preconditions] ${datasource.reportName} preconditions complete.\n`);
         return;
       }
       process.stderr.write(
-        `[preconditions] ${datasource.reportName} hit transient gateway error, retrying setup (${attempt}/3)...\n`,
+        `[preconditions] ${datasource.reportName} hit transient error, retrying setup (${attempt}/3)...\n`,
       );
-      await page.waitForTimeout(2000 * attempt);
+      await page.waitForTimeout(3000 * attempt);
     }
   }
 }
