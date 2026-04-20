@@ -104,25 +104,60 @@ function summarizeActual(err: unknown): string {
         : "";
   if (!raw) return "";
 
-  // Playwright 断言错误典型形态：
-  //   Expected: ...\nReceived: ...
-  //   Expected string: "a"\nReceived string: "b"
-  //   Expected pattern: /.../\nReceived string: "..."
-  //   Timed out Xms waiting for expect(locator).toBeVisible()
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
-  const receivedLine = lines.find((l) => /^Received[\s:]/i.test(l));
+  const lines = raw.split("\n");
+  const trimmedLines = lines.map((l) => l.trim()).filter(Boolean);
+
+  // 1) 单行 Received: "..."（toHaveText/toContainText 等）
+  const receivedLine = trimmedLines.find((l) => /^Received[\s:]/i.test(l));
   if (receivedLine) {
     const val = receivedLine.replace(/^Received[^:]*:\s*/i, "");
     return truncate(val, 200);
   }
 
-  const timedOut = lines.find((l) => /^Timed out/i.test(l));
+  // 2) toEqual / toMatchObject 等 diff 格式：
+  //      - Expected  - N
+  //      + Received  + M
+  //        Array [
+  //      -   "*key",
+  //      +   "key",
+  //          ...
+  //        ]
+  const diff = parseDiffChanges(lines);
+  if (diff) {
+    return truncate(diff, 300);
+  }
+
+  // 3) 超时类错误
+  const timedOut = trimmedLines.find((l) => /^Timed out/i.test(l));
   if (timedOut) {
     return truncate(timedOut, 200);
   }
 
-  // 其他错误：取首条非空行
-  return truncate(lines[0] ?? "", 200);
+  // 4) 兜底：取首条非空行
+  return truncate(trimmedLines[0] ?? "", 200);
+}
+
+function parseDiffChanges(lines: string[]): string | null {
+  const expected: string[] = [];
+  const received: string[] = [];
+  for (const line of lines) {
+    if (line.startsWith("---") || line.startsWith("+++")) continue;
+    // 跳过 diff 头："- Expected  - 1" / "+ Received  + 1"
+    if (/^[-+]\s+(Expected|Received)\b/.test(line)) continue;
+    const mMinus = line.match(/^-\s+(.*\S)\s*$/);
+    const mPlus = line.match(/^\+\s+(.*\S)\s*$/);
+    if (mMinus) expected.push(cleanDiffValue(mMinus[1]));
+    else if (mPlus) received.push(cleanDiffValue(mPlus[1]));
+  }
+  if (expected.length === 0 && received.length === 0) return null;
+  const actualPart = received.length ? received.join("、") : "(空)";
+  const expectedPart = expected.length ? expected.join("、") : "(空)";
+  return `${actualPart}（预期 ${expectedPart}）`;
+}
+
+function cleanDiffValue(raw: string): string {
+  // 去掉末尾逗号、首尾空白；保留引号使输出直观
+  return raw.replace(/,\s*$/, "").trim();
 }
 
 function truncate(text: string, max: number): string {
