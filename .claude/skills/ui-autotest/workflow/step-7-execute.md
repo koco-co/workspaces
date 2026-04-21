@@ -26,6 +26,20 @@ ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
 >
 > 报告输出至 `workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/`，含 `allure-results/`（原始数据）和 `allure-report/`（HTML 入口 `index.html`）两个子目录。
 
+**并发执行（可选，加速全量回归）**：默认串行，用例多时可开启并发：
+
+```bash
+PW_FULLY_PARALLEL=1 PW_WORKERS=4 \
+  ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
+  bun run .claude/scripts/run-tests-notify.ts \
+  workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
+  --project=chromium
+```
+
+- `PW_FULLY_PARALLEL=1`：开启同文件内并发（Playwright 的 `fullyParallel` 模式）
+- `PW_WORKERS=N`：worker 数量；不设置时 Playwright 默认 CPU/2
+- **数据冲突前置检查**：开并发前确认测试用 `uniqueName()` 生成隔离标识、前置数据（数据源/质量项目）已提前创建好可复用，避免多 worker 抢占同名资源
+
 记录执行开始时间，计算 `duration`。
 
 ---

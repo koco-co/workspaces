@@ -77,6 +77,14 @@ if (sessionPath === legacySessionPath) {
 }
 process.env.UI_AUTOTEST_SESSION_PATH = sessionPath;
 
+// 并发控制：默认串行（向后兼容），通过环境变量按需开启并发
+// - PW_FULLY_PARALLEL=1：同文件内（含 describe 内）用例也并发
+// - PW_WORKERS=N：worker 数量；未设置则走 Playwright 默认（CPU / 2）
+const fullyParallel = process.env.PW_FULLY_PARALLEL === "1";
+const workersEnv = process.env.PW_WORKERS;
+const workers =
+  workersEnv && /^\d+$/.test(workersEnv) ? Number(workersEnv) : undefined;
+
 export default defineConfig({
   testMatch: [
     `workspace/${project}/tests/**/*.spec.ts`,
@@ -88,6 +96,8 @@ export default defineConfig({
     `workspace/${project}/.temp/ui-blocks/**/*-helpers.ts`,
     `workspace/${project}/tests/**/*-helpers.ts`,
   ],
+  fullyParallel,
+  ...(workers !== undefined ? { workers } : {}),
   timeout: 60000,
   reporter: [
     ["line"],
