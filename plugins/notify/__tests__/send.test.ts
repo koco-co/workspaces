@@ -67,7 +67,7 @@ describe("formatMessage", () => {
     assert.ok(msg.text.includes("🔧"));
   });
 
-  it("ui-test-completed: includes passed, failed, reportFile, pass rate", () => {
+  it("ui-test-completed: includes passed, failed, reportFile (legacy), pass rate", () => {
     const msg = formatMessage("ui-test-completed", { passed: 10, failed: 2, reportFile: "ui-report.html" });
     assert.ok(msg.text.includes("10"));
     assert.ok(msg.text.includes("2"));
@@ -84,6 +84,61 @@ describe("formatMessage", () => {
   it("ui-test-completed: shows green icon when all pass", () => {
     const msg = formatMessage("ui-test-completed", { passed: 10, failed: 0 });
     assert.ok(msg.text.includes("🟢"), "should show green icon for all pass");
+  });
+
+  it("ui-test-completed: renders env/project/suite/tenant and allure open command", () => {
+    const msg = formatMessage("ui-test-completed", {
+      env: "ltqc",
+      tenant: "岚图",
+      project: "dataAssets",
+      suite: "【通用配置】json格式配置-15696",
+      passed: 40,
+      failed: 3,
+      skipped: 0,
+      broken: 0,
+      durationMs: 125_000,
+      reportPath: "/abs/path/allure-report",
+      failedCases: [
+        { title: "【P1】验证A", message: "timeout" },
+        { title: "【P0】验证B", message: "element not found" },
+      ],
+    });
+    assert.ok(msg.text.includes("ltqc"));
+    assert.ok(msg.text.includes("岚图"));
+    assert.ok(msg.text.includes("dataAssets"));
+    assert.ok(msg.text.includes("【通用配置】json格式配置-15696"));
+    assert.ok(msg.text.includes("93%"), "pass rate 40/43");
+    assert.ok(msg.text.includes("2m 5s"), "duration formatting");
+    assert.ok(msg.text.includes("allure open"));
+    assert.ok(msg.text.includes("/abs/path/allure-report"));
+    assert.ok(msg.text.includes("【P1】验证A"));
+    assert.ok(msg.text.includes("timeout"));
+  });
+
+  it("ui-test-completed: online link section when reportUrl provided", () => {
+    const msg = formatMessage("ui-test-completed", {
+      passed: 1,
+      failed: 0,
+      reportUrl: "https://reports.example.com/abc/",
+    });
+    assert.ok(msg.text.includes("在线查看"));
+    assert.ok(msg.text.includes("https://reports.example.com/abc/"));
+  });
+
+  it("ui-test-completed: caps failedCases list at 5 and shows overflow note", () => {
+    const many = Array.from({ length: 8 }, (_, i) => ({
+      title: `case-${i}`,
+      message: `msg-${i}`,
+    }));
+    const msg = formatMessage("ui-test-completed", {
+      passed: 0,
+      failed: 8,
+      failedCases: many,
+    });
+    assert.ok(msg.text.includes("case-0"));
+    assert.ok(msg.text.includes("case-4"));
+    assert.ok(!msg.text.includes("case-5 —"), "should not list the 6th case");
+    assert.ok(msg.text.includes("另有 3 条失败"));
   });
 
   it("archive-converted: includes fileCount and caseCount", () => {

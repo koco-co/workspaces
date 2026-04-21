@@ -149,31 +149,8 @@ function formatByEvent(
         `🕐 ${timestamp} · QAFlow`,
       ].join("\n");
 
-    case "ui-test-completed": {
-      const passed = Number(data.passed ?? 0);
-      const failed = Number(data.failed ?? 0);
-      const total = passed + failed;
-      const rate = total > 0 ? `${Math.round((passed / total) * 100)}%` : "-";
-      const statusIcon = failed > 0 ? "🔴" : "🟢";
-      return [
-        `## 🧪 UI 自动化测试完成 ${statusIcon}`,
-        "",
-        `> 通过率 **${rate}**（${passed}/${total}）`,
-        "",
-        "| 项目 | 详情 |",
-        "| --- | --- |",
-        `| ✅ 通过 | **${data.passed ?? "-"}** |`,
-        `| ❌ 失败 | **${data.failed ?? "-"}** |`,
-        `| 📊 通过率 | ${rate} |`,
-        `| 📄 报告 | ${data.reportFile ?? "-"} |`,
-        ...(data.reportURL
-          ? [`| 🔗 在线查看 | [${data.reportURL}](${data.reportURL}) |`]
-          : []),
-        "",
-        `---`,
-        `🕐 ${timestamp} · QAFlow`,
-      ].join("\n");
-    }
+    case "ui-test-completed":
+      return formatUiTestCompleted(data, timestamp);
 
     case "archive-converted":
       return [
@@ -221,6 +198,111 @@ function formatByEvent(
         `🕐 ${timestamp} · QAFlow`,
       ].join("\n");
   }
+}
+
+function formatUiTestCompleted(data: NotifyData, timestamp: string): string {
+  const passed = Number(data.passed ?? 0);
+  const failed = Number(data.failed ?? 0);
+  const broken = Number(data.broken ?? 0);
+  const skipped = Number(data.skipped ?? 0);
+  const total = Number(data.total ?? passed + failed + broken + skipped);
+  const executed = total - skipped;
+  const rate =
+    executed > 0 ? `${Math.round((passed / executed) * 100)}%` : "-";
+
+  const failedTotal = failed + broken;
+  const statusIcon = failedTotal > 0 ? "🔴" : passed > 0 ? "🟢" : "⚪";
+  const statusText = failedTotal > 0 ? "存在失败" : passed > 0 ? "全部通过" : "无通过用例";
+
+  const env = String(data.env ?? "-");
+  const tenant = data.tenant ? String(data.tenant) : "";
+  const project = data.project ? String(data.project) : "";
+  const suite = data.suite ? String(data.suite) : "";
+  const durationText = formatDuration(Number(data.durationMs ?? 0));
+
+  const rows = [
+    `| 🏷 环境 | \`${env}\` |`,
+    ...(tenant ? [`| 🏢 租户 | \`${tenant}\` |`] : []),
+    ...(project ? [`| 📦 项目 | \`${project}\` |`] : []),
+    ...(suite ? [`| 🎯 套件 | ${suite} |`] : []),
+    `| 📊 总计 | **${total}**（执行 ${executed} · 跳过 ${skipped}） |`,
+    `| ✅ 通过 | **${passed}** |`,
+    `| ❌ 失败 | **${failed}** |`,
+    ...(broken > 0 ? [`| ⚠️ 异常 | **${broken}** |`] : []),
+    `| 📈 通过率 | **${rate}** |`,
+    `| ⏱ 耗时 | ${durationText} |`,
+  ];
+
+  const lines: string[] = [
+    `## 🧪 UI 自动化测试完成 ${statusIcon}`,
+    "",
+    `> **${statusText}** · 通过率 **${rate}**（${passed}/${executed}）`,
+    "",
+    "| 指标 | 值 |",
+    "| --- | --- |",
+    ...rows,
+    "",
+  ];
+
+  // Allure report section (supports both new `reportPath`/`reportUrl` and legacy `reportFile`/`reportURL`)
+  const reportPath = data.reportPath
+    ? String(data.reportPath)
+    : data.reportFile
+      ? String(data.reportFile)
+      : "";
+  const reportUrl = data.reportUrl
+    ? String(data.reportUrl)
+    : data.reportURL
+      ? String(data.reportURL)
+      : "";
+  if (reportPath || reportUrl) {
+    lines.push("**📄 Allure 报告**");
+    lines.push("");
+    if (reportUrl) {
+      lines.push(`- 🔗 [在线查看](${reportUrl})`);
+    }
+    if (reportPath) {
+      lines.push(`- 📁 本地路径：\`${reportPath}\``);
+      lines.push(`- ▶️ 打开命令：\`allure open "${reportPath}"\``);
+    }
+    lines.push("");
+  }
+
+  // Top failed cases
+  const failedCases = Array.isArray(data.failedCases)
+    ? (data.failedCases as Array<{ title?: string; message?: string }>)
+    : [];
+  if (failedCases.length > 0) {
+    const topN = 5;
+    lines.push(`**❌ 失败用例（Top ${Math.min(topN, failedCases.length)}）**`);
+    lines.push("");
+    for (const fc of failedCases.slice(0, topN)) {
+      const title = fc.title ?? "(未命名)";
+      const msg = fc.message ? ` — ${fc.message}` : "";
+      lines.push(`- ${title}${msg}`);
+    }
+    if (failedCases.length > topN) {
+      lines.push(`- …另有 ${failedCases.length - topN} 条失败，详见报告`);
+    }
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push(`🕐 ${timestamp} · QAFlow`);
+
+  return lines.join("\n");
+}
+
+function formatDuration(ms: number): string {
+  if (!ms || ms < 0) return "-";
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min < 60) return sec > 0 ? `${min}m ${sec}s` : `${min}m`;
+  const hour = Math.floor(min / 60);
+  const remMin = min % 60;
+  return `${hour}h ${remMin}m`;
 }
 
 // ── Channel Detection ────────────────────────────────────────────────────────

@@ -1620,36 +1620,20 @@ export async function clearAllRules(page: Page): Promise<void> {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const ruleForms = page.locator(".ruleForm");
     const count = await ruleForms.count().catch(() => 0);
-    if (count === 0) {
+    let deletedVisibleRule = false;
+    for (let index = 0; index < count; index += 1) {
+      const ruleForm = ruleForms.nth(index);
+      if (!(await ruleForm.isVisible().catch(() => false))) {
+        continue;
+      }
+      await deleteRule(page, ruleForm);
+      await page.waitForTimeout(300);
+      deletedVisibleRule = true;
+      break;
+    }
+    if (!deletedVisibleRule) {
       return;
     }
-    await deleteRule(page, ruleForms.first());
-    await page.waitForTimeout(300);
-  }
-
-  throw new Error("Failed to clear existing rules from rule set editor.");
-}
-
-export async function clearAllRules(page: Page): Promise<void> {
-  const packageSections = page.locator(".ruleSetMonitor__package");
-  const packageCount = await packageSections.count().catch(() => 0);
-  for (let index = 0; index < packageCount; index += 1) {
-    const packageSection = packageSections.nth(index);
-    const expandBtn = packageSection.getByRole("button", { name: /展开/ }).first();
-    if (await expandBtn.isVisible().catch(() => false)) {
-      await expandBtn.click();
-      await page.waitForTimeout(200);
-    }
-  }
-
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const ruleForms = page.locator(".ruleForm");
-    const count = await ruleForms.count().catch(() => 0);
-    if (count === 0) {
-      return;
-    }
-    await deleteRule(page, ruleForms.first());
-    await page.waitForTimeout(300);
   }
 
   throw new Error("Failed to clear existing rules from rule set editor.");
