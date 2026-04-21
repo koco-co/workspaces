@@ -82,6 +82,12 @@ export default defineConfig({
     `workspace/${project}/tests/**/*.spec.ts`,
     `workspace/${project}/.temp/ui-blocks/**/*.ts`,
   ],
+  // 排除 .temp/ui-blocks 里的 helpers（被 t*.ts 以相对路径 import）
+  // 以及 tests/ 下同目录的 *-helpers.ts（与 spec 并列的工具文件）
+  testIgnore: [
+    `workspace/${project}/.temp/ui-blocks/**/*-helpers.ts`,
+    `workspace/${project}/tests/**/*-helpers.ts`,
+  ],
   timeout: 60000,
   reporter: [
     ["line"],

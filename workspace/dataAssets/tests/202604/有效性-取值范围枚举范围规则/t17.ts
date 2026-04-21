@@ -40,7 +40,7 @@ for (const datasource of ACTIVE_DATASOURCES) {
       await step(
         "步骤2: 点击task_15695_weak的执行按钮 → 页面弹出提示信息，提示任务已提交执行",
         async () => {
-          const targetRow = page.locator(tableRows).filter({ hasText: "task_15695_weak" }).first();
+          const targetRow = getTableRowByTaskName(page, "task_15695_weak");
           await expect(targetRow).toBeVisible({ timeout: 10000 });
           await executeTaskFromList(page, "task_15695_weak");
         },

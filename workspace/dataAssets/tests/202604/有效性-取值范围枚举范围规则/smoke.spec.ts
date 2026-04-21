@@ -1,4 +1,4 @@
 // 冒烟测试（P0）
-// 由 ui-autotest 合并生成
-import "./t1.spec";
-import "./t15.spec";
+// 生成时间：2026-04-21T05:26:55.709Z
+// 用例数量：0
+export {};

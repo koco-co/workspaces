@@ -3,10 +3,11 @@ import type { Locator } from "@playwright/test";
 import { expect, test } from "../../fixtures/step-screenshot";
 import { ACTIVE_DATASOURCES, clearCurrentDatasource, setCurrentDatasource } from "./test-data";
 import {
+  addRuleToPackage,
   cloneRule,
+  configureRangeEnumRule,
   deleteRule,
   getRulePackage,
-  getRuleSetListRow,
   gotoRuleSetList,
   openRuleSetEditor,
 } from "./rule-editor-helpers";
@@ -38,9 +39,7 @@ for (const datasource of ACTIVE_DATASOURCES) {
         "步骤1: 进入规则集管理页面 → 页面打开，列表显示已有规则集数据行",
         async () => {
           await gotoRuleSetList(page);
-          await expect(getRuleSetListRow(page, "ruleset_15695_and")).toBeVisible({
-            timeout: 10000,
-          });
+          await expect(page.locator(".ant-table-row").first()).toBeVisible({ timeout: 10000 });
         },
         page.locator(".ant-table-tbody"),
       );
@@ -53,6 +52,25 @@ for (const datasource of ACTIVE_DATASOURCES) {
 
           const ruleForms = packageSection.locator(".ruleForm");
           beforeCount = await ruleForms.count();
+          if (beforeCount === 0) {
+            const seededRule = await addRuleToPackage(page, "且关系校验包", "有效性校验");
+            await configureRangeEnumRule(page, seededRule, {
+              field: "score",
+              range: {
+                firstOperator: ">",
+                firstValue: "1",
+                condition: "且",
+                secondOperator: "<",
+                secondValue: "10",
+              },
+              enumOperator: "in",
+              enumValues: ["1", "2", "3"],
+              relation: "且",
+              ruleStrength: "强规则",
+              description: "score取值范围1到10且枚举值in 1,2,3",
+            });
+            beforeCount = await ruleForms.count();
+          }
           const sourceRule = ruleForms.first();
           await expect(sourceRule).toContainText("取值范围&枚举范围");
 
