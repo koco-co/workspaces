@@ -1605,6 +1605,56 @@ export async function addRuleToPackage(
   return ruleForms.nth(beforeCount);
 }
 
+export async function clearAllRules(page: Page): Promise<void> {
+  const packageSections = page.locator(".ruleSetMonitor__package");
+  const packageCount = await packageSections.count().catch(() => 0);
+  for (let index = 0; index < packageCount; index += 1) {
+    const packageSection = packageSections.nth(index);
+    const expandBtn = packageSection.getByRole("button", { name: /展开/ }).first();
+    if (await expandBtn.isVisible().catch(() => false)) {
+      await expandBtn.click();
+      await page.waitForTimeout(200);
+    }
+  }
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const ruleForms = page.locator(".ruleForm");
+    const count = await ruleForms.count().catch(() => 0);
+    if (count === 0) {
+      return;
+    }
+    await deleteRule(page, ruleForms.first());
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error("Failed to clear existing rules from rule set editor.");
+}
+
+export async function clearAllRules(page: Page): Promise<void> {
+  const packageSections = page.locator(".ruleSetMonitor__package");
+  const packageCount = await packageSections.count().catch(() => 0);
+  for (let index = 0; index < packageCount; index += 1) {
+    const packageSection = packageSections.nth(index);
+    const expandBtn = packageSection.getByRole("button", { name: /展开/ }).first();
+    if (await expandBtn.isVisible().catch(() => false)) {
+      await expandBtn.click();
+      await page.waitForTimeout(200);
+    }
+  }
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const ruleForms = page.locator(".ruleForm");
+    const count = await ruleForms.count().catch(() => 0);
+    if (count === 0) {
+      return;
+    }
+    await deleteRule(page, ruleForms.first());
+    await page.waitForTimeout(300);
+  }
+
+  throw new Error("Failed to clear existing rules from rule set editor.");
+}
+
 export async function getRuleForm(page: Page, text: string | RegExp): Promise<Locator> {
   const ruleForm = page.locator(".ruleForm").filter({ hasText: text }).first();
   await expect(ruleForm).toBeVisible({ timeout: 10000 });

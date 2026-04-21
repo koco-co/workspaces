@@ -4,6 +4,7 @@ import { selectAntOption } from "../../helpers/test-setup";
 import { ACTIVE_DATASOURCES, clearCurrentDatasource, setCurrentDatasource } from "./test-data";
 import {
   addRuleToPackage,
+  clearAllRules,
   getRulePackage,
   getRuleSetListRow,
   gotoRuleSetList,
@@ -48,6 +49,7 @@ for (const datasource of ACTIVE_DATASOURCES) {
           await expect(
             page.locator(".ruleSetMonitor__package").filter({ hasText: "仅枚举值包" }).first(),
           ).toBeVisible({ timeout: 10000 });
+          await clearAllRules(page);
 
           const ruleForm = await addRuleToPackage(page, "仅枚举值包");
           const functionRow = await selectRuleFieldAndFunction(
