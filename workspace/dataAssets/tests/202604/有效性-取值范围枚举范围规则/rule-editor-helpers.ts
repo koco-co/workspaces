@@ -1276,8 +1276,6 @@ export async function createRuleSetDraft(
         els.map((el) => el.textContent?.trim()).filter((t): t is string => Boolean(t)),
       )
       .catch(() => [] as string[]);
-    await page.keyboard.press("Escape").catch(() => undefined);
-    await page.waitForTimeout(300);
     if (tableOptions.length > 0) {
       process.stderr.write(
         `[ruleset] table dropdown loaded (attempt ${tableWait + 1}): ${tableOptions.slice(0, 10).join(", ")}\n`,
@@ -1293,6 +1291,8 @@ export async function createRuleSetDraft(
       await page.waitForTimeout(300);
       break;
     }
+    await page.keyboard.press("Escape").catch(() => undefined);
+    await page.waitForTimeout(300);
     process.stderr.write(
       `[ruleset] table dropdown empty (attempt ${tableWait + 1}/15), waiting...\n`,
     );
