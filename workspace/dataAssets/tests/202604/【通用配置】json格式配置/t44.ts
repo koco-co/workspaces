@@ -95,7 +95,7 @@ async function triggerExport(
     (async () => {
       await page.getByRole("button", { name: /^导\s*出$/ }).click();
       const popconfirm = page
-        .locator(".ant-popover-inner, .ant-popconfirm")
+        .locator(".ant-popconfirm")
         .filter({ hasText: "请确认是否导出列表数据" });
       await popconfirm.waitFor({ state: "visible", timeout: 5000 });
       const confirmBtn = popconfirm
