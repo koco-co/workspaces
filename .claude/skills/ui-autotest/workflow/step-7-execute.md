@@ -11,21 +11,19 @@
 ```bash
 # 冒烟测试
 ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
-  bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
+  bun run .claude/scripts/run-tests-notify.ts \
+  workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/smoke.spec.ts \
   --project=chromium
 
 # 完整测试
 ACTIVE_ENV={{env}} QA_PROJECT={{project}} QA_SUITE_NAME="{{suite_name}}" \
-  bunx playwright test workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
+  bun run .claude/scripts/run-tests-notify.ts \
+  workspace/{{project}}/tests/{{YYYYMM}}/{{suite_name}}/full.spec.ts \
   --project=chromium
-
-# 生成 Allure HTML 报告（合并 / 回归后必跑）
-npx allure generate \
-  workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-results \
-  --output workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/allure-report \
-  --clean
 ```
 
+> **必须使用 `run-tests-notify.ts` 包装器**：直接调用 `bunx playwright test` 只会执行测试，**不会**刷新 Allure HTML 报告、**不会**发送钉钉通知。包装器会在测试结束后自动生成 `allure-report/` 并推送 IM 卡片。如需临时跳过通知，加 `SKIP_NOTIFY=1`；跳过报告生成加 `SKIP_ALLURE_GEN=1`。
+>
 > 报告输出至 `workspace/{{project}}/reports/allure/{{YYYYMM}}/{{suite_name}}/{{env}}/`，含 `allure-results/`（原始数据）和 `allure-report/`（HTML 入口 `index.html`）两个子目录。
 
 记录执行开始时间，计算 `duration`。
