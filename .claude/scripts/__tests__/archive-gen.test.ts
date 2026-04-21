@@ -167,6 +167,58 @@ describe("archive-gen.ts convert — H2/H3/H4/H5 body structure", () => {
   });
 });
 
+describe("archive-gen.ts convert — strips duplicate priority prefix", () => {
+  it("removes existing 【P0】/【P1】 prefix from title before prepending", () => {
+    // Build a fixture whose titles already carry 【P0】 / 【P1】 prefixes
+    // (this mirrors what writer-agent produces in real intermediate JSON).
+    const rawFixture = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
+      modules: Array<{
+        pages: Array<{
+          sub_groups?: Array<{ test_cases: Array<{ priority: string; title: string }> }>;
+          test_cases?: Array<{ priority: string; title: string }>;
+        }>;
+      }>;
+    };
+    for (const mod of rawFixture.modules) {
+      for (const page of mod.pages) {
+        for (const sg of page.sub_groups ?? []) {
+          for (const tc of sg.test_cases) {
+            tc.title = `【${tc.priority}】${tc.title}`;
+          }
+        }
+        for (const tc of page.test_cases ?? []) {
+          tc.title = `【${tc.priority}】${tc.title}`;
+        }
+      }
+    }
+
+    const prefixedInput = join(TMP_DIR, "prefixed-fixture.json");
+    writeFileSync(prefixedInput, JSON.stringify(rawFixture), "utf8");
+
+    const output = join(TMP_DIR, "test-dup-prefix.md");
+    const { code, stderr } = run([
+      "convert",
+      "--input",
+      prefixedInput,
+      "--output",
+      output,
+    ]);
+    assert.equal(code, 0, `stderr: ${stderr}`);
+
+    const content = readFileSync(output, "utf8");
+    assert.doesNotMatch(
+      content,
+      /【P\d】【P\d】/,
+      "Archive must not contain duplicated priority prefix",
+    );
+    assert.match(
+      content,
+      /^##### 【P0】验证默认加载列表页/m,
+      "Single P0 prefix expected after stripping",
+    );
+  });
+});
+
 describe("archive-gen.ts convert — step table format", () => {
   it("step tables have correct header format (| 编号 | 步骤 | 预期 |)", () => {
     const output = join(TMP_DIR, "test-table.md");

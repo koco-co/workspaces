@@ -79,24 +79,7 @@ export async function selectAntOption(
   // 策略 1：直接匹配可见选项
   if (await clickVisibleOption()) return;
 
-  // 策略 2：搜索输入框过滤
-  if (typeof optionText === "string") {
-    const searchInput = triggerLocator
-      .locator("input.ant-select-selection-search-input")
-      .or(
-        page.locator(
-          ".ant-select-open input.ant-select-selection-search-input, .ant-select-focused input.ant-select-selection-search-input",
-        ),
-      )
-      .first();
-    if ((await searchInput.count()) && (await searchInput.isEditable().catch(() => false))) {
-      await searchInput.fill(optionText);
-      await waitForOptionsToSettle(2500);
-      if (await clickVisibleOption()) return;
-    }
-  }
-
-  // 策略 3：滚动 rc-virtual-list 查找
+  // 策略 2：滚动 rc-virtual-list 查找
   const virtualHolder = dropdown.locator(".rc-virtual-list-holder").first();
   if (await virtualHolder.count()) {
     const metrics = await virtualHolder.evaluate((el) => ({
@@ -110,6 +93,43 @@ export async function selectAntOption(
       }, top);
       await page.waitForTimeout(200);
       if (await clickVisibleOption()) return;
+    }
+  }
+
+  // 策略 3：搜索输入框过滤
+  if (typeof optionText === "string") {
+    const searchInput = triggerLocator
+      .locator("input.ant-select-selection-search-input")
+      .or(
+        page.locator(
+          ".ant-select-open input.ant-select-selection-search-input, .ant-select-focused input.ant-select-selection-search-input",
+        ),
+      )
+      .first();
+    if ((await searchInput.count()) && (await searchInput.isEditable().catch(() => false))) {
+      await searchInput.fill(optionText);
+      await waitForOptionsToSettle(4000);
+      const searchStartedAt = Date.now();
+      do {
+        if (await clickVisibleOption()) return;
+
+        const isLoading = await dropdown
+          .locator(".ant-spin-spinning, .ant-select-item-empty .ant-spin-spinning")
+          .first()
+          .isVisible()
+          .catch(() => false);
+        const isEmpty = await dropdown
+          .locator(".ant-select-item-empty, .ant-empty")
+          .first()
+          .isVisible()
+          .catch(() => false);
+
+        if (isEmpty && !isLoading && Date.now() - searchStartedAt >= 1000) {
+          break;
+        }
+
+        await page.waitForTimeout(300);
+      } while (Date.now() - searchStartedAt < 8000);
     }
   }
 

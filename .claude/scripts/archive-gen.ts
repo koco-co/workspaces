@@ -162,6 +162,10 @@ function buildCaseBody(tc: TestCase): string {
   return lines.join("\n");
 }
 
+function stripPriorityPrefix(title: string): string {
+  return title.replace(/^【P\d】\s*/, "").trim();
+}
+
 function buildBodyFromModules(modules: Module[]): string {
   const lines: string[] = [];
 
@@ -180,7 +184,7 @@ function buildBodyFromModules(modules: Module[]): string {
           lines.push("");
 
           for (const tc of sg.test_cases) {
-            lines.push(`##### 【${tc.priority}】${tc.title}`);
+            lines.push(`##### 【${tc.priority}】${stripPriorityPrefix(tc.title)}`);
             lines.push("");
             lines.push(buildCaseBody(tc));
             lines.push("");
@@ -190,7 +194,7 @@ function buildBodyFromModules(modules: Module[]): string {
 
       // Direct page test_cases (no sub-group)
       for (const tc of page.test_cases ?? []) {
-        lines.push(`##### 【${tc.priority}】${tc.title}`);
+        lines.push(`##### 【${tc.priority}】${stripPriorityPrefix(tc.title)}`);
         lines.push("");
         lines.push(buildCaseBody(tc));
         lines.push("");
@@ -243,6 +247,11 @@ function registerHandlebarsHelpers(): void {
     return new Handlebars.SafeString(
       String(text).replace(/\|/g, "\\|").replace(/\n/g, "<br>"),
     );
+  });
+
+  // Strip any existing 【P0】/【P1】/... prefix from a case title
+  Handlebars.registerHelper("stripPriority", (text: string) => {
+    return stripPriorityPrefix(String(text ?? ""));
   });
 }
 

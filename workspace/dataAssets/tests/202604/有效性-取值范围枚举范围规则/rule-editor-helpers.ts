@@ -13,6 +13,7 @@ import {
   getCurrentDatasource,
   injectProjectContext,
   resolveEffectiveQualityProjectId,
+  runPreconditions,
 } from "./test-data";
 import {
   addOfflineRuleToPackage,
@@ -370,6 +371,79 @@ async function datasourceHasCandidateSchema(
   return schemas.some((s) => schemaCandidates.includes(s));
 }
 
+type DatasourceTableItem = {
+  tableName?: string;
+  schemaName?: string;
+  view?: string;
+};
+
+function matchesCurrentDatasource(item: MonitorDatasourceItem | DatasourceItem): boolean {
+  const datasource = getCurrentDatasource();
+  return (
+    datasource.optionPattern.test(
+      `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
+    ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? ""))
+  );
+}
+
+async function getCurrentMonitorDatasource(page: Page): Promise<MonitorDatasourceItem | undefined> {
+  const cachedItems = cachedCompatibleMonitorDatasourcePayload?.data ?? [];
+  const cachedMatch = cachedItems.find((item) => item?.id && matchesCurrentDatasource(item));
+  if (cachedMatch?.id) {
+    return cachedMatch;
+  }
+
+  const response = await postProjectApi<{ data?: MonitorDatasourceItem[] }>(
+    page,
+    "/dmetadata/v1/dataSource/monitor/list",
+    {},
+  ).catch(() => null);
+
+  return (response?.data ?? []).find((item) => item?.id && matchesCurrentDatasource(item));
+}
+
+async function getDatasourceTables(
+  page: Page,
+  datasourceId: string | number,
+  schemaName: string,
+  search?: string,
+): Promise<string[]> {
+  const result = await postProjectApi<{ data?: DatasourceTableItem[] }>(
+    page,
+    "/dassets/v1/dataSource/tablelist",
+    {
+      sourceId: Number(datasourceId),
+      schemaName,
+      ...(search ? { search } : {}),
+    },
+  );
+
+  return (result.data ?? []).map((item) => item.tableName ?? "").filter(Boolean);
+}
+
+async function resolveSchemaForTable(
+  page: Page,
+  datasourceId: string | number,
+  tableName: string,
+  preferredSchemas: string[],
+): Promise<string | null> {
+  const allSchemas = await getDatasourceSchemas(page, datasourceId);
+  const orderedSchemas = [...preferredSchemas, ...allSchemas].filter(
+    (value, index, array) => Boolean(value) && array.indexOf(value) === index,
+  );
+
+  for (const schemaName of orderedSchemas) {
+    const tableNames = await getDatasourceTables(page, datasourceId, schemaName, tableName).catch(
+      () => [],
+    );
+    if (tableNames.includes(tableName)) {
+      return schemaName;
+    }
+  }
+
+  return preferredSchemas.find((schemaName) => allSchemas.includes(schemaName)) ?? orderedSchemas[0] ?? null;
+}
+
 async function ensureMonitorDatasource(page: Page): Promise<boolean> {
   const datasource = getCurrentDatasource();
 
@@ -388,12 +462,7 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
 
   const findMonitorDatasource = async () => {
     const response = await listMonitorDatasources();
-    return (response.data ?? []).find(
-      (item) =>
-        datasource.optionPattern.test(
-          `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
-        ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
-    );
+    return (response.data ?? []).find((item) => matchesCurrentDatasource(item));
   };
 
   let existingMonitorDatasource: DatasourceItem | undefined;
@@ -444,9 +513,7 @@ async function ensureMonitorDatasource(page: Page): Promise<boolean> {
   // For Doris: prefer the datasource that has the required schema over a random matching one.
   const matchingDatasources = (allDatasources.data?.contentList ?? []).filter(
     (item) =>
-      datasource.optionPattern.test(
-        `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
-      ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
+      matchesCurrentDatasource(item),
   );
 
   let projectDatasource: DatasourceItem | undefined;
@@ -1135,14 +1202,28 @@ export async function createRuleSetDraft(
   // If the exact name was already found in the visible options, skip the stripped fallback.
   const effectiveCandidates =
     schemaOptions.includes(datasource.database) ? [datasource.database] : schemaCandidates;
+  const monitorDatasource = await getCurrentMonitorDatasource(page).catch(() => undefined);
+  const resolvedSchemaForTable =
+    monitorDatasource?.id && datasource.preconditionType === "Doris"
+      ? await resolveSchemaForTable(page, monitorDatasource.id, tableName, effectiveCandidates).catch(
+          () => null,
+        )
+      : null;
+  const schemaSelectionOrder = [
+    resolvedSchemaForTable,
+    ...effectiveCandidates,
+    ...schemaOptions,
+  ].filter((value, index, array): value is string => Boolean(value) && array.indexOf(value) === index);
 
   let schemaSelected = false;
-  for (const schemaCandidate of effectiveCandidates) {
+  let selectedSchemaName = schemaSelectionOrder[0] ?? datasource.database;
+  for (const schemaCandidate of schemaSelectionOrder) {
     try {
       await selectAntOptionWithRetry(page, schemaSelect, schemaCandidate, 2);
+      selectedSchemaName = schemaCandidate;
       if (schemaCandidate !== datasource.database) {
         process.stderr.write(
-          `[ruleset] WARN: database "${datasource.database}" not found. Used fallback schema "${schemaCandidate}" instead.\n`,
+          `[ruleset] WARN: database "${datasource.database}" not used. Selected schema "${schemaCandidate}" for table "${tableName}".\n`,
         );
       }
       schemaSelected = true;
@@ -1155,10 +1236,25 @@ export async function createRuleSetDraft(
   }
   if (!schemaSelected) {
     throw new Error(
-      `Cannot select schema: none of ${schemaCandidates.join(", ")} found in dropdown. Available (first page): ${schemaOptions.join(", ")}`,
+      `Cannot select schema: none of ${schemaSelectionOrder.join(", ")} found in dropdown. Available (first page): ${schemaOptions.join(", ")}`,
     );
   }
   await page.waitForTimeout(1000);
+
+  if (monitorDatasource?.id && selectedSchemaName) {
+    await expect
+      .poll(
+        async () =>
+          (await getDatasourceTables(page, monitorDatasource.id!, selectedSchemaName, tableName).catch(
+            () => [],
+          )).includes(tableName),
+        {
+          timeout: 20000,
+          message: `Waiting for table "${tableName}" to appear under schema "${selectedSchemaName}".`,
+        },
+      )
+      .toBe(true);
+  }
 
   const tableFormItem = page
     .locator(".ant-form-item")
@@ -1169,6 +1265,7 @@ export async function createRuleSetDraft(
   const tableSelect = tableFormItem.locator(".ant-select").first();
   // Poll until the table select shows at least one option before attempting selection
   let tableOptions: string[] = [];
+  let tableSelected = false;
   for (let tableWait = 0; tableWait < 15; tableWait += 1) {
     await tableSelect.click().catch(() => undefined);
     await page.waitForTimeout(800);
@@ -1185,6 +1282,15 @@ export async function createRuleSetDraft(
       process.stderr.write(
         `[ruleset] table dropdown loaded (attempt ${tableWait + 1}): ${tableOptions.slice(0, 10).join(", ")}\n`,
       );
+      const exactMatchIndex = tableOptions.findIndex((option) => option === tableName);
+      if (exactMatchIndex >= 0) {
+        await tableDropdown.locator(".ant-select-item-option").nth(exactMatchIndex).click();
+        await page.waitForTimeout(500);
+        tableSelected = true;
+        break;
+      }
+      await page.keyboard.press("Escape").catch(() => undefined);
+      await page.waitForTimeout(300);
       break;
     }
     process.stderr.write(
@@ -1194,23 +1300,25 @@ export async function createRuleSetDraft(
       await page.waitForTimeout(2000);
     }
   }
-  let selectTableError: Error | null = null;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    try {
-      await selectAntOptionWithRetry(page, tableSelect, tableName, 1);
-      selectTableError = null;
-      break;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes("Ant Select option not found")) {
-        throw error;
+  if (!tableSelected) {
+    let selectTableError: Error | null = null;
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      try {
+        await selectAntOptionWithRetry(page, tableSelect, tableName, 2);
+        selectTableError = null;
+        break;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.includes("Ant Select option not found")) {
+          throw error;
+        }
+        selectTableError = error instanceof Error ? error : new Error(message);
+        await page.waitForTimeout(1000 * (attempt + 1));
       }
-      selectTableError = error instanceof Error ? error : new Error(message);
-      await page.waitForTimeout(1000 * (attempt + 1));
     }
-  }
-  if (selectTableError) {
-    throw selectTableError;
+    if (selectTableError) {
+      throw selectTableError;
+    }
   }
   await page.waitForTimeout(500);
 
@@ -1239,17 +1347,119 @@ async function tryOpenRuleSetRow(
   requiredPackageNames: string[],
 ): Promise<boolean> {
   for (const rowText of rowTexts) {
-    const targetRow = dataRows.filter({ hasText: rowText }).first();
-    if (await targetRow.isVisible().catch(() => false)) {
+    const matchingRows = dataRows.filter({ hasText: rowText });
+    const matchingCount = await matchingRows.count().catch(() => 0);
+    for (let rowIndex = 0; rowIndex < matchingCount; rowIndex += 1) {
+      const targetRow = matchingRows.nth(rowIndex);
+      if (!(await targetRow.isVisible().catch(() => false))) {
+        continue;
+      }
+
       await targetRow.getByRole("button", { name: "编辑" }).click();
+      await page
+        .waitForURL(/\/dq\/ruleSet\/edit\/\d+(?:\?.*)?$/, { timeout: 15000 })
+        .catch(() => undefined);
       await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
-      await page.waitForTimeout(1000);
+      const packageNameInputs = page.locator('input[placeholder="请输入规则包名称"]');
+      const nextBtn = page.getByRole("button", { name: "下一步" }).first();
+      const newPackageBtn = page.getByRole("button", { name: /新增规则包/ }).first();
+      await expect
+        .poll(
+          async () =>
+            (await packageNameInputs.first().isVisible().catch(() => false)) ||
+            (await nextBtn.isVisible().catch(() => false)) ||
+            (await newPackageBtn.isVisible().catch(() => false)),
+          { timeout: 15000 },
+        )
+        .toBe(true);
+      await page.waitForTimeout(500);
+
+      if (requiredPackageNames.length > 0) {
+        await gotoMonitorRulesStep(page);
+        const currentPackageNames = (
+          await page
+            .locator(".ruleSetMonitor__package .ruleSetMonitor__packageSelect .ant-select-selection-item")
+            .evaluateAll((nodes) =>
+              nodes
+                .map((node) => node.textContent?.trim())
+                .filter((text): text is string => Boolean(text)),
+            )
+            .catch(() => [] as string[])
+        );
+        const hasAllRequiredPackages = requiredPackageNames.every((packageName) =>
+          currentPackageNames.includes(packageName),
+        );
+        if (!hasAllRequiredPackages) {
+          process.stderr.write(
+            `[ruleset] skipped row "${rowText}" (${rowIndex + 1}/${matchingCount}) because packages [` +
+              `${currentPackageNames.join(", ")}] do not include [` +
+              `${requiredPackageNames.join(", ")}].\n`,
+          );
+          await gotoRuleSetList(page);
+          await page.locator(".ant-table-tbody").waitFor({ state: "visible", timeout: 15000 });
+          continue;
+        }
+      }
+
       await ensureMonitorRulesStep(page, requiredPackageNames);
       return true;
     }
   }
 
   return false;
+}
+
+async function findRuleSetIdByTableName(
+  page: Page,
+  tableName: string,
+): Promise<number | string | null> {
+  for (let current = 1; current <= 20; current += 1) {
+    const response = await postRuleSetApi<{
+      data?: { contentList?: Array<{ id?: number | string; tableName?: string }> };
+    }>(page, "/dassets/v1/valid/monitorRuleSet/pageQuery", {
+      current,
+      size: 50,
+      search: "",
+    }).catch(() => null);
+
+    const rows = response?.data?.contentList ?? [];
+    const matchedRow = rows.find((row) => String(row.tableName ?? "") === tableName && row.id);
+    if (matchedRow?.id) {
+      return matchedRow.id;
+    }
+    if (rows.length < 50) {
+      break;
+    }
+  }
+
+  return null;
+}
+
+async function openRuleSetEditorById(
+  page: Page,
+  ruleSetId: number | string,
+  requiredPackageNames: string[],
+): Promise<void> {
+  const effectiveProjectId = await resolveEffectiveQualityProjectId(page);
+  await page.goto(buildDataAssetsUrl(`/dq/ruleSet/edit/${ruleSetId}`, effectiveProjectId), {
+    waitUntil: "domcontentloaded",
+  });
+  await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => undefined);
+
+  const packageNameInputs = page.locator('input[placeholder="请输入规则包名称"]');
+  const nextBtn = page.getByRole("button", { name: "下一步" }).first();
+  const newPackageBtn = page.getByRole("button", { name: /新增规则包/ }).first();
+  await expect
+    .poll(
+      async () =>
+        (await packageNameInputs.first().isVisible().catch(() => false)) ||
+        (await nextBtn.isVisible().catch(() => false)) ||
+        (await newPackageBtn.isVisible().catch(() => false)),
+      { timeout: 15000 },
+    )
+    .toBe(true);
+  await page.waitForTimeout(500);
+  await ensureMonitorRulesStep(page, requiredPackageNames);
 }
 
 export async function openRuleSetEditor(
@@ -1280,7 +1490,19 @@ export async function openRuleSetEditor(
   const seedPackageName = requiredPackageNames[0];
   const seedRuleConfig = seedPackageName ? RULESET_PACKAGE_SEEDS[seedPackageName] : undefined;
 
+  if (targetTableName) {
+    const existingRuleSetId = await findRuleSetIdByTableName(page, targetTableName);
+    if (existingRuleSetId) {
+      process.stderr.write(
+        `[ruleset] DOM lookup missed existing ruleset for table "${targetTableName}" (id=${existingRuleSetId}). Opening via API.\n`,
+      );
+      await openRuleSetEditorById(page, existingRuleSetId, requiredPackageNames);
+      return;
+    }
+  }
+
   if (targetTableName && seedPackageName && seedRuleConfig) {
+    await runPreconditions(page);
     await createRuleSetForTable(page, targetTableName, seedPackageName, seedRuleConfig);
     await gotoRuleSetList(page);
     await page.locator(".ant-table-tbody").waitFor({ state: "visible", timeout: 15000 });

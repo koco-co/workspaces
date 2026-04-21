@@ -26,7 +26,7 @@ origin: "{{fm.origin}}"
         {{this.name}}
 
         {{#each this.test_cases}}
-          ##### 【{{this.priority}}】{{this.title}}
+          ##### 【{{this.priority}}】{{stripPriority this.title}}
 
           {{#if this.preconditions}}
             > 前置条件 ```
@@ -50,7 +50,7 @@ origin: "{{fm.origin}}"
       {{/if}}
     {{/each}}
     {{#each this.test_cases}}
-      ##### 【{{this.priority}}】{{this.title}}
+      ##### 【{{this.priority}}】{{stripPriority this.title}}
 
       {{#if this.preconditions}}
         > 前置条件 ```
