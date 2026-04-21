@@ -86,11 +86,49 @@ describe("formatMessage", () => {
     assert.ok(msg.text.includes("🟢"), "should show green icon for all pass");
   });
 
-  it("ui-test-completed: renders env/project/suite/tenant and allure open command", () => {
+  it("ui-test-completed: requirement name prepended to title and 需求 row present", () => {
+    const msg = formatMessage("ui-test-completed", {
+      suite: "【通用配置】json格式配置-15696",
+      passed: 10,
+      failed: 0,
+    });
+    assert.ok(
+      msg.text.startsWith("## 🧪 【通用配置】json格式配置-15696 - UI 自动化测试完成"),
+      "title should include requirement name prefix",
+    );
+    assert.ok(msg.text.includes("🎯 需求"), "label should be 需求 not 套件");
+  });
+
+  it("ui-test-completed: envLabel URL rendered as clickable link", () => {
     const msg = formatMessage("ui-test-completed", {
       env: "ltqc",
-      tenant: "岚图",
-      project: "dataAssets",
+      envLabel: "http://shuzhan63-test-ltqc.k8s.dtstack.cn",
+      passed: 1,
+      failed: 0,
+    });
+    assert.ok(
+      msg.text.includes("[http://shuzhan63-test-ltqc.k8s.dtstack.cn](http://shuzhan63-test-ltqc.k8s.dtstack.cn)"),
+      "should render URL as markdown link",
+    );
+    assert.ok(msg.text.includes("`ltqc`"), "should append env code");
+  });
+
+  it("ui-test-completed: env code only when no URL available", () => {
+    const msg = formatMessage("ui-test-completed", {
+      env: "ltqc",
+      passed: 1,
+      failed: 0,
+    });
+    assert.ok(msg.text.includes("| 🏷 环境 | `ltqc` |"));
+    assert.ok(!msg.text.includes("[ltqc]"));
+  });
+
+  it("ui-test-completed: renders tenant/project/duration and allure open command", () => {
+    const msg = formatMessage("ui-test-completed", {
+      env: "ltqc",
+      envLabel: "http://shuzhan63-test-ltqc.k8s.dtstack.cn",
+      tenant: "pw_test",
+      project: "pw_test",
       suite: "【通用配置】json格式配置-15696",
       passed: 40,
       failed: 3,
@@ -103,9 +141,7 @@ describe("formatMessage", () => {
         { title: "【P0】验证B", message: "element not found" },
       ],
     });
-    assert.ok(msg.text.includes("ltqc"));
-    assert.ok(msg.text.includes("岚图"));
-    assert.ok(msg.text.includes("dataAssets"));
+    assert.ok(msg.text.includes("pw_test"));
     assert.ok(msg.text.includes("【通用配置】json格式配置-15696"));
     assert.ok(msg.text.includes("93%"), "pass rate 40/43");
     assert.ok(msg.text.includes("2m 5s"), "duration formatting");

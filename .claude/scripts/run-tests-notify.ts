@@ -12,9 +12,13 @@
  *
  * 环境变量（与 playwright.config.ts 保持一致）：
  *   - ACTIVE_ENV / QA_ACTIVE_ENV  环境标识，默认 ltqc
- *   - QA_PROJECT                  项目名，默认 dataAssets
+ *   - QA_PROJECT                  qa-flow 内部项目名（workspace 目录），默认 dataAssets
  *   - QA_SUITE_NAME               套件名（需求名），默认 report
- *   - QA_TENANT                   租户标识（可选，展示在通知中）
+ *
+ * 通知卡片展示（按优先级取值）：
+ *   - 环境 URL：`{ENV}_BASE_URL` → `UI_AUTOTEST_BASE_URL`
+ *   - 租户：`QA_TENANT` → 从 `{ENV}_COOKIE` 解析 `dt_tenant_name=`
+ *   - 项目：`QA_PROJECT_LABEL` → 租户值兜底 → `QA_PROJECT`
  *
  * 可选开关：
  *   - SKIP_NOTIFY=1           跳过通知发送
@@ -43,6 +47,18 @@ interface Paths {
   reportDir: string;
   allureResultsDir: string;
   allureReportDir: string;
+}
+
+/** Extract `dt_tenant_name` value from a DTStack cookie string (URL-decoded). */
+export function extractTenantFromCookie(cookie: string | undefined): string | undefined {
+  if (!cookie) return undefined;
+  const match = cookie.match(/(?:^|[;\s])dt_tenant_name=([^;]+)/);
+  if (!match) return undefined;
+  try {
+    return decodeURIComponent(match[1]).trim();
+  } catch {
+    return match[1].trim();
+  }
 }
 
 function resolvePaths(): Paths {
@@ -166,15 +182,26 @@ async function main(): Promise<void> {
     ? paths.allureReportDir
     : paths.allureResultsDir;
   const reportUrl = buildReportUrl(paths);
-  const tenant = getEnv("QA_TENANT");
+
+  const envKey = paths.env.toUpperCase();
+  const envLabel =
+    getEnv(`${envKey}_BASE_URL`) ??
+    getEnv("UI_AUTOTEST_BASE_URL") ??
+    "";
+  const tenant =
+    getEnv("QA_TENANT") ??
+    extractTenantFromCookie(getEnv(`${envKey}_COOKIE`)) ??
+    "";
+  const projectLabel = getEnv("QA_PROJECT_LABEL") ?? tenant ?? paths.project;
 
   const durationMs =
     effectiveStats.durationMs > 0 ? effectiveStats.durationMs : runEnd - runStart;
 
   const payload = {
     env: paths.env,
+    ...(envLabel ? { envLabel } : {}),
     ...(tenant ? { tenant } : {}),
-    project: paths.project,
+    project: projectLabel,
     suite: paths.suiteName,
     total: effectiveStats.total,
     passed: effectiveStats.passed,

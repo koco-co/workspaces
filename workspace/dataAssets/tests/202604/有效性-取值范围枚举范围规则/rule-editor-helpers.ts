@@ -1626,6 +1626,10 @@ export async function clearAllRules(page: Page): Promise<void> {
       if (!(await ruleForm.isVisible().catch(() => false))) {
         continue;
       }
+      const deleteBtn = ruleForm.locator(".ruleForm__icon").locator("xpath=ancestor::button[1]").first();
+      if (!(await deleteBtn.isVisible().catch(() => false))) {
+        continue;
+      }
       await deleteRule(page, ruleForm);
       await page.waitForTimeout(300);
       deletedVisibleRule = true;

@@ -214,17 +214,21 @@ function formatUiTestCompleted(data: NotifyData, timestamp: string): string {
   const statusIcon = failedTotal > 0 ? "🔴" : passed > 0 ? "🟢" : "⚪";
   const statusText = failedTotal > 0 ? "存在失败" : passed > 0 ? "全部通过" : "无通过用例";
 
-  const env = String(data.env ?? "-");
+  const envLabel = data.envLabel ? String(data.envLabel) : "";
+  const envCode = data.env ? String(data.env) : "";
+  const envDisplay = envLabel || envCode || "-";
   const tenant = data.tenant ? String(data.tenant) : "";
   const project = data.project ? String(data.project) : "";
   const suite = data.suite ? String(data.suite) : "";
   const durationText = formatDuration(Number(data.durationMs ?? 0));
 
+  const titlePrefix = suite ? `${suite} - ` : "";
+
   const rows = [
-    `| 🏷 环境 | \`${env}\` |`,
+    `| 🏷 环境 | ${formatEnvCell(envDisplay, envCode, envLabel)} |`,
     ...(tenant ? [`| 🏢 租户 | \`${tenant}\` |`] : []),
     ...(project ? [`| 📦 项目 | \`${project}\` |`] : []),
-    ...(suite ? [`| 🎯 套件 | ${suite} |`] : []),
+    ...(suite ? [`| 🎯 需求 | ${suite} |`] : []),
     `| 📊 总计 | **${total}**（执行 ${executed} · 跳过 ${skipped}） |`,
     `| ✅ 通过 | **${passed}** |`,
     `| ❌ 失败 | **${failed}** |`,
@@ -234,7 +238,7 @@ function formatUiTestCompleted(data: NotifyData, timestamp: string): string {
   ];
 
   const lines: string[] = [
-    `## 🧪 UI 自动化测试完成 ${statusIcon}`,
+    `## 🧪 ${titlePrefix}UI 自动化测试完成 ${statusIcon}`,
     "",
     `> **${statusText}** · 通过率 **${rate}**（${passed}/${executed}）`,
     "",
@@ -291,6 +295,16 @@ function formatUiTestCompleted(data: NotifyData, timestamp: string): string {
   lines.push(`🕐 ${timestamp} · QAFlow`);
 
   return lines.join("\n");
+}
+
+function formatEnvCell(display: string, code: string, label: string): string {
+  // When we have a URL (label starts with http/https), render as clickable link + small code tag
+  if (/^https?:\/\//i.test(display)) {
+    const codeSuffix = code && code !== display ? ` · \`${code}\`` : "";
+    return `[${display}](${display})${codeSuffix}`;
+  }
+  // Only env code (ltqc) available
+  return `\`${display}\``;
 }
 
 function formatDuration(ms: number): string {
