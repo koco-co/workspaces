@@ -480,6 +480,85 @@ updated: 2026-04-15
     assert.ok(!content.includes("原 body"));
   });
 
+  it("module body_patch with section appends when section missing (preserves body)", () => {
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "m1.md"),
+      `---
+title: 原标题
+type: module
+tags: [a]
+confidence: medium
+source: "old"
+updated: 2026-04-15
+---
+
+# m1
+
+## 已有章节
+
+已有内容
+`,
+    );
+    const { code } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/m1.md",
+      "--content", JSON.stringify({
+        body_patch: { section: "新章节", new_body: "新增的正文段落" },
+        mode: "patch",
+      }),
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
+    // 原内容必须保留
+    assert.ok(content.includes("## 已有章节"));
+    assert.ok(content.includes("已有内容"));
+    // 新 section 被追加
+    assert.ok(content.includes("## 新章节"));
+    assert.ok(content.includes("新增的正文段落"));
+  });
+
+  it("module body_patch with existing section replaces only that section", () => {
+    writeFileSync(
+      join(PROJECT_KNOWLEDGE, "modules", "m1.md"),
+      `---
+title: 原标题
+type: module
+tags: [a]
+confidence: medium
+source: "old"
+updated: 2026-04-15
+---
+
+# m1
+
+## 章节A
+
+A 旧内容
+
+## 章节B
+
+B 旧内容
+`,
+    );
+    const { code } = runKk([
+      "update", "--project", PROJECT,
+      "--path", "modules/m1.md",
+      "--content", JSON.stringify({
+        body_patch: { section: "章节A", new_body: "A 新内容" },
+        mode: "patch",
+      }),
+      "--confirmed",
+    ]);
+    assert.equal(code, 0);
+    const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
+    assert.ok(content.includes("A 新内容"));
+    assert.ok(!content.includes("A 旧内容"));
+    // 其他 section 不变
+    assert.ok(content.includes("## 章节B"));
+    assert.ok(content.includes("B 旧内容"));
+  });
+
   it("dry-run does not persist", () => {
     const { stdout } = runKk([
       "update", "--project", PROJECT,

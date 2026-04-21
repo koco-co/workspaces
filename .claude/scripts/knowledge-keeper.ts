@@ -568,7 +568,13 @@ function runUpdate(opts: {
     const bp = patch.body_patch;
     const fmType = newFm.type;
     if ((fmType === "module" || fmType === "pitfall") && typeof bp.new_body === "string") {
-      newBody = bp.new_body;
+      if (bp.section) {
+        // section 指定：section 级 upsert（不存在则追加，存在则替换）
+        newBody = upsertOverviewSection(parsed.body, bp.section, bp.new_body, "replace");
+      } else {
+        // 无 section：整体替换 body
+        newBody = bp.new_body;
+      }
     } else if (fmType === "overview" && bp.section && typeof bp.new_body === "string") {
       newBody = upsertOverviewSection(parsed.body, bp.section, bp.new_body, "replace");
     } else if (fmType === "term" && bp.row_id && typeof bp.new_body === "string") {
