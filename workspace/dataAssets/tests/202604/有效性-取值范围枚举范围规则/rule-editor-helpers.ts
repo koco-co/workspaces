@@ -173,8 +173,17 @@ async function prewarmMonitorDatasourceCache(page: Page): Promise<void> {
       // For Doris: validate that at least one item has the required schema.
       // If none do, we don't cache this result and instead look via pageQuery for the correct datasource.
       if (shouldValidateSchema) {
+        // For Doris: first filter by optionPattern / sourceTypePattern so we don't
+        // accidentally pick a SparkThrift datasource that also has the same schema name.
+        const matchingItems = monitorItems.filter(
+          (item) =>
+            datasource.optionPattern.test(
+              `${String(item.dataSourceName ?? "")} ${String(item.dtCenterSourceName ?? "")}`,
+            ) || datasource.sourceTypePattern.test(String(item.sourceTypeValue ?? "")),
+        );
+        const candidateItems = matchingItems.length > 0 ? matchingItems : monitorItems;
         let schemaValidItem: MonitorDatasourceItem | undefined;
-        for (const item of monitorItems) {
+        for (const item of candidateItems) {
           if (!item.id) continue;
           const hasSchema = await getDatasourceSchemas(page, item.id)
             .then((schemas) => schemas.some((s) => schemaCandidates.includes(s)))
