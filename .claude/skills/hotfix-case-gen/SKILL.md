@@ -37,6 +37,25 @@ argument-hint: "[禅道 Bug URL | Bug ID]"
 
 输入解析格式与输出目录约定详见 [`workflow/zentao-input.md`](workflow/zentao-input.md)。
 
+## 规则加载（强制）
+
+派发 `hotfix-case-agent` 前，必须合并加载全局 + 项目级规则：
+
+```bash
+bun run .claude/scripts/rule-loader.ts load --project {{project}} > workspace/{{project}}/.temp/rules-merged.json
+```
+
+在传入 agent 的提示中明确引用以下规则文件（存在即加载，优先级：项目级 > 全局）：
+
+- `rules/case-writing.md` / `workspace/{{project}}/rules/case-writing.md` — 用例编写通用规范
+- `workspace/{{project}}/rules/hotfix-frontmatter.md` — Hotfix frontmatter 约束（如 `keywords` 字段）
+- `workspace/{{project}}/rules/hotfix-prerequisites.md` — **Hotfix 前置条件 SQL 示例约束**
+- `.claude/references/unicode-symbols.md` — 符号规范
+
+<precedence>
+用户当前指令 > 项目级 rules（workspace/{{project}}/rules/） > 全局 rules/ > agent 内置模板
+</precedence>
+
 ---
 
 ## 工作流总览

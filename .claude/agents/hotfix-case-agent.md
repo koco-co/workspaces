@@ -155,7 +155,9 @@ origin: zentao
 
 - 内容须用代码块（` ``` `）包裹
 - 仅涉及页面操作流程时，写「无」
-- 涉及特定数据状态时，给出可执行 SQL 语句；能通过页面操作构造的，优先写操作步骤
+- 涉及特定数据状态时，**必须给出可直接执行的 SQL 语句**（`INSERT` / `UPDATE`），明确库名.表名，字段名完整；能通过页面操作构造的先列 UI 步骤再给 SQL 兜底
+- 表结构从源码 MyBatis Mapper XML 或 `@TableName` 实体类反查，不得臆造字段名
+- 详细规则以项目级 `workspace/{{project}}/rules/hotfix-prerequisites.md` 为准（存在即优先于本模板）
 
 **用例标题**
 
