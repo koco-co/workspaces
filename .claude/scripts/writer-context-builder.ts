@@ -280,7 +280,7 @@ function runBuild(opts: {
   process.stdout.write(`${JSON.stringify(context, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "writer-context-builder",
   description: "按模块切分 PRD，为每个 writer 构建精简上下文",
   commands: [
@@ -299,4 +299,4 @@ createCli({
       action: runBuild,
     },
   ],
-}).parse(process.argv);
+});

@@ -91,7 +91,7 @@ function runResolve(opts: { profile: string; forceStrategy?: string; output: str
   process.stdout.write(`${JSON.stringify(resolution, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "case-strategy-resolver",
   description: "策略路由：SignalProfile → StrategyResolution",
   commands: [
@@ -117,4 +117,4 @@ createCli({
       action: runResolve,
     },
   ],
-}).parse(process.argv);
+});

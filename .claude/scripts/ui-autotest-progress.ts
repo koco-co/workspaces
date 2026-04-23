@@ -498,89 +498,87 @@ function runSuiteSlug(opts: { suite: string }): void {
   process.stdout.write(slugify(opts.suite));
 }
 
-if (import.meta.main) {
-  createCli({
-    name: "ui-autotest-progress",
-    description: "UI 自动化测试断点续传状态管理",
-    commands: [
-      {
-        name: "create",
-        description: "Create a new progress file for a test suite",
-        options: [
-          { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--archive <path>", description: "Archive MD path", required: true },
-          { flag: "--url <url>", description: "Target URL for testing", required: true },
-          { flag: "--priorities <csv>", description: "Comma-separated priorities to run", defaultValue: "P0" },
-          { flag: "--output-dir <dir>", description: "Output directory for test scripts", defaultValue: "tests/" },
-          { flag: "--cases <json>", description: "JSON map of case id → {title, priority}", required: true },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runCreate,
-      },
-      {
-        name: "update",
-        description: "Update a field in the progress file",
-        options: [
-          { flag: "--project <name>", description: "Project name", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--case <id>", description: "Case ID to update (omit for top-level field)" },
-          { flag: "--field <name>", description: "Field name to update", required: true },
-          { flag: "--value <val>", description: "New value", required: true },
-          { flag: "--error <msg>", description: "Error message to append to error_history (only used when field=test_status and value=failed)" },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runUpdate,
-      },
-      {
-        name: "read",
-        description: "Read and output current progress JSON",
-        options: [
-          { flag: "--project <name>", description: "Project name", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runRead,
-      },
-      {
-        name: "summary",
-        description: "Output aggregated counts and status for a suite",
-        options: [
-          { flag: "--project <name>", description: "Project name", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runSummary,
-      },
-      {
-        name: "reset",
-        description: "Delete the progress file for a suite",
-        options: [
-          { flag: "--project <name>", description: "Project name", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runReset,
-      },
-      {
-        name: "resume",
-        description: "Sanitize progress for resumption (reset running → pending, validate script_path)",
-        options: [
-          { flag: "--project <name>", description: "Project name", required: true },
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-          { flag: "--retry-failed", description: "Also reset failed cases to pending", defaultValue: false },
-          { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
-        ],
-        action: runResume,
-      },
-      {
-        name: "suite-slug",
-        description: "Print ASCII-safe slug for a suite name (used for ui-blocks subdir)",
-        options: [
-          { flag: "--suite <name>", description: "Test suite name", required: true },
-        ],
-        action: runSuiteSlug,
-      },
-    ],
-  }).parse(process.argv);
-}
+export const program = createCli({
+  name: "ui-autotest-progress",
+  description: "UI 自动化测试断点续传状态管理",
+  commands: [
+    {
+      name: "create",
+      description: "Create a new progress file for a test suite",
+      options: [
+        { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--archive <path>", description: "Archive MD path", required: true },
+        { flag: "--url <url>", description: "Target URL for testing", required: true },
+        { flag: "--priorities <csv>", description: "Comma-separated priorities to run", defaultValue: "P0" },
+        { flag: "--output-dir <dir>", description: "Output directory for test scripts", defaultValue: "tests/" },
+        { flag: "--cases <json>", description: "JSON map of case id → {title, priority}", required: true },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runCreate,
+    },
+    {
+      name: "update",
+      description: "Update a field in the progress file",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--case <id>", description: "Case ID to update (omit for top-level field)" },
+        { flag: "--field <name>", description: "Field name to update", required: true },
+        { flag: "--value <val>", description: "New value", required: true },
+        { flag: "--error <msg>", description: "Error message to append to error_history (only used when field=test_status and value=failed)" },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runUpdate,
+    },
+    {
+      name: "read",
+      description: "Read and output current progress JSON",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runRead,
+    },
+    {
+      name: "summary",
+      description: "Output aggregated counts and status for a suite",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runSummary,
+    },
+    {
+      name: "reset",
+      description: "Delete the progress file for a suite",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runReset,
+    },
+    {
+      name: "resume",
+      description: "Sanitize progress for resumption (reset running → pending, validate script_path)",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+        { flag: "--retry-failed", description: "Also reset failed cases to pending", defaultValue: false },
+        { flag: "--env <name>", description: "环境标识（如 ci63、ltqcdev）" },
+      ],
+      action: runResume,
+    },
+    {
+      name: "suite-slug",
+      description: "Print ASCII-safe slug for a suite name (used for ui-blocks subdir)",
+      options: [
+        { flag: "--suite <name>", description: "Test suite name", required: true },
+      ],
+      action: runSuiteSlug,
+    },
+  ],
+});

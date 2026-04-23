@@ -346,7 +346,7 @@ function runSetStrategy(opts: {
 // CLI wiring
 // ============================================================================
 
-createCli({
+export const program = createCli({
   name: "discuss",
   description: "PRD 需求讨论 plan.md 管理 CLI",
   commands: [
@@ -430,6 +430,4 @@ createCli({
       }) => runSetStrategy(opts),
     },
   ],
-}).parseAsync(process.argv).catch((err) => {
-  fail(`Unhandled error: ${(err as Error).message}`);
 });

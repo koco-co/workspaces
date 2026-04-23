@@ -111,7 +111,7 @@ function runNormalize(opts: { file: string; dryRun?: boolean }): void {
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "prd-frontmatter",
   description: "Normalize PRD front-matter fields",
   commands: [
@@ -129,4 +129,4 @@ createCli({
       action: runNormalize,
     },
   ],
-}).parse(process.argv);
+});

@@ -401,7 +401,7 @@ function runCheck(opts: { input: string }): void {
   }
 }
 
-createCli({
+export const program = createCli({
   name: "format-check-script",
   description: "Archive MD 格式规则确定性检查",
   commands: [
@@ -414,4 +414,4 @@ createCli({
       action: runCheck,
     },
   ],
-}).parse(process.argv);
+});

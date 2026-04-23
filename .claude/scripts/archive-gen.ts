@@ -429,72 +429,65 @@ async function runSearch(opts: {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  createCli({
-    name: "archive-gen",
-    description:
-      "Convert intermediate JSON to Archive Markdown, or search existing archives",
-    commands: [
-      {
-        name: "convert",
-        description: "Convert intermediate JSON test cases to Archive Markdown",
-        options: [
-          { flag: "--input <path>", description: "Path to input JSON file", required: true },
-          { flag: "--output <path>", description: "Path to output Markdown file", required: true },
-          { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
-          {
-            flag: "--template <path>",
-            description: "Path to Handlebars template (uses built-in if omitted)",
-          },
-        ],
-        action: async (opts: {
-          input: string;
-          output: string;
-          project?: string;
-          template?: string;
-        }) => {
-          await runConvert(opts);
+export const program = createCli({
+  name: "archive-gen",
+  description:
+    "Convert intermediate JSON to Archive Markdown, or search existing archives",
+  commands: [
+    {
+      name: "convert",
+      description: "Convert intermediate JSON test cases to Archive Markdown",
+      options: [
+        { flag: "--input <path>", description: "Path to input JSON file", required: true },
+        { flag: "--output <path>", description: "Path to output Markdown file", required: true },
+        { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+        {
+          flag: "--template <path>",
+          description: "Path to Handlebars template (uses built-in if omitted)",
         },
+      ],
+      action: async (opts: {
+        input: string;
+        output: string;
+        project?: string;
+        template?: string;
+      }) => {
+        await runConvert(opts);
       },
-      {
-        name: "search",
-        description: "Search archive Markdown files by keyword",
-        options: [
-          { flag: "--query <keywords>", description: "Search keyword(s)", required: true },
-          { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
-          {
-            flag: "--dir <path>",
-            description: "Archive directory to search (overrides project default)",
-          },
-          { flag: "--limit <n>", description: "Maximum results to return", defaultValue: "20" },
-        ],
-        action: async (opts: {
-          query: string;
-          project?: string;
-          dir?: string;
-          limit: string;
-        }) => {
-          if (!opts.dir && !opts.project) {
-            process.stderr.write(
-              `Error: --project is required (or use --dir to override)\n`,
-            );
-            process.exit(1);
-          }
-          const searchDir =
-            opts.dir ??
-            resolve(repoRoot(), "workspace", opts.project!, "archive");
-          await runSearch({
-            query: opts.query,
-            dir: searchDir,
-            limit: Number.parseInt(opts.limit, 10) || 20,
-          });
+    },
+    {
+      name: "search",
+      description: "Search archive Markdown files by keyword",
+      options: [
+        { flag: "--query <keywords>", description: "Search keyword(s)", required: true },
+        { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+        {
+          flag: "--dir <path>",
+          description: "Archive directory to search (overrides project default)",
         },
+        { flag: "--limit <n>", description: "Maximum results to return", defaultValue: "20" },
+      ],
+      action: async (opts: {
+        query: string;
+        project?: string;
+        dir?: string;
+        limit: string;
+      }) => {
+        if (!opts.dir && !opts.project) {
+          process.stderr.write(
+            `Error: --project is required (or use --dir to override)\n`,
+          );
+          process.exit(1);
+        }
+        const searchDir =
+          opts.dir ??
+          resolve(repoRoot(), "workspace", opts.project!, "archive");
+        await runSearch({
+          query: opts.query,
+          dir: searchDir,
+          limit: Number.parseInt(opts.limit, 10) || 20,
+        });
       },
-    ],
-  }).parseAsync(process.argv);
-}
-
-main().catch((err) => {
-  process.stderr.write(`[archive-gen] Unexpected error: ${err}\n`);
-  process.exit(1);
+    },
+  ],
 });

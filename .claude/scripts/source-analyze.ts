@@ -202,7 +202,7 @@ function runAnalyze(opts: { repo: string; keywords: string }): void {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "source-analyze",
   description: "批量搜索源码仓库，返回结构化分析结果",
   commands: [
@@ -216,4 +216,4 @@ createCli({
       action: runAnalyze,
     },
   ],
-}).parse(process.argv);
+});

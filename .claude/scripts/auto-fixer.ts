@@ -221,7 +221,7 @@ function runFix(opts: { input: string; issues: string; output: string }): void {
   process.stdout.write(JSON.stringify(report) + "\n");
 }
 
-createCli({
+export const program = createCli({
   name: "auto-fixer",
   description: "对 reviewer 审查发现的规则性问题执行自动修正",
   commands: [
@@ -236,7 +236,4 @@ createCli({
       action: runFix,
     },
   ],
-}).parseAsync(process.argv).catch((err) => {
-  process.stderr.write(`Fatal: ${err}\n`);
-  process.exit(1);
 });

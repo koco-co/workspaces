@@ -17,7 +17,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, basename, join, extname } from "node:path";
-import { Command } from "commander";
+import { createCli } from "./lib/cli-runner.ts";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -402,21 +402,20 @@ export async function convertReportToPdf(
 
 // ─── CLI ─────────────────────────────────────────────────────────────
 
-if (
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith("report-to-pdf.ts")
-) {
-  const program = new Command();
-
-  program
-    .name("report-to-pdf")
-    .description("Convert monocart HTML/JSON report to self-contained PDF")
-    .argument("<source-path>", "Path to the HTML or JSON report file")
-    .option("-o, --output <path>", "Custom output PDF path")
-    .helpOption("-h, --help", "Display help information")
-    .action(async (sourcePath: string, opts: { output?: string }) => {
+export const program = createCli({
+  name: "report-to-pdf",
+  description: "Convert monocart HTML/JSON report to self-contained PDF",
+  rootAction: {
+    arguments: [
+      { name: "sourcePath", description: "Path to the HTML or JSON report file", required: true },
+    ],
+    options: [
+      { flag: "-o, --output <path>", description: "Custom output PDF path" },
+    ],
+    action: async (rawOpts: Record<string, unknown>) => {
+      const opts = rawOpts as { sourcePath: string; output?: string };
       const result = await convertReportToPdf({
-        sourcePath,
+        sourcePath: opts.sourcePath,
         outputPath: opts.output,
       });
 
@@ -426,7 +425,6 @@ if (
         process.stderr.write(`Failed: ${result.error}\n`);
         process.exit(1);
       }
-    });
-
-  program.parse(process.argv);
-}
+    },
+  },
+});

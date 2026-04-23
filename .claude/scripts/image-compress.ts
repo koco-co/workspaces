@@ -127,7 +127,7 @@ function runCompress(opts: { dir: string; maxSize: string; dryRun?: boolean }): 
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "image-compress",
   description: "Compress images larger than max size using macOS sips",
   rootAction: {
@@ -149,4 +149,4 @@ createCli({
     ],
     action: runCompress,
   },
-}).parse(process.argv);
+});

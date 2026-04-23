@@ -242,39 +242,32 @@ async function runPrint(opts: {
 
 // ─── CLI ─────────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  createCli({
-    name: "format-report-locator",
-    description: "Map format-checker issues to Archive MD line numbers",
-    commands: [
-      {
-        name: "locate",
-        description: "Enrich format-checker report with line numbers from Archive MD",
-        options: [
-          { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
-          { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
-          { flag: "--output <path>", description: "Path to write enriched JSON report", required: true },
-        ],
-        action: async (opts: { report: string; archive: string; output: string }) => {
-          await runLocate(opts);
-        },
+export const program = createCli({
+  name: "format-report-locator",
+  description: "Map format-checker issues to Archive MD line numbers",
+  commands: [
+    {
+      name: "locate",
+      description: "Enrich format-checker report with line numbers from Archive MD",
+      options: [
+        { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
+        { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
+        { flag: "--output <path>", description: "Path to write enriched JSON report", required: true },
+      ],
+      action: async (opts: { report: string; archive: string; output: string }) => {
+        await runLocate(opts);
       },
-      {
-        name: "print",
-        description: "Print terminal-readable format check report",
-        options: [
-          { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
-          { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
-        ],
-        action: async (opts: { report: string; archive: string }) => {
-          await runPrint(opts);
-        },
+    },
+    {
+      name: "print",
+      description: "Print terminal-readable format check report",
+      options: [
+        { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
+        { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
+      ],
+      action: async (opts: { report: string; archive: string }) => {
+        await runPrint(opts);
       },
-    ],
-  }).parseAsync(process.argv);
-}
-
-main().catch((err) => {
-  process.stderr.write(`[format-report-locator] Unexpected error: ${err}\n`);
-  process.exit(1);
+    },
+  ],
 });

@@ -293,7 +293,7 @@ function runCloneRepo(project: string, url: string, branch: string): void {
   );
 }
 
-createCli({
+export const program = createCli({
   name: "create-project",
   description: "创建新项目或补齐残缺项目骨架",
   commands: [
@@ -332,4 +332,4 @@ createCli({
       },
     },
   ],
-}).parse(process.argv);
+});

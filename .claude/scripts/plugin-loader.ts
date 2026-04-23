@@ -132,7 +132,7 @@ function runNotify(opts: { event: string; data: string }): void {
   );
 }
 
-createCli({
+export const program = createCli({
   name: "plugin-loader",
   description: "Plugin discovery and dispatch for qa-flow",
   commands: [
@@ -180,4 +180,4 @@ createCli({
       action: runNotify,
     },
   ],
-}).parse(process.argv);
+});

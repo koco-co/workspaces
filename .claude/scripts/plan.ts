@@ -392,7 +392,7 @@ function runList(opts: { project: string; workflow?: string }): void {
   outputJson(plans);
 }
 
-createCli({
+export const program = createCli({
   name: "plan",
   description: "Workflow execution plan management for qa-flow",
   commands: [
@@ -448,4 +448,4 @@ createCli({
       action: runList,
     },
   ],
-}).parse(process.argv);
+});

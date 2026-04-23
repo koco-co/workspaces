@@ -109,6 +109,3 @@ export const program = createCli({
   ],
 });
 
-if (import.meta.main) {
-  program.parse(process.argv);
-}

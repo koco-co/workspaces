@@ -119,7 +119,7 @@ function runList(): void {
   process.stdout.write(`${JSON.stringify(entries, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "repo-profile",
   description: "Manage repo profiles for source code mapping",
   commands: [
@@ -150,4 +150,4 @@ createCli({
       action: () => runList(),
     },
   ],
-}).parse(process.argv);
+});

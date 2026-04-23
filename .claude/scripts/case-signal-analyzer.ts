@@ -409,7 +409,7 @@ async function probeAction(opts: {
   }
 }
 
-createCli({
+export const program = createCli({
   name: "case-signal-analyzer",
   description: "4-dimensional signal probe (source / PRD / history / knowledge)",
   commands: [
@@ -437,4 +437,4 @@ createCli({
       action: probeAction,
     },
   ],
-}).parseAsync(process.argv);
+});

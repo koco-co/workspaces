@@ -996,9 +996,3 @@ export const program = createCli({
   ],
 });
 
-if (import.meta.main) {
-  program.parseAsync(process.argv).catch((err) => {
-    process.stderr.write(`[knowledge-keeper] Unexpected error: ${err}\n`);
-    process.exit(1);
-  });
-}

@@ -1485,7 +1485,7 @@ async function runConvert(opts: {
   process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
 }
 
-createCli({
+export const program = createCli({
   name: "history-convert",
   description: "Convert historical CSV/XMind files to Archive Markdown",
   rootAction: {
@@ -1500,4 +1500,4 @@ createCli({
     ],
     action: runConvert,
   },
-}).parseAsync(process.argv);
+});

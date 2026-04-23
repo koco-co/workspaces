@@ -133,29 +133,22 @@ async function runFilter(opts: {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  createCli({
-    name: "search-filter",
-    description: "Deduplicate, sort, and truncate archive search results",
-    commands: [
-      {
-        name: "filter",
-        description:
-          "Filter archive search results: deduplicate by suite_name, sort by case_count desc, truncate to top-N",
-        options: [
-          { flag: "--input <file>", description: "Path to JSON file with search results (default: stdin)" },
-          { flag: "--top <n>", description: "Maximum number of results to return", defaultValue: "5" },
-        ],
-        action: async (opts: { input?: string; top: string }) => {
-          const topN = parseInt(opts.top, 10);
-          await runFilter({ input: opts.input, top: topN });
-        },
+export const program = createCli({
+  name: "search-filter",
+  description: "Deduplicate, sort, and truncate archive search results",
+  commands: [
+    {
+      name: "filter",
+      description:
+        "Filter archive search results: deduplicate by suite_name, sort by case_count desc, truncate to top-N",
+      options: [
+        { flag: "--input <file>", description: "Path to JSON file with search results (default: stdin)" },
+        { flag: "--top <n>", description: "Maximum number of results to return", defaultValue: "5" },
+      ],
+      action: async (opts: { input?: string; top: string }) => {
+        const topN = parseInt(opts.top, 10);
+        await runFilter({ input: opts.input, top: topN });
       },
-    ],
-  }).parseAsync(process.argv);
-}
-
-main().catch((err) => {
-  process.stderr.write(`[search-filter] Unexpected error: ${err}\n`);
-  process.exit(1);
+    },
+  ],
 });

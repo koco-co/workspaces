@@ -504,9 +504,8 @@ async function cmdDelete(opts: {
 
 // ─── CLI ──────────────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  createCli({
-    name: "xmind-patch",
+export const program = createCli({
+  name: "xmind-patch",
     description:
       "Search, view, patch, add, and delete test cases in .xmind files",
     commands: [
@@ -594,10 +593,4 @@ async function main(): Promise<void> {
         },
       },
     ],
-  }).parseAsync(process.argv);
-}
-
-main().catch((err) => {
-  process.stderr.write(`[xmind-patch] Unexpected error: ${err}\n`);
-  process.exit(1);
 });

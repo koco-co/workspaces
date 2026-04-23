@@ -40,6 +40,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { initEnv, getEnv } from "./lib/env.ts";
+import { createCli } from "./lib/cli-runner.ts";
 import {
   collectAllureStats,
   snapshotResultFiles,
@@ -328,12 +329,15 @@ async function main(): Promise<void> {
   process.exit(pwExitCode);
 }
 
-const isMain =
-  process.argv[1] &&
-  fileURLToPath(import.meta.url) === resolve(process.argv[1]);
-if (isMain) {
-  main().catch((err: unknown) => {
-    process.stderr.write(`[run-tests-notify] fatal: ${err}\n`);
-    process.exit(1);
-  });
-}
+export const program = createCli({
+  name: "run-tests-notify",
+  description: "跑 Playwright，自动刷新 Allure HTML 报告并推送 IM 通知",
+  rootAction: {
+    arguments: [
+      { name: "playwrightArgs", description: "Playwright 参数（透传）", required: false, variadic: true },
+    ],
+    action: async () => {
+      await main();
+    },
+  },
+});

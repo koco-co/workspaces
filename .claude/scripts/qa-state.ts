@@ -323,7 +323,7 @@ function runClean(opts: { project: string; prdSlug: string }): void {
   }
 }
 
-createCli({
+export const program = createCli({
   name: "qa-state",
   description:
     "Breakpoint resume state management for qa-flow test case generation",
@@ -401,4 +401,4 @@ createCli({
       action: runClean,
     },
   ],
-}).parse(process.argv);
+});

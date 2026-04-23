@@ -822,42 +822,40 @@ async function runGenerate(opts: {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-async function main(): Promise<void> {
-  createCli({
-    name: "xmind-gen",
-    description:
-      "Convert intermediate JSON or Archive Markdown to .xmind files",
-    rootAction: {
-      options: [
-        {
-          flag: "--input <path>",
-          description: "Path to input JSON, MD file, or directory of MD files",
-          required: true,
-        },
-        {
-          flag: "--output <path>",
-          description: "Path to output .xmind file (auto-derived for MD input)",
-        },
-        {
-          flag: "--mode <mode>",
-          description: "Write mode: create | append | replace",
-          defaultValue: "create",
-        },
-        {
-          flag: "--project <name>",
-          description: "Project name for XMind root node",
-          defaultValue: "数栈测试",
-        },
-        {
-          flag: "--version <ver>",
-          description: "PRD version (e.g. 6.4.9) for root title template",
-        },
-        { flag: "--json-only", description: "Only output intermediate JSON (MD input only)" },
-      ],
-      action: runGenerate,
-    },
-  }).parseAsync(process.argv);
-}
+export const program = createCli({
+  name: "xmind-gen",
+  description:
+    "Convert intermediate JSON or Archive Markdown to .xmind files",
+  rootAction: {
+    options: [
+      {
+        flag: "--input <path>",
+        description: "Path to input JSON, MD file, or directory of MD files",
+        required: true,
+      },
+      {
+        flag: "--output <path>",
+        description: "Path to output .xmind file (auto-derived for MD input)",
+      },
+      {
+        flag: "--mode <mode>",
+        description: "Write mode: create | append | replace",
+        defaultValue: "create",
+      },
+      {
+        flag: "--project <name>",
+        description: "Project name for XMind root node",
+        defaultValue: "数栈测试",
+      },
+      {
+        flag: "--version <ver>",
+        description: "PRD version (e.g. 6.4.9) for root title template",
+      },
+      { flag: "--json-only", description: "Only output intermediate JSON (MD input only)" },
+    ],
+    action: runGenerate,
+  },
+});
 
 async function processMdFile(
   mdPath: string,
@@ -906,7 +904,3 @@ async function processMdFile(
   process.stdout.write(`XMind: ${resolve(xmindPath)} (${caseCount} cases)\n`);
 }
 
-main().catch((err) => {
-  process.stderr.write(`[xmind-gen] Unexpected error: ${err}\n`);
-  process.exit(1);
-});

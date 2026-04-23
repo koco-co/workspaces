@@ -99,11 +99,11 @@ function runShow(): void {
   }
 }
 
-createCli({
+export const program = createCli({
   name: "config",
   description:
     "Output merged workspace config JSON (reads .env + scans plugins/)",
   rootAction: {
     action: () => runShow(),
   },
-}).parse(process.argv);
+});

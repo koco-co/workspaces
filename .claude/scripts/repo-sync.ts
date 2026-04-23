@@ -259,6 +259,3 @@ export const program = createCli({
   ],
 });
 
-if (import.meta.main) {
-  program.parseAsync(process.argv);
-}
