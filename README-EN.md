@@ -85,7 +85,7 @@ qa-flow uses a **Router + Skill + Agent + Plugin Hook** architecture:
 - **11 Skills** — `qa-flow` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
 - **6 primary user workflows** — `test-case-gen`, `ui-autotest`, `xmind-editor`, `hotfix-case-gen`, `bug-report`, `conflict-report` (`setup` + `create-project` are bootstrap workflows)
 - **15 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill; includes Phase 3's `pattern-analyzer-agent`
-- **Cross-cutting capabilities** — CLI Runner factory, three-tier `.env`, multi-environment `qa-state` isolation, `plan.md` arbitration, `LOG_LEVEL` logging, project-level rules, read-only source repos, plugin hooks
+- **Cross-cutting capabilities** — CLI Runner factory, three-tier `.env`, multi-environment `kata-state` isolation, `plan.md` arbitration, `LOG_LEVEL` logging, project-level rules, read-only source repos, plugin hooks
 - **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright + Allure assets
 
 </details>
@@ -195,7 +195,7 @@ Transforms PRD / Story documents into structured XMind and Archive Markdown test
 
 | Node | Name           | Description                                                                        | Key Scripts                                           |
 | ---- | -------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| 1    | **init**       | Parse input, restore state, and load project/plugin context                        | `qa-state.ts`, `plugin-loader.ts`, `rule-loader.ts`   |
+| 1    | **init**       | Parse input, restore state, and load project/plugin context                        | `kata-state.ts`, `plugin-loader.ts`, `rule-loader.ts`   |
 | 2    | **discuss**    | Orchestrator-hosted requirements discussion; persists `plan.md`                    | `discuss.ts`, `plan.ts`                               |
 | 3    | **probe**      | 4-dimension signal probe (bug / regression / feature-magnitude / reuse-score)      | `case-signal-analyzer.ts`                             |
 | 4    | **strategy**   | 5-strategy dispatch (S1–S5; S5 routes to `hotfix-case-gen`)                        | `case-strategy-resolver.ts`                           |
@@ -424,7 +424,7 @@ Merge order (later wins): `process.env > .env.local > .env.envs > .env`.
 
 ### Multi-environment State Isolation
 
-`qa-state` filename carries an `ACTIVE_ENV` suffix: `workspace/<project>/.temp/.qa-state-<slug>-<env>.json`.
+`kata-state` filename carries an `ACTIVE_ENV` suffix: `workspace/<project>/.temp/.kata-state-<slug>-<env>.json`.
 
 - Multiple Claude Code instances can run different environments concurrently without interference
 - `resume` treats `plan.md` frontmatter as the authoritative source for `strategy_resolution` hydration
@@ -513,7 +513,7 @@ All scripts are located at `.claude/scripts/`. They share a unified entry factor
 
 | Script                      | Commands                                          | Description                                            |
 | --------------------------- | ------------------------------------------------- | ------------------------------------------------------ |
-| `qa-state.ts`               | `init` / `resume` / `update` / `clean`            | Breakpoint state (isolated per `ACTIVE_ENV`)           |
+| `kata-state.ts`               | `init` / `resume` / `update` / `clean`            | Breakpoint state (isolated per `ACTIVE_ENV`)           |
 | `plan.ts`                   | `read` / `write-strategy` / `hydrate`             | `plan.md` frontmatter read/write and arbitration       |
 | `discuss.ts`                | `start` / `close`                                 | Orchestrator-hosted requirements discussion session    |
 | `case-signal-analyzer.ts`   | `run` / `cache-read`                              | 4-dimension signal probe                               |
@@ -560,10 +560,10 @@ Copy `.env.example` to `.env`; for multi-environment setups also copy `.env.envs
 Switch environments by editing `.env.envs` directly, or inject via shell:
 
 ```bash
-ACTIVE_ENV=ci63 bun run .claude/scripts/qa-state.ts resume --project dataAssets --prd-slug myPrd
+ACTIVE_ENV=ci63 bun run .claude/scripts/kata-state.ts resume --project dataAssets --prd-slug myPrd
 ```
 
-`qa-state` filenames include the `-{env}` suffix so parallel instances never collide.
+`kata-state` filenames include the `-{env}` suffix so parallel instances never collide.
 
 ### Plugin: Lanhu
 

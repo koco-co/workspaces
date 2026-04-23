@@ -34,6 +34,172 @@ export interface NotifyData {
   [key: string]: unknown;
 }
 
+// ── Event Schemas ────────────────────────────────────────────────────────────
+// Single source of truth: drives --help, --describe and runtime field validation.
+
+export interface FieldSpec {
+  name: string;
+  required?: boolean;
+  type: "string" | "number" | "boolean" | "string[]" | "enum";
+  desc: string;
+  enum?: string[];
+}
+
+export interface EventSchema {
+  summary: string;
+  fields: FieldSpec[];
+}
+
+export const EVENT_SCHEMAS: Record<string, EventSchema> = {
+  "case-generated": {
+    summary: "测试用例生成完成（XMind / Archive）",
+    fields: [
+      { name: "count", type: "number", desc: "用例数量" },
+      { name: "file", type: "string", desc: "XMind 文件路径" },
+      { name: "archiveFile", type: "string", desc: "Archive MD 路径" },
+      { name: "requirement", type: "string", desc: "需求名称" },
+      { name: "duration", type: "number", desc: "耗时（秒）" },
+    ],
+  },
+  "bug-report": {
+    summary: "Bug 分析报告生成完成",
+    fields: [
+      { name: "summary", type: "string", desc: "一句话摘要" },
+      { name: "problemType", type: "string", desc: "问题类型（前端/后端/...）" },
+      { name: "severity", type: "string", desc: "严重度（critical/high/medium/low）" },
+      { name: "rootCause", type: "string", desc: "根因描述" },
+      { name: "fixSuggestion", type: "string", desc: "修复建议" },
+      { name: "reportFile", type: "string", desc: "HTML 报告路径" },
+    ],
+  },
+  "conflict-analyzed": {
+    summary: "Git 合并冲突分析完成",
+    fields: [
+      { name: "conflictCount", type: "number", desc: "冲突总数" },
+      { name: "autoResolvable", type: "number", desc: "可自动合并数" },
+      { name: "manualRequired", type: "number", desc: "需人工决策数" },
+      { name: "branches", type: "string[]", desc: "分支链（[base, target]）" },
+      { name: "reportFile", type: "string", desc: "HTML 报告路径" },
+    ],
+  },
+  "hotfix-case-generated": {
+    summary: "Hotfix 验证用例生成完成",
+    fields: [
+      { name: "bugId", type: "string", desc: "禅道 Bug ID" },
+      { name: "branch", type: "string", desc: "修复分支名" },
+      { name: "caseCount", type: "number", desc: "用例数量" },
+      { name: "file", type: "string", desc: "XMind 文件路径" },
+    ],
+  },
+  "ui-test-completed": {
+    summary: "UI 自动化测试套件执行完成",
+    fields: [
+      { name: "passed", required: true, type: "number", desc: "通过数" },
+      { name: "failed", required: true, type: "number", desc: "失败数" },
+      { name: "broken", type: "number", desc: "异常数" },
+      { name: "skipped", type: "number", desc: "跳过数" },
+      { name: "total", type: "number", desc: "总数（不传则自动求和）" },
+      { name: "env", type: "string", desc: "环境标识（如 ltqcdev）" },
+      { name: "envLabel", type: "string", desc: "环境展示名/URL" },
+      { name: "tenant", type: "string", desc: "租户" },
+      { name: "project", type: "string", desc: "项目名" },
+      { name: "suite", type: "string", desc: "套件/需求名" },
+      { name: "durationMs", type: "number", desc: "总耗时（毫秒）" },
+      { name: "reportFile", type: "string", desc: "Allure 本地路径（兼容字段）" },
+      { name: "reportURL", type: "string", desc: "Allure 在线访问 URL" },
+      { name: "specFiles", type: "string[]", desc: "spec 文件列表" },
+    ],
+  },
+  "ui-test-needs-input": {
+    summary: "UI 自动化遇到无法自主判断的偏差，等待用户裁定",
+    fields: [
+      { name: "question", required: true, type: "string", desc: "向用户提出的一句话问题" },
+      {
+        name: "reasonType",
+        required: true,
+        type: "enum",
+        enum: ["dom_mismatch", "assertion_ambiguity", "flow_missing", "selector_unknown", "potential_bug"],
+        desc: "原因类型（卡片中按映射展示中文）",
+      },
+      { name: "caseTitle", required: true, type: "string", desc: "用例标题" },
+      { name: "expected", type: "string", desc: "用例预期文本" },
+      { name: "actual", type: "string", desc: "页面实际表现" },
+      { name: "evidence", type: "string", desc: "DOM snippet / 截图路径 / 关键源码引用" },
+      { name: "project", type: "string", desc: "项目名" },
+      { name: "suite", type: "string", desc: "套件/需求名" },
+    ],
+  },
+  "archive-converted": {
+    summary: "Archive MD 批量归档完成（仅在新增文件时触发）",
+    fields: [
+      { name: "fileCount", type: "number", desc: "新增文件数" },
+      { name: "caseCount", type: "number", desc: "用例数量（缺失时整行隐藏）" },
+      { name: "outputDir", type: "string", desc: "归档目录（缺失时整行隐藏）" },
+    ],
+  },
+  "workflow-failed": {
+    summary: "工作流异常中断",
+    fields: [
+      { name: "step", required: true, type: "string", desc: "失败步骤标识" },
+      { name: "reason", required: true, type: "string", desc: "失败原因" },
+      { name: "retryable", type: "string", desc: "是否可重试（默认是）" },
+    ],
+  },
+};
+
+export interface ValidationResult {
+  missingRequired: string[];
+  unknownFields: string[];
+  enumViolations: { field: string; value: unknown; allowed: string[] }[];
+}
+
+export function validateEventData(event: string, data: NotifyData): ValidationResult {
+  const schema = EVENT_SCHEMAS[event];
+  if (!schema) {
+    return { missingRequired: [], unknownFields: [], enumViolations: [] };
+  }
+  const known = new Set(schema.fields.map((f) => f.name));
+  const missingRequired = schema.fields
+    .filter((f) => f.required && (data[f.name] === undefined || data[f.name] === null))
+    .map((f) => f.name);
+  const unknownFields = Object.keys(data).filter((k) => !known.has(k));
+  const enumViolations = schema.fields
+    .filter((f) => f.type === "enum" && data[f.name] !== undefined && f.enum)
+    .filter((f) => !f.enum!.includes(String(data[f.name])))
+    .map((f) => ({ field: f.name, value: data[f.name], allowed: f.enum! }));
+  return { missingRequired, unknownFields, enumViolations };
+}
+
+export function describeEvent(event: string): string {
+  const schema = EVENT_SCHEMAS[event];
+  if (!schema) {
+    const known = Object.keys(EVENT_SCHEMAS).join(", ");
+    return `未知事件 "${event}"。已知事件: ${known}`;
+  }
+  const lines = [`事件: ${event}`, `说明: ${schema.summary}`, "", "字段:"];
+  const nameWidth = Math.max(...schema.fields.map((f) => f.name.length));
+  const typeWidth = Math.max(...schema.fields.map((f) => f.type.length));
+  for (const f of schema.fields) {
+    const flag = f.required ? "*" : " ";
+    const enumHint = f.type === "enum" && f.enum ? `  [${f.enum.join(" | ")}]` : "";
+    lines.push(
+      `  ${flag} ${f.name.padEnd(nameWidth)}  ${f.type.padEnd(typeWidth)}  ${f.desc}${enumHint}`,
+    );
+  }
+  lines.push("", "* = 必填");
+  return lines.join("\n");
+}
+
+export function listAllEvents(): string {
+  const lines = ["全部事件类型:"];
+  const nameWidth = Math.max(...Object.keys(EVENT_SCHEMAS).map((n) => n.length));
+  for (const [name, schema] of Object.entries(EVENT_SCHEMAS)) {
+    lines.push(`  ${name.padEnd(nameWidth)}  ${schema.summary}`);
+  }
+  lines.push("", "查看单个事件字段: --describe <event>");
+  return lines.join("\n");
+}
+
 export interface FormattedMessage {
   title: string;
   text: string;
@@ -153,25 +319,44 @@ function formatByEvent(
     case "ui-test-completed":
       return formatUiTestCompleted(data, timestamp);
 
-    case "archive-converted":
+    case "archive-converted": {
+      const fileCount = data.fileCount;
+      const caseCount = data.caseCount;
+      const outputDir = data.outputDir;
+      const rows = [
+        ...(fileCount !== undefined && fileCount !== null
+          ? [`| 📁 新增文件数 | **${fileCount}** |`]
+          : []),
+        ...(caseCount !== undefined && caseCount !== null
+          ? [`| 📊 用例数 | **${caseCount}** |`]
+          : []),
+        ...(outputDir ? [`| 📂 目录 | ${outputDir} |`] : []),
+      ];
       return [
         "## 📦 归档转化完成",
         "",
-        `> **${data.fileCount ?? "-"}** 个文件已标准化归档`,
+        `> **${fileCount ?? "-"}** 个文件已标准化归档`,
         "",
         "| 项目 | 详情 |",
         "| --- | --- |",
-        `| 📁 文件数 | **${data.fileCount ?? "-"}** |`,
-        `| 📊 用例数 | **${data.caseCount ?? "-"}** |`,
-        `| 📂 目录 | ${data.outputDir ?? "-"} |`,
+        ...rows,
         "",
         `---`,
         `🕐 ${timestamp} · QAFlow`,
       ].join("\n");
+    }
 
     case "ui-test-needs-input": {
+      const REASON_TYPE_LABELS: Record<string, string> = {
+        dom_mismatch: "DOM 与用例不一致",
+        assertion_ambiguity: "断言文本歧义",
+        flow_missing: "流程步骤缺失",
+        selector_unknown: "选择器无法确定",
+        potential_bug: "疑似业务 Bug",
+      };
       const caseTitle = data.caseTitle ? String(data.caseTitle) : "-";
-      const reasonType = data.reasonType ? String(data.reasonType) : "-";
+      const rawReason = data.reasonType ? String(data.reasonType) : "-";
+      const reasonType = REASON_TYPE_LABELS[rawReason] ?? rawReason;
       const question = data.question ? String(data.question) : "-";
       const expected = data.expected ? String(data.expected) : "";
       const actual = data.actual ? String(data.actual) : "";
@@ -184,12 +369,12 @@ function formatByEvent(
         ...(project ? [`| 📦 项目 | \`${project}\` |`] : []),
         ...(suite ? [`| 🎯 套件 | ${suite} |`] : []),
         `| 📝 用例 | ${caseTitle} |`,
-        `| 🏷 类型 | \`${reasonType}\` |`,
+        `| 🏷 类型 | ${reasonType} |`,
         ...(expected ? [`| 📖 用例预期 | ${expected} |`] : []),
         ...(actual ? [`| 🖥 实际表现 | ${actual} |`] : []),
       ];
 
-      return [
+      const lines: string[] = [
         `## ⏸ UI 自动化等待用户确认${titleSuffix}`,
         "",
         `> ${question}`,
@@ -198,15 +383,17 @@ function formatByEvent(
         "| --- | --- |",
         ...rows,
         "",
-        evidence ? `**🔍 证据：** ${evidence}` : "",
-        "",
+      ];
+      if (evidence) {
+        lines.push(`**🔍 证据：** ${evidence}`, "");
+      }
+      lines.push(
         "**⚡ 请回到 Claude Code 会话回答问题，工作流已暂停等待你的判断。**",
         "",
-        `---`,
+        "---",
         `🕐 ${timestamp} · QAFlow`,
-      ]
-        .filter(Boolean)
-        .join("\n");
+      );
+      return lines.join("\n");
     }
 
     case "workflow-failed":
@@ -617,37 +804,50 @@ async function main(): Promise<void> {
     .name("notify")
     .description("qa-flow IM 通知发送工具")
     .version("1.0.0")
-    .requiredOption(
-      "-e, --event <type>",
-      "事件类型 (case-generated, bug-report, ...)",
-    )
-    .option("-d, --data <json>", "事件数据 (JSON 字符串)", "{}")
+    .option("-e, --event <type>", "事件类型 (使用 --list-events 查看所有)")
+    .option("-d, --data <json>", "事件数据 (JSON 字符串，字段见 --describe <event>)", "{}")
     .option("--dry-run", "仅格式化消息，不实际发送")
+    .option("--list-events", "列出所有支持的事件类型")
+    .option("--describe <event>", "打印某个事件支持的字段、类型和必填项")
+    .option("--strict", "未知字段或缺失必填字段时直接失败（默认仅告警）")
     .addHelpText(
       "after",
       `
-示例:
-  $ bun run plugins/notify/send.ts --event case-generated --data '{"count":42,"file":"test.xmind","duration":30}'
-  $ bun run plugins/notify/send.ts --dry-run --event workflow-failed --data '{"step":"writer","reason":"timeout"}'
+${listAllEvents()}
 
-支持的事件类型:
-  case-generated       用例生成完成
-  bug-report           Bug 分析报告生成完成
-  conflict-analyzed    冲突分析完成
-  hotfix-case-generated  线上问题用例转化完成
-  ui-test-completed    UI 自动化测试完成
-  archive-converted    批量归档完成
-  workflow-failed      工作流异常中断
+示例:
+  $ bun run plugins/notify/send.ts --list-events
+  $ bun run plugins/notify/send.ts --describe ui-test-needs-input
+  $ bun run plugins/notify/send.ts --event case-generated --data '{"count":42,"file":"test.xmind"}'
+  $ bun run plugins/notify/send.ts --dry-run --event workflow-failed --data '{"step":"writer","reason":"timeout"}'
 `,
     );
 
   program.parse(process.argv);
 
   const opts = program.opts<{
-    event: string;
+    event?: string;
     data: string;
     dryRun?: boolean;
+    listEvents?: boolean;
+    describe?: string;
+    strict?: boolean;
   }>();
+
+  if (opts.listEvents) {
+    process.stdout.write(listAllEvents() + "\n");
+    return;
+  }
+
+  if (opts.describe) {
+    process.stdout.write(describeEvent(opts.describe) + "\n");
+    return;
+  }
+
+  if (!opts.event) {
+    process.stderr.write("[notify] --event 必填（或使用 --list-events / --describe）\n");
+    process.exit(1);
+  }
 
   let data: NotifyData;
   try {
@@ -655,6 +855,33 @@ async function main(): Promise<void> {
   } catch {
     process.stderr.write(`[notify] Invalid --data JSON: ${opts.data}\n`);
     process.exit(1);
+  }
+
+  const validation = validateEventData(opts.event, data);
+  const hasIssues =
+    validation.missingRequired.length > 0 ||
+    validation.unknownFields.length > 0 ||
+    validation.enumViolations.length > 0;
+  if (hasIssues) {
+    if (validation.missingRequired.length > 0) {
+      process.stderr.write(
+        `[notify] 缺失必填字段 (${opts.event}): ${validation.missingRequired.join(", ")}\n`,
+      );
+    }
+    if (validation.unknownFields.length > 0) {
+      process.stderr.write(
+        `[notify] 未知字段将被丢弃 (${opts.event}): ${validation.unknownFields.join(", ")}\n`,
+      );
+    }
+    for (const v of validation.enumViolations) {
+      process.stderr.write(
+        `[notify] 字段 "${v.field}" 值 "${v.value}" 不在枚举范围: [${v.allowed.join(", ")}]\n`,
+      );
+    }
+    process.stderr.write(`[notify] 提示: 运行 \`--describe ${opts.event}\` 查看完整 schema\n`);
+    if (opts.strict) {
+      process.exit(1);
+    }
   }
 
   const result = await sendNotification(opts.event, data, {

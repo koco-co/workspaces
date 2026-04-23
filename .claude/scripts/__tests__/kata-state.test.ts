@@ -32,7 +32,7 @@ function runState(
   try {
     const stdout = execFileSync(
       "bun",
-      ["run", ".claude/scripts/qa-state.ts", ...args],
+      ["run", ".claude/scripts/kata-state.ts", ...args],
       {
         cwd: resolve(import.meta.dirname, "../../.."),
         encoding: "utf8",
@@ -56,11 +56,11 @@ function runState(
 }
 
 function stateFilePath(project: string, slug: string, env = "default"): string {
-  return join(workspaceTempForProject(project), `.qa-state-${slug}-${env}.json`);
+  return join(workspaceTempForProject(project), `.kata-state-${slug}-${env}.json`);
 }
 
 function legacyStateFilePath(project: string, slug: string): string {
-  return join(workspaceTempForProject(project), `.qa-state-${slug}.json`);
+  return join(workspaceTempForProject(project), `.kata-state-${slug}.json`);
 }
 
 before(() => {
@@ -87,7 +87,7 @@ beforeEach(() => {
   }
 });
 
-describe("qa-state.ts init", () => {
+describe("kata-state.ts init", () => {
   it("creates state file and outputs JSON", () => {
     const slug = `init-test-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -181,7 +181,7 @@ describe("qa-state.ts init", () => {
   });
 });
 
-describe("qa-state.ts update", () => {
+describe("kata-state.ts update", () => {
   it("advances current_node and appends to completed_nodes", () => {
     const slug = `update-test-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -359,7 +359,7 @@ describe("qa-state.ts update", () => {
   });
 });
 
-describe("qa-state.ts resume", () => {
+describe("kata-state.ts resume", () => {
   it("returns current state JSON", () => {
     const slug = `resume-test-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -390,7 +390,7 @@ describe("qa-state.ts resume", () => {
   });
 });
 
-describe("qa-state.ts update — multiple sequential node transitions", () => {
+describe("kata-state.ts update — multiple sequential node transitions", () => {
   it("tracks full lifecycle: init → transform → enhance → write", () => {
     const slug = `lifecycle-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -452,7 +452,7 @@ describe("qa-state.ts update — multiple sequential node transitions", () => {
   });
 });
 
-describe("qa-state.ts update — invalid JSON data", () => {
+describe("kata-state.ts update — invalid JSON data", () => {
   it("exits 1 when --data is not valid JSON", () => {
     const slug = `bad-json-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -475,7 +475,7 @@ describe("qa-state.ts update — invalid JSON data", () => {
   });
 });
 
-describe("qa-state.ts — cached_parse_result and source_mtime", () => {
+describe("kata-state.ts — cached_parse_result and source_mtime", () => {
   it("stores cached_parse_result via --data", () => {
     const slug = `cache-store-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -598,7 +598,7 @@ describe("qa-state.ts — cached_parse_result and source_mtime", () => {
   });
 });
 
-describe("qa-state.ts — strategy_resolution", () => {
+describe("kata-state.ts — strategy_resolution", () => {
   it("update with strategy_resolution in --data promotes it to root level", () => {
     const slug = `strategy-root-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -688,7 +688,7 @@ describe("qa-state.ts — strategy_resolution", () => {
   });
 });
 
-describe("qa-state.ts clean", () => {
+describe("kata-state.ts clean", () => {
   it("deletes state file and returns cleaned=true", () => {
     const slug = `clean-test-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
@@ -737,7 +737,7 @@ describe("qa-state.ts clean", () => {
   });
 });
 
-describe("qa-state.ts — plan.md strategy hydration", () => {
+describe("kata-state.ts — plan.md strategy hydration", () => {
   function writePlanWithStrategy(
     project: string,
     slug: string,
@@ -825,11 +825,11 @@ empty
     const state = JSON.parse(stdout) as QaState & {
       strategy_resolution?: { strategy_id?: string };
     };
-    // plan.md is authoritative: S1 overrides qa-state's S4
+    // plan.md is authoritative: S1 overrides kata-state's S4
     assert.equal(state.strategy_resolution?.strategy_id, "S1");
   });
 
-  it("fall back to qa-state strategy when plan.md has no strategy field", () => {
+  it("fall back to kata-state strategy when plan.md has no strategy field", () => {
     const slug = `hydrate-fallback-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
 
@@ -865,7 +865,7 @@ empty
     assert.equal(state.strategy_resolution?.strategy_id, "S3");
   });
 
-  it("no plan.md and no qa-state strategy → strategy_resolution undefined", () => {
+  it("no plan.md and no kata-state strategy → strategy_resolution undefined", () => {
     const slug = `hydrate-none-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;
 
@@ -886,7 +886,7 @@ empty
   });
 });
 
-describe("qa-state.ts — multi-env isolation", () => {
+describe("kata-state.ts — multi-env isolation", () => {
   it("same slug under different ACTIVE_ENV writes to distinct files", () => {
     const slug = `env-iso-${Date.now()}`;
     const prd = `workspace/dataAssets/prds/202604/${slug}.md`;

@@ -56,6 +56,20 @@ SMTP_TO="team@example.com"
 
 ## 用法
 
+### 查看所有事件 / 字段契约（无需读源码）
+
+```bash
+# 列出全部事件
+bun run plugins/notify/send.ts --list-events
+
+# 查看某事件支持的字段、类型、必填项、枚举值
+bun run plugins/notify/send.ts --describe ui-test-needs-input
+
+# 校验数据（缺失必填 / 未知字段 / 枚举越界会在 stderr 告警；
+# 加 --strict 时直接退出 1）
+bun run plugins/notify/send.ts --dry-run --event ui-test-completed --data '{...}'
+```
+
 通知会在以下事件自动触发：
 
 - `case-generated`: 生成测试用例完成

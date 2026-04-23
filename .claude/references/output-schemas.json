@@ -331,7 +331,7 @@
   },
 
   "qa_state_file": {
-    "_description": "断点续传状态文件（.qa-state-{prd-slug}.json）完整结构",
+    "_description": "断点续传状态文件（.kata-state-{prd-slug}.json）完整结构",
     "prd_slug": "string",
     "project": "string",
     "mode": "string — normal|quick",

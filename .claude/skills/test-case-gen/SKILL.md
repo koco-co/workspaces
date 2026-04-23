@@ -204,7 +204,7 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 ## 断点续传说明
 
-- **状态文件位置**：与 PRD 同目录的 `.qa-state-{prd-slug}.json`
+- **状态文件位置**：与 PRD 同目录的 `.kata-state-{prd-slug}.json`
 - **自动检测**：节点 1 的 `state.ts resume` 命令自动发现并恢复
 - **节点更新**：每个节点完成时通过 `state.ts update` 写入进度
 - **最终清理**：output 节点成功后执行 `state.ts clean` 删除状态文件

@@ -79,7 +79,7 @@
         <mxCell id="repos" value="Read-only repos&#xa;workspace/&lt;project&gt;/.repos/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="300" y="708" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="state" value="State (per-env)&#xa;.qa-state-{slug}-{env}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="state" value="State (per-env)&#xa;.kata-state-{slug}-{env}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="520" y="708" width="200" height="70" as="geometry" />
         </mxCell>
         <mxCell id="plugins" value="Plugin hooks&#xa;lanhu / zentao / notify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">

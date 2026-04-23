@@ -1,15 +1,15 @@
 #!/usr/bin/env bun
 /**
- * qa-state.ts — Breakpoint resume state management CLI.
+ * kata-state.ts — Breakpoint resume state management CLI.
  *
  * Node lifecycle: init → transform → enhance → analyze → write → review → output
  *
  * Usage:
- *   bun run .claude/scripts/qa-state.ts init --project dataAssets --prd workspace/dataAssets/prds/202604/xxx.md --mode normal
- *   bun run .claude/scripts/qa-state.ts update --project dataAssets --prd-slug xxx --node transform --data '{"confidence":0.85}'
- *   bun run .claude/scripts/qa-state.ts resume --project dataAssets --prd-slug xxx
- *   bun run .claude/scripts/qa-state.ts clean --project dataAssets --prd-slug xxx
- *   bun run .claude/scripts/qa-state.ts --help
+ *   kata-cli kata-state init --project dataAssets --prd workspace/dataAssets/prds/202604/xxx.md --mode normal
+ *   kata-cli kata-state update --project dataAssets --prd-slug xxx --node transform --data '{"confidence":0.85}'
+ *   kata-cli kata-state resume --project dataAssets --prd-slug xxx
+ *   kata-cli kata-state clean --project dataAssets --prd-slug xxx
+ *   kata-cli kata-state --help
  */
 
 import {
@@ -56,12 +56,12 @@ function stateFilePath(project: string, prdSlug: string, env?: string): string {
   return projectPath(
     project,
     ".temp",
-    `.qa-state-${prdSlug}-${envSuffix}.json`,
+    `.kata-state-${prdSlug}-${envSuffix}.json`,
   );
 }
 
 function legacyStateFilePath(project: string, prdSlug: string): string {
-  return projectPath(project, ".temp", `.qa-state-${prdSlug}.json`);
+  return projectPath(project, ".temp", `.kata-state-${prdSlug}.json`);
 }
 
 function slugFromPrd(prdPath: string): string {
@@ -80,7 +80,7 @@ function migrateLegacyStateIfPresent(
   mkdirSync(dirname(target), { recursive: true });
   renameSync(legacy, target);
   process.stderr.write(
-    `[qa-state] INFO : migrated legacy state file ${basename(legacy)} → ${basename(target)}\n`,
+    `[kata-state] INFO : migrated legacy state file ${basename(legacy)} → ${basename(target)}\n`,
   );
   return { migrated: true, from: legacy, to: target };
 }
@@ -231,24 +231,24 @@ function derivePlanPath(project: string, prd: string): string | null {
  * Hydrate `strategy_resolution` from plan.md frontmatter.
  *
  * plan.md is the authoritative source for strategy (git-tracked, human-editable).
- * qa-state keeps a runtime copy; on resume, plan.md wins if present.
+ * kata-state keeps a runtime copy; on resume, plan.md wins if present.
  *
- * Returns { state, hydratedFrom } where hydratedFrom is "plan" | "qa-state" | "none".
+ * Returns { state, hydratedFrom } where hydratedFrom is "plan" | "kata-state" | "none".
  */
 export function hydrateStrategyFromPlan(
   state: QaState,
-): { state: QaState; hydratedFrom: "plan" | "qa-state" | "none" } {
+): { state: QaState; hydratedFrom: "plan" | "kata-state" | "none" } {
   if (!state.prd || !state.project) {
     return {
       state,
-      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+      hydratedFrom: state.strategy_resolution ? "kata-state" : "none",
     };
   }
   const planAbs = derivePlanPath(state.project, state.prd);
   if (!planAbs || !existsSync(planAbs)) {
     return {
       state,
-      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+      hydratedFrom: state.strategy_resolution ? "kata-state" : "none",
     };
   }
   try {
@@ -258,7 +258,7 @@ export function hydrateStrategyFromPlan(
     if (!inline) {
       return {
         state,
-        hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+        hydratedFrom: state.strategy_resolution ? "kata-state" : "none",
       };
     }
     const fromPlan = JSON.parse(inline) as unknown;
@@ -269,7 +269,7 @@ export function hydrateStrategyFromPlan(
   } catch {
     return {
       state,
-      hydratedFrom: state.strategy_resolution ? "qa-state" : "none",
+      hydratedFrom: state.strategy_resolution ? "kata-state" : "none",
     };
   }
 }
@@ -299,7 +299,7 @@ function runResume(opts: { project: string; prdSlug: string }): void {
   const { state: hydrated, hydratedFrom } = hydrateStrategyFromPlan(resolved);
   if (hydratedFrom === "plan") {
     process.stderr.write(
-      `[qa-state] INFO : hydrated strategy_resolution from plan.md\n`,
+      `[kata-state] INFO : hydrated strategy_resolution from plan.md\n`,
     );
   }
   resolved = hydrated;
@@ -324,7 +324,7 @@ function runClean(opts: { project: string; prdSlug: string }): void {
 }
 
 export const program = createCli({
-  name: "qa-state",
+  name: "kata-state",
   description:
     "Breakpoint resume state management for qa-flow test case generation",
   commands: [

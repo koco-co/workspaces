@@ -35,6 +35,8 @@ export interface DetectedEvent {
 interface PatternRule {
   pattern: RegExp;
   event: EventType;
+  /** When true, only count newly added files (not modifications). */
+  addedOnly?: boolean;
   extract: (files: string[]) => NotifyData;
 }
 
@@ -75,38 +77,57 @@ const PATTERN_RULES: readonly PatternRule[] = [
   {
     pattern: /^workspace\/[^/]+\/archive\/\d{6}\/(?!tmp\/).*\.md$/,
     event: "archive-converted",
+    addedOnly: true,
     extract: (files) => ({
       fileCount: files.length,
-      caseCount: files.length,
     }),
   },
 ];
 
 // ── Detection Logic ─────────────────────────────────────────────────────────
 
-export function getChangedFiles(cwd: string): string[] {
+export interface ChangedFile {
+  path: string;
+  /** True for newly added/untracked files; false for modifications/renames. */
+  added: boolean;
+}
+
+export function getChangedFiles(cwd: string): ChangedFile[] {
   try {
-    const output = execSync("git diff --name-only && git diff --name-only --cached", {
+    // --porcelain=v1 with -z gives stable, NUL-separated output with status flags.
+    const output = execSync("git status --porcelain=v1 --untracked-files=all", {
       cwd,
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
     });
-    const files = output
-      .split("\n")
-      .map((f) => f.trim())
-      .filter(Boolean);
-    // Deduplicate
-    return [...new Set(files)];
+    const seen = new Map<string, boolean>();
+    for (const line of output.split("\n")) {
+      if (!line) continue;
+      // Format: "XY path" where X=index status, Y=worktree status
+      const xy = line.slice(0, 2);
+      const path = line.slice(3).trim();
+      if (!path) continue;
+      // Added if untracked (??) or index-add (A in either column)
+      const added = xy === "??" || xy.includes("A");
+      // If both added and modified entries exist for same path, "added" wins
+      if (!seen.has(path) || added) {
+        seen.set(path, added);
+      }
+    }
+    return [...seen.entries()].map(([path, added]) => ({ path, added }));
   } catch {
     return [];
   }
 }
 
-export function matchEvents(changedFiles: readonly string[]): DetectedEvent[] {
+export function matchEvents(changedFiles: readonly ChangedFile[]): DetectedEvent[] {
   const raw: DetectedEvent[] = [];
 
   for (const rule of PATTERN_RULES) {
-    const matched = changedFiles.filter((f) => rule.pattern.test(f));
+    const matched = changedFiles
+      .filter((f) => rule.pattern.test(f.path))
+      .filter((f) => (rule.addedOnly ? f.added : true))
+      .map((f) => f.path);
     if (matched.length > 0) {
       raw.push({
         event: rule.event,

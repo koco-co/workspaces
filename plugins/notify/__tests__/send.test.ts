@@ -76,6 +76,35 @@ describe("formatMessage", () => {
     assert.ok(msg.text.includes("83%"), "should calculate pass rate");
   });
 
+  it("validateEventData: flags missing required, unknown fields and enum violations", async () => {
+    const { validateEventData } = await import("../send.ts");
+    const result = validateEventData("ui-test-needs-input", {
+      question: "x",
+      reasonType: "bogus",
+      wrongField: 1,
+    });
+    assert.deepEqual(result.missingRequired.sort(), ["caseTitle"]);
+    assert.deepEqual(result.unknownFields, ["wrongField"]);
+    assert.equal(result.enumViolations.length, 1);
+    assert.equal(result.enumViolations[0].field, "reasonType");
+  });
+
+  it("describeEvent: returns multi-line schema for known event", async () => {
+    const { describeEvent } = await import("../send.ts");
+    const text = describeEvent("ui-test-needs-input");
+    assert.ok(text.includes("question"));
+    assert.ok(text.includes("dom_mismatch"));
+    assert.ok(text.includes("* = 必填"));
+  });
+
+  it("listAllEvents: lists every event in EVENT_SCHEMAS", async () => {
+    const { listAllEvents, EVENT_SCHEMAS } = await import("../send.ts");
+    const text = listAllEvents();
+    for (const name of Object.keys(EVENT_SCHEMAS)) {
+      assert.ok(text.includes(name), `missing ${name} in listAllEvents output`);
+    }
+  });
+
   it("ui-test-needs-input: includes question, expected, actual, suite", () => {
     const msg = formatMessage("ui-test-needs-input", {
       project: "dataAssets",
@@ -88,7 +117,8 @@ describe("formatMessage", () => {
       evidence: "div.result-banner",
     });
     assert.ok(msg.text.includes("等待用户确认"));
-    assert.ok(msg.text.includes("dom_mismatch"));
+    assert.ok(msg.text.includes("DOM 与用例不一致"), "reasonType should be rendered in Chinese");
+    assert.ok(!msg.text.includes("dom_mismatch"), "raw enum should not appear in user-facing text");
     assert.ok(msg.text.includes("校验通过"));
     assert.ok(msg.text.includes("匹配成功"));
     assert.ok(msg.text.includes("json格式配置"));

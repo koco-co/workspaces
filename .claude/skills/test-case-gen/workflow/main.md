@@ -14,7 +14,7 @@
 ### 1.1 断点续传检测
 
 ```bash
-bun run .claude/scripts/qa-state.ts resume --prd-slug {{prd_slug}} --project {{project}}
+bun run .claude/scripts/kata-state.ts resume --prd-slug {{prd_slug}} --project {{project}}
 ```
 
 若返回有效状态 → 跳转到断点所在节点继续执行。
@@ -44,7 +44,7 @@ bun run .claude/scripts/plugin-loader.ts check --input "{{user_input}}"
 ### 1.5 初始化状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts init --prd {{prd_path}} --project {{project}} --mode {{mode}}
+bun run .claude/scripts/kata-state.ts init --prd {{prd_path}} --project {{project}} --mode {{mode}}
 ```
 
 ### 交互点 A — 参数分歧处理（仅在输入存在歧义时使用 AskUserQuestion 工具）
@@ -105,7 +105,7 @@ stdout 输出 StrategyResolution JSON。
 - **state.ts**：
 
   ```bash
-  bun run .claude/scripts/qa-state.ts update \
+  bun run .claude/scripts/kata-state.ts update \
     --project {{project}} --prd-slug {{prd_slug}} \
     --node probe \
     --data '{"strategy_resolution": {{resolution_json}}}'
@@ -335,7 +335,7 @@ transform-agent 执行：
 ### 2.5 更新状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node transform --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node transform --data '{{json}}'
 ```
 
 数据结构：参见 `.claude/references/output-schemas.json` 中的 `state_transform_data`。
@@ -371,7 +371,7 @@ bun run .claude/scripts/prd-frontmatter.ts normalize --file {{prd_path}}
 ### 3.3 更新状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node enhance --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node enhance --data '{{json}}'
 ```
 
 **✅ Task**：将 `enhance` 任务标记为 `completed`（subject 更新为 `enhance — {{n}} 张图片，{{m}} 个要点`）。
@@ -413,7 +413,7 @@ bun run .claude/scripts/archive-gen.ts search --query "{{keywords}}" --project {
 ### 4.3 更新状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node analyze --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node analyze --data '{{json}}'
 ```
 
 **✅ Task**：将 `analyze` 任务标记为 `completed`（subject 更新为 `analyze — {{n}} 个模块，{{m}} 条测试点`）。
@@ -487,7 +487,7 @@ bun run .claude/scripts/writer-context-builder.ts build \
 每个 Writer 完成后更新状态：
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node write --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node write --data '{{json}}'
 ```
 
 ---
@@ -521,7 +521,7 @@ bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{proje
 ### 6.3 更新状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node review --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node review --data '{{json}}'
 ```
 
 **✅ Task**：将 `review` 任务标记为 `completed`（subject 更新为 `review — {{n}} 条用例，问题率 {{rate}}%`）。
@@ -622,7 +622,7 @@ bun run .claude/scripts/format-report-locator.ts print \
 每轮循环后更新状态：
 
 ```bash
-bun run .claude/scripts/qa-state.ts update --prd-slug {{slug}} --project {{project}} --node format-check --data '{{json}}'
+bun run .claude/scripts/kata-state.ts update --prd-slug {{slug}} --project {{project}} --node format-check --data '{{json}}'
 ```
 
 数据结构：参见 `.claude/references/output-schemas.json` 中的 `state_format_check_data`。
@@ -677,7 +677,7 @@ notify_data 必需字段：`count`、`file`、`duration`。
 ### 7.4 清理状态
 
 ```bash
-bun run .claude/scripts/qa-state.ts clean --prd-slug {{slug}} --project {{project}}
+bun run .claude/scripts/kata-state.ts clean --prd-slug {{slug}} --project {{project}}
 ```
 
 **✅ Task**：将 `output` 任务标记为 `completed`（subject 更新为 `output — {{n}} 条用例，XMind + Archive MD 已生成`）。

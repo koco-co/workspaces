@@ -547,30 +547,64 @@ print("已生成 json_key_range_import_250.xlsx，共250条一层key数据")
 > 前置条件
 
 ```
-1) 已在【通用配置 → json格式校验管理】页面批量维护含3000条key的数据：
-   第一层级：key_l1_001至key_l1_1000
-   第二层级：key_l2_001至key_l2_2000
+1) 已在【通用配置 → json格式校验管理】页面批量维护含1200条key的5层数据：
+   一层200条（key_l1_001至key_l1_200）、二层300条（key_l2_001至key_l2_300）、三层300条（key_l3_001至key_l3_300）、四层200条（key_l4_001至key_l4_200）、五层200条（key_l5_001至key_l5_200）
    通用配置导入文件生成脚本如下:
 
-import openpyxl
+from openpyxl import Workbook
 
-wb = openpyxl.Workbook()
+FORMATS = ["^[a-zA-Z]+$", "^[0-9]+$", "^[a-zA-Z0-9_]+$", "^\\d{4}$", "^\\d{4}-\\d{2}-\\d{2}$", "^[\\u4e00-\\u9fa5]+$", "^.{1,50}$", "^(true|false)$"]
+def fmt(i): return FORMATS[i % len(FORMATS)]
+
+wb = Workbook()
 # 一层 Sheet
 ws1 = wb.active
 ws1.title = "一层"
 ws1.append(["key", "中文名称", "value格式"])
-for i in range(1, 1001):
-    ws1.append([f"key_l1_{i:03d}", f"一层key{i}", ""])
+L1 = [f"key_l1_{i:03d}" for i in range(1, 201)]
+for i, k in enumerate(L1, 1):
+    ws1.append([k, f"一层key{i}", fmt(i)])
 
 # 二层 Sheet
 ws2 = wb.create_sheet("二层")
-ws2.append(["上一层级的key名", "key", "中文名称", "value格式"])
-for i in range(1, 2001):
-    parent_key = f"key_l1_{((i - 1) % 1000) + 1:03d}"
-    ws2.append([parent_key, f"key_l2_{i:03d}", f"二层key{i}", ""])
+ws2.append(["第一层级key名", "key", "中文名称", "value格式"])
+L2 = []
+for i in range(1, 301):
+    parent = L1[(i - 1) % 100]
+    k = f"key_l2_{i:03d}"
+    ws2.append([parent, k, f"二层key{i}", fmt(i)])
+    L2.append((parent, k))
 
-wb.save("json_key_range_import_3000.xlsx")
-print("已生成 json_key_range_import_3000.xlsx，共3000条key数据（一层1000+二层2000）")
+# 三层 Sheet
+ws3 = wb.create_sheet("三层")
+ws3.append(["第一层级key名", "第二层级key名", "key", "中文名称", "value格式"])
+L3 = []
+for i in range(1, 301):
+    l1p, l2p = L2[(i - 1) % 100]
+    k = f"key_l3_{i:03d}"
+    ws3.append([l1p, l2p, k, f"三层key{i}", fmt(i)])
+    L3.append((l1p, l2p, k))
+
+# 四层 Sheet
+ws4 = wb.create_sheet("四层")
+ws4.append(["第一层级key名", "第二层级key名", "第三层级key名", "key", "中文名称", "value格式"])
+L4 = []
+for i in range(1, 201):
+    l1p, l2p, l3p = L3[(i - 1) % 100]
+    k = f"key_l4_{i:03d}"
+    ws4.append([l1p, l2p, l3p, k, f"四层key{i}", fmt(i)])
+    L4.append((l1p, l2p, l3p, k))
+
+# 五层 Sheet
+ws5 = wb.create_sheet("五层")
+ws5.append(["第一层级key名", "第二层级key名", "第三层级key名", "第四层级key名", "key", "中文名称", "value格式"])
+for i in range(1, 201):
+    l1p, l2p, l3p, l4p = L4[(i - 1) % 100]
+    k = f"key_l5_{i:03d}"
+    ws5.append([l1p, l2p, l3p, l4p, k, f"五层key{i}", fmt(i)])
+
+wb.save("json_key_range_import_1200.xlsx")
+print("已生成 json_key_range_import_1200.xlsx，共1200条key数据（一层200+二层300+三层300+四层200+五层200），value格式已填充")
 
 2) 已在SparkThrift2.x表中执行以下灌数SQL：
    INSERT INTO test_json_key_range VALUES
@@ -609,30 +643,64 @@ print("已生成 insert_json_key_range_1000.sql，共1000条INSERT记录")
 > 前置条件
 
 ```
-1) 已在【通用配置 → json格式校验管理】页面批量维护含2000条key的数据：
-   第一层级：key_l1_001至key_l1_1000
-   第二层级：key_l2_001至key_l2_1000
+1) 已在【通用配置 → json格式校验管理】页面批量维护含1200条key的5层数据：
+   一层200条（key_l1_001至key_l1_200）、二层300条（key_l2_001至key_l2_300）、三层300条（key_l3_001至key_l3_300）、四层200条（key_l4_001至key_l4_200）、五层200条（key_l5_001至key_l5_200）
    通用配置导入文件生成脚本如下:
 
-import openpyxl
+from openpyxl import Workbook
 
-wb = openpyxl.Workbook()
+FORMATS = ["^[a-zA-Z]+$", "^[0-9]+$", "^[a-zA-Z0-9_]+$", "^\\d{4}$", "^\\d{4}-\\d{2}-\\d{2}$", "^[\\u4e00-\\u9fa5]+$", "^.{1,50}$", "^(true|false)$"]
+def fmt(i): return FORMATS[i % len(FORMATS)]
+
+wb = Workbook()
 # 一层 Sheet
 ws1 = wb.active
 ws1.title = "一层"
 ws1.append(["key", "中文名称", "value格式"])
-for i in range(1, 1001):
-    ws1.append([f"key_l1_{i:03d}", f"一层key{i}", ""])
+L1 = [f"key_l1_{i:03d}" for i in range(1, 201)]
+for i, k in enumerate(L1, 1):
+    ws1.append([k, f"一层key{i}", fmt(i)])
 
 # 二层 Sheet
 ws2 = wb.create_sheet("二层")
-ws2.append(["上一层级的key名", "key", "中文名称", "value格式"])
-for i in range(1, 1001):
-    parent_key = f"key_l1_{i:03d}"
-    ws2.append([parent_key, f"key_l2_{i:03d}", f"二层key{i}", ""])
+ws2.append(["第一层级key名", "key", "中文名称", "value格式"])
+L2 = []
+for i in range(1, 301):
+    parent = L1[(i - 1) % 100]
+    k = f"key_l2_{i:03d}"
+    ws2.append([parent, k, f"二层key{i}", fmt(i)])
+    L2.append((parent, k))
 
-wb.save("json_key_range_perf_import_2000.xlsx")
-print("已生成 json_key_range_perf_import_2000.xlsx，共2000条key数据（一层1000+二层1000）")
+# 三层 Sheet
+ws3 = wb.create_sheet("三层")
+ws3.append(["第一层级key名", "第二层级key名", "key", "中文名称", "value格式"])
+L3 = []
+for i in range(1, 301):
+    l1p, l2p = L2[(i - 1) % 100]
+    k = f"key_l3_{i:03d}"
+    ws3.append([l1p, l2p, k, f"三层key{i}", fmt(i)])
+    L3.append((l1p, l2p, k))
+
+# 四层 Sheet
+ws4 = wb.create_sheet("四层")
+ws4.append(["第一层级key名", "第二层级key名", "第三层级key名", "key", "中文名称", "value格式"])
+L4 = []
+for i in range(1, 201):
+    l1p, l2p, l3p = L3[(i - 1) % 100]
+    k = f"key_l4_{i:03d}"
+    ws4.append([l1p, l2p, l3p, k, f"四层key{i}", fmt(i)])
+    L4.append((l1p, l2p, l3p, k))
+
+# 五层 Sheet
+ws5 = wb.create_sheet("五层")
+ws5.append(["第一层级key名", "第二层级key名", "第三层级key名", "第四层级key名", "key", "中文名称", "value格式"])
+for i in range(1, 201):
+    l1p, l2p, l3p, l4p = L4[(i - 1) % 100]
+    k = f"key_l5_{i:03d}"
+    ws5.append([l1p, l2p, l3p, l4p, k, f"五层key{i}", fmt(i)])
+
+wb.save("json_key_range_perf_import_1200.xlsx")
+print("已生成 json_key_range_perf_import_1200.xlsx，共1200条key数据（一层200+二层300+三层300+四层200+五层200），value格式已填充")
 
 2) 已通过【数据质量 → 规则集管理】页面，点击【新建规则集】，在 Step 1 基础信息中选择数据源=SparkThrift2.x、数据库=pw_test、数据表=test_json_key_range（含json字段 info），规则包名称"大数据量性能测试包"，点击【下一步】进入 Step 2 监控规则，在规则包"大数据量性能测试包"中点击【新增规则】，统计函数选择【非空值数】，字段选择 info，点击规则行【保存】，再点击页面底部【保存】完成规则集"rule_set_large_key_perf"创建
 ```

@@ -7,7 +7,7 @@
 **Architecture:**
 - **CLI 层：** 每个脚本仅 `export const program`，不再 parse 自身 argv、不再保留 `import.meta.main` gate。根入口 `kata-cli.ts` 用 commander `addCommand` 聚合 27 个 subprogram。
 - **可执行方式：** `kata-cli.ts` 带 shebang `#!/usr/bin/env bun` + `chmod +x`，`package.json` 的 `"bin"` 字段声明 `"kata-cli": ".claude/scripts/kata-cli.ts"`。用户在项目根目录执行一次 `bun link`，`kata-cli` 即注册到 `~/.bun/bin/`（已在 `$PATH`），此后任意目录可直接调用。
-- **命名迁移：** 项目名 `qa-flow` → `kata`；CLI 命令名 = `kata-cli`；文件名 `qa.ts` → `kata-cli.ts`、`qa-state.ts` → `kata-state.ts`（按用户要求统一，所有 16 处引用同步）；slash 菜单 `/qa-flow` → `/kata`；skill 目录 `.claude/skills/qa-flow/` → `.claude/skills/kata/`。
+- **命名迁移：** 项目名 `qa-flow` → `kata`；CLI 命令名 = `kata-cli`；文件名 `qa.ts` → `kata-cli.ts`、`kata-state.ts` → `kata-state.ts`（按用户要求统一，所有 16 处引用同步）；slash 菜单 `/qa-flow` → `/kata`；skill 目录 `.claude/skills/qa-flow/` → `.claude/skills/kata/`。
 - **归档保留：** `docs/refactor/archive/**` 是历史时间点快照，原文保留。`workspace/**/.audit.jsonl` 运行时产物不改。
 - **硬编码检查：** 按 `CLAUDE.md` 的反硬编码规则，脚本源码不得出现绝对路径；已有脚本都用 `repoRoot()` 动态计算，无需改动。
 
@@ -21,7 +21,7 @@
 | ----------------------------------------------------- | ------------------ | ------------------------------ |
 | 脚本移除 parse 调用，仅 `export program`              | 28 个              | Task 2                         |
 | `kata-cli.ts` 根入口 `addCommand` 注册                | 27 个              | Task 3                         |
-| `qa-state.ts` → `kata-state.ts` 改名 + 16 处引用更新  | 16 个文件          | Task 2.5                       |
+| `kata-state.ts` → `kata-state.ts` 改名 + 16 处引用更新  | 16 个文件          | Task 2.5                       |
 | 测试里调用从 `bun run .claude/scripts/xxx.ts` → `kata-cli xxx` | 约 27 个   | Task 4                         |
 | skill/agent/ref 文档里 `bun run .claude/scripts/xxx.ts` → `kata-cli xxx` | 87 个文件 | Task 5 |
 | `qa-flow` → `kata` 关键词（非归档）                   | 约 50 文件 / 435 处 | Task 6                         |
@@ -40,8 +40,8 @@
 | --------------------------------------------------- | -------------------------------------------------- |
 | `.claude/scripts/qa.ts`                             | `.claude/scripts/kata-cli.ts`                      |
 | `.claude/scripts/__tests__/qa.test.ts`              | `.claude/scripts/__tests__/kata-cli.test.ts`       |
-| `.claude/scripts/qa-state.ts`                       | `.claude/scripts/kata-state.ts`                    |
-| `.claude/scripts/__tests__/qa-state.test.ts`        | `.claude/scripts/__tests__/kata-state.test.ts`     |
+| `.claude/scripts/kata-state.ts`                       | `.claude/scripts/kata-state.ts`                    |
+| `.claude/scripts/__tests__/kata-state.test.ts`        | `.claude/scripts/__tests__/kata-state.test.ts`     |
 | `.claude/skills/qa-flow/`                           | `.claude/skills/kata/`                             |
 
 ### 修改（主要）
@@ -217,12 +217,12 @@ git commit -m "refactor: rename qa to kata-cli with bin registration"
 archive-gen auto-fixer case-signal-analyzer case-strategy-resolver
 config create-project discuss format-check-script format-report-locator
 history-convert image-compress knowledge-keeper plan plugin-loader
-prd-frontmatter qa-state repo-profile repo-sync report-to-pdf rule-loader
+prd-frontmatter kata-state repo-profile repo-sync report-to-pdf rule-loader
 run-tests-notify search-filter source-analyze ui-autotest-progress
 writer-context-builder xmind-gen xmind-patch
 ```
 
-（`qa-state.ts` 在 Task 2.5 才改名，本任务先按原名改造）
+（`kata-state.ts` 在 Task 2.5 才改名，本任务先按原名改造）
 
 - [ ] **Step 2.1: 对每个脚本做统一模式替换**
 
@@ -310,18 +310,18 @@ git commit -m "refactor: strip parse calls and main gate from all scripts"
 
 ---
 
-### Task 2.5: `qa-state.ts` → `kata-state.ts`
+### Task 2.5: `kata-state.ts` → `kata-state.ts`
 
 **Files:**
-- Rename: `.claude/scripts/qa-state.ts` → `.claude/scripts/kata-state.ts`
-- Rename: `.claude/scripts/__tests__/qa-state.test.ts` → `.claude/scripts/__tests__/kata-state.test.ts`
-- 更新 16 个引用文件里的 `qa-state` → `kata-state`
+- Rename: `.claude/scripts/kata-state.ts` → `.claude/scripts/kata-state.ts`
+- Rename: `.claude/scripts/__tests__/kata-state.test.ts` → `.claude/scripts/__tests__/kata-state.test.ts`
+- 更新 16 个引用文件里的 `kata-state` → `kata-state`
 
 - [ ] **Step 2.5.1: 重命名文件**
 
 ```bash
-git mv .claude/scripts/qa-state.ts .claude/scripts/kata-state.ts
-git mv .claude/scripts/__tests__/qa-state.test.ts .claude/scripts/__tests__/kata-state.test.ts
+git mv .claude/scripts/kata-state.ts .claude/scripts/kata-state.ts
+git mv .claude/scripts/__tests__/kata-state.test.ts .claude/scripts/__tests__/kata-state.test.ts
 ```
 
 - [ ] **Step 2.5.2: 文件内修改脚本名注释和 CLI name**
@@ -330,24 +330,24 @@ git mv .claude/scripts/__tests__/qa-state.test.ts .claude/scripts/__tests__/kata
 
 ```diff
 -/**
-- * qa-state.ts — Breakpoint resume state management CLI.
+- * kata-state.ts — Breakpoint resume state management CLI.
 +/**
 + * kata-state.ts — Breakpoint resume state management CLI.
   * ...
-- *   bun run .claude/scripts/qa-state.ts init --project ...
+- *   bun run .claude/scripts/kata-state.ts init --project ...
 + *   kata-cli kata-state init --project ...
   * ...
   */
 ```
 
-找到文件里 `createCli({ name: "qa-state", ... })` → 改为 `name: "kata-state"`（或保持 `name` 字段不变，因为它只是 commander 显示用；但建议同步改为 kata-state 保持一致）。
+找到文件里 `createCli({ name: "kata-state", ... })` → 改为 `name: "kata-state"`（或保持 `name` 字段不变，因为它只是 commander 显示用；但建议同步改为 kata-state 保持一致）。
 
-- [ ] **Step 2.5.3: 全仓库批量替换 `qa-state` → `kata-state`**
+- [ ] **Step 2.5.3: 全仓库批量替换 `kata-state` → `kata-state`**
 
 ```bash
-grep -rln "qa-state" . \
+grep -rln "kata-state" . \
   --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=archive \
-  | xargs sed -i '' 's|qa-state|kata-state|g'
+  | xargs sed -i '' 's|kata-state|kata-state|g'
 ```
 
 影响文件（按 survey 是 16 个）应全部更新。
@@ -355,7 +355,7 @@ grep -rln "qa-state" . \
 - [ ] **Step 2.5.4: 核查残留**
 
 ```bash
-grep -rln "qa-state" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=archive
+grep -rln "kata-state" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=archive
 ```
 
 Expected: 无输出。
@@ -364,7 +364,7 @@ Expected: 无输出。
 
 ```bash
 git add -A
-git commit -m "refactor: rename qa-state to kata-state"
+git commit -m "refactor: rename kata-state to kata-state"
 ```
 
 ---
@@ -376,7 +376,7 @@ git commit -m "refactor: rename qa-state to kata-state"
 
 - [ ] **Step 3.1: 写入完整 import + addCommand（按字母序）**
 
-⚠️ `qa-state` 已改名为 `kata-state`，import 要用新名字。
+⚠️ `kata-state` 已改名为 `kata-state`，import 要用新名字。
 
 ```ts
 #!/usr/bin/env bun
@@ -829,7 +829,7 @@ mv ~/.claude/projects/-Users-poco-Projects-qa-flow ~/.claude/projects/-Users-poc
 | -------------------------------------- | ---------------------- |
 | 直接用 `kata-cli`（无 `bun run` 前缀） | Task 1.4 bin + 1.5 bun link |
 | 所有脚本统一走 `kata-cli` 调用         | Task 2 + Task 4 + Task 5 |
-| `qa-state` 随大流改名                  | Task 2.5               |
+| `kata-state` 随大流改名                  | Task 2.5               |
 | 移除 `import.meta.main` gate           | Task 2（彻底删）       |
 | 全量 `qa-flow` → `kata`                | Task 6 + Task 7        |
 | GitHub remote 切换                     | Task 8.4               |
@@ -847,7 +847,7 @@ mv ~/.claude/projects/-Users-poco-Projects-qa-flow ~/.claude/projects/-Users-poc
 
 - ✅ 所有脚本统一 `export const program`
 - ✅ `kata-cli.ts` import 27 个 program，名字与脚本文件名一一对应
-- ✅ `qa-state` → `kata-state` 在 Task 2.5 完整传导到 Task 3 的 import
+- ✅ `kata-state` → `kata-state` 在 Task 2.5 完整传导到 Task 3 的 import
 - ✅ 测试调用方式（`execFileSync("kata-cli", ...)`）与 bin 注册一致
 
 ### 已知风险
@@ -856,7 +856,7 @@ mv ~/.claude/projects/-Users-poco-Projects-qa-flow ~/.claude/projects/-Users-poc
 2. **测试里 `execFileSync("kata-cli", ...)` 依赖 `$PATH` 里有 `kata-cli`**——Task 1.5 bun link 完成后才满足。Task 2 commit 后到 Task 3 commit 前测试会暂时 fail，属预期中间态。
 3. **脚本移除 parse 后直接 `bun run .claude/scripts/xxx.ts` 会没有任何输出**（commander program 导出但不被调用）。这是有意为之——强制所有调用走 `kata-cli`。开发者如需调试单文件，走 `kata-cli xxx --help` 也够用。
 4. **SVG / drawio 文字替换**——`architecture.svg` 里的文本节点可能影响视觉，Task 6.3 手工 review。
-5. **`qa-state` → `kata-state` 影响面**——16 个文件引用，Task 2.5 批量处理后 Task 8 终极扫描兜底。
+5. **`kata-state` → `kata-state` 影响面**——16 个文件引用，Task 2.5 批量处理后 Task 8 终极扫描兜底。
 
 ---
 
