@@ -38,7 +38,6 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { initEnv, getEnv } from "./lib/env.ts";
 import { createCli } from "./lib/cli-runner.ts";
 import {
@@ -175,10 +174,9 @@ function buildReportUrl(paths: Paths): string | undefined {
   return `${base}/${segments.join("/")}/`;
 }
 
-async function main(): Promise<void> {
+async function main(pwArgs: readonly string[]): Promise<void> {
   initEnv({ cwd: repoRoot() });
 
-  const pwArgs = process.argv.slice(2);
   if (pwArgs.length === 0) {
     process.stderr.write(
       "[run-tests-notify] 缺少 Playwright 参数。示例：\n" +
@@ -336,8 +334,11 @@ export const program = createCli({
     arguments: [
       { name: "playwrightArgs", description: "Playwright 参数（透传）", required: false, variadic: true },
     ],
-    action: async () => {
-      await main();
+    action: async (opts) => {
+      const pwArgs = Array.isArray(opts.playwrightArgs)
+        ? (opts.playwrightArgs as string[])
+        : [];
+      await main(pwArgs);
     },
   },
 });
