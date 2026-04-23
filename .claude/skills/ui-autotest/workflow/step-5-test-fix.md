@@ -107,44 +107,62 @@ if (failedCount >= convergenceThreshold &&
 
 > `original_steps` 必填：fixer 判断断言失败是 Bug 还是定位错误时，需要原始 `expected` 文本做对照。`strict_assertion` 恒为 `true`，fixer 不得放宽断言。
 
-Sub-Agent 返回 `FIXED` → 更新进度 `test_status = "passed"`；返回 `STILL_FAILING` → 更新 `test_status = "failed"` 并通过 `--error` 追加到 `error_history`，`attempts < 3` 则再派发一轮，否则标记放弃。
+Sub-Agent 三态返回：
 
-**5.3 Archive MD 反向更新**
+| 状态 | 主 agent 处理 |
+|------|--------------|
+| `FIXED` | 更新进度 `test_status = "passed"` |
+| `STILL_FAILING` | `--error` 追加到 `error_history`，`attempts < 3` 再派发一轮，否则标记放弃 |
+| `NEED_USER_INPUT` | **不再派发**，进入下文 5.2.5「向用户求证」流程 |
 
-Sub-Agent 在修复过程中若发现 MD 用例描述与实际系统行为不一致，将在返回结果中附带 `corrections` 字段，并标注 `reason_type`：
+**5.2.5 NEED_USER_INPUT 处理（反死循环硬约束）**
 
-- `frontend`：前端 DOM 变化（页面结构、字段名、按钮文本、流程步骤、选项值等）
-- `logic`：需求逻辑变更（业务规则、预期结果等）
+当 sub-agent 返回 `NEED_USER_INPUT` 时（典型场景：DOM 与用例描述对不上、断言文本歧义、流程步骤缺失、按钮位置变了），主 agent **禁止**继续派发 fixer 猜测，按以下顺序处理：
 
-主 agent 收集所有 corrections 后，按 `reason_type` 分三类处理：
+1. **发送 IM 通知（如配置了 notify 插件）**
 
-**前端类（自动写回）**
+   ```bash
+   bun run .claude/scripts/plugin-loader.ts notify \
+     --event ui-test-needs-input \
+     --data '{
+       "project": "{{project}}",
+       "suite": "{{suite_name}}",
+       "caseTitle": "{{case_title}}",
+       "reasonType": "{{reason_type}}",
+       "question": "{{question}}",
+       "expected": "{{用例预期文本}}",
+       "actual": "{{实际 DOM 表现}}",
+       "evidence": "{{DOM snippet 或截图路径}}"
+     }'
+   ```
 
-直接更新 Archive MD，追加注释 `<!-- 由 ui-autotest 自测校正 -->`，完成后通知用户：
+   `reason_type` 取值：`dom_mismatch` / `assertion_ambiguity` / `flow_missing` / `selector_unknown`。
 
-```
-已自动同步以下用例（前端 DOM 变更）：
+2. **使用 AskUserQuestion 让用户裁定**
 
-{{#each frontend_corrections}}
-- {{case_title}}：{{field}} "{{current}}" → "{{proposed}}"
-{{/each}}
-```
+   选项固定三选一（外加跳过）：
 
-**逻辑类（需确认）**
+   - `bug`：系统 Bug，脚本保持原断言，标记 potential_bug，进入失败汇总
+   - `case_error`：用例描述错误，按用户后续指示更新 Archive MD（追加 `<!-- 由 ui-autotest 用户确认校正 -->`）后重派 fixer
+   - `requirement_change`：需求变更，更新 Archive MD 并重派 fixer
+   - `skip`：当前轮放弃，标记失败但不再追问
 
-展示差异预览，等待用户确认后才写回：
+3. **根据用户回答推进**：
 
-```
-以下用例存在需求逻辑差异，请确认是否更新：
+   - `bug` → 同 potential_bug 处理，进入失败汇总（见下文 5.3）
+   - `case_error` / `requirement_change` → 主 agent 写回 Archive MD，重派一次 fixer（计入 `attempts`）
+   - `skip` → `test_status = "failed"`，记录 `skipped_by_user`
 
-{{#each logic_corrections}}
-- {{case_title}}：{{field}} "{{current}}" → "{{proposed}}" (依据: {{evidence}})
-{{/each}}
+4. **`attempts` 计数规则**：`NEED_USER_INPUT` 不消耗重试次数；用户回答后再次派发 fixer 才计入 `attempts`。这避免"机械重试 3 次都猜错"和"无脑追问用户"两端。
 
-是否更新 Archive MD？
-1. 不更新（默认）
-2. 更新
-```
+**5.3 Archive MD 反向更新（统一走用户确认，不再自动写回）**
+
+Sub-Agent 在修复过程中发现 MD 用例描述与实际系统行为不一致时：
+
+- **机械修正**（如 helpers 函数签名漂移、纯选择器写错且 DOM 文本与用例完全一致）→ 直接修脚本，返回 `FIXED`
+- **任何涉及 Archive MD 内容的修改**（字段名、按钮文本、流程步骤、断言预期等，无论 sub-agent 主观判断属于 `frontend` 还是 `logic`）→ **必须**返回 `NEED_USER_INPUT`，由 5.2.5 流程让用户裁定
+
+禁止 sub-agent 在 `corrections.reason_type=frontend` 时假设"是前端文案变更直接改"，因为 fixer 没有需求上下文，无法区分"前端确实改了文案" vs "用例本来就写错了" vs "前端 Bug"。三类后果完全不同。
 
 **potential_bug 类（不写回，上报用户）**
 

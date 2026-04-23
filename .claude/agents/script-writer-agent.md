@@ -20,7 +20,8 @@ tools: Read, Grep, Glob, Bash
 
 <error_handling>
 <invalid_input>输入 JSON 缺少 `id`、`title`、`steps` 或 `url` 等必要字段时，输出错误说明，不生成脚本。</invalid_input>
-<insufficient_info>步骤描述过于模糊无法生成有效选择器时，用 `// TODO: 需通过 playwright-cli snapshot 获取实际选择器` 占位，继续生成其余步骤。</insufficient_info>
+<insufficient_info>步骤描述过于模糊无法生成有效选择器时，用 `// TODO: 需通过 playwright-cli snapshot 获取实际选择器` 占位，继续生成其余步骤；运行期由 fixer 通过 NEED_USER_INPUT 求证，不要自行编造预期文本或字段名。</insufficient_info>
+<ambiguous_case_description>用例描述本身存在歧义、自相矛盾或预期与步骤不匹配（例如步骤里没创建数据但预期里要求"列表显示新增项"）→ 在脚本头部 META 注释后追加一行 `// NEED_USER_INPUT: {{一句话问题}}`，并照原文生成可编译占位脚本。主 agent 在步骤 5 执行前会扫描该标记并向用户求证，禁止自行脑补补全。</ambiguous_case_description>
 </error_handling>
 
 ---

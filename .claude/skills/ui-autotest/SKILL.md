@@ -33,7 +33,8 @@ argument-hint: "[功能名或 MD 路径] [目标 URL]"
 <rule id="status_only">步骤完成统计、通过/失败摘要、报告路径展示仅作状态展示，不要求确认。</rule>
 <rule id="scope_selection">仅在 URL、执行范围或登录方式不明确时使用 AskUserQuestion。</rule>
 <rule id="reference_permission">允许用实际 DOM、playwright-cli snapshot 与只读源码来修正脚本的**操作步骤部分**（选择器、按钮文本、流程顺序）；断言/预期必须严格忠实于用例 `expected` 列原文，禁止为了通过而放宽断言。</rule>
-<rule id="archive_writeback">前端 DOM 不一致（页面结构、字段名、按钮文本、流程步骤等）→ 直接写回 Archive MD，追加注释后通知用户；需求逻辑变更 → 展示差异预览并请用户确认；**断言预期与实际页面行为不符（potential_bug）→ 脚本和 Archive MD 都不改，用例标记失败并上报用户可能 Bug**。</rule>
+<rule id="archive_writeback">**任何**与前端实际 DOM 不一致的偏差（页面结构、字段名、按钮文本、流程步骤、字段值等）一律由主 agent 通过 AskUserQuestion 让用户确认是「Bug / 用例描述错误 / 需求变更」三类之一后才能动作；禁止 sub-agent 自主判断"是 frontend 类就直接改 Archive"。同时必须发送 `ui-test-needs-input` IM 通知，把工作流挂起等用户回答。</rule>
+<rule id="subagent_no_guess">Sub-agent（script-writer / script-fixer）遇到任何无法靠"读源码 + 看 DOM"机械确定的偏差，**必须**返回 `NEED_USER_INPUT` 状态把决策权交还主 agent，禁止自行猜测断言文本、字段名或流程步骤；这是反死循环的硬约束。</rule>
 <rule id="assertion_fidelity">断言文本必须严格对齐用例预期原文。禁止扩大正则匹配（如 `/匹配成功|符合正则/`）、禁止用祖先元素全局 `filter({ hasText })`、禁止用 `toBeVisible()` 替代文本断言、禁止 try/catch 吞断言。违反即 Bug 被吞。</rule>
 </confirmation_policy>
 

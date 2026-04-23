@@ -25,6 +25,7 @@ export type EventType =
   | "conflict-analyzed"
   | "hotfix-case-generated"
   | "ui-test-completed"
+  | "ui-test-needs-input"
   | "archive-converted"
   | "workflow-failed"
   | (string & {});
@@ -167,6 +168,46 @@ function formatByEvent(
         `---`,
         `🕐 ${timestamp} · QAFlow`,
       ].join("\n");
+
+    case "ui-test-needs-input": {
+      const caseTitle = data.caseTitle ? String(data.caseTitle) : "-";
+      const reasonType = data.reasonType ? String(data.reasonType) : "-";
+      const question = data.question ? String(data.question) : "-";
+      const expected = data.expected ? String(data.expected) : "";
+      const actual = data.actual ? String(data.actual) : "";
+      const evidence = data.evidence ? String(data.evidence) : "";
+      const suite = data.suite ? String(data.suite) : "";
+      const project = data.project ? String(data.project) : "";
+
+      const titleSuffix = suite ? ` · ${suite}` : "";
+      const rows = [
+        ...(project ? [`| 📦 项目 | \`${project}\` |`] : []),
+        ...(suite ? [`| 🎯 套件 | ${suite} |`] : []),
+        `| 📝 用例 | ${caseTitle} |`,
+        `| 🏷 类型 | \`${reasonType}\` |`,
+        ...(expected ? [`| 📖 用例预期 | ${expected} |`] : []),
+        ...(actual ? [`| 🖥 实际表现 | ${actual} |`] : []),
+      ];
+
+      return [
+        `## ⏸ UI 自动化等待用户确认${titleSuffix}`,
+        "",
+        `> ${question}`,
+        "",
+        "| 项目 | 详情 |",
+        "| --- | --- |",
+        ...rows,
+        "",
+        evidence ? `**🔍 证据：** ${evidence}` : "",
+        "",
+        "**⚡ 请回到 Claude Code 会话回答问题，工作流已暂停等待你的判断。**",
+        "",
+        `---`,
+        `🕐 ${timestamp} · QAFlow`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    }
 
     case "workflow-failed":
       return [

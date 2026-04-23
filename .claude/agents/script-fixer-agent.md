@@ -14,7 +14,30 @@ tools: Read, Grep, Glob, Bash, Edit
 <output_contract>
 返回修复结果 JSON，结构参见 `.claude/references/output-schemas.json` 中的 `script_fixer_json`。
 
+`status` 三态：
+
+| status | 含义 | 何时返回 |
+|--------|------|----------|
+| `FIXED` | 已机械修复并验证通过 | DOM 与用例完全一致，仅是选择器/等待/导入路径之类纯技术问题 |
+| `STILL_FAILING` | 修复尝试失败但失败原因清晰（如已知超时、环境不可用） | 不需要用户判断，主 agent 可继续重试或放弃 |
+| `NEED_USER_INPUT` | **不能自主判断必须求助用户** | DOM 与用例描述不一致、断言文本歧义、流程步骤缺失或多余、按钮位置/字段名变化、potential_bug |
+
 返回 JSON 中必须包含 `helpers_modified: string[]` 字段，列出本次修复修改的 helpers 文件路径（含 `tests/helpers/*` 与 `lib/playwright/*`）。无修改时为空数组。主 agent 用此字段审计是否遵守 `helpers_locked` 约束。
+
+**`NEED_USER_INPUT` 返回结构**（不要再尝试改脚本，原样返回）：
+
+```json
+{
+  "status": "NEED_USER_INPUT",
+  "reason_type": "dom_mismatch | assertion_ambiguity | flow_missing | selector_unknown | potential_bug",
+  "question": "一句话向用户提出的问题，例如：用例预期『校验通过』但页面实际显示『匹配成功』，是 Bug 还是用例文案要更新？",
+  "case_title": "{{case title}}",
+  "expected": "用例 expected 列原文",
+  "actual": "实际 DOM 显示文本或结构",
+  "evidence": "DOM snippet / playwright snapshot 摘要 / 关键源码引用",
+  "helpers_modified": []
+}
+```
 </output_contract>
 
 ---
@@ -110,10 +133,22 @@ QA_PROJECT={{project}} bunx playwright test {{script_path}} --project=chromium -
 
 1. 读取 `original_steps` 确认用例原文 `expected`
 2. 获取实际 DOM，看页面真实渲染文本
-3. 分支判断：
-   - **定位错误**（结果区域存在且文本正确，原脚本找错位置）→ 修定位器，保留原断言文本 → `FIXED`
+3. 分支判断（**升级优先于猜测**）：
+   - **纯定位错误**（结果区域存在且文本与用例 `expected` 一字不差，原脚本找错位置）→ 修定位器 → `FIXED`
    - **时序问题**（结果会出现，只是晚）→ 加等待 → `FIXED`
-   - **前端文案同义变更**（"通过" → "校验成功"语义不变）→ 脚本按新词更新 + `corrections.reason_type="frontend"` → `FIXED`
-   - **功能缺陷**（页面根本不显示预期文本或显示相反结果）→ **不改脚本断言** → `STILL_FAILING` + `corrections.reason_type="potential_bug"` + DOM 证据
+   - **页面文本与用例不一致**（任何字面差异，包括看似同义的"通过/校验成功"）→ **禁止自主判断"是否同义"** → `NEED_USER_INPUT`，`reason_type="dom_mismatch"`，把用例原文和实际文本一并交给主 agent 让用户裁定
+   - **功能缺陷**（页面不显示预期文本或显示相反结果）→ `NEED_USER_INPUT`，`reason_type="potential_bug"`，附 DOM 证据
 
-**绝不允许**：为了让 `STILL_FAILING` 变 `FIXED`，偷偷放宽断言正则或切换到含歧义文本的祖先节点。
+**反死循环原则**：你只在"DOM 与用例完全一致 + 失败原因纯技术"时才返回 `FIXED`；只要涉及 Archive MD 内容是否需要变更，立即 `NEED_USER_INPUT`，由主 agent 用 AskUserQuestion 让用户拍板。绝不允许偷偷放宽断言、绝不允许自主改 Archive MD。
+
+### 何时返回 NEED_USER_INPUT 的快速对照表
+
+| 场景 | 处理 |
+|------|------|
+| 用例预期 "校验通过"，DOM 显示 "校验成功" | NEED_USER_INPUT (dom_mismatch) |
+| 用例步骤要求点击 "保存"，页面没有"保存"按钮只有 "确定" | NEED_USER_INPUT (dom_mismatch) |
+| 用例期望出现成功提示，DOM 出现 "失败" 提示 | NEED_USER_INPUT (potential_bug) |
+| 用例步骤数量与页面实际流程对不上 | NEED_USER_INPUT (flow_missing) |
+| getByRole 在源码里找不到，无法确认正确 role | NEED_USER_INPUT (selector_unknown) |
+| 元素超时但 DOM 截图显示元素存在 | 加等待重试 → FIXED 或 STILL_FAILING |
+| import 路径错、helper 名拼错 | 修代码 → FIXED |

@@ -76,6 +76,25 @@ describe("formatMessage", () => {
     assert.ok(msg.text.includes("83%"), "should calculate pass rate");
   });
 
+  it("ui-test-needs-input: includes question, expected, actual, suite", () => {
+    const msg = formatMessage("ui-test-needs-input", {
+      project: "dataAssets",
+      suite: "json格式配置",
+      caseTitle: "验证 JSON 格式校验提示",
+      reasonType: "dom_mismatch",
+      question: "用例预期『校验通过』但页面显示『匹配成功』，是 Bug 还是用例文案要更新？",
+      expected: "校验通过",
+      actual: "匹配成功",
+      evidence: "div.result-banner",
+    });
+    assert.ok(msg.text.includes("等待用户确认"));
+    assert.ok(msg.text.includes("dom_mismatch"));
+    assert.ok(msg.text.includes("校验通过"));
+    assert.ok(msg.text.includes("匹配成功"));
+    assert.ok(msg.text.includes("json格式配置"));
+    assert.ok(msg.text.includes("⏸"));
+  });
+
   it("ui-test-completed: shows red icon when failures exist", () => {
     const msg = formatMessage("ui-test-completed", { passed: 5, failed: 3 });
     assert.ok(msg.text.includes("🔴"), "should show red icon for failures");

@@ -64,6 +64,7 @@ SMTP_TO="team@example.com"
 - `hotfix-case-generated`: 线上问题用例转化完成
 - `archive-converted`: 批量归档完成
 - `ui-test-completed`: UI 自动化测试完成
+- `ui-test-needs-input`: UI 自动化等待用户确认（DOM 与用例不一致 / 疑似 Bug，子 agent 不自主猜测）
 - `workflow-failed`: 工作流异常中断
 
 ## 通知内容示例
