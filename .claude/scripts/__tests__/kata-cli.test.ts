@@ -1,12 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { after, describe, it } from "node:test";
+import { resolve } from "node:path";
+import { describe, it } from "node:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../../..");
-const TMP_DIR = join(tmpdir(), `kata-cli-test-${process.pid}`);
 
 function run(
   args: string[],
@@ -29,10 +26,6 @@ function run(
 }
 
 describe("kata-cli unified CLI", () => {
-  after(() => {
-    rmSync(TMP_DIR, { recursive: true, force: true });
-  });
-
   it("top-level --help exits 0", () => {
     const { code } = run(["--help"]);
     assert.equal(code, 0);
