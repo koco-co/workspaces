@@ -17,14 +17,66 @@
  */
 
 import { Command } from "commander";
-// NOTE: 27 subprogram imports added in Task 3
+import { program as archiveGen } from "./archive-gen.ts";
+import { program as autoFixer } from "./auto-fixer.ts";
+import { program as caseSignalAnalyzer } from "./case-signal-analyzer.ts";
+import { program as caseStrategyResolver } from "./case-strategy-resolver.ts";
+import { program as config } from "./config.ts";
+import { program as createProject } from "./create-project.ts";
+import { program as discuss } from "./discuss.ts";
+import { program as formatCheckScript } from "./format-check-script.ts";
+import { program as formatReportLocator } from "./format-report-locator.ts";
+import { program as historyConvert } from "./history-convert.ts";
+import { program as imageCompress } from "./image-compress.ts";
+import { program as kataState } from "./kata-state.ts";
+import { program as knowledgeKeeper } from "./knowledge-keeper.ts";
+import { program as plan } from "./plan.ts";
+import { program as pluginLoader } from "./plugin-loader.ts";
+import { program as prdFrontmatter } from "./prd-frontmatter.ts";
+import { program as repoProfile } from "./repo-profile.ts";
+import { program as repoSync } from "./repo-sync.ts";
+import { program as reportToPdf } from "./report-to-pdf.ts";
+import { program as ruleLoader } from "./rule-loader.ts";
+import { program as runTestsNotify } from "./run-tests-notify.ts";
+import { program as searchFilter } from "./search-filter.ts";
+import { program as sourceAnalyze } from "./source-analyze.ts";
+import { program as uiAutotestProgress } from "./ui-autotest-progress.ts";
+import { program as writerContextBuilder } from "./writer-context-builder.ts";
+import { program as xmindGen } from "./xmind-gen.ts";
+import { program as xmindPatch } from "./xmind-patch.ts";
 
 const kata = new Command()
   .name("kata-cli")
   .description("kata unified CLI — dispatches to scripts under .claude/scripts/")
   .showHelpAfterError();
 
-// NOTE: 27 addCommand calls added in Task 3
+kata.addCommand(archiveGen);
+kata.addCommand(autoFixer);
+kata.addCommand(caseSignalAnalyzer);
+kata.addCommand(caseStrategyResolver);
+kata.addCommand(config);
+kata.addCommand(createProject);
+kata.addCommand(discuss);
+kata.addCommand(formatCheckScript);
+kata.addCommand(formatReportLocator);
+kata.addCommand(historyConvert);
+kata.addCommand(imageCompress);
+kata.addCommand(kataState);
+kata.addCommand(knowledgeKeeper);
+kata.addCommand(plan);
+kata.addCommand(pluginLoader);
+kata.addCommand(prdFrontmatter);
+kata.addCommand(repoProfile);
+kata.addCommand(repoSync);
+kata.addCommand(reportToPdf);
+kata.addCommand(ruleLoader);
+kata.addCommand(runTestsNotify);
+kata.addCommand(searchFilter);
+kata.addCommand(sourceAnalyze);
+kata.addCommand(uiAutotestProgress);
+kata.addCommand(writerContextBuilder);
+kata.addCommand(xmindGen);
+kata.addCommand(xmindPatch);
 
 kata.parseAsync(process.argv).catch((err) => {
   process.stderr.write(`[kata-cli] Unexpected error: ${err}\n`);
