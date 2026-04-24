@@ -36,10 +36,10 @@
 ```
 📄 PRD / 蓝湖 / 历史文件 ── /test-case-gen ───→ 🗺️ XMind (A) + 📝 Archive MD (B)
 🤖 Archive MD + URL ──── /ui-autotest ─────→ ♻️ 自修复回归 → 🐛 报告 / 📣 通知
-📋 现有 XMind ─────────── /xmind-editor ────→ 👀 预览 → ✅ 确认 → ✏️ 写入
-🔗 禅道 Bug 链接 ─────── /hotfix-case-gen ──→ 🔧 Hotfix Archive MD
-🔥 报错 / 异常 ───────── /bug-report ──────→ 📊 后端/前端 Bug HTML 报告
-⚡ git 冲突片段 ───────── /conflict-report ──→ 📊 合并冲突 HTML 报告
+📋 现有 XMind ─────────── /case-format ─────→ 👀 预览 → ✅ 确认 → ✏️ 写入
+🔗 禅道 Bug 链接 ─────── /daily-task hotfix → 🔧 Hotfix Archive MD
+🔥 报错 / 异常 ───────── /daily-task bug ───→ 📊 后端/前端 Bug HTML 报告
+⚡ git 冲突片段 ───────── /daily-task conflict → 📊 合并冲突 HTML 报告
 ```
 
 </div>
@@ -56,7 +56,7 @@
 - [工作流详解](#工作流详解)
   - [测试用例生成](#1-测试用例生成-test-case-gen)
   - [Hotfix / Bug / 冲突分析](#2-hotfix--bug--冲突分析)
-  - [XMind 用例编辑](#3-xmind-用例编辑-xmind-editor)
+  - [XMind 用例编辑](#3-xmind-用例编辑-case-format)
   - [UI 自动化测试](#4-ui-自动化测试-ui-autotest)
 - [插件系统](#插件系统)
 - [项目结构](#项目结构)
@@ -71,7 +71,7 @@
 
 | 特性                            | 说明                                                                                 |
 | ------------------------------- | ------------------------------------------------------------------------------------ |
-| **11 个 Skill / 6 个核心工作流** | `kata` Router + `setup` + `create-project` + 6 个核心执行工作流，覆盖初始化、生成、分析、编辑、Bug/冲突诊断和回归 |
+| **7 个 Skill / 5 个核心工作流** | `using-kata` + `create-project` + 5 个核心执行工作流，覆盖菜单/初始化、生成、分析、格式转换、Bug/冲突/Hotfix 诊断和回归 |
 | **15 Agent 架构**              | 独立 Agent 通过 frontmatter 声明 model/tools，按复杂度动态匹配 haiku / sonnet / opus；含 pattern-analyzer 等动态派发 |
 | **项目级工作区**                | 所有产物统一输出到 `workspace/&lt;project&gt;/...`，多项目互不污染                   |
 | **A/B 双契约**                  | XMind / intermediate 使用 Contract A；Archive MD / 展示标题使用 Contract B           |
@@ -91,9 +91,9 @@
 
 kata 采用 **Router + Skill + Agent + Plugin Hook** 分层架构：
 
-- **kata Router** — 入口路由层；首次使用、无项目或 `/kata init` 会优先路由到 `setup`
-- **11 个 Skill** — `kata` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
-- **6 个核心用户工作流** — `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report`（`setup` + `create-project` 为初始化工作流）
+- **kata Router** — 入口路由层；首次使用、无项目或安装向导由 `using-kata` skill 承接
+- **7 个 Skill** — `using-kata` / `create-project` / `test-case-gen` / `ui-autotest` / `case-format` / `daily-task` / `knowledge-keeper`
+- **5 个核心用户工作流** — `test-case-gen` / `ui-autotest` / `case-format` / `daily-task`（bug/conflict/hotfix）/ `knowledge-keeper`（`using-kata` + `create-project` 为入口与初始化工作流）
 - **15 个独立 Agent** — 每个 Agent 通过 frontmatter 声明 model/tools，由 Skill 作为编排器调度；含 Phase 3 新增 `pattern-analyzer-agent` / `script-fixer-agent`
 - **Cross-cutting 能力** — CLI Runner 工厂、三段式 `.env`、多环境 `kata-state` 隔离、`plan.md` 仲裁、`LOG_LEVEL` 日志分级、项目级规则、只读源码副本、Plugin Hooks
 - **Project-scoped Output** — 统一输出到 `workspace/<project>/`，支持 XMind / Archive MD / HTML 报告 / Playwright + Allure 产物
@@ -133,13 +133,11 @@ bunx playwright install                       # 仅 UI 自动化场景需要
 
 ### 初始化
 
-在 Claude Code 中优先输入：
+按仓库根目录 `INSTALL.md` 指引完成环境初始化，或在 Claude Code 中输入：
 
 ```
-/kata init
+/using-kata
 ```
-
-`/setup` 仍可直接使用，但推荐把 `/kata init` 作为统一入口。
 
 6 步交互向导自动完成：
 
@@ -156,10 +154,7 @@ bunx playwright install                       # 仅 UI 自动化场景需要
 
 ```bash
 # 查看功能菜单
-/kata
-
-# 初始化 / 切换到 setup
-/kata init
+/using-kata
 
 # 为需求文档生成完整测试用例
 为 {{需求名称}} 生成测试用例
@@ -269,9 +264,9 @@ code-analysis 的一体化路由已按业务边界拆成三个专职 skill，触
 
 | Skill                                          | 输入信号                                            | 派发 Agent                                                       | 输出                                              |
 | ---------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------- |
-| **`/hotfix-case-gen`**                         | 禅道 Bug URL（含 `bug-view-`）或 Bug ID             | `hotfix-case-agent`                                              | `workspace/<project>/issues/YYYYMM/hotfix_*.md`   |
-| **`/bug-report`**                              | Java 堆栈 / HTTP 错误 / 前端 Console 报错           | `backend-bug-agent`（后端）/ `frontend-bug-agent`（前端）        | `workspace/<project>/reports/bugs/YYYYMMDD/*.html` |
-| **`/conflict-report`**                         | 含 `<<<<<<< HEAD` / `=======` / `>>>>>>>` 冲突片段 | `conflict-agent`                                                 | `workspace/<project>/reports/conflicts/YYYYMMDD/*.html` |
+| **`/daily-task hotfix`**                       | 禅道 Bug URL（含 `bug-view-`）或 Bug ID             | `hotfix-case-agent`                                              | `workspace/<project>/issues/YYYYMM/hotfix_*.md`   |
+| **`/daily-task bug`**                          | Java 堆栈 / HTTP 错误 / 前端 Console 报错           | `backend-bug-agent`（后端）/ `frontend-bug-agent`（前端）        | `workspace/<project>/reports/bugs/YYYYMMDD/*.html` |
+| **`/daily-task conflict`**                     | 含 `<<<<<<< HEAD` / `=======` / `>>>>>>>` 冲突片段 | `conflict-agent`                                                 | `workspace/<project>/reports/conflicts/YYYYMMDD/*.html` |
 
 #### 双门策略
 
@@ -303,7 +298,7 @@ code-analysis 的一体化路由已按业务边界拆成三个专职 skill，触
 
 ---
 
-### 3. XMind 用例编辑 (`/xmind-editor`)
+### 3. XMind 用例编辑 (`/case-format`)
 
 直接在已有 XMind 文件上进行局部操作，无需重新读取 PRD。所有写操作遵循 **preview-first**：先 `--dry-run` 预览，再确认，最后真实写入；修改完成后再触发偏好学习流程。
 
@@ -485,15 +480,12 @@ kata/
 │   │   │   └── logger.ts         #   统一日志
 │   │   └── __tests__/            # 单元测试（80%+ 覆盖率）
 │   └── skills/
-│       ├── kata/              # 入口菜单路由
-│       ├── setup/                # 5 步初始化向导
+│       ├── using-kata/           # 功能菜单 + 项目管理入口
 │       ├── create-project/       # 项目骨架创建 / 补齐
 │       ├── test-case-gen/        # 测试用例生成（编排器，派发 Agent）
 │       │   └── references/       # 格式规范与协议
-│       ├── xmind-editor/         # XMind 局部编辑
-│       ├── hotfix-case-gen/      # Hotfix 用例生成（禅道链接触发）
-│       ├── bug-report/           # Bug 报告生成（后端/前端自动路由）
-│       ├── conflict-report/      # 合并冲突分析
+│       ├── case-format/          # XMind 编辑 / 格式转换 / 双向同步
+│       ├── daily-task/           # Bug / 冲突 / Hotfix 三模式
 │       ├── knowledge-keeper/     # 业务知识库读写
 │       ├── ui-autotest/          # Playwright UI 自动化（编排器，派发 Agent）
 │       │   └── scripts/          # parse-cases / merge-specs / session-login

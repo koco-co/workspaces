@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * init-wizard.ts — kata v2.0 setup skill
+ * init-wizard.ts — kata 环境检查工具
  *
  * Subcommands:
  *   scan    — check project environment, output JSON
@@ -11,16 +11,16 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
-import { initEnv } from "../../../scripts/lib/env.ts";
+import { initEnv } from "./lib/env.ts";
 
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
 
 function repoRoot(): string {
-  // This file is at .claude/skills/setup/scripts/init-wizard.ts
-  // 4 levels up → repo root
-  return resolve(fileURLToPath(import.meta.url), "../../../../..");
+  // This file is at .claude/scripts/init-wizard.ts
+  // 3 levels up → repo root
+  return resolve(fileURLToPath(import.meta.url), "../../..");
 }
 
 // ---------------------------------------------------------------------------
@@ -236,7 +236,7 @@ function runScan(): ScanResult {
     issues.push("node_modules/ not found — run: bun install");
   }
   if (!workspaceExists) {
-    issues.push("workspace/ directory not found — run: /kata init");
+    issues.push("workspace/ directory not found — see INSTALL.md for setup instructions");
   }
   if (!envConfigured) {
     issues.push(
@@ -284,7 +284,7 @@ function runVerify(): VerifyResult {
       status: scan.workspace_exists ? "pass" : "fail",
       detail: scan.workspace_exists
         ? "workspace/ 存在"
-        : "workspace/ 不存在，请运行 /kata init",
+        : "workspace/ 不存在，请参考 INSTALL.md",
     },
     {
       name: ".env 配置",

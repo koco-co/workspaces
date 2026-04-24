@@ -2,20 +2,17 @@
 
 ## 快速开始
 
-输入 `/kata` 查看功能菜单，首次使用请先执行 `/kata init`。
+输入 `/using-kata` 查看功能菜单，首次安装请按仓库根目录 INSTALL.md 指引。
 
 ## 功能索引
 
-| 命令               | 功能             |
-| ------------------ | ---------------- |
-| `/kata`         | 功能菜单         |
-| `/kata init`    | 环境初始化       |
-| `/test-case-gen`   | 生成测试用例     |
-| `/ui-autotest`     | UI 自动化测试    |
-| `/xmind-editor`    | 编辑 XMind 用例  |
-| `/hotfix-case-gen` | 生成 Hotfix 用例 |
-| `/bug-report`      | 分析 Bug 报告    |
-| `/conflict-report` | 分析合并冲突     |
+| 命令             | 功能                                      |
+| ---------------- | ----------------------------------------- |
+| `/using-kata`    | 功能菜单 + 项目创建                       |
+| `/test-case-gen` | 生成测试用例（PRD → 用例）                |
+| `/case-format`   | XMind 编辑 / XMind↔Archive 同步 / 格式转换 |
+| `/daily-task`    | bug / conflict / hotfix 三模式            |
+| `/ui-autotest`   | UI 自动化测试                             |
 
 ## 多项目工作区
 
@@ -68,7 +65,7 @@ kata 的协作偏好、规则、业务知识分三层存放，职责互斥：
 
 **读写约束：**
 
-- `rules/` 通过 `kata-cli rule-loader load --project {{project}}` 合并加载；主 agent 读、skill 读；AI 在 xmind-editor 等场景下可追加写入
+- `rules/` 通过 `kata-cli rule-loader load --project {{project}}` 合并加载；主 agent 读、skill 读；AI 在 case-format 等场景下可追加写入
 - `knowledge/` 由 `knowledge-keeper` skill（阶段 1 实施）统一读写；subagent 不得直接改文件
 - `memory/` 由 Claude Code 自动持久化；AI 主动写入
 

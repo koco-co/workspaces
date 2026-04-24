@@ -1,6 +1,6 @@
 # Skill 执行前准备（通用片段）
 
-> 供 `bug-report` / `hotfix-case-gen` / `conflict-report` 等分析类 skill 在 SKILL.md 开头统一引用。
+> 供 `daily-task` 等分析类 skill 在 SKILL.md 开头统一引用。
 
 ## 项目选择
 
@@ -14,7 +14,7 @@
   2. project-b
   请输入编号（默认 1）：
   ```
-- 若 **无项目**，提示用户先执行 `/kata init` 初始化
+- 若 **无项目**，提示用户按 INSTALL.md 完成初始化，或运行 `/using-kata`
 
 选定的项目名称记为 `{{project}}`，后续所有路径均使用该变量。
 

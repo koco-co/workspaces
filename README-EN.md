@@ -26,10 +26,10 @@ From requirements to test cases, from bug analysis to UI automation — all-in-o
 ```
 PRD / Lanhu / historical cases ── /test-case-gen ─────> XMind (A) + Archive MD (B)
 Archive MD + URL ──────────────── /ui-autotest ────────> Self-healing regression → Reports / Notifications
-Existing XMind ────────────────── /xmind-editor ───────> Preview → Confirm → Write
-Zentao bug URL ────────────────── /hotfix-case-gen ────> Hotfix Archive MD
-Backend/frontend error logs ───── /bug-report ─────────> HTML bug report
-Git conflict snippet ──────────── /conflict-report ────> HTML merge-conflict report
+Existing XMind ────────────────── /case-format ────────> Preview → Confirm → Write
+Zentao bug URL ────────────────── /daily-task hotfix ──> Hotfix Archive MD
+Backend/frontend error logs ───── /daily-task bug ──────> HTML bug report
+Git conflict snippet ──────────── /daily-task conflict ─> HTML merge-conflict report
 ```
 
 </div>
@@ -46,7 +46,7 @@ Git conflict snippet ──────────── /conflict-report ─�
 - [Workflow Details](#workflow-details)
   - [Test Case Generation](#1-test-case-generation-test-case-gen)
   - [Hotfix / Bug / Conflict Analysis](#2-hotfix--bug--conflict-analysis)
-  - [XMind Editor](#3-xmind-editor-xmind-editor)
+  - [XMind / Format Conversion](#3-xmind--format-conversion-case-format)
   - [UI Automation](#4-ui-automation-ui-autotest)
 - [Plugin System](#plugin-system)
 - [Project Structure](#project-structure)
@@ -61,7 +61,7 @@ Git conflict snippet ──────────── /conflict-report ─�
 
 | Feature                         | Description                                                                                                    |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **11 Skills / 6 Core Workflows** | `kata` Router + `setup` + `create-project` + 6 primary execution workflows covering init, generation, analysis, editing, diagnostics, and regression |
+| **7 Skills / 5 Core Workflows** | `using-kata` + `create-project` + 5 primary execution workflows covering menus/init, generation, analysis, format conversion, diagnostics, and regression |
 | **15-Agent Architecture**        | Specialized agents declare model/tools in frontmatter and are dispatched by Skills based on task complexity; includes `pattern-analyzer-agent` / `script-fixer-agent` |
 | **Project-Scoped Workspace**    | All artifacts are written into `workspace/&lt;project&gt;/...`, keeping projects isolated                      |
 | **A/B Artifact Contract**       | XMind / intermediate artifacts use Contract A; Archive MD / display titles use Contract B                      |
@@ -81,9 +81,9 @@ Git conflict snippet ──────────── /conflict-report ─�
 
 kata uses a **Router + Skill + Agent + Plugin Hook** architecture:
 
-- **kata Router** — Entry routing layer; first-run, no-project, or `/kata init` requests are routed to `setup`
-- **11 Skills** — `kata` / `setup` / `create-project` / `test-case-gen` / `ui-autotest` / `xmind-editor` / `hotfix-case-gen` / `bug-report` / `conflict-report` / `knowledge-keeper` / `playwright-cli`
-- **6 primary user workflows** — `test-case-gen`, `ui-autotest`, `xmind-editor`, `hotfix-case-gen`, `bug-report`, `conflict-report` (`setup` + `create-project` are bootstrap workflows)
+- **kata Router** — Entry routing layer; first-run and project management requests are handled by the `using-kata` skill
+- **7 Skills** — `using-kata` / `create-project` / `test-case-gen` / `ui-autotest` / `case-format` / `daily-task` / `knowledge-keeper`
+- **5 primary user workflows** — `test-case-gen`, `ui-autotest`, `case-format`, `daily-task` (bug/conflict/hotfix), `knowledge-keeper` (`using-kata` + `create-project` are entry and bootstrap workflows)
 - **15 standalone agents** — Each agent declares its model/tools in frontmatter and is orchestrated by a Skill; includes Phase 3's `pattern-analyzer-agent`
 - **Cross-cutting capabilities** — CLI Runner factory, three-tier `.env`, multi-environment `kata-state` isolation, `plan.md` arbitration, `LOG_LEVEL` logging, project-level rules, read-only source repos, plugin hooks
 - **Project-scoped output** — artifacts are written to `workspace/<project>/`, including XMind, Archive MD, HTML reports, and Playwright + Allure assets
@@ -124,13 +124,11 @@ bunx playwright install                       # only needed for UI automation
 
 ### Initialize
 
-In Claude Code, start with:
+Follow the `INSTALL.md` guide in the repository root to complete environment setup, or in Claude Code start with:
 
 ```
-/kata init
+/using-kata
 ```
-
-`/setup` still works as a direct alias, but `/kata init` is the recommended unified entrypoint.
 
 A 6-step interactive wizard will guide you through:
 
@@ -149,10 +147,7 @@ The current user-facing trigger phrases are Chinese-first; the examples below ar
 
 ```bash
 # Show feature menu
-/kata
-
-# Initialize the workspace
-/kata init
+/using-kata
 
 # Generate test cases from PRD
 为 {{requirement_name}} 生成测试用例
@@ -262,9 +257,9 @@ The former `code-analysis` umbrella has been split along business boundaries int
 
 | Skill                                 | Input signal                                                 | Dispatched agent                                                    | Output                                             |
 | ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- | -------------------------------------------------- |
-| **`/hotfix-case-gen`**                | Zentao Bug URL (containing `bug-view-`) or raw Bug ID        | `hotfix-case-agent`                                                 | `workspace/<project>/issues/YYYYMM/hotfix_*.md`    |
-| **`/bug-report`**                     | Java stack traces / HTTP errors / frontend console errors    | `backend-bug-agent` (backend) / `frontend-bug-agent` (frontend)     | `workspace/<project>/reports/bugs/YYYYMMDD/*.html` |
-| **`/conflict-report`**                | Snippet containing `<<<<<<< HEAD` / `=======` / `>>>>>>>`    | `conflict-agent`                                                    | `workspace/<project>/reports/conflicts/YYYYMMDD/*.html` |
+| **`/daily-task hotfix`**              | Zentao Bug URL (containing `bug-view-`) or raw Bug ID        | `hotfix-case-agent`                                                 | `workspace/<project>/issues/YYYYMM/hotfix_*.md`    |
+| **`/daily-task bug`**                 | Java stack traces / HTTP errors / frontend console errors    | `backend-bug-agent` (backend) / `frontend-bug-agent` (frontend)     | `workspace/<project>/reports/bugs/YYYYMMDD/*.html` |
+| **`/daily-task conflict`**            | Snippet containing `<<<<<<< HEAD` / `=======` / `>>>>>>>`    | `conflict-agent`                                                    | `workspace/<project>/reports/conflicts/YYYYMMDD/*.html` |
 
 #### Two-Gate Policy
 
@@ -296,7 +291,7 @@ The former `code-analysis` umbrella has been split along business boundaries int
 
 ---
 
-### 3. XMind Editor (`/xmind-editor`)
+### 3. XMind / Format Conversion (`/case-format`)
 
 Perform local edits on existing XMind files without re-reading PRDs. All write operations now follow **preview-first**: `--dry-run` preview, user confirmation, then real write. Preference learning runs after the write is confirmed.
 
@@ -456,15 +451,12 @@ kata/
 │   │   ├── lib/                  # Shared helpers and types
 │   │   └── __tests__/            # Unit tests
 │   └── skills/
-│       ├── kata/              # Entry menu router
-│       ├── setup/                # 6-step initialization wizard
+│       ├── using-kata/           # Feature menu + project management entry
+│       ├── create-project/       # Project skeleton creation / repair
 │       ├── test-case-gen/        # Test case generation orchestrator
 │       │   └── references/       # Format specs & protocols
-│       ├── create-project/       # Project skeleton creation / repair
-│       ├── xmind-editor/         # Local XMind editing
-│       ├── hotfix-case-gen/      # Hotfix case generation (Zentao-driven)
-│       ├── bug-report/           # Bug report generation (backend/frontend auto-routing)
-│       ├── conflict-report/      # Merge-conflict analysis
+│       ├── case-format/          # XMind editing / format conversion / bidirectional sync
+│       ├── daily-task/           # Bug / conflict / hotfix three-mode skill
 │       ├── knowledge-keeper/     # Business knowledge base read/write
 │       ├── ui-autotest/          # Playwright UI automation orchestrator
 │       │   └── scripts/          # parse-cases / merge-specs / session-login

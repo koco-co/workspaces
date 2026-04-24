@@ -65,7 +65,7 @@ stdout 输出 StrategyResolution JSON。
 - 选项 2：继续主流程（降级为 S4 保守模式）
 - 选项 3：取消本次执行
 
-**选项 1**：主 agent 立即停止当前 workflow，引导用户重新输入 `/hotfix-case-gen <Bug URL>`
+**选项 1**：主 agent 立即停止当前 workflow，引导用户重新输入 `/daily-task hotfix <Bug URL>`
 **选项 2**：调 `case-strategy-resolver.ts resolve --profile ... --force-strategy S4`（CLI 已支持）把 resolution 覆盖为 S4 后继续
 **选项 3**：`state.ts clean` + 退出
 
