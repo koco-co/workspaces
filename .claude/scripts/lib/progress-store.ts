@@ -290,6 +290,8 @@ export function addTasks(
   }
 
   const tasks = [...session.tasks, ...inputs.map(makeTask)];
+  const cycle = detectCycle(tasks);
+  if (cycle) throw new Error(`cycle detected: ${cycle.join(" → ")}`);
   writeSession(project, { ...session, tasks, updated_at: nowIso() });
 }
 
@@ -366,6 +368,8 @@ export function updateTask(
   }
 
   const tasks = [...session.tasks.slice(0, idx), next, ...session.tasks.slice(idx + 1)];
+  const cycle = detectCycle(tasks);
+  if (cycle) throw new Error(`cycle detected: ${cycle.join(" → ")}`);
   writeSession(project, { ...session, tasks, updated_at: nowIso() });
 }
 
@@ -466,4 +470,68 @@ export function isExecutable(
   if (!task) throw new Error(`task not found: ${taskId}`);
   const blocked_by = computeBlockedBy(task, session.tasks);
   return { ok: blocked_by.length === 0, blocked_by };
+}
+
+// ── Cycle Detection ───────────────────────────────────────────────────────────
+
+function detectCycle(tasks: readonly Task[]): string[] | null {
+  const graph = new Map<string, readonly string[]>();
+  for (const t of tasks) graph.set(t.id, t.depends_on);
+
+  const visited = new Set<string>();
+  const stack = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(id: string): string[] | null {
+    if (stack.has(id)) {
+      const cycleStart = path.indexOf(id);
+      return path.slice(cycleStart).concat(id);
+    }
+    if (visited.has(id)) return null;
+    visited.add(id);
+    stack.add(id);
+    path.push(id);
+    for (const dep of graph.get(id) ?? []) {
+      const found = dfs(dep);
+      if (found) return found;
+    }
+    stack.delete(id);
+    path.pop();
+    return null;
+  }
+
+  for (const id of graph.keys()) {
+    const found = dfs(id);
+    if (found) return found;
+  }
+  return null;
+}
+
+// ── Rollup ────────────────────────────────────────────────────────────────────
+
+/**
+ * Roll up a parent task to `done` once all its children are in {done, skipped}.
+ * Throws if any child is still unfinished.
+ */
+export function rollupTask(
+  project: string,
+  sessionId: string,
+  parentId: string,
+): void {
+  const session = readSession(project, sessionId);
+  if (!session) throw new Error(`session not found: ${sessionId}`);
+  const parent = session.tasks.find((t) => t.id === parentId);
+  if (!parent) throw new Error(`task not found: ${parentId}`);
+
+  const children = session.tasks.filter((t) => t.parent === parentId);
+  const unfinished = children.filter(
+    (c) => c.status !== "done" && c.status !== "skipped",
+  );
+  if (unfinished.length > 0) {
+    throw new Error(
+      `rollup blocked: unfinished children of ${parentId}: ${unfinished.map((c) => c.id).join(",")}`,
+    );
+  }
+
+  updateTask(project, sessionId, parentId, { status: "done" });
 }

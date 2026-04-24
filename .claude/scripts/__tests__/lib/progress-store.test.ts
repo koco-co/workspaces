@@ -13,6 +13,7 @@ import {
   updateTask,
   removeTask,
   queryTasks,
+  rollupTask,
 } from "../../lib/progress-store.ts";
 import type { Session } from "../../lib/progress-types.ts";
 
@@ -291,5 +292,77 @@ describe("queryTasks visibility rules", () => {
     assert.match(byId.t1.blocked_by!.join(","), /t0/);
     assert.ok(byId.t5);
     assert.match(byId.t5.blocked_by!.join(","), /t6/);
+  });
+});
+
+describe("cycle detection", () => {
+  const project = "dataAssets";
+  it("rejects addTasks that introduces a cycle", () => {
+    const s = createSession({
+      project, workflow: "w", slug: "c1", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [
+      { id: "a", name: "a", kind: "node", order: 1, depends_on: ["b"] },
+    ]);
+    assert.throws(
+      () => addTasks(project, s.session_id, [
+        { id: "b", name: "b", kind: "node", order: 2, depends_on: ["a"] },
+      ]),
+      /cycle/i,
+    );
+  });
+
+  it("rejects updateTask --depends-on introducing cycle", () => {
+    const s = createSession({
+      project, workflow: "w", slug: "c2", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [
+      { id: "a", name: "a", kind: "node", order: 1 },
+      { id: "b", name: "b", kind: "node", order: 2, depends_on: ["a"] },
+    ]);
+    assert.throws(
+      () => updateTask(project, s.session_id, "a", { depends_on: ["b"] }),
+      /cycle/i,
+    );
+  });
+});
+
+describe("rollupTask", () => {
+  const project = "dataAssets";
+  it("sets parent to done when all children done/skipped", () => {
+    const s = createSession({
+      project, workflow: "w", slug: "r1", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [
+      { id: "p", name: "p", kind: "phase", order: 1 },
+      { id: "c1", name: "c1", kind: "case", order: 1, parent: "p" },
+      { id: "c2", name: "c2", kind: "case", order: 2, parent: "p" },
+    ]);
+    updateTask(project, s.session_id, "p", { status: "running" });
+    updateTask(project, s.session_id, "c1", { status: "done" });
+    updateTask(project, s.session_id, "c2", { status: "skipped" });
+    rollupTask(project, s.session_id, "p");
+    const cur = readSession(project, s.session_id)!;
+    assert.equal(cur.tasks.find((t) => t.id === "p")!.status, "done");
+  });
+
+  it("throws when any child unfinished", () => {
+    const s = createSession({
+      project, workflow: "w", slug: "r2", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [
+      { id: "p", name: "p", kind: "phase", order: 1 },
+      { id: "c1", name: "c1", kind: "case", order: 1, parent: "p" },
+    ]);
+    updateTask(project, s.session_id, "p", { status: "running" });
+    assert.throws(() => rollupTask(project, s.session_id, "p"), /unfinished/i);
   });
 });
