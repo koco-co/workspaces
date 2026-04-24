@@ -392,19 +392,36 @@ function extractSummary(body: string): string {
 // Section rendering
 // ============================================================================
 
-function renderSelfCheckTable(clarifications: Clarification[]): string {
-  // Aggregate by dimension keyword in `location` prefix (best-effort categorization).
-  const dims = [
-    { key: "字段定义", label: "字段定义" },
-    { key: "交互逻辑", label: "交互逻辑" },
-    { key: "导航路径", label: "导航路径" },
-    { key: "状态流转", label: "状态流转" },
-    { key: "权限控制", label: "权限控制" },
-    { key: "异常处理", label: "异常处理" },
-  ];
-  const counts = new Map<string, { total: number; clarified: number; autoDefaulted: number }>();
+const GLOBAL_DIMS = [
+  { key: "数据源", label: "数据源" },
+  { key: "历史数据", label: "历史数据" },
+  { key: "测试范围", label: "测试范围" },
+  { key: "PRD 合理性", label: "PRD 合理性" },
+];
+
+const FUNCTIONAL_DIMS = [
+  { key: "字段定义", label: "字段定义" },
+  { key: "交互逻辑", label: "交互逻辑" },
+  { key: "导航路径", label: "导航路径" },
+  { key: "状态流转", label: "状态流转" },
+  { key: "权限控制", label: "权限控制" },
+  { key: "异常处理", label: "异常处理" },
+];
+
+interface DimCount {
+  total: number;
+  clarified: number;
+  autoDefaulted: number;
+  pending: number;
+}
+
+function countByDimensions(
+  dims: Array<{ key: string; label: string }>,
+  clarifications: Clarification[],
+): Map<string, DimCount> {
+  const counts = new Map<string, DimCount>();
   for (const dim of dims) {
-    counts.set(dim.key, { total: 0, clarified: 0, autoDefaulted: 0 });
+    counts.set(dim.key, { total: 0, clarified: 0, autoDefaulted: 0, pending: 0 });
   }
   for (const c of clarifications) {
     for (const dim of dims) {
@@ -414,22 +431,41 @@ function renderSelfCheckTable(clarifications: Clarification[]): string {
         entry.total += 1;
         if (c.severity === "blocking_unknown" && c.user_answer) entry.clarified += 1;
         if (c.severity === "defaultable_unknown") entry.autoDefaulted += 1;
+        if (c.severity === "pending_for_pm") entry.pending += 1;
         break;
       }
     }
   }
+  return counts;
+}
 
+function renderDimTable(
+  dims: Array<{ key: string; label: string }>,
+  counts: Map<string, DimCount>,
+): string {
   const lines = [
-    "| 维度 | 命中条数 | 已澄清 | 自动默认 |",
-    "|---|---|---|---|",
+    "| 维度 | 命中条数 | 已澄清 | 自动默认 | 待定 |",
+    "|---|---|---|---|---|",
   ];
   for (const dim of dims) {
-    const entry = counts.get(dim.key) ?? { total: 0, clarified: 0, autoDefaulted: 0 };
-    lines.push(
-      `| ${dim.label} | ${entry.total} | ${entry.clarified} | ${entry.autoDefaulted} |`,
-    );
+    const c = counts.get(dim.key) ?? { total: 0, clarified: 0, autoDefaulted: 0, pending: 0 };
+    lines.push(`| ${dim.label} | ${c.total} | ${c.clarified} | ${c.autoDefaulted} | ${c.pending} |`);
   }
   return lines.join("\n");
+}
+
+function renderSelfCheckTable(clarifications: Clarification[]): string {
+  const globalCounts = countByDimensions(GLOBAL_DIMS, clarifications);
+  const funcCounts = countByDimensions(FUNCTIONAL_DIMS, clarifications);
+  return [
+    "### 全局层（4 维度）",
+    "",
+    renderDimTable(GLOBAL_DIMS, globalCounts),
+    "",
+    "### 功能层（6 维度）",
+    "",
+    renderDimTable(FUNCTIONAL_DIMS, funcCounts),
+  ].join("\n");
 }
 
 function renderClarificationsMd(clarifications: Clarification[]): string {
@@ -442,7 +478,9 @@ function renderClarificationsMd(clarifications: Clarification[]): string {
       ? `- **用户答案**：${c.user_answer.selected_option}（${c.user_answer.value}）\n- **答时**：${c.user_answer.answered_at}`
       : c.severity === "defaultable_unknown"
         ? `- **自动默认**：${c.default_policy ?? "采用 recommended_option"}`
-        : "- **状态**：待解答";
+        : c.severity === "pending_for_pm"
+          ? `- **状态**：待产品确认（见 §6）`
+          : "- **状态**：待解答";
     blocks.push(
       [
         `### ${c.id}（severity: ${c.severity}）`,
@@ -483,6 +521,36 @@ function renderKnowledgeSection(knowledge: KnowledgeDropped[]): string {
     .join("\n");
 }
 
+const PENDING_FENCE_OPEN = "<!-- pending:begin -->";
+const PENDING_FENCE_CLOSE = "<!-- pending:end -->";
+
+function extractDimensionKeyword(location: string): string {
+  for (const dim of [...GLOBAL_DIMS, ...FUNCTIONAL_DIMS]) {
+    if (location.includes(dim.key)) return dim.label;
+  }
+  return "未分类";
+}
+
+function renderPendingList(clarifications: Clarification[]): string {
+  const pending = clarifications.filter((c) => c.severity === "pending_for_pm");
+  const lines: string[] = [PENDING_FENCE_OPEN];
+  if (pending.length === 0) {
+    lines.push("");
+    lines.push("_暂无待产品确认项。_");
+    lines.push("");
+  } else {
+    for (const c of pending) {
+      const dim = extractDimensionKeyword(c.location);
+      const rec = c.recommended_option || "（未提供）";
+      lines.push(`- [ ] **[${dim}]** ${c.id}: ${c.question}`);
+      lines.push(`  - AI 推荐: ${rec}`);
+      lines.push(`  - 请产品打勾确认或补充说明。`);
+    }
+  }
+  lines.push(PENDING_FENCE_CLOSE);
+  return lines.join("\n");
+}
+
 function renderDownstreamHints(status: PlanStatus, clarifications: Clarification[]): string {
   if (status !== "ready") {
     return "_讨论未完成，下游 hints 将在 complete 时写入。_";
@@ -491,16 +559,43 @@ function renderDownstreamHints(status: PlanStatus, clarifications: Clarification
     (c) => c.severity === "blocking_unknown" && c.user_answer,
   ).length;
   const defaultCount = clarifications.filter((c) => c.severity === "defaultable_unknown").length;
-  return [
+  const pendingCount = clarifications.filter((c) => c.severity === "pending_for_pm").length;
+  const lines = [
     `- **transform**：本需求字段已在 discuss 阶段确认（${blockingCount} 条已澄清 + ${defaultCount} 条自动默认）。按 §3 / §4 直接落入 PRD，分别标注 🟢/🟡。不再生成 clarify_envelope。`,
     `- **analyze**：测试点必须覆盖 §3 全部 blocking_unknown 已澄清场景；§4 自动默认项不必单独出测试点。`,
     `- **write**：参考 §5 沉淀条目；Writer 若遇到 §3 未覆盖的 blocking_unknown，直接走 blocked_envelope 回到主 agent。`,
-  ].join("\n");
+  ];
+  if (pendingCount > 0) {
+    lines.push(
+      `- **⚠️ 存在 ${pendingCount} 条 pending_for_pm**：下游门禁（Phase C）会拦截，请先把 §6 打勾回写为 blocking_unknown + user_answer。`,
+    );
+  }
+  return lines.join("\n");
 }
 
 function renderPlan(fm: PlanFrontmatter, clarifications: Clarification[], summary: string): string {
   const frontmatter = renderFrontmatter(fm);
-  const summaryBlock = [SUMMARY_MARKER_OPEN, "", summary || "_TODO 主 agent 摘录_", "", SUMMARY_MARKER_CLOSE].join("\n");
+
+  const summaryBlock = [
+    SUMMARY_MARKER_OPEN,
+    "",
+    summary || [
+      "### 背景",
+      "_TODO 主 agent 摘录业务背景（为何要做这个需求）_",
+      "",
+      "### 痛点",
+      "_TODO 主 agent 摘录当前痛点（现状有什么问题）_",
+      "",
+      "### 目标",
+      "_TODO 主 agent 摘录目标（做完后达成什么）_",
+      "",
+      "### 成功标准",
+      "_TODO 主 agent 摘录可衡量的成功标准_",
+    ].join("\n"),
+    "",
+    SUMMARY_MARKER_CLOSE,
+  ].join("\n");
+
   const clarifyJson = JSON.stringify(clarifications, null, 2);
   const fenceBlock = [
     CLARIFY_FENCE_OPEN,
@@ -515,13 +610,13 @@ function renderPlan(fm: PlanFrontmatter, clarifications: Clarification[], summar
     `# 需求讨论 Plan：${fm.requirement_name}（#${fm.requirement_id}）`,
     "",
     "> 本文件由 test-case-gen 的 discuss 节点生成。",
-    "> 下游节点从本文件恢复上下文；frontmatter 关键字段（plan_version / status / resume_anchor / *_count / *_at）由 discuss CLI 维护，请勿手工编辑。",
+    "> 下游节点从本文件恢复上下文；frontmatter 关键字段（plan_version / status / resume_anchor / *_count / *_at / handoff_mode / repo_consent）由 discuss CLI 维护，请勿手工编辑。",
     "",
     "## 1. 需求摘要",
     "",
     summaryBlock,
     "",
-    "## 2. 6 维度自检结果",
+    "## 2. 10 维度自检结果",
     "",
     renderSelfCheckTable(clarifications),
     "",
@@ -539,7 +634,11 @@ function renderPlan(fm: PlanFrontmatter, clarifications: Clarification[], summar
     "",
     renderKnowledgeSection(fm.knowledge_dropped),
     "",
-    "## 6. 下游节点 hint",
+    "## 6. 待定清单（pending_for_pm）",
+    "",
+    renderPendingList(clarifications),
+    "",
+    "## 7. 下游节点 hint",
     "",
     renderDownstreamHints(fm.status, clarifications),
     "",
@@ -620,6 +719,9 @@ export function appendClarificationToPlan(
   ).length;
   fm.auto_defaulted_count = nextList.filter(
     (c) => c.severity === "defaultable_unknown",
+  ).length;
+  fm.pending_count = nextList.filter(
+    (c) => c.severity === "pending_for_pm",
   ).length;
 
   return { plan: renderPlan(fm, nextList, parsed.summary), isNew };
@@ -729,4 +831,6 @@ export const __internal = {
   CLARIFY_FENCE_CLOSE,
   SUMMARY_MARKER_OPEN,
   SUMMARY_MARKER_CLOSE,
+  PENDING_FENCE_OPEN,
+  PENDING_FENCE_CLOSE,
 };

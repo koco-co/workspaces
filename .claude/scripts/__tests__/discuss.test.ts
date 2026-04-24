@@ -415,3 +415,42 @@ describe("discuss set-strategy", () => {
     assert.match(stderr, /invalid strategy resolution JSON/);
   });
 });
+
+describe("discuss init — phase B template shape", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  it("renders §1 summary with 4 subsections", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /### 背景/);
+    assert.match(raw, /### 痛点/);
+    assert.match(raw, /### 目标/);
+    assert.match(raw, /### 成功标准/);
+  });
+
+  it("renders §2 self-check table with global and functional layers", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /### 全局层（4 维度）/);
+    assert.match(raw, /### 功能层（6 维度）/);
+    // 全局层维度
+    assert.match(raw, /\| 数据源 \|/);
+    assert.match(raw, /\| 历史数据 \|/);
+    assert.match(raw, /\| 测试范围 \|/);
+    assert.match(raw, /\| PRD 合理性 \|/);
+    // 功能层维度保留
+    assert.match(raw, /\| 字段定义 \|/);
+    assert.match(raw, /\| 异常处理 \|/);
+  });
+
+  it("renders §6 pending placeholder and §7 downstream hints", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /## 6\. 待定清单（pending_for_pm）/);
+    assert.match(raw, /<!-- pending:begin -->/);
+    assert.match(raw, /<!-- pending:end -->/);
+    assert.match(raw, /## 7\. 下游节点 hint/);
+  });
+});

@@ -89,21 +89,27 @@ describe("buildInitialPlan", () => {
     assert.match(plan, /# 需求讨论 Plan：质量项目检查（#15695）/);
   });
 
-  it("includes all 6 sections", () => {
+  it("includes all 7 sections", () => {
     const plan = buildInitialPlan(baseInput);
     assert.match(plan, /## 1\. 需求摘要/);
-    assert.match(plan, /## 2\. 6 维度自检结果/);
+    assert.match(plan, /## 2\. 10 维度自检结果/);
     assert.match(plan, /## 3\. 澄清记录/);
     assert.match(plan, /## 4\. 自动默认项汇总/);
     assert.match(plan, /## 5\. 沉淀的 knowledge/);
-    assert.match(plan, /## 6\. 下游节点 hint/);
+    assert.match(plan, /## 6\. 待定清单（pending_for_pm）/);
+    assert.match(plan, /## 7\. 下游节点 hint/);
   });
 
-  it("includes summary marker block with TODO placeholder", () => {
+  it("includes summary marker block with 4 subsection placeholders", () => {
     const plan = buildInitialPlan(baseInput);
     assert.ok(plan.includes(__internal.SUMMARY_MARKER_OPEN));
     assert.ok(plan.includes(__internal.SUMMARY_MARKER_CLOSE));
-    assert.ok(plan.includes("_TODO 主 agent 摘录_"));
+    assert.match(plan, /### 背景/);
+    assert.match(plan, /### 痛点/);
+    assert.match(plan, /### 目标/);
+    assert.match(plan, /### 成功标准/);
+    assert.match(plan, /_TODO 主 agent 摘录业务背景/);
+    assert.match(plan, /_TODO 主 agent 摘录目标/);
   });
 
   it("includes empty clarifications JSON fence", () => {
@@ -123,7 +129,7 @@ describe("parsePlan", () => {
     const plan = buildInitialPlan(baseInput);
     const parsed = parsePlan(plan);
     assert.equal(parsed.clarifications.length, 0);
-    assert.equal(parsed.summary, "_TODO 主 agent 摘录_");
+    assert.match(parsed.summary, /### 背景[\s\S]+### 成功标准/);
   });
 
   it("parses plan with single blocking clarification", () => {
