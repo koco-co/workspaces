@@ -167,6 +167,8 @@ function runRead(opts: { project: string; prd: string }): void {
     clarifications: parsed.clarifications,
     schema_valid: validation.valid,
     schema_errors: validation.errors,
+    pending_count: parsed.frontmatter.pending_count,
+    handoff_mode: parsed.frontmatter.handoff_mode,
   };
   process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
   if (!validation.valid) {
@@ -214,6 +216,7 @@ function runAppendClarify(opts: { project: string; prd: string; content: string 
         action: isNew ? "appended" : "replaced",
         clarify_count: parsed.frontmatter.clarify_count,
         auto_defaulted_count: parsed.frontmatter.auto_defaulted_count,
+        pending_count: parsed.frontmatter.pending_count,
         discussion_rounds: parsed.frontmatter.discussion_rounds,
       },
       null,

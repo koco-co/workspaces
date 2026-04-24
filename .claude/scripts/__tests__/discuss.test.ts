@@ -226,6 +226,38 @@ describe("discuss append-clarify", () => {
     assert.equal(code, 1);
     assert.match(stderr, /must include/);
   });
+
+  it("appends pending_for_pm, updates pending_count and renders §6 checkbox", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const payload = {
+      id: "Q3",
+      severity: "pending_for_pm",
+      question: "是否支持 Kafka 数据源？",
+      location: "全局层 → 数据源",
+      recommended_option: "否（knowledge/overview.md 默认 spark thrift 2.x）",
+      options: [],
+    };
+    const { stdout, code } = runCli([
+      "append-clarify",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--content",
+      JSON.stringify(payload),
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.action, "appended");
+    assert.equal(data.pending_count, 1);
+    assert.equal(data.clarify_count, 0);
+    assert.equal(data.auto_defaulted_count, 0);
+
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /pending_count: 1/);
+    assert.match(raw, /- \[ \] \*\*\[数据源\]\*\* Q3: 是否支持 Kafka/);
+    assert.match(raw, /AI 推荐: 否（knowledge\/overview\.md/);
+  });
 });
 
 describe("discuss complete", () => {
@@ -343,6 +375,14 @@ describe("discuss read — phase B schema", () => {
     assert.equal(data.frontmatter.pending_count, 0);
     assert.equal(data.frontmatter.handoff_mode, null);
     assert.equal(data.frontmatter.repo_consent, null);
+  });
+
+  it("exposes pending_count and handoff_mode as top-level convenience fields", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout } = runCli(["read", "--project", PROJECT, "--prd", PRD_ABS]);
+    const data = JSON.parse(stdout);
+    assert.equal(data.pending_count, 0);
+    assert.equal(data.handoff_mode, null);
   });
 });
 
