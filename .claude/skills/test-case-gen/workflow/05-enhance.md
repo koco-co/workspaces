@@ -21,8 +21,9 @@ kata-cli prd-frontmatter normalize --file {{prd_path}}
 
 - 图片语义化描述
 - 页面要点提取
-- 需求歧义标注
 - 健康度预检
+
+> **Phase C 移除**：需求歧义标注职责已全部迁往节点 3 discuss（10 维度 / 模糊扫描 / pending_for_pm）。enhance 节点不再产出 `[待澄清]` 标记或 blocking 提示；若发现 PRD 有新的疑问点，应回退到 discuss 的 `append-clarify`。
 
 ### 5.3 更新状态
 
@@ -36,7 +37,7 @@ kata-cli progress task-update --project {{project}} --session "$SESSION_ID" --ta
 
 默认行为：展示增强摘要后直接进入 analyze。
 
-仅当 `health_warnings` 中出现 `blocking_unknown` / `invalid_input`，或用户明确要求停下来查看增强结果时，才使用 AskUserQuestion：
+仅当 `health_warnings` 中出现 `invalid_input`（PRD 本身格式破损），或用户明确要求停下来查看增强结果时，才使用 AskUserQuestion：
 
 - 问题：`增强完成：识别 {{n}} 张图片，{{m}} 个页面要点。健康度告警：{{health_warnings}}。如何处理？`
 - 选项 1：继续分析（推荐）
