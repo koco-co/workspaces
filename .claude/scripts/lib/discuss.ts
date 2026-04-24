@@ -742,6 +742,7 @@ export function completePlanText(
   raw: string,
   now: Date,
   knowledgeSummary?: KnowledgeDropped[],
+  handoffMode?: HandoffMode | null,
 ): { plan: string; remainingBlocking: number } {
   const parsed = parsePlan(raw);
   const remaining = parsed.clarifications.filter(
@@ -756,6 +757,9 @@ export function completePlanText(
   fm.updated_at = toIsoOffset(now);
   if (knowledgeSummary !== undefined) {
     fm.knowledge_dropped = knowledgeSummary;
+  }
+  if (handoffMode !== undefined) {
+    fm.handoff_mode = handoffMode;
   }
 
   return {

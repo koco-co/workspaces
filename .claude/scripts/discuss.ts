@@ -21,6 +21,7 @@ import {
   buildInitialPlan,
   Clarification,
   completePlanText,
+  HandoffMode,
   KnowledgeDropped,
   parsePlan,
   setStrategyInPlan,
@@ -233,10 +234,19 @@ function runComplete(opts: {
   project: string;
   prd: string;
   knowledgeSummary?: string;
+  handoffMode?: string;
 }): void {
   const { planAbs } = resolvePlanPath(opts.project, opts.prd);
   if (!existsSync(planAbs)) {
     fail(`Plan not found: ${planAbs}`);
+  }
+
+  let handoff: HandoffMode | null | undefined;
+  if (opts.handoffMode !== undefined) {
+    if (opts.handoffMode !== "current" && opts.handoffMode !== "new") {
+      fail(`--handoff-mode must be 'current' or 'new', got: ${opts.handoffMode}`);
+    }
+    handoff = opts.handoffMode as HandoffMode;
   }
 
   let knowledge: KnowledgeDropped[] | undefined;
@@ -254,7 +264,7 @@ function runComplete(opts: {
 
   const raw = readFileSync(planAbs, "utf8");
   const now = new Date();
-  const { plan: next, remainingBlocking } = completePlanText(raw, now, knowledge);
+  const { plan: next, remainingBlocking } = completePlanText(raw, now, knowledge, handoff);
 
   if (remainingBlocking > 0) {
     fail(
@@ -272,6 +282,8 @@ function runComplete(opts: {
         resume_anchor: parsed.frontmatter.resume_anchor,
         blocking_remaining: 0,
         knowledge_count: parsed.frontmatter.knowledge_dropped.length,
+        handoff_mode: parsed.frontmatter.handoff_mode,
+        pending_count: parsed.frontmatter.pending_count,
       },
       null,
       2,
@@ -393,16 +405,22 @@ export const program = createCli({
           flag: "--knowledge-summary <json>",
           description: "已沉淀的 knowledge 列表 JSON",
         },
+        {
+          flag: "--handoff-mode <mode>",
+          description: "交接模式：current（同会话继续）| new（新会话）",
+        },
       ],
       action: (opts: {
         project: string;
         prd: string;
         knowledgeSummary?: string;
+        handoffMode?: string;
       }) =>
         runComplete({
           project: opts.project,
           prd: opts.prd,
           knowledgeSummary: opts.knowledgeSummary,
+          handoffMode: opts.handoffMode,
         }),
     },
     {

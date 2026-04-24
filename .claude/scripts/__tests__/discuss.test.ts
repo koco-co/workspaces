@@ -456,6 +456,101 @@ describe("discuss set-strategy", () => {
   });
 });
 
+describe("discuss complete — handoff mode", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  it("stores handoff_mode=current in frontmatter", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout, code } = runCli([
+      "complete",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--handoff-mode",
+      "current",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.status, "ready");
+    assert.equal(data.handoff_mode, "current");
+    const raw = readFileSync(PLAN_ABS, "utf8");
+    assert.match(raw, /handoff_mode: current/);
+  });
+
+  it("stores handoff_mode=new", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout } = runCli([
+      "complete",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--handoff-mode",
+      "new",
+    ]);
+    const data = JSON.parse(stdout);
+    assert.equal(data.handoff_mode, "new");
+  });
+
+  it("rejects invalid --handoff-mode value", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { code, stderr } = runCli([
+      "complete",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--handoff-mode",
+      "bogus",
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /handoff-mode must be/);
+  });
+
+  it("complete without --handoff-mode keeps handoff_mode=null", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout } = runCli(["complete", "--project", PROJECT, "--prd", PRD_ABS]);
+    const data = JSON.parse(stdout);
+    assert.equal(data.handoff_mode, null);
+  });
+
+  it("allows completing with pending_for_pm entries (does not block)", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    runCli([
+      "append-clarify",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--content",
+      JSON.stringify({
+        id: "Q1",
+        severity: "pending_for_pm",
+        question: "Kafka?",
+        location: "全局层 → 数据源",
+        recommended_option: "否",
+        options: [],
+      }),
+    ]);
+    const { code, stdout } = runCli([
+      "complete",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--handoff-mode",
+      "current",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.status, "ready");
+    assert.equal(data.blocking_remaining, 0);
+  });
+});
+
 describe("discuss init — phase B template shape", () => {
   before(() => resetFixture());
   after(() => rmSync(TMP, { recursive: true, force: true }));
