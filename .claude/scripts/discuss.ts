@@ -422,6 +422,72 @@ function runSetRepoConsent(opts: {
 }
 
 // ============================================================================
+// validate
+// ============================================================================
+
+function runValidate(opts: {
+  project: string;
+  prd: string;
+  requireZeroBlocking: boolean;
+  requireZeroPending: boolean;
+}): void {
+  const { planAbs } = resolvePlanPath(opts.project, opts.prd);
+  if (!existsSync(planAbs)) {
+    fail(`Plan not found: ${planAbs}`);
+  }
+  const raw = readFileSync(planAbs, "utf8");
+  const parsed = parsePlan(raw);
+  const validation = validatePlanSchema(parsed.frontmatter);
+
+  const blockingUnanswered = parsed.clarifications.filter(
+    (c) => c.severity === "blocking_unknown" && !c.user_answer,
+  ).length;
+  const pendingCount = parsed.frontmatter.pending_count ?? 0;
+
+  const reasons: string[] = [];
+  if (!validation.valid) {
+    for (const e of validation.errors) reasons.push(`schema: ${e}`);
+  }
+  if (opts.requireZeroBlocking && blockingUnanswered > 0) {
+    reasons.push(`blocking_unanswered=${blockingUnanswered}`);
+  }
+  if (opts.requireZeroPending && pendingCount > 0) {
+    reasons.push(`pending_count=${pendingCount}`);
+  }
+
+  const ok = reasons.length === 0;
+  const payload = {
+    ok,
+    plan_path: planAbs,
+    status: parsed.frontmatter.status,
+    blocking_unanswered: blockingUnanswered,
+    pending_count: pendingCount,
+    handoff_mode: parsed.frontmatter.handoff_mode,
+    schema_valid: validation.valid,
+    reasons,
+  };
+  process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
+
+  if (ok) {
+    return;
+  }
+
+  // Exit code precedence: schema error (1) > blocking (2) > pending (3)
+  if (!validation.valid) {
+    info(`validate failed: ${reasons.join("; ")}`);
+    process.exit(1);
+  }
+  if (opts.requireZeroBlocking && blockingUnanswered > 0) {
+    info(`validate failed: blocking_unanswered=${blockingUnanswered}`);
+    process.exit(2);
+  }
+  if (opts.requireZeroPending && pendingCount > 0) {
+    info(`validate failed: pending_count=${pendingCount}`);
+    process.exit(3);
+  }
+}
+
+// ============================================================================
 // CLI wiring
 // ============================================================================
 
@@ -536,6 +602,30 @@ export const program = createCli({
         content?: string;
         clear: boolean;
       }) => runSetRepoConsent(opts),
+    },
+    {
+      name: "validate",
+      description: "校验 plan.md 状态，可作为下游节点门禁",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+        {
+          flag: "--require-zero-blocking",
+          description: "未答 blocking_unknown > 0 则退出码 2",
+          defaultValue: false,
+        },
+        {
+          flag: "--require-zero-pending",
+          description: "pending_count > 0 则退出码 3",
+          defaultValue: false,
+        },
+      ],
+      action: (opts: {
+        project: string;
+        prd: string;
+        requireZeroBlocking: boolean;
+        requireZeroPending: boolean;
+      }) => runValidate(opts),
     },
   ],
 });

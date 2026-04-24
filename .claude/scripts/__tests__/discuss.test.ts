@@ -802,3 +802,133 @@ describe("discuss set-repo-consent", () => {
     assert.equal(data.frontmatter.repo_consent.granted_at, "2026-04-24T10:00:00+08:00");
   });
 });
+
+describe("discuss validate", () => {
+  before(() => resetFixture());
+  after(() => rmSync(TMP, { recursive: true, force: true }));
+  beforeEach(() => resetFixture());
+
+  it("passes when plan has no clarifications", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    const { stdout, code } = runCli([
+      "validate",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--require-zero-blocking",
+    ]);
+    assert.equal(code, 0);
+    const data = JSON.parse(stdout);
+    assert.equal(data.ok, true);
+    assert.equal(data.blocking_unanswered, 0);
+    assert.equal(data.pending_count, 0);
+  });
+
+  it("fails exit=2 when blocking unanswered remains", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    runCli([
+      "append-clarify",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--content",
+      JSON.stringify({
+        id: "Q1",
+        severity: "blocking_unknown",
+        question: "?",
+        location: "字段定义 → x",
+        recommended_option: "A",
+        options: [{ id: "A", description: "x" }],
+      }),
+    ]);
+    const { code, stderr, stdout } = runCli([
+      "validate",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--require-zero-blocking",
+    ]);
+    assert.equal(code, 2);
+    assert.match(stderr, /blocking_unanswered=1/);
+    const data = JSON.parse(stdout);
+    assert.equal(data.ok, false);
+    assert.equal(data.blocking_unanswered, 1);
+  });
+
+  it("passes exit=0 with pending when --require-zero-pending NOT set", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    runCli([
+      "append-clarify",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--content",
+      JSON.stringify({
+        id: "Q2",
+        severity: "pending_for_pm",
+        question: "Kafka?",
+        location: "全局层 → 数据源",
+        recommended_option: "否",
+        options: [],
+      }),
+    ]);
+    const { code, stdout } = runCli([
+      "validate",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--require-zero-blocking",
+    ]);
+    assert.equal(code, 0);
+    assert.equal(JSON.parse(stdout).pending_count, 1);
+  });
+
+  it("fails exit=3 when --require-zero-pending and pending_count > 0", () => {
+    runCli(["init", "--project", PROJECT, "--prd", PRD_ABS]);
+    runCli([
+      "append-clarify",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--content",
+      JSON.stringify({
+        id: "Q3",
+        severity: "pending_for_pm",
+        question: "Kafka?",
+        location: "全局层 → 数据源",
+        recommended_option: "否",
+        options: [],
+      }),
+    ]);
+    const { code, stderr } = runCli([
+      "validate",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--require-zero-blocking",
+      "--require-zero-pending",
+    ]);
+    assert.equal(code, 3);
+    assert.match(stderr, /pending_count=1/);
+  });
+
+  it("fails exit=1 when plan not found", () => {
+    const { code, stderr } = runCli([
+      "validate",
+      "--project",
+      PROJECT,
+      "--prd",
+      PRD_ABS,
+      "--require-zero-blocking",
+    ]);
+    assert.equal(code, 1);
+    assert.match(stderr, /Plan not found/);
+  });
+});
