@@ -8,6 +8,7 @@ import {
   setStatus,
   setSection,
   addSection,
+  addPending,
 } from "../lib/enhanced-doc-store.ts";
 import { repoRoot } from "../lib/paths.ts";
 
@@ -110,3 +111,76 @@ describe("enhanced-doc-store: set-section", () => {
     expect(sec?.body).toContain("字段");
   });
 });
+
+describe("enhanced-doc-store: add-pending", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("addPending increments q_counter and returns q id", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const sectionAnchor = doc.overview[0].anchor;
+    const qid = addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, {
+      locationAnchor: sectionAnchor,
+      locationLabel: "§1.1 背景 → 范围",
+      question: "是否支持 Kafka？",
+      recommended: "否",
+      expected: "仅 Spark Thrift 2.x",
+      severity: "pending_for_pm",
+    });
+    expect(qid).toBe("q1");
+    const doc2 = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(doc2.frontmatter.q_counter).toBe(1);
+    expect(doc2.frontmatter.pending_count).toBe(1);
+    expect(doc2.pending).toHaveLength(1);
+    expect(doc2.pending[0].id).toBe("q1");
+    expect(doc2.pending[0].expected).toBe("仅 Spark Thrift 2.x");
+    expect(doc2.pending[0].severity).toBe("pending_for_pm");
+  });
+
+  test("addPending second call yields q2 (monotonic)", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const a1 = addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
+    const a2 = addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
+    expect(a1).toBe("q1");
+    expect(a2).toBe("q2");
+  });
+
+  test("addPending during status=analyzing auto-retreats to discussing with reentry_from", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    setStatus(TEST_PROJECT, TEST_YM, TEST_SLUG, "analyzing");
+    addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
+    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(doc.frontmatter.status).toBe("discussing");
+    expect(doc.frontmatter.reentry_from).toBe("analyzing");
+  });
+
+  test("addPending during status=writing records reentry_from=writing", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    setStatus(TEST_PROJECT, TEST_YM, TEST_SLUG, "writing");
+    addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
+    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(doc.frontmatter.reentry_from).toBe("writing");
+  });
+
+  test("addPending on invalid location anchor throws", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(() =>
+      addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, {
+        ...sampleQ(),
+        locationAnchor: "s-9-9-dead",
+      }),
+    ).toThrow(/location anchor not found/i);
+  });
+});
+
+function sampleQ() {
+  return {
+    locationAnchor: "s-1",
+    locationLabel: "§1 概述",
+    question: "q?",
+    recommended: "r",
+    expected: "e",
+    severity: "blocking_unknown" as const,
+  };
+}

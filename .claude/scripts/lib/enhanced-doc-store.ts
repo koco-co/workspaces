@@ -2,13 +2,15 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 import matter from "gray-matter";
 import { prdDir, enhancedMd } from "./paths.ts";
-import { generateSectionAnchor } from "./enhanced-doc-anchors.ts";
+import { generateSectionAnchor, generateQAnchor, isValidSectionAnchor } from "./enhanced-doc-anchors.ts";
 import type {
   EnhancedDoc,
   EnhancedFrontmatter,
   EnhancedStatus,
   SectionContent,
   PendingItem,
+  PendingSeverity,
+  PendingStatus,
 } from "./enhanced-doc-types.ts";
 
 // ---- Block markers ----
@@ -18,6 +20,8 @@ const FUNCTIONAL_BEGIN = "<!-- functional-begin -->";
 const FUNCTIONAL_END = "<!-- functional-end -->";
 const IMAGES_BEGIN = "<!-- images-summary-begin -->";
 const IMAGES_END = "<!-- images-summary-end -->";
+const PENDING_BEGIN = "<!-- pending-begin -->";
+const PENDING_END = "<!-- pending-end -->";
 
 function extractBlock(body: string, begin: string, end: string): string {
   const i = body.indexOf(begin);
@@ -181,7 +185,59 @@ function parseImagesSummary(body: string): string {
   return extractBlock(body, IMAGES_BEGIN, IMAGES_END).trim();
 }
 
-function parsePending(_body: string): PendingItem[] { return []; }
+function renderQBlock(item: PendingItem): string {
+  return `
+### ${item.id.toUpperCase()} <a id="${item.id}"></a>
+
+<!-- severity: ${item.severity} -->
+
+| 字段 | 值 |
+|---|---|
+| **位置** | [${item.location_label}](#${item.location_anchor}) |
+| **问题** | ${item.question} |
+| **状态** | ${item.status} |
+| **推荐** | ${item.recommended} |
+| **预期** | ${item.expected} |
+`.trimEnd();
+}
+
+function matchCell(table: string, label: string, innerExtract?: RegExp): string | null {
+  const line = table.match(new RegExp(`\\*\\*${label}\\*\\*\\s*\\|\\s*(.+)$`, "m"));
+  if (!line) return null;
+  const raw = line[1].trim().replace(/\s*\|$/, "").trim();
+  if (innerExtract) {
+    const inner = raw.match(innerExtract);
+    return inner ? inner[1] : null;
+  }
+  return raw;
+}
+
+function parsePending(body: string): PendingItem[] {
+  const block = extractBlock(body, PENDING_BEGIN, PENDING_END);
+  const items: PendingItem[] = [];
+  // Match: ### Q1 <a id="q1"></a>...(until next ### or end)
+  //   OR: ### <del>Q1</del> <a id="q1"></a>...
+  const re = /^### (Q\d+|<del>Q\d+<\/del>) <a id="(q\d+)"><\/a>([\s\S]*?)(?=^### |$(?![\r\n]))/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(block)) !== null) {
+    const resolved = m[1].startsWith("<del>");
+    const tableText = m[3];
+    const sevMatch = tableText.match(/<!-- severity: (\w+) -->/);
+    items.push({
+      id: m[2],
+      location_anchor: matchCell(tableText, "位置", /#([^)]+)\)/) ?? "",
+      location_label: matchCell(tableText, "位置", /\[([^\]]+)\]/) ?? "",
+      question: matchCell(tableText, "问题") ?? "",
+      status: (matchCell(tableText, "状态") ?? "待确认") as PendingStatus,
+      recommended: matchCell(tableText, "推荐") ?? "",
+      expected: matchCell(tableText, "预期") ?? "",
+      answer: resolved ? matchCell(tableText, "回答") : null,
+      severity: (sevMatch?.[1] ?? "blocking_unknown") as PendingSeverity,
+      resolved_at: resolved ? (matchCell(tableText, "已解决") ?? null) : null,
+    });
+  }
+  return items;
+}
 
 // ---- Section mutation exports ----
 
@@ -244,4 +300,66 @@ export function addSection(
   const fm = { ...(parsed.data as EnhancedFrontmatter), updated_at: new Date().toISOString() };
   writeFileSync(docPath, matter.stringify(newBody, fm), "utf8");
   return anchor;
+}
+
+export interface AddPendingOpts {
+  locationAnchor: string;
+  locationLabel: string;
+  question: string;
+  recommended: string;
+  expected: string;
+  severity: PendingSeverity;
+}
+
+export function addPending(
+  project: string,
+  yyyymm: string,
+  slug: string,
+  opts: AddPendingOpts,
+): string {
+  if (!isValidSectionAnchor(opts.locationAnchor)) {
+    throw new Error(`invalid location anchor format: ${opts.locationAnchor}`);
+  }
+  const docPath = enhancedMd(project, yyyymm, slug);
+  const raw = readFileSync(docPath, "utf8");
+  const parsed = matter(raw);
+  const body = parsed.content;
+  if (!body.includes(`<a id="${opts.locationAnchor}"></a>`)) {
+    throw new Error(`location anchor not found in doc: ${opts.locationAnchor}`);
+  }
+  const fm = { ...(parsed.data as EnhancedFrontmatter) };
+  const newCounter = fm.q_counter + 1;
+  const qid = generateQAnchor(newCounter);
+  const item: PendingItem = {
+    id: qid,
+    location_anchor: opts.locationAnchor,
+    location_label: opts.locationLabel,
+    question: opts.question,
+    status: "待确认",
+    recommended: opts.recommended,
+    expected: opts.expected,
+    answer: null,
+    severity: opts.severity,
+    resolved_at: null,
+  };
+
+  let newBody = body;
+  // 1) inline footnote [^qN] at sub-section heading (only for s-level-index-uuid format)
+  const subAnchor = /^s-\d+-\d+-[0-9a-f]{4}$/.test(opts.locationAnchor);
+  if (subAnchor) {
+    const headingRegex = new RegExp(`(^### .+? <a id="${opts.locationAnchor}"><\\/a>\\s*$)`, "m");
+    newBody = newBody.replace(headingRegex, (_, h) => `${h}\n\n[^${qid}]`);
+  }
+  // 2) append Q block before <!-- pending-end -->
+  newBody = newBody.replace(PENDING_END, `${renderQBlock(item)}\n\n${PENDING_END}`);
+  // 3) frontmatter updates
+  fm.q_counter = newCounter;
+  fm.pending_count += 1;
+  fm.updated_at = new Date().toISOString();
+  if (fm.status === "analyzing" || fm.status === "writing") {
+    fm.reentry_from = fm.status;
+    fm.status = "discussing";
+  }
+  writeFileSync(docPath, matter.stringify(newBody, fm), "utf8");
+  return qid;
 }
