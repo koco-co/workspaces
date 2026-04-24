@@ -1,4 +1,4 @@
-# test-case-gen · reverse-sync workflow（XMind → Archive MD 反向同步）
+# case-format / reverse-sync — XMind ↔ Archive MD 反向同步工作流
 
 > 由 SKILL.md 路由后加载。触发：用户在 XMind 软件中手动修改了用例，需要同步回 Archive MD。
 > 触发词：同步 xmind / 同步 XMind 文件 / 反向同步。

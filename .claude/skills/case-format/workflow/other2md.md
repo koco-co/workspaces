@@ -1,4 +1,4 @@
-# test-case-gen · standardize workflow（XMind/CSV → 标准化 Archive MD）
+# case-format · other2md workflow（XMind/CSV → 标准化 Archive MD）
 
 > 由 SKILL.md 路由后加载。触发：输入文件扩展名为 `.xmind` 或 `.csv`，或含「标准化归档 / 归档用例 / 转化用例」触发词。
 > 此流程不走 10 节点主流程，独立 4 步完成。
