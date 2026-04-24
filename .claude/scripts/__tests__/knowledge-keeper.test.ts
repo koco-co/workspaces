@@ -345,6 +345,7 @@ describe("write --type overview", () => {
       "--type", "overview",
       "--content", JSON.stringify({ section: "产品定位", body: "企业级数据资产平台", mode: "replace" }),
       "--confidence", "high",
+      "--force",
     ]);
     assert.equal(code, 0);
     const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
@@ -453,6 +454,7 @@ updated: 2026-04-15
         mode: "patch",
       }),
       "--confirmed",
+      "--force",
     ]);
     assert.equal(code, 0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
