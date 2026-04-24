@@ -6,6 +6,8 @@ import {
   readDoc,
   writeFrontmatter,
   setStatus,
+  setSection,
+  addSection,
 } from "../lib/enhanced-doc-store.ts";
 import { repoRoot } from "../lib/paths.ts";
 
@@ -70,5 +72,41 @@ describe("enhanced-doc-store: frontmatter", () => {
 
   test("readDoc on non-existent file throws", () => {
     expect(() => readDoc(TEST_PROJECT, TEST_YM, "nonexistent")).toThrow();
+  });
+});
+
+describe("enhanced-doc-store: set-section", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("setSection replaces content by anchor, preserves anchor", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const anchor11 = doc.overview[0].anchor;
+    setSection(TEST_PROJECT, TEST_YM, TEST_SLUG, anchor11, "业务侧新需求说明……");
+    const doc2 = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const sec = doc2.overview.find(s => s.anchor === anchor11);
+    expect(sec?.body.trim()).toBe("业务侧新需求说明……");
+    expect(sec?.anchor).toBe(anchor11);
+  });
+
+  test("setSection on unknown anchor throws", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(() =>
+      setSection(TEST_PROJECT, TEST_YM, TEST_SLUG, "s-9-9-dead", "..."),
+    ).toThrow(/anchor not found/i);
+  });
+
+  test("addSection creates new sub-section under §2 with fresh anchor", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const anchor = addSection(
+      TEST_PROJECT, TEST_YM, TEST_SLUG,
+      { parentLevel: 2, title: "新功能块", body: "字段 ..." },
+    );
+    expect(anchor).toMatch(/^s-2-\d+-[0-9a-f]{4}$/);
+    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const sec = doc.functional.find(s => s.anchor === anchor);
+    expect(sec?.title).toBe("新功能块");
+    expect(sec?.body).toContain("字段");
   });
 });

@@ -11,6 +11,32 @@ import type {
   PendingItem,
 } from "./enhanced-doc-types.ts";
 
+// ---- Block markers ----
+const OVERVIEW_BEGIN = "<!-- overview-begin -->";
+const OVERVIEW_END = "<!-- overview-end -->";
+const FUNCTIONAL_BEGIN = "<!-- functional-begin -->";
+const FUNCTIONAL_END = "<!-- functional-end -->";
+const IMAGES_BEGIN = "<!-- images-summary-begin -->";
+const IMAGES_END = "<!-- images-summary-end -->";
+
+function extractBlock(body: string, begin: string, end: string): string {
+  const i = body.indexOf(begin);
+  const j = body.indexOf(end);
+  if (i < 0 || j < 0) return "";
+  return body.slice(i + begin.length, j);
+}
+
+function parseSections(block: string): SectionContent[] {
+  const sections: SectionContent[] = [];
+  // Anchor form: s-{level}-{index}-{4hex}
+  const re = /^### (.+?) <a id="(s-\d+-\d+-[0-9a-f]{4})"><\/a>\s*$([\s\S]*?)(?=^### |$(?![\r\n]))/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(block)) !== null) {
+    sections.push({ anchor: m[2], title: m[1].trim(), body: m[3].trim() });
+  }
+  return sections;
+}
+
 const SKELETON_BODY = (slug: string) => `
 # ${slug}
 
@@ -142,8 +168,80 @@ export function setStatus(
   writeFrontmatter(project, yyyymm, slug, { status });
 }
 
-// ---- Placeholder parsers (filled in Tasks 5-10) ----
-function parseOverview(_body: string): SectionContent[] { return []; }
-function parseFunctional(_body: string): SectionContent[] { return []; }
-function parseImagesSummary(_body: string): string { return ""; }
+// ---- Section parsers ----
+function parseOverview(body: string): SectionContent[] {
+  return parseSections(extractBlock(body, OVERVIEW_BEGIN, OVERVIEW_END));
+}
+
+function parseFunctional(body: string): SectionContent[] {
+  return parseSections(extractBlock(body, FUNCTIONAL_BEGIN, FUNCTIONAL_END));
+}
+
+function parseImagesSummary(body: string): string {
+  return extractBlock(body, IMAGES_BEGIN, IMAGES_END).trim();
+}
+
 function parsePending(_body: string): PendingItem[] { return []; }
+
+// ---- Section mutation exports ----
+
+export function setSection(
+  project: string,
+  yyyymm: string,
+  slug: string,
+  anchor: string,
+  content: string,
+): void {
+  const docPath = enhancedMd(project, yyyymm, slug);
+  const raw = readFileSync(docPath, "utf8");
+  const parsed = matter(raw);
+  const body = parsed.content;
+  const headingRegex = new RegExp(`^### .+? <a id="${anchor}"><\\/a>\\s*$`, "m");
+  const match = headingRegex.exec(body);
+  if (!match) throw new Error(`anchor not found: ${anchor}`);
+
+  const headingEndIdx = match.index + match[0].length;
+  const rest = body.slice(headingEndIdx);
+
+  // End of this section: next `\n### ` OR next `\n<!-- {block}-end -->`
+  const nextHeadingOffset = rest.search(/\n### /);
+  const nextBlockEndOffset = rest.search(/\n<!--\s*\w[\w-]*-end\s*-->/);
+  let endOffset = rest.length;
+  for (const c of [nextHeadingOffset, nextBlockEndOffset]) {
+    if (c >= 0 && c < endOffset) endOffset = c;
+  }
+
+  const before = body.slice(0, headingEndIdx);
+  const after = body.slice(headingEndIdx + endOffset);
+  const newBody = `${before}\n\n${content.trim()}\n${after}`;
+  const fm = { ...(parsed.data as EnhancedFrontmatter), updated_at: new Date().toISOString() };
+  writeFileSync(docPath, matter.stringify(newBody, fm), "utf8");
+}
+
+export interface AddSectionOpts {
+  parentLevel: 2 | 3;
+  title: string;
+  body: string;
+}
+
+export function addSection(
+  project: string,
+  yyyymm: string,
+  slug: string,
+  opts: AddSectionOpts,
+): string {
+  const docPath = enhancedMd(project, yyyymm, slug);
+  const raw = readFileSync(docPath, "utf8");
+  const parsed = matter(raw);
+  const existing = opts.parentLevel === 2
+    ? parseFunctional(parsed.content)
+    : parseOverview(parsed.content);
+  const newIndex = existing.length + 1;
+  const anchor = generateSectionAnchor(opts.parentLevel, newIndex);
+  const snippet = `### ${opts.title} <a id="${anchor}"></a>\n\n${opts.body}\n\n`;
+  const block = opts.parentLevel === 2 ? FUNCTIONAL_END : OVERVIEW_END;
+  const newBody = parsed.content.replace(block, snippet + block);
+  const fm = { ...(parsed.data as EnhancedFrontmatter), updated_at: new Date().toISOString() };
+  writeFileSync(docPath, matter.stringify(newBody, fm), "utf8");
+  return anchor;
+}
