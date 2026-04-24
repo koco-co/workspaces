@@ -35,7 +35,7 @@ argument-hint: "[禅道 Bug URL | Bug ID]"
 
 参见 [`.claude/references/skill-preamble.md`](../../../references/skill-preamble.md)（项目选择、读取配置、符号规则、异常处理通用片段）。
 
-输入解析格式与输出目录约定详见 [`workflow/zentao-input.md`](workflow/zentao-input.md)。
+输入解析格式与输出目录约定详见 [`zentao-input.md`](zentao-input.md)。
 
 ## 规则加载（强制）
 
@@ -70,4 +70,4 @@ bun run qa rule-loader load --project {{project}} > workspace/{{project}}/.temp/
 | E5   | 发送通知          | 触发 plugin-loader notify 事件                      |
 | E6   | 完成摘要          | 状态展示，无需确认                                  |
 
-完整执行细节详见 [`workflow/main.md`](workflow/main.md)。
+完整执行细节详见 [`main.md`](main.md)。

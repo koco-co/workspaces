@@ -70,7 +70,7 @@ argument-hint: "[报错日志 / 堆栈文本 / 前端 Console 错误 | --templat
 
 ## 路由分支
 
-- 路由识别与回退（含错误纠正策略）：详见 [`workflow/routing.md`](workflow/routing.md)
-- 后端分支（步骤 2-3，含 `backend-bug-agent` 调用）：详见 [`workflow/backend.md`](workflow/backend.md)
-- 前端分支（步骤 2-3，含 `frontend-bug-agent` 调用）：详见 [`workflow/frontend.md`](workflow/frontend.md)
-- 渲染、通知与目录约定（步骤 4-6）：详见 [`workflow/rendering.md`](workflow/rendering.md)
+- 路由识别与回退（含错误纠正策略）：详见 [`routing.md`](routing.md)
+- 后端分支（步骤 2-3，含 `backend-bug-agent` 调用）：详见 [`backend.md`](backend.md)
+- 前端分支（步骤 2-3，含 `frontend-bug-agent` 调用）：详见 [`frontend.md`](frontend.md)
+- 渲染、通知与目录约定（步骤 4-6）：详见 [`rendering.md`](rendering.md)
