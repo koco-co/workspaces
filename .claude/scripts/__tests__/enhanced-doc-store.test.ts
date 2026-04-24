@@ -13,8 +13,10 @@ import {
   listPending,
   compactDoc,
   validateDoc,
+  setSourceFacts,
+  readSourceFacts,
 } from "../lib/enhanced-doc-store.ts";
-import { repoRoot, enhancedMd } from "../lib/paths.ts";
+import { repoRoot, enhancedMd, sourceFactsJson } from "../lib/paths.ts";
 
 const TEST_PROJECT = "test-d1-project";
 const TEST_YM = "202604";
@@ -336,5 +338,43 @@ describe("enhanced-doc-store: validate", () => {
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG, { requireZeroPending: true });
     expect(r.ok).toBe(false);
     expect(r.issues.some(i => i.includes("pending_count > 0"))).toBe(true);
+  });
+});
+
+describe("enhanced-doc-store: source-facts blob", () => {
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("small source-facts inlined in enhanced.md", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const small = {
+      fields: [{ name: "a", type: "string", path: "x.ts", note: "" }],
+      routes: [],
+      state_enums: [],
+      permissions: [],
+      api_signatures: [],
+    };
+    setSourceFacts(TEST_PROJECT, TEST_YM, TEST_SLUG, small);
+    const read = readSourceFacts(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(read.fields.length).toBe(1);
+    const raw = readFileSync(enhancedMd(TEST_PROJECT, TEST_YM, TEST_SLUG), "utf8");
+    expect(raw).not.toContain("$ref");
+  });
+
+  test("large source-facts (>64KB) externalized to source-facts.json", () => {
+    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    const big = {
+      fields: Array.from({ length: 2000 }, (_, i) => ({
+        name: `f${i}`, type: "string", path: `file${i}.ts`, note: "x".repeat(50),
+      })),
+      routes: [], state_enums: [], permissions: [], api_signatures: [],
+    };
+    setSourceFacts(TEST_PROJECT, TEST_YM, TEST_SLUG, big);
+    const raw = readFileSync(enhancedMd(TEST_PROJECT, TEST_YM, TEST_SLUG), "utf8");
+    expect(raw).toContain("$ref");
+    const jsonPath = sourceFactsJson(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(existsSync(jsonPath)).toBe(true);
+    const read = readSourceFacts(TEST_PROJECT, TEST_YM, TEST_SLUG);
+    expect(read.fields.length).toBe(2000);
   });
 });

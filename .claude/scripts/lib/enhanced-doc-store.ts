@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 import matter from "gray-matter";
-import { prdDir, enhancedMd, resolvedMd } from "./paths.ts";
+import { prdDir, enhancedMd, resolvedMd, sourceFactsJson } from "./paths.ts";
 import { generateSectionAnchor, generateQAnchor, isValidSectionAnchor } from "./enhanced-doc-anchors.ts";
 import type {
   EnhancedDoc,
@@ -11,7 +11,9 @@ import type {
   PendingItem,
   PendingSeverity,
   PendingStatus,
+  SourceFacts,
 } from "./enhanced-doc-types.ts";
+import { SOURCE_FACTS_BLOB_THRESHOLD } from "./enhanced-doc-types.ts";
 
 // ---- Block markers ----
 const OVERVIEW_BEGIN = "<!-- overview-begin -->";
@@ -22,12 +24,25 @@ const IMAGES_BEGIN = "<!-- images-summary-begin -->";
 const IMAGES_END = "<!-- images-summary-end -->";
 const PENDING_BEGIN = "<!-- pending-begin -->";
 const PENDING_END = "<!-- pending-end -->";
+const SOURCE_FACTS_BEGIN = "<!-- source-facts-begin -->";
+const SOURCE_FACTS_END = "<!-- source-facts-end -->";
 
 function extractBlock(body: string, begin: string, end: string): string {
   const i = body.indexOf(begin);
   const j = body.indexOf(end);
   if (i < 0 || j < 0) return "";
   return body.slice(i + begin.length, j);
+}
+
+function hasSourceFacts(body: string): boolean {
+  const block = extractBlock(body, SOURCE_FACTS_BEGIN, SOURCE_FACTS_END).trim();
+  return block.length > 0 && !block.includes("_TODO_");
+}
+
+function extractSourceFactsRef(body: string): string | null {
+  const block = extractBlock(body, SOURCE_FACTS_BEGIN, SOURCE_FACTS_END);
+  const m = block.match(/"\$ref":\s*"([^"]+)"/);
+  return m ? m[1] : null;
 }
 
 function parseSections(block: string): SectionContent[] {
@@ -141,8 +156,8 @@ export function readDoc(project: string, yyyymm: string, slug: string): Enhanced
     functional: parseFunctional(parsed.content),
     images_summary: parseImagesSummary(parsed.content),
     pending: parsePending(parsed.content),
-    source_facts: null,
-    source_facts_ref: null,
+    source_facts: hasSourceFacts(parsed.content) ? readSourceFacts(project, yyyymm, slug) : null,
+    source_facts_ref: extractSourceFactsRef(parsed.content),
   };
 }
 
@@ -537,6 +552,51 @@ export function validateDoc(
   }
 
   return { ok: issues.length === 0, issues };
+}
+
+// ---- source-facts blob ----
+
+export function setSourceFacts(
+  project: string,
+  yyyymm: string,
+  slug: string,
+  facts: SourceFacts,
+): void {
+  const docPath = enhancedMd(project, yyyymm, slug);
+  const raw = readFileSync(docPath, "utf8");
+  const parsed = matter(raw);
+  const serialized = JSON.stringify(facts, null, 2);
+  let blockContent: string;
+  if (Buffer.byteLength(serialized, "utf8") > SOURCE_FACTS_BLOB_THRESHOLD) {
+    const jsonPath = sourceFactsJson(project, yyyymm, slug);
+    writeFileSync(jsonPath, serialized, "utf8");
+    blockContent = `\n\`\`\`json\n{ "$ref": "./source-facts.json" }\n\`\`\`\n`;
+  } else {
+    blockContent = `\n\`\`\`json\n${serialized}\n\`\`\`\n`;
+  }
+  const newBody = parsed.content.replace(
+    new RegExp(`${SOURCE_FACTS_BEGIN}[\\s\\S]*?${SOURCE_FACTS_END}`),
+    `${SOURCE_FACTS_BEGIN}${blockContent}${SOURCE_FACTS_END}`,
+  );
+  const fm = { ...(parsed.data as EnhancedFrontmatter), updated_at: new Date().toISOString() };
+  writeFileSync(docPath, matter.stringify(newBody, fm), "utf8");
+}
+
+export function readSourceFacts(
+  project: string,
+  yyyymm: string,
+  slug: string,
+): SourceFacts {
+  const raw = readFileSync(enhancedMd(project, yyyymm, slug), "utf8");
+  const block = extractBlock(matter(raw).content, SOURCE_FACTS_BEGIN, SOURCE_FACTS_END);
+  const jsonMatch = block.match(/```json\s*\n([\s\S]*?)\n```/);
+  if (!jsonMatch) throw new Error(`source-facts block malformed`);
+  const obj = JSON.parse(jsonMatch[1]);
+  if (obj["$ref"]) {
+    const refPath = sourceFactsJson(project, yyyymm, slug);
+    return JSON.parse(readFileSync(refPath, "utf8")) as SourceFacts;
+  }
+  return obj as SourceFacts;
 }
 
 // ---- compactDoc ----
