@@ -9,6 +9,9 @@ import {
   writeSession,
   withSessionLock,
   sessionIdFor,
+  addTasks,
+  updateTask,
+  removeTask,
 } from "../../lib/progress-store.ts";
 import type { Session } from "../../lib/progress-types.ts";
 
@@ -108,5 +111,115 @@ describe("withSessionLock", () => {
       withSessionLock(project, base.session_id, async () => {}, { timeoutMs: 200 }),
       /lock/i,
     );
+  });
+});
+
+describe("addTasks", () => {
+  const project = "dataAssets";
+  function seed(): Session {
+    const s = createSession({
+      project, workflow: "test-case-gen", slug: "p1", env: "default",
+      source: { type: "prd", path: "x.md", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    return s;
+  }
+
+  it("adds batch tasks with defaults for omitted fields", () => {
+    const s = seed();
+    addTasks(project, s.session_id, [
+      { id: "t1", name: "transform", kind: "node", order: 1 },
+      { id: "t2", name: "enhance", kind: "node", order: 2, depends_on: ["t1"] },
+    ]);
+    const cur = readSession(project, s.session_id)!;
+    assert.equal(cur.tasks.length, 2);
+    assert.equal(cur.tasks[0].status, "pending");
+    assert.equal(cur.tasks[0].parent, null);
+    assert.equal(cur.tasks[0].attempts, 0);
+    assert.deepEqual(cur.tasks[1].depends_on, ["t1"]);
+  });
+
+  it("rejects duplicate ids", () => {
+    const s = seed();
+    addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
+    assert.throws(
+      () => addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 2 }]),
+      /duplicate/i,
+    );
+  });
+});
+
+describe("updateTask", () => {
+  const project = "dataAssets";
+  function seedWithTask(): { sessionId: string } {
+    const s = createSession({
+      project, workflow: "w", slug: "u", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
+    return { sessionId: s.session_id };
+  }
+
+  it("increments attempts when status set to running", () => {
+    const { sessionId } = seedWithTask();
+    updateTask(project, sessionId, "t1", { status: "running" });
+    const cur = readSession(project, sessionId)!;
+    assert.equal(cur.tasks[0].status, "running");
+    assert.equal(cur.tasks[0].attempts, 1);
+    assert.ok(cur.tasks[0].started_at);
+  });
+
+  it("appends error entry when status=failed with error message", () => {
+    const { sessionId } = seedWithTask();
+    updateTask(project, sessionId, "t1", {
+      status: "failed", error: "timeout",
+    });
+    const cur = readSession(project, sessionId)!;
+    assert.equal(cur.tasks[0].errors.length, 1);
+    assert.equal(cur.tasks[0].errors[0].message, "timeout");
+  });
+
+  it("appends error regardless of status (e.g. forced-start on running)", () => {
+    const { sessionId } = seedWithTask();
+    updateTask(project, sessionId, "t1", {
+      status: "running", error: "forced-start",
+    });
+    const cur = readSession(project, sessionId)!;
+    assert.equal(cur.tasks[0].status, "running");
+    assert.equal(cur.tasks[0].errors.length, 1);
+    assert.match(cur.tasks[0].errors[0].message, /forced-start/);
+  });
+
+  it("sets reason when status=blocked", () => {
+    const { sessionId } = seedWithTask();
+    updateTask(project, sessionId, "t1", {
+      status: "blocked", reason: "需确认",
+    });
+    const cur = readSession(project, sessionId)!;
+    assert.equal(cur.tasks[0].status, "blocked");
+    assert.equal(cur.tasks[0].reason, "需确认");
+  });
+
+  it("merges payload object", () => {
+    const { sessionId } = seedWithTask();
+    updateTask(project, sessionId, "t1", { payload: { a: 1 } });
+    updateTask(project, sessionId, "t1", { payload: { b: 2 } });
+    const cur = readSession(project, sessionId)!;
+    assert.deepEqual(cur.tasks[0].payload, { a: 1, b: 2 });
+  });
+});
+
+describe("removeTask", () => {
+  it("removes task by id", () => {
+    const project = "dataAssets";
+    const s = createSession({
+      project, workflow: "w", slug: "r", env: "default",
+      source: { type: "prd", path: "x", mtime: null }, meta: {},
+    });
+    writeSession(project, s);
+    addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
+    removeTask(project, s.session_id, "t1");
+    assert.equal(readSession(project, s.session_id)!.tasks.length, 0);
   });
 });

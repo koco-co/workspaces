@@ -222,3 +222,149 @@ export async function withSessionLock<T>(
     releaseLock(lockPath);
   }
 }
+
+// ── Task CRUD ─────────────────────────────────────────────────────────────────
+
+import type { Task, TaskStatus, ErrorEntry } from "./progress-types.ts";
+
+export interface TaskInput {
+  readonly id: string;
+  readonly name: string;
+  readonly kind: string;
+  readonly order: number;
+  readonly parent?: string | null;
+  readonly depends_on?: readonly string[];
+  readonly payload?: Record<string, unknown>;
+}
+
+export interface TaskUpdatePatch {
+  readonly status?: TaskStatus;
+  readonly reason?: string | null;
+  readonly payload?: Record<string, unknown>;
+  readonly depends_on?: readonly string[];
+  readonly error?: string;
+  readonly force?: boolean;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function makeTask(input: TaskInput): Task {
+  return {
+    id: input.id,
+    parent: input.parent ?? null,
+    depends_on: input.depends_on ?? [],
+    order: input.order,
+    name: input.name,
+    kind: input.kind,
+    status: "pending",
+    reason: null,
+    attempts: 0,
+    payload: input.payload ?? {},
+    errors: [],
+    started_at: null,
+    completed_at: null,
+  };
+}
+
+/**
+ * Add a batch of tasks to an existing session. Throws if any id is a duplicate
+ * (either within the batch or against existing tasks).
+ */
+export function addTasks(
+  project: string,
+  sessionId: string,
+  inputs: readonly TaskInput[],
+): void {
+  const session = readSession(project, sessionId);
+  if (!session) throw new Error(`session not found: ${sessionId}`);
+
+  const existingIds = new Set(session.tasks.map((t) => t.id));
+  const newIds = new Set<string>();
+  for (const inp of inputs) {
+    if (existingIds.has(inp.id) || newIds.has(inp.id)) {
+      throw new Error(`duplicate task id: ${inp.id}`);
+    }
+    newIds.add(inp.id);
+  }
+
+  const tasks = [...session.tasks, ...inputs.map(makeTask)];
+  writeSession(project, { ...session, tasks, updated_at: nowIso() });
+}
+
+/**
+ * Remove a task by id from an existing session.
+ * No-op if the task id does not exist.
+ */
+export function removeTask(
+  project: string,
+  sessionId: string,
+  taskId: string,
+): void {
+  const session = readSession(project, sessionId);
+  if (!session) throw new Error(`session not found: ${sessionId}`);
+  const tasks = session.tasks.filter((t) => t.id !== taskId);
+  writeSession(project, { ...session, tasks, updated_at: nowIso() });
+}
+
+/**
+ * Apply a patch to a single task. Status transitions, error appending, reason,
+ * payload merging, and depends_on updates are all supported.
+ *
+ * - `status=running` increments `attempts` and sets `started_at` (once).
+ * - `status=done` sets `completed_at`.
+ * - `error` appends an ErrorEntry regardless of status (intentional — enables
+ *   forced-start records and diagnostic traces on running tasks).
+ * - `payload` is shallow-merged with the existing payload.
+ * - `force` is reserved for Task 10 and has no effect here.
+ */
+export function updateTask(
+  project: string,
+  sessionId: string,
+  taskId: string,
+  patch: TaskUpdatePatch,
+): void {
+  const session = readSession(project, sessionId);
+  if (!session) throw new Error(`session not found: ${sessionId}`);
+  const idx = session.tasks.findIndex((t) => t.id === taskId);
+  if (idx < 0) throw new Error(`task not found: ${taskId}`);
+
+  const current = session.tasks[idx];
+  let next: Task = { ...current };
+
+  if (patch.status !== undefined) {
+    next = { ...next, status: patch.status };
+    if (patch.status === "running") {
+      next = {
+        ...next,
+        attempts: current.attempts + 1,
+        started_at: current.started_at ?? nowIso(),
+      };
+    }
+    if (patch.status === "done") {
+      next = { ...next, completed_at: nowIso() };
+    }
+  }
+
+  // error appends regardless of status
+  if (patch.error !== undefined) {
+    const entry: ErrorEntry = { at: nowIso(), message: patch.error };
+    next = { ...next, errors: [...next.errors, entry] };
+  }
+
+  if (patch.reason !== undefined) {
+    next = { ...next, reason: patch.reason };
+  }
+
+  if (patch.payload !== undefined) {
+    next = { ...next, payload: { ...current.payload, ...patch.payload } };
+  }
+
+  if (patch.depends_on !== undefined) {
+    next = { ...next, depends_on: patch.depends_on };
+  }
+
+  const tasks = [...session.tasks.slice(0, idx), next, ...session.tasks.slice(idx + 1)];
+  writeSession(project, { ...session, tasks, updated_at: nowIso() });
+}
