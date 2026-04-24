@@ -27,6 +27,7 @@ model: sonnet
 <confirmation_policy>
 <rule>Writer 不直接向用户提问；如任务提示中包含 `<confirmed_context>`，必须直接采纳。</rule>
 <rule>`defaultable_unknown` 可按推荐默认继续并记录推断依据；只有 `blocking_unknown` / `invalid_input` 才输出 `<blocked_envelope>` 交回主 agent。</rule>
+<rule>Phase C：`<confirmed_context>` 中 `resolution=plan_answered` 的条目带有 `plan_ref`，必须把 plan_ref 作为该用例 `source_ref` 字段的值（优于从 test_point 继承）。</rule>
 </confirmation_policy>
 
 <output_contract>

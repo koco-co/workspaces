@@ -5,18 +5,18 @@
 
 ## 节点映射表
 
-| # | 名称 | 文件 | 默认超时 | 可跳过条件 |
-|---|---|---|---|---|
-| 1 | init | workflow/01-init.md | 30s | — |
-| 2 | probe | workflow/02-probe.md | 2min | 断点恢复 |
-| 3 | discuss | workflow/03-discuss.md | 15min | plan.status=ready |
-| 4 | transform | workflow/04-transform.md | 5min | — |
-| 5 | enhance | workflow/05-enhance.md | 3min | --quick |
-| 6 | analyze | workflow/06-analyze.md | 5min | — |
-| 7 | write | workflow/07-write.md | 10min | — |
-| 8 | review | workflow/08-review.md | 3min | --quick |
-| 9 | format-check | workflow/09-format-check.md | 5min | — |
-| 10 | output | workflow/10-output.md | 1min | — |
+| #   | 名称         | 文件                        | 默认超时 | 可跳过条件        |
+| --- | ------------ | --------------------------- | -------- | ----------------- |
+| 1   | init         | workflow/01-init.md         | 30s      | —                 |
+| 2   | probe        | workflow/02-probe.md        | 2min     | 断点恢复          |
+| 3   | discuss      | workflow/03-discuss.md      | 15min    | plan.status=ready |
+| 4   | transform    | workflow/04-transform.md    | 5min     | —                 |
+| 5   | enhance      | workflow/05-enhance.md      | 3min     | --quick           |
+| 6   | analyze      | workflow/06-analyze.md      | 5min     | —                 |
+| 7   | write        | workflow/07-write.md        | 10min    | —                 |
+| 8   | review       | workflow/08-review.md       | 3min     | --quick           |
+| 9   | format-check | workflow/09-format-check.md | 5min     | —                 |
+| 10  | output       | workflow/10-output.md       | 1min     | —                 |
 
 **加载规则**：主 agent 按映射表 `文件` 字段动态 Read；同会话已读无需重复读。
 
@@ -70,44 +70,73 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 ## 共享协议
 
-### Writer 阻断中转协议
+### Writer 阻断中转协议（Phase C：回射到 discuss）
 
 当 Writer Sub-Agent 返回 `<blocked_envelope>` 时，表示需求信息不足以继续编写，或输入无效。
 
+**核心变更**：Phase C 起不再"现场 AskUserQuestion"，而是把阻断条目回射到 discuss 节点沉淀为 plan.md §3 的持久记录。目的是让同类需求在下一次讨论阶段就能提前识别漏掉的维度。
+
 #### 处理流程
 
-1. **解析**：从 `<blocked_envelope>` 中提取 `items`
-2. **逐条询问**（使用 AskUserQuestion 工具）：每次只向用户提出一个问题，使用 AskUserQuestion 工具：
+1. **解析 envelope**：从 `<blocked_envelope>` 提取 `items[]`
 
-- 问题：`Writer 需要确认（{{current}}/{{total}}）：{{question_description}}`
-- 选项按候选答案列出，AI 推荐项标注"（推荐）"
+2. **分流 invalid_input**：
+   - 若 `status = "invalid_input"` → 停止该模块并要求修正输入（PRD / 测试点 / writer_id 本身损坏），不走本协议剩余步骤
 
-3. **默认项处理**：若 item 为 `defaultable_unknown`，直接采用推荐项并记录为 `auto_defaulted`
-4. **invalid_input 处理**：若 `status = "invalid_input"`，停止该模块并要求修正输入，不重启 Writer
-5. **收集完毕**：将所有答案与默认项注入 `<confirmed_context>`，重启该模块的 Writer
-6. **注入格式**：
+3. **逐条回射到 discuss append-clarify**（仅 `status = "needs_confirmation"` 的分支）：
 
-```xml
-<confirmed_context>
-{
-  "writer_id": "{{writer_id}}",
-  "items": [
-    {
-      "id": "B1",
-      "resolution": "user_selected",
-      "selected_option": "A",
-      "value": "{{answer_1}}"
-    },
-    {
-      "id": "B2",
-      "resolution": "auto_defaulted",
-      "selected_option": "B",
-      "value": "{{answer_2}}"
-    }
-  ]
-}
-</confirmed_context>
-```
+   每个 item 映射为：
+
+   ```json
+   {
+     "id": "{{item.id}}",
+     "severity": "blocking_unknown",
+     "question": "{{item.question}}",
+     "location": "writer-回射：{{item.location}}（writer_id={{writer_id}}）",
+     "recommended_option": "{{item.recommended_option}}",
+     "options": "{{item.options}}",
+     "context": {
+       "writer_id": "{{writer_id}}",
+       "type": "{{item.type}}",
+       "source": "{{item.context}}"
+     }
+   }
+   ```
+
+   调 CLI 逐条落盘：
+
+   ```bash
+   kata-cli discuss append-clarify \
+     --project {{project}} --prd {{prd_path}} \
+     --content '<json 上表>'
+   ```
+
+   注意：`kata-cli discuss append-clarify` 会自动把 plan.md.status 从 `ready` 重置为 `discussing`，`resume_anchor` 会被顺带清零——这正是 Phase C 期望的行为（写作已中断，需要重走 discuss 闭环）。
+
+4. **回到 discuss 3.6 → 3.8 → 3.9**：主 agent 按 `workflow/03-discuss.md` 3.6 节逐条向用户确认（仍是 3 选项格式），用户回答后再次自审（3.8）+ complete（3.9）。
+
+5. **重入 writer**：discuss complete 成功返回 `status=ready` 后，主 agent 回到节点 7 write 派发该模块 Writer。重派前构建 `<confirmed_context>`：
+
+   ```xml
+   <confirmed_context>
+   {
+     "writer_id": "{{writer_id}}",
+     "items": [
+       {
+         "id": "B1",
+         "resolution": "plan_answered",
+         "plan_ref": "plan#q{{new_q_id}}-{{slug}}",
+         "value": "{{plan §3 的 user_answer 字段}}"
+       }
+     ]
+   }
+   </confirmed_context>
+   ```
+
+   - 所有 item 的 `resolution` 固定为 `"plan_answered"`（不再区分 `user_selected` / `auto_defaulted`，因为值都来自 plan.md）
+   - `plan_ref` 必填，指向 discuss 回射后的新 Q 条目
+
+6. **Writer 必须优先采纳 plan_answered**：writer-agent 的 `<confirmed_context>` 优先级规则不变；但主 agent 不得再以"auto_defaulted"重注入回射条目——Phase C 要求全部沉淀到 plan.md。
 
 ### 断点续传说明
 
