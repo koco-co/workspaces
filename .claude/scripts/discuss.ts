@@ -510,31 +510,155 @@ export const program = createCli({
   name: "discuss",
   description: "PRD 需求讨论 enhanced.md 管理 CLI (v2)",
   commands: [
+    // ── legacy (plan.md) shims ──────────────────────────────────────────────
+    // Preserved for D2 regression coverage. Non-colliding commands (append-clarify,
+    // complete, reset, set-strategy, set-repo-consent) are restored verbatim.
+    // Colliding commands (init, read, validate) use dual-mode dispatch:
+    //   --prd <path>  → legacy runXxx (plan.md)
+    //   otherwise     → new enhanced-doc-store functions
     {
-      name: "init",
-      description: "创建 enhanced.md 骨架",
+      name: "append-clarify",
+      description: "追加或替换一条澄清记录（legacy plan.md）",
       options: [
         { flag: "--project <name>", description: "项目名", required: true },
-        { flag: "--yyyymm <ym>", description: "月份 YYYYMM", required: true },
-        { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--migrated-from-plan", description: "从 plan.md 迁移", defaultValue: false },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+        { flag: "--content <json>", description: "Clarification JSON", required: true },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string; migratedFromPlan: boolean }) => {
-        initDoc(opts.project, opts.yyyymm, opts.prdSlug, { migratedFromPlan: opts.migratedFromPlan });
-        process.stdout.write(JSON.stringify({ ok: true }) + "\n");
-      },
+      action: (opts: { project: string; prd: string; content: string }) =>
+        runAppendClarify(opts),
     },
     {
-      name: "read",
-      description: "读取 enhanced.md（JSON 输出）",
+      name: "complete",
+      description: "完成讨论，标记 status=ready（legacy plan.md）",
       options: [
         { flag: "--project <name>", description: "项目名", required: true },
-        { flag: "--yyyymm <ym>", description: "月份 YYYYMM", required: true },
-        { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+        {
+          flag: "--knowledge-summary <json>",
+          description: "已沉淀的 knowledge 列表 JSON",
+        },
+        {
+          flag: "--handoff-mode <mode>",
+          description: "交接模式：current（同会话继续）| new（新会话）",
+        },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string }) => {
-        const doc = readDoc(opts.project, opts.yyyymm, opts.prdSlug);
-        process.stdout.write(JSON.stringify(doc) + "\n");
+      action: (opts: {
+        project: string;
+        prd: string;
+        knowledgeSummary?: string;
+        handoffMode?: string;
+      }) =>
+        runComplete({
+          project: opts.project,
+          prd: opts.prd,
+          knowledgeSummary: opts.knowledgeSummary,
+          handoffMode: opts.handoffMode,
+        }),
+    },
+    {
+      name: "reset",
+      description: "备份并清除当前 plan.md（legacy plan.md）",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+      ],
+      action: (opts: { project: string; prd: string }) => runReset(opts),
+    },
+    {
+      name: "set-strategy",
+      description: "Write strategy resolution into plan.md frontmatter（legacy plan.md）",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+        {
+          flag: "--strategy-resolution <json>",
+          description: "StrategyResolution JSON or @<path>",
+          required: true,
+        },
+      ],
+      action: (opts: {
+        project: string;
+        prd: string;
+        strategyResolution: string;
+      }) => runSetStrategy(opts),
+    },
+    {
+      name: "set-repo-consent",
+      description: "写入或清空源码引用许可 frontmatter.repo_consent（legacy plan.md）",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "PRD 文件路径", required: true },
+        {
+          flag: "--content <json>",
+          description: 'RepoConsent JSON，如 \'{"repos":[{"path":"...","branch":"..."}],"granted_at":"..."}\'',
+        },
+        {
+          flag: "--clear",
+          description: "清空 repo_consent（置为 null）",
+          defaultValue: false,
+        },
+      ],
+      action: (opts: {
+        project: string;
+        prd: string;
+        content?: string;
+        clear: boolean;
+      }) => runSetRepoConsent(opts),
+    },
+    // ── dual-mode: init (legacy --prd | new --yyyymm + --prd-slug) ──────────
+    {
+      name: "init",
+      description: "初始化 plan.md（legacy: --prd）或创建 enhanced.md 骨架（新: --yyyymm + --prd-slug）",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "[legacy] PRD 文件路径" },
+        { flag: "--force", description: "[legacy] 已存在时备份并重建", defaultValue: false },
+        { flag: "--yyyymm <ym>", description: "[new] 月份 YYYYMM" },
+        { flag: "--prd-slug <slug>", description: "[new] PRD slug" },
+        { flag: "--migrated-from-plan", description: "[new] 从 plan.md 迁移", defaultValue: false },
+      ],
+      action: (opts: {
+        project: string;
+        prd?: string;
+        force: boolean;
+        yyyymm?: string;
+        prdSlug?: string;
+        migratedFromPlan: boolean;
+      }) => {
+        if (opts.prd) {
+          runInit({ project: opts.project, prd: opts.prd, force: opts.force });
+        } else if (opts.yyyymm && opts.prdSlug) {
+          initDoc(opts.project, opts.yyyymm, opts.prdSlug, { migratedFromPlan: opts.migratedFromPlan });
+          process.stdout.write(JSON.stringify({ ok: true }) + "\n");
+        } else {
+          fail("init requires either --prd <path> (legacy) or --yyyymm + --prd-slug (new)");
+        }
+      },
+    },
+    // ── dual-mode: read (legacy --prd | new --yyyymm + --prd-slug) ──────────
+    {
+      name: "read",
+      description: "读取 plan.md（legacy: --prd）或 enhanced.md（新: --yyyymm + --prd-slug）",
+      options: [
+        { flag: "--project <name>", description: "项目名", required: true },
+        { flag: "--prd <path>", description: "[legacy] PRD 文件路径" },
+        { flag: "--yyyymm <ym>", description: "[new] 月份 YYYYMM" },
+        { flag: "--prd-slug <slug>", description: "[new] PRD slug" },
+      ],
+      action: (opts: {
+        project: string;
+        prd?: string;
+        yyyymm?: string;
+        prdSlug?: string;
+      }) => {
+        if (opts.prd) {
+          runRead({ project: opts.project, prd: opts.prd });
+        } else if (opts.yyyymm && opts.prdSlug) {
+          const doc = readDoc(opts.project, opts.yyyymm, opts.prdSlug);
+          process.stdout.write(JSON.stringify(doc) + "\n");
+        } else {
+          fail("read requires either --prd <path> (legacy) or --yyyymm + --prd-slug (new)");
+        }
       },
     },
     {
@@ -687,25 +811,39 @@ export const program = createCli({
         process.stdout.write(JSON.stringify({ moved }) + "\n");
       },
     },
+    // ── dual-mode: validate (legacy --prd | new --yyyymm + --prd-slug) ───────
     {
       name: "validate",
-      description: "校验 enhanced.md 完整性",
+      description: "校验 plan.md（legacy: --prd）或 enhanced.md（新: --yyyymm + --prd-slug）完整性",
       options: [
         { flag: "--project <name>", description: "项目名", required: true },
-        { flag: "--yyyymm <ym>", description: "月份", required: true },
-        { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
+        { flag: "--prd <path>", description: "[legacy] PRD 文件路径" },
+        { flag: "--require-zero-blocking", description: "[legacy] blocking_unknown > 0 则退 2", defaultValue: false },
+        { flag: "--yyyymm <ym>", description: "[new] 月份" },
+        { flag: "--prd-slug <slug>", description: "[new] PRD slug" },
         { flag: "--require-zero-pending", description: "pending>0 则退 3", defaultValue: false },
-        { flag: "--check-source-refs <csv>", description: "逗号分隔的 source_ref 列表" },
+        { flag: "--check-source-refs <csv>", description: "[new] 逗号分隔的 source_ref 列表" },
       ],
       action: (opts: any) => {
-        const r = validateDoc(opts.project, opts.yyyymm, opts.prdSlug, {
-          requireZeroPending: !!opts.requireZeroPending,
-          checkSourceRefs: opts.checkSourceRefs ? opts.checkSourceRefs.split(",") : undefined,
-        });
-        process.stdout.write(JSON.stringify(r) + "\n");
-        if (!r.ok) {
-          const zeroPendingIssue = r.issues.some((i: string) => i.includes("requireZeroPending"));
-          process.exit(zeroPendingIssue ? 3 : 1);
+        if (opts.prd) {
+          runValidate({
+            project: opts.project,
+            prd: opts.prd,
+            requireZeroBlocking: !!opts.requireZeroBlocking,
+            requireZeroPending: !!opts.requireZeroPending,
+          });
+        } else if (opts.yyyymm && opts.prdSlug) {
+          const r = validateDoc(opts.project, opts.yyyymm, opts.prdSlug, {
+            requireZeroPending: !!opts.requireZeroPending,
+            checkSourceRefs: opts.checkSourceRefs ? opts.checkSourceRefs.split(",") : undefined,
+          });
+          process.stdout.write(JSON.stringify(r) + "\n");
+          if (!r.ok) {
+            const zeroPendingIssue = r.issues.some((i: string) => i.includes("requireZeroPending"));
+            process.exit(zeroPendingIssue ? 3 : 1);
+          }
+        } else {
+          fail("validate requires either --prd <path> (legacy) or --yyyymm + --prd-slug (new)");
         }
       },
     },
