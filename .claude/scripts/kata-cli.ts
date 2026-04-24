@@ -17,6 +17,7 @@
  */
 
 import { Command } from "commander";
+import { initEnv } from "./lib/env.ts";
 import { program as archiveGen } from "./archive-gen.ts";
 import { program as autoFixer } from "./auto-fixer.ts";
 import { program as caseSignalAnalyzer } from "./case-signal-analyzer.ts";
@@ -77,6 +78,8 @@ kata.addCommand(uiAutotestProgress);
 kata.addCommand(writerContextBuilder);
 kata.addCommand(xmindGen);
 kata.addCommand(xmindPatch);
+
+initEnv();
 
 kata.parseAsync(process.argv).catch((err) => {
   process.stderr.write(`[kata-cli] Unexpected error: ${err}\n`);

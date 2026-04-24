@@ -9,7 +9,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "my-tool",
       description: "test cli",
-      initEnv: false,
       commands: [
         {
           name: "run",
@@ -34,7 +33,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "multi",
       description: "multi cli",
-      initEnv: false,
       commands: [
         {
           name: "alpha",
@@ -67,7 +65,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "async-tool",
       description: "async",
-      initEnv: false,
       commands: [
         {
           name: "slow",
@@ -91,7 +88,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "err-tool",
       description: "err",
-      initEnv: false,
       onError: (err) => {
         captured.push(err as Error);
       },
@@ -119,7 +115,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "ctx-tool",
       description: "ctx",
-      initEnv: false,
       commands: [
         {
           name: "inspect",
@@ -145,7 +140,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "opt-tool",
       description: "opt",
-      initEnv: false,
       commands: [
         {
           name: "go",
@@ -175,7 +169,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "no-env",
       description: "no-env",
-      initEnv: false,
       commands: [
         {
           name: "noop",
@@ -196,7 +189,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "root-tool",
       description: "root",
-      initEnv: false,
       rootAction: {
         arguments: [{ name: "source", description: "source path", required: true }],
         options: [{ flag: "-o, --output <p>", description: "out" }],
@@ -219,7 +211,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "flag-only",
       description: "no positional",
-      initEnv: false,
       rootAction: {
         options: [{ flag: "--url <u>", description: "url", required: true }],
         action: (opts) => {
@@ -239,7 +230,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "pos-tool",
       description: "pos",
-      initEnv: false,
       commands: [
         {
           name: "search",
@@ -274,7 +264,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "hybrid",
       description: "hybrid",
-      initEnv: false,
       rootAction: {
         options: [{ flag: "--url <u>", description: "url" }],
         action: () => {
@@ -310,7 +299,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "choice-tool",
       description: "choice",
-      initEnv: false,
       commands: [
         {
           name: "go",
@@ -344,7 +332,6 @@ describe("createCli", () => {
     const program = createCli({
       name: "help-tool",
       description: "help",
-      initEnv: false,
       commands: [
         {
           name: "run",
@@ -377,7 +364,6 @@ describe("createCli", () => {
     createCli({
       name: "lvl-tool",
       description: "lvl",
-      initEnv: false,
       commands: [{ name: "x", description: "x", action: () => {} }],
     });
     // No direct API to read current level, but setLogLevel should have been invoked.

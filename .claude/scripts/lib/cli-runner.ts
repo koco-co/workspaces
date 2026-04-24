@@ -1,5 +1,4 @@
 import { Command, Option } from "commander";
-import { initEnv } from "./env.ts";
 import { createLogger, initLogLevel, type Logger } from "./logger.ts";
 
 export interface CliOption {
@@ -47,7 +46,6 @@ export interface CliConfig {
   description: string;
   commands?: CliCommandSpec[];
   rootAction?: CliRootActionSpec;
-  initEnv?: boolean;
   onError?: (err: unknown, ctx: CliContext) => void;
 }
 
@@ -130,20 +128,18 @@ function buildActionHandler(
 }
 
 /**
- * Build a commander program with uniform initEnv, logger, and error wrapping.
+ * Build a commander program with logger and error wrapping.
  *
  * Supports three shapes:
  *  - `commands`: classic subcommand dispatch (e.g. `state init --prd ...`)
  *  - `rootAction`: root-level action, for single-purpose tools (e.g. `xmind-gen --input ...`)
  *  - Both: root action runs when no subcommand matches (hybrid tools like `repo-sync`)
  *
- * Caller chooses `.parse(process.argv)` (sync) or `.parseAsync(process.argv)` (async).
- * For any async action, caller must use `.parseAsync`.
+ * Env initialization is done once by the kata-cli root entry point before dispatch,
+ * not here. This keeps module imports side-effect-free so tests importing helpers
+ * from script files do not accidentally trigger .env loading.
  */
 export function createCli(config: CliConfig): Command {
-  if (config.initEnv !== false) {
-    initEnv();
-  }
   initLogLevel();
 
   const logger = createLogger(config.name);
