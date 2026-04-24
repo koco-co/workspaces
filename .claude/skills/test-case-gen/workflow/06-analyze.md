@@ -6,6 +6,20 @@
 
 **⏳ Task**：将 `analyze` 任务标记为 `in_progress`。
 
+### 6.0 下游入口门禁（Phase C 新增）
+
+进入本节点**前必须**执行 discuss 门禁（与 4.0 同口径）：
+
+```bash
+kata-cli discuss validate \
+  --project {{project}} --prd {{prd_path}} \
+  --require-zero-blocking --require-zero-pending
+```
+
+退出码处理同 4.0。退出 3（pending > 0）→ 回 discuss 节点 3.6 把产品回写的 §6 条目转 blocking+answer，再跑 3.9 complete 后重入本节点。
+
+> **为什么在 analyze 也要拦一道**：用户可能直接跳过 transform（例如测试点重做）。保守冗余一次门禁比事后修补便宜。
+
 ### 6.1 历史用例检索
 
 ```bash
@@ -14,6 +28,8 @@ kata-cli archive-gen search --query "{{keywords}}" --project {{project}} --limit
 ```
 
 > 注：`workspace/{{project}}/archive` 中的 `workspace` 对应 `.env` 中 `WORKSPACE_DIR` 的值（默认 `workspace`），`{{project}}` 为当前选中的项目名称。`search-filter.ts` 对结果做相关性排序并截取 top-5，减少传入 analyze-agent 的上下文体积。
+
+> **Phase C 变化**：历史用例仅用于本节点 analyze-agent 自身的"覆盖分析"（避免重复产出同类测试点），**不再**作为 writer 的参考输入（见 07-write.md 7.1）。`historical_coverage` 输出字段保留，用于审计和日志回放，writer-agent 在 Phase C 不再读取它。
 
 ### 6.2 测试点清单生成（AI 任务）
 
