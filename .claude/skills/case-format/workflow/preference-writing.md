@@ -1,4 +1,4 @@
-# xmind-editor · 偏好写入流程
+# case-format / preference-writing — 偏好写入流程
 
 > 由 SKILL.md 路由后加载。共享的前置加载、artifact_contract、写入确认策略在 SKILL.md 中定义，本文件不重复。
 

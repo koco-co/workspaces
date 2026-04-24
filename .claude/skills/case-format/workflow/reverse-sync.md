@@ -60,4 +60,4 @@ kata-cli history-convert --path {{xmind_file}} --project {{project}}
 
 - Archive MD 已更新：`{{archive_path}}`
 - 同步用例数：`{{count}}`
-- 若用户继续提出查看或编辑诉求，再展示文件内容或路由 `xmind-editor`
+- 若用户继续提出查看或编辑诉求，再展示文件内容或路由 `case-format edit`
