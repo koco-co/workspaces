@@ -109,3 +109,116 @@ describe("session-list + session-delete", () => {
     assert.equal(after.length, 1);
   });
 });
+
+describe("task-add + task-query + task-update", () => {
+  function seed() {
+    const sid = JSON.parse(run([
+      "session-create", "--workflow", "w", "--project", "dataAssets",
+      "--source-type", "prd", "--source-path", "t.md",
+    ]).stdout).session_id;
+    run(["task-add", "--project", "dataAssets", "--session", sid,
+      "--tasks", JSON.stringify([
+        { id: "t1", name: "n", kind: "node", order: 1 },
+        { id: "t2", name: "n", kind: "node", order: 2, depends_on: ["t1"] },
+      ])]);
+    return sid;
+  }
+
+  it("task-add adds tasks", () => {
+    const sid = seed();
+    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
+    assert.equal(s.tasks.length, 2);
+  });
+
+  it("task-update --status running auto-increments attempts", () => {
+    const sid = seed();
+    run(["task-update", "--project", "dataAssets", "--session", sid,
+      "--task", "t1", "--status", "running"]);
+    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
+    assert.equal(s.tasks[0].status, "running");
+    assert.equal(s.tasks[0].attempts, 1);
+  });
+
+  it("task-update --status running fails with exit 4 when deps unsatisfied", () => {
+    const sid = seed();
+    const res = run(["task-update", "--project", "dataAssets", "--session", sid,
+      "--task", "t2", "--status", "running"]);
+    assert.equal(res.code, 4);
+    assert.match(res.stderr, /dep/);
+  });
+
+  it("task-update --force bypasses dep check and records forced-start", () => {
+    const sid = seed();
+    const res = run(["task-update", "--project", "dataAssets", "--session", sid,
+      "--task", "t2", "--status", "running", "--force"]);
+    assert.equal(res.code, 0);
+    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
+    const t2 = s.tasks.find((t: { id: string }) => t.id === "t2");
+    assert.equal(t2.attempts, 1);
+    assert.ok(t2.errors.some((e: { message: string }) => /forced-start/.test(e.message)));
+  });
+
+  it("task-query default hides tasks with unsatisfied deps", () => {
+    const sid = seed();
+    const out = JSON.parse(run([
+      "task-query", "--project", "dataAssets", "--session", sid, "--format", "json",
+    ]).stdout);
+    const ids = out.map((r: { task: { id: string } }) => r.task.id);
+    assert.deepEqual(ids, ["t1"]);
+  });
+
+  it("task-query --include-blocked shows blocked_by reasons", () => {
+    const sid = seed();
+    const out = JSON.parse(run([
+      "task-query", "--project", "dataAssets", "--session", sid,
+      "--include-blocked", "--format", "json",
+    ]).stdout);
+    assert.equal(out.length, 1);
+    assert.equal(out[0].task.id, "t2");
+    assert.match(out[0].blocked_by.join(","), /t1/);
+  });
+});
+
+describe("task-block / task-unblock / task-rollup", () => {
+  function seedRollup() {
+    const sid = JSON.parse(run([
+      "session-create", "--workflow", "w", "--project", "dataAssets",
+      "--source-type", "prd", "--source-path", "r.md",
+    ]).stdout).session_id;
+    run(["task-add", "--project", "dataAssets", "--session", sid,
+      "--tasks", JSON.stringify([
+        { id: "p", name: "p", kind: "phase", order: 1 },
+        { id: "c1", name: "c", kind: "case", order: 1, parent: "p" },
+        { id: "c2", name: "c", kind: "case", order: 2, parent: "p" },
+      ])]);
+    run(["task-update", "--project", "dataAssets", "--session", sid,
+      "--task", "p", "--status", "running"]);
+    return sid;
+  }
+
+  it("task-block sets status=blocked with reason", () => {
+    const sid = seedRollup();
+    run(["task-block", "--project", "dataAssets", "--session", sid,
+      "--task", "c1", "--reason", "需人工"]);
+    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
+    const c1 = s.tasks.find((t: { id: string }) => t.id === "c1");
+    assert.equal(c1.status, "blocked");
+    assert.equal(c1.reason, "需人工");
+  });
+
+  it("task-rollup fails with exit 5 when children unfinished", () => {
+    const sid = seedRollup();
+    const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
+    assert.equal(res.code, 5);
+  });
+
+  it("task-rollup succeeds when all children done", () => {
+    const sid = seedRollup();
+    run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c1", "--status", "done"]);
+    run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c2", "--status", "done"]);
+    const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
+    assert.equal(res.code, 0);
+    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
+    assert.equal(s.tasks.find((t: { id: string }) => t.id === "p").status, "done");
+  });
+});

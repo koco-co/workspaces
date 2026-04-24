@@ -9,8 +9,13 @@ import { createCli } from "./lib/cli-runner.ts";
 import {
   createSession, readSession, writeSession, deleteSession,
   listSessions, resumeSession,
+  addTasks, updateTask, removeTask,
+  queryTasks, isExecutable, rollupTask,
+  withSessionLock,
 } from "./lib/progress-store.ts";
+import type { TaskInput, TaskUpdatePatch } from "./lib/progress-store.ts";
 import { ExitCode } from "./lib/progress-types.ts";
+import type { TaskStatus } from "./lib/progress-types.ts";
 
 function slugFromPath(p: string): string {
   return basename(p, ".md").replace(/\.[^.]+$/, "");
@@ -111,6 +116,157 @@ function runSessionResume(opts: {
   emit(s);
 }
 
+// ── task-add ────────────────────────────────────────────
+
+async function runTaskAdd(opts: {
+  project: string; session: string; tasks: string;
+}): Promise<void> {
+  let inputs: TaskInput[];
+  try {
+    inputs = JSON.parse(opts.tasks) as TaskInput[];
+    if (!Array.isArray(inputs)) throw new Error("--tasks must be a JSON array");
+  } catch (err) {
+    fail("task-add", `invalid --tasks JSON: ${(err as Error).message}`, ExitCode.ARG_ERROR);
+  }
+  try {
+    await withSessionLock(opts.project, opts.session, () =>
+      addTasks(opts.project, opts.session, inputs));
+  } catch (err) {
+    fail("task-add", (err as Error).message, ExitCode.ARG_ERROR);
+  }
+  emit(readSession(opts.project, opts.session));
+}
+
+// ── task-update ─────────────────────────────────────────
+
+async function runTaskUpdate(opts: {
+  project: string; session: string; task: string;
+  status?: string; reason?: string; payload?: string;
+  dependsOn?: string; error?: string; force?: boolean;
+}): Promise<void> {
+  const patch: Record<string, unknown> = {};
+  if (opts.status) {
+    if (!["pending","running","done","blocked","failed","skipped"].includes(opts.status)) {
+      fail("task-update", `invalid --status ${opts.status}`, ExitCode.ARG_ERROR);
+    }
+    patch.status = opts.status;
+  }
+  if (opts.reason !== undefined) patch.reason = opts.reason;
+  if (opts.error !== undefined) patch.error = opts.error;
+  if (opts.payload) {
+    try { patch.payload = JSON.parse(opts.payload); }
+    catch { fail("task-update", `invalid --payload JSON`, ExitCode.ARG_ERROR); }
+  }
+  if (opts.dependsOn !== undefined) {
+    patch.depends_on = opts.dependsOn
+      ? opts.dependsOn.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+  }
+
+  // Guard: when transitioning to running, check deps (unless --force)
+  if (patch.status === "running") {
+    const gate = isExecutable(opts.project, opts.session, opts.task);
+    if (!gate.ok) {
+      if (!opts.force) {
+        fail("task-update",
+          `cannot start ${opts.task}: blocked_by ${gate.blocked_by.join(",")}`,
+          ExitCode.DEPENDENCY_UNSATISFIED);
+      }
+      // --force: record forced-start in errors
+      patch.error = `forced-start: blocked_by ${gate.blocked_by.join(",")}`;
+    }
+  }
+
+  try {
+    await withSessionLock(opts.project, opts.session, () =>
+      updateTask(opts.project, opts.session, opts.task, patch as TaskUpdatePatch));
+  } catch (err) {
+    fail("task-update", (err as Error).message, ExitCode.ARG_ERROR);
+  }
+  emit(readSession(opts.project, opts.session));
+}
+
+// ── task-remove ─────────────────────────────────────────
+
+async function runTaskRemove(opts: {
+  project: string; session: string; task: string;
+}): Promise<void> {
+  await withSessionLock(opts.project, opts.session, () =>
+    removeTask(opts.project, opts.session, opts.task));
+  emit(readSession(opts.project, opts.session));
+}
+
+// ── task-query ──────────────────────────────────────────
+
+function runTaskQuery(opts: {
+  project: string; session: string;
+  status?: string; kind?: string; parent?: string;
+  includeAll?: boolean; includeBlocked?: boolean; format?: string;
+}): void {
+  const results = queryTasks(opts.project, opts.session, {
+    status: opts.status
+      ? (opts.status.split(",").map((s) => s.trim()) as TaskStatus[])
+      : undefined,
+    kind: opts.kind,
+    parent: opts.parent,
+    includeAll: opts.includeAll,
+    includeBlocked: opts.includeBlocked,
+  });
+
+  if (opts.format === "table") {
+    const lines = [
+      ["id", "name", "status", "kind", "parent", "blocked_by"].join("\t"),
+      ...results.map((r) => [
+        r.task.id, r.task.name, r.task.status, r.task.kind,
+        r.task.parent ?? "-", (r.blocked_by ?? []).join(",") || "-",
+      ].join("\t")),
+    ];
+    process.stdout.write(`${lines.join("\n")}\n`);
+    return;
+  }
+  emit(results);
+}
+
+// ── task-block / task-unblock ───────────────────────────
+
+async function runTaskBlock(opts: {
+  project: string; session: string; task: string; reason: string;
+}): Promise<void> {
+  await withSessionLock(opts.project, opts.session, () =>
+    updateTask(opts.project, opts.session, opts.task, {
+      status: "blocked", reason: opts.reason,
+    }));
+  emit(readSession(opts.project, opts.session));
+}
+
+async function runTaskUnblock(opts: {
+  project: string; session: string; task: string;
+}): Promise<void> {
+  await withSessionLock(opts.project, opts.session, () =>
+    updateTask(opts.project, opts.session, opts.task, {
+      status: "pending", reason: null,
+    }));
+  emit(readSession(opts.project, opts.session));
+}
+
+// ── task-rollup ─────────────────────────────────────────
+
+async function runTaskRollup(opts: {
+  project: string; session: string; task: string;
+}): Promise<void> {
+  try {
+    await withSessionLock(opts.project, opts.session, () =>
+      rollupTask(opts.project, opts.session, opts.task));
+  } catch (err) {
+    const msg = (err as Error).message;
+    if (/unfinished/i.test(msg)) {
+      fail("task-rollup", msg, ExitCode.ROLLUP_INCOMPLETE);
+    }
+    fail("task-rollup", msg, ExitCode.ARG_ERROR);
+  }
+  emit(readSession(opts.project, opts.session));
+}
+
 // ── registration ────────────────────────────────────────
 
 export const program = createCli({
@@ -177,6 +333,88 @@ export const program = createCli({
         { flag: "--payload-path-check <key>", description: "Reset task if payload[key] file is missing" },
       ],
       action: runSessionResume,
+    },
+    {
+      name: "task-add",
+      description: "Add tasks (batch via --tasks JSON array)",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--tasks <json>", description: "JSON array of TaskInput", required: true },
+      ],
+      action: runTaskAdd,
+    },
+    {
+      name: "task-update",
+      description: "Update task fields",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--task <id>", description: "Task id", required: true },
+        { flag: "--status <s>", description: "pending|running|done|blocked|failed|skipped" },
+        { flag: "--reason <msg>", description: "Block / skip reason" },
+        { flag: "--payload <json>", description: "Merge into task payload" },
+        { flag: "--depends-on <csv>", description: "Replace depends_on list (comma-separated)" },
+        { flag: "--error <msg>", description: "Append to errors (with failed/blocked status)" },
+        { flag: "--force", description: "Bypass dependency check when starting", defaultValue: false },
+      ],
+      action: runTaskUpdate,
+    },
+    {
+      name: "task-remove",
+      description: "Remove a task by id",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--task <id>", description: "Task id", required: true },
+      ],
+      action: runTaskRemove,
+    },
+    {
+      name: "task-query",
+      description: "Query tasks with visibility rules",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--status <csv>", description: "Comma-separated statuses" },
+        { flag: "--kind <k>", description: "Filter by kind" },
+        { flag: "--parent <id>", description: "Filter by parent id" },
+        { flag: "--include-all", description: "Bypass all visibility filters", defaultValue: false },
+        { flag: "--include-blocked", description: "Show hidden (blocked) tasks with reasons", defaultValue: false },
+        { flag: "--format <fmt>", description: "json | table", defaultValue: "json" },
+      ],
+      action: runTaskQuery,
+    },
+    {
+      name: "task-block",
+      description: "Shortcut: set status=blocked with reason",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--task <id>", description: "Task id", required: true },
+        { flag: "--reason <msg>", description: "Block reason", required: true },
+      ],
+      action: runTaskBlock,
+    },
+    {
+      name: "task-unblock",
+      description: "Shortcut: clear blocked, return to pending",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--task <id>", description: "Task id", required: true },
+      ],
+      action: runTaskUnblock,
+    },
+    {
+      name: "task-rollup",
+      description: "Mark parent done if all children done/skipped",
+      options: [
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--session <id>", description: "Session id", required: true },
+        { flag: "--task <id>", description: "Parent task id", required: true },
+      ],
+      action: runTaskRollup,
     },
   ],
 });
