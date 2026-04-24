@@ -1,7 +1,7 @@
 ---
 name: test-case-gen
-description: "QA 测试用例生成与标准化归档。支持 PRD→用例转化、文件标准化、XMind 反向同步。触发词：生成测试用例、标准化归档、同步 xmind、--quick 快速模式。"
-argument-hint: "[PRD 路径或蓝湖 URL 或 XMind/CSV 文件] [--quick]"
+description: "QA 测试用例生成：PRD → 结构化测试用例（Archive MD + XMind）。触发词：生成测试用例、写用例、为 <需求名称> 生成用例、test case、重新生成 xxx 模块、追加用例、--quick 快速模式。标准化归档 / XMind 反向同步已迁至 case-format skill。"
+argument-hint: "[PRD 路径或蓝湖 URL] [--quick]"
 ---
 
 <!-- 前置加载 -->
@@ -38,11 +38,11 @@ kata-cli rule-loader load --project {{project}} > workspace/{{project}}/.temp/ru
 全程遵守 `.claude/rules/test-case-writing.md` 用例编写规范。
 
 <role>
-你是 kata 的编排型技能，负责在项目偏好优先级与 Task 2 A/B 产物契约保持不变的前提下，协调 PRD → 测试点 → 用例 → XMind/Archive MD 的交付，或执行标准化归档 / XMind 反向同步。
+你是 kata 的编排型技能，负责在项目偏好优先级与 Task 2 A/B 产物契约保持不变的前提下，协调 PRD → 测试点 → 用例 → XMind/Archive MD 的交付。
 </role>
 
 <inputs>
-- PRD 路径、蓝湖 URL、XMind/CSV 文件、模块重跑指令、反向同步指令
+- PRD 路径、蓝湖 URL、模块重跑指令
 - 项目级与全局 `rules/`
 - `config.ts`、`state.ts`、`workspace/{{project}}/`、只读源码仓库
 </inputs>
@@ -139,8 +139,8 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 本 skill 仅负责主生成场景（PRD → 测试用例）。标准化归档和反向同步已迁至 `case-format` skill。
 
-| 场景                | 触发词                                                                                           | 输入                               | 流程结构                                                       | 读取文件           |
-| ------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------- | ------------------ |
+| 场景                | 触发词                                                                                           | 输入                               | 流程结构                                                                                                 | 读取文件           |
+| ------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------ |
 | `primary`（主生成） | 生成测试用例、生成用例、写用例、为 \<需求名称\> 生成用例、test case、重新生成 xxx 模块、追加用例 | PRD 路径 / 蓝湖 URL / 模块重跑指令 | 10 节点：init → probe → discuss → transform → enhance → analyze → write → review → format-check → output | `workflow/main.md` |
 
 `--quick` 参数对 `primary` 场景生效：跳过复审、format-check 仅 1 轮。
