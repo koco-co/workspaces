@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, beforeEach, describe, it } from "node:test";
@@ -249,5 +249,36 @@ describe("artifact-set + artifact-get", () => {
       "artifact-get", "--project", "dataAssets", "--session", sid, "--key", "blob",
     ]).stdout);
     assert.equal(got.data.length, 100_000);
+  });
+});
+
+describe("progress migrate --from legacy", () => {
+  it("scans workspace .temp and migrates all legacy files", () => {
+    const wsTemp = join(TMP, "workspace", "dataAssets", ".temp");
+    mkdirSync(wsTemp, { recursive: true });
+    writeFileSync(join(wsTemp, ".kata-state-prd-a-default.json"), JSON.stringify({
+      project: "dataAssets", prd: "prd-a.md", mode: "normal",
+      current_node: "init", completed_nodes: [], node_outputs: {}, writers: {},
+      created_at: "x", updated_at: "x",
+    }));
+    writeFileSync(join(wsTemp, "ui-autotest-progress-my-suite.json"), JSON.stringify({
+      version: 1, suite_name: "my-suite",
+      archive_md: "x.md", url: "u", selected_priorities: ["P0"],
+      output_dir: "t/", started_at: "x", updated_at: "x",
+      current_step: 4, preconditions_ready: false, merge_status: "pending",
+      cases: {},
+    }));
+
+    const dry = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets",
+      "--dry-run"], { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
+    assert.equal(dry.plan.length, 2);
+
+    const real = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets"],
+      { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
+    assert.equal(real.migrated, 2);
+
+    const again = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets"],
+      { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
+    assert.equal(again.migrated, 0);
   });
 });

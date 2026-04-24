@@ -17,6 +17,9 @@ import {
 import type { TaskInput, TaskUpdatePatch } from "./lib/progress-store.ts";
 import { ExitCode } from "./lib/progress-types.ts";
 import type { TaskStatus } from "./lib/progress-types.ts";
+import {
+  migrateKataState, migrateUiAutotest, discoverLegacyFiles,
+} from "./lib/progress-migrator.ts";
 
 function slugFromPath(p: string): string {
   return basename(p, ".md").replace(/\.[^.]+$/, "");
@@ -286,6 +289,39 @@ function runArtifactGet(opts: { project: string; session: string; key: string })
   emit(v);
 }
 
+// ── migrate ─────────────────────────────────────────────
+
+async function runMigrate(opts: {
+  from: string;
+  project: string;
+  dryRun?: boolean;
+}): Promise<void> {
+  if (opts.from !== "legacy") {
+    fail("migrate", `unsupported --from value: ${opts.from}`, ExitCode.ARG_ERROR);
+  }
+  const entries = discoverLegacyFiles(opts.project);
+
+  if (opts.dryRun) {
+    emit({ plan: entries });
+    return;
+  }
+
+  let migrated = 0;
+  const results: Array<{ path: string; sessionId: string; kind: string }> = [];
+  for (const entry of entries) {
+    const result = entry.kind === "kata-state"
+      ? await migrateKataState({
+          legacyPath: entry.path, project: opts.project, env: entry.env, dryRun: false,
+        })
+      : await migrateUiAutotest({
+          legacyPath: entry.path, project: opts.project, env: entry.env, dryRun: false,
+        });
+    migrated++;
+    results.push({ path: entry.path, sessionId: result.sessionId, kind: entry.kind });
+  }
+  emit({ migrated, results });
+}
+
 // ── registration ────────────────────────────────────────
 
 export const program = createCli({
@@ -455,6 +491,16 @@ export const program = createCli({
         { flag: "--key <k>", description: "Artifact key", required: true },
       ],
       action: runArtifactGet,
+    },
+    {
+      name: "migrate",
+      description: "Migrate legacy kata-state / ui-autotest-progress files",
+      options: [
+        { flag: "--from <source>", description: "Migration source (only 'legacy' supported)", required: true },
+        { flag: "--project <name>", description: "Project name", required: true },
+        { flag: "--dry-run", description: "Show plan without writing anything", defaultValue: false },
+      ],
+      action: runMigrate,
     },
   ],
 });
