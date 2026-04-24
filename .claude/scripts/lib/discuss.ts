@@ -415,6 +415,20 @@ interface DimCount {
   pending: number;
 }
 
+// Returns the first dim whose key appears in location, using longest-key-first matching
+// to avoid substring collisions (e.g. "历史数据" must win over "数据源" when both appear).
+// Does NOT mutate the input array — sorts a copy.
+function matchDimension(
+  location: string,
+  dims: Array<{ key: string; label: string }>,
+): { key: string; label: string } | null {
+  const sorted = [...dims].sort((a, b) => b.key.length - a.key.length);
+  for (const dim of sorted) {
+    if (location.includes(dim.key)) return dim;
+  }
+  return null;
+}
+
 function countByDimensions(
   dims: Array<{ key: string; label: string }>,
   clarifications: Clarification[],
@@ -424,15 +438,14 @@ function countByDimensions(
     counts.set(dim.key, { total: 0, clarified: 0, autoDefaulted: 0, pending: 0 });
   }
   for (const c of clarifications) {
-    for (const dim of dims) {
-      if (c.location.includes(dim.key)) {
-        const entry = counts.get(dim.key);
-        if (!entry) break;
+    const hit = matchDimension(c.location, dims);
+    if (hit) {
+      const entry = counts.get(hit.key);
+      if (entry) {
         entry.total += 1;
         if (c.severity === "blocking_unknown" && c.user_answer) entry.clarified += 1;
         if (c.severity === "defaultable_unknown") entry.autoDefaulted += 1;
         if (c.severity === "pending_for_pm") entry.pending += 1;
-        break;
       }
     }
   }
@@ -525,10 +538,8 @@ const PENDING_FENCE_OPEN = "<!-- pending:begin -->";
 const PENDING_FENCE_CLOSE = "<!-- pending:end -->";
 
 function extractDimensionKeyword(location: string): string {
-  for (const dim of [...GLOBAL_DIMS, ...FUNCTIONAL_DIMS]) {
-    if (location.includes(dim.key)) return dim.label;
-  }
-  return "未分类";
+  const hit = matchDimension(location, [...GLOBAL_DIMS, ...FUNCTIONAL_DIMS]);
+  return hit ? hit.label : "未分类";
 }
 
 function renderPendingList(clarifications: Clarification[]): string {
@@ -567,7 +578,7 @@ function renderDownstreamHints(status: PlanStatus, clarifications: Clarification
   ];
   if (pendingCount > 0) {
     lines.push(
-      `- **⚠️ 存在 ${pendingCount} 条 pending_for_pm**：下游门禁（Phase C）会拦截，请先把 §6 打勾回写为 blocking_unknown + user_answer。`,
+      `- **⚠️ 存在 ${pendingCount} 条 pending_for_pm**：下游节点会拦截（pending_for_pm 未闭合）；请先在 §6 待定清单打勾，并由 AI 将条目回写为 blocking_unknown + user_answer。`,
     );
   }
   return lines.join("\n");

@@ -129,7 +129,12 @@ describe("parsePlan", () => {
     const plan = buildInitialPlan(baseInput);
     const parsed = parsePlan(plan);
     assert.equal(parsed.clarifications.length, 0);
-    assert.match(parsed.summary, /### 背景[\s\S]+### 成功标准/);
+    assert.match(parsed.summary, /### 背景/);
+    assert.match(parsed.summary, /### 痛点/);
+    assert.match(parsed.summary, /### 目标/);
+    assert.match(parsed.summary, /### 成功标准/);
+    assert.match(parsed.summary, /_TODO 主 agent 摘录业务背景/);
+    assert.match(parsed.summary, /_TODO 主 agent 摘录可衡量的成功标准_/);
   });
 
   it("parses plan with single blocking clarification", () => {
@@ -456,5 +461,79 @@ describe("roundtrip", () => {
     assert.equal(parsed.frontmatter.clarify_count, 2);
     assert.equal(parsed.frontmatter.auto_defaulted_count, 1);
     assert.equal(parsed.frontmatter.discussion_rounds, 3);
+  });
+});
+
+// ============================================================================
+// Dimension matching (longest-first)
+// ============================================================================
+
+describe("dimension matching (longest-first)", () => {
+  const baseFm = {
+    plan_version: 2 as const,
+    prd_slug: "x",
+    prd_path: "x",
+    project: "p",
+    requirement_id: "1",
+    requirement_name: "n",
+    created_at: "2026-04-24T10:00:00+08:00",
+    updated_at: "2026-04-24T10:00:00+08:00",
+    status: "discussing" as const,
+    discussion_rounds: 1,
+    clarify_count: 1,
+    auto_defaulted_count: 0,
+    pending_count: 0,
+    resume_anchor: "discuss-in-progress" as const,
+    knowledge_dropped: [],
+    handoff_mode: null,
+    repo_consent: null,
+  };
+
+  it("classifies '历史数据迁移到数据源' as 历史数据 not 数据源", () => {
+    const clars: Clarification[] = [
+      {
+        id: "Q1",
+        severity: "blocking_unknown",
+        question: "?",
+        location: "历史数据迁移到数据源的字段",
+        recommended_option: "A",
+        options: [],
+        user_answer: {
+          selected_option: "A",
+          value: "x",
+          answered_at: "2026-04-24T00:00:00+08:00",
+        },
+      },
+    ];
+    const plan = __internal.renderPlan(baseFm, clars, "");
+    // 历史数据 row: 1 total / 1 clarified / 0 auto / 0 pending
+    assert.match(plan, /\| 历史数据 \| 1 \| 1 \| 0 \| 0 \|/);
+    // 数据源 row: all zeros
+    assert.match(plan, /\| 数据源 \| 0 \| 0 \| 0 \| 0 \|/);
+  });
+
+  it("classifies pending 'PRD 合理性审查 → 数据源' as PRD 合理性 (longer key wins)", () => {
+    const clars: Clarification[] = [
+      {
+        id: "Q2",
+        severity: "pending_for_pm",
+        question: "?",
+        location: "PRD 合理性审查 → 数据源边界",
+        recommended_option: "否",
+        options: [],
+      },
+    ];
+    const pendingFm = {
+      ...baseFm,
+      clarify_count: 0,
+      pending_count: 1,
+    };
+    const plan = __internal.renderPlan(pendingFm, clars, "");
+    // PRD 合理性 row: 1 total / 0 clarified / 0 auto / 1 pending
+    assert.match(plan, /\| PRD 合理性 \| 1 \| 0 \| 0 \| 1 \|/);
+    // 数据源 row: all zeros
+    assert.match(plan, /\| 数据源 \| 0 \| 0 \| 0 \| 0 \|/);
+    // §6 pending list label should read [PRD 合理性] not [数据源]
+    assert.match(plan, /- \[ \] \*\*\[PRD 合理性\]\*\* Q2:/);
   });
 });
