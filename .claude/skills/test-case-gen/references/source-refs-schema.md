@@ -101,7 +101,3 @@ plan#q3-审批状态             # 迁移后应改写为 enhanced#q3
 - analyze / write 允许 `prd#` / `knowledge#` 前缀（不要求 `enhanced#` 锚点解析）
 - reviewer F16 放宽：`prd#` / `knowledge#` 可解析即放行
 - `enhanced#` 锚点仍建议使用（当 source-facts-agent 仅扫 images 时 §3 锚点依然存在）
-
-## 与 clarify-protocol.md 的关系
-
-`clarify-protocol.md` 的 envelope 协议已 DEPRECATED（Phase B 起）；所有澄清通过 enhanced.md §4 持久化。transform-agent 已删除；新流程下 analyze / write / review 不再产出 `<clarify_envelope>`。

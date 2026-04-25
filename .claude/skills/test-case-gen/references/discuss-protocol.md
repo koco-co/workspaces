@@ -124,7 +124,3 @@ complete 后回到 writing，writer-agent 重跑构建 `<confirmed_context>`：
 }
 </confirmed_context>
 ```
-
-## 与 clarify-protocol.md 的关系
-
-`references/clarify-protocol.md` 已标 DEPRECATED（Phase B 起）；其 envelope 协议在 discuss 节点不再使用。Phase D2 起 transform-agent / enhance-agent 已删除。所有澄清通过 enhanced.md §4 + `add-pending` / `resolve` 持久化。
