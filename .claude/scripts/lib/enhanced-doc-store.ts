@@ -103,7 +103,6 @@ _TODO_
 `;
 
 export interface InitDocOptions {
-  migratedFromPlan?: boolean;
   strategyId?: string;
 }
 
@@ -132,7 +131,7 @@ export function initDoc(
     reentry_from: null,
     source_consent: null,
     source_reference: "full",
-    migrated_from_plan: opts.migratedFromPlan ?? false,
+    migrated_from_plan: false,
     q_counter: 0,
     created_at: now,
     updated_at: now,

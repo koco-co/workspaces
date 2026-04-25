@@ -33,11 +33,10 @@ kata-cli source-ref batch --refs-json /tmp/refs-*.json \
 
 CLI 内部按前缀 dispatch：
 
-- `enhanced#...` → 调 `discuss validate --check-source-refs`（D3 前仍可走 legacy plan.md path；D2 过渡期 CLI 兼容两种）
+- `enhanced#...` → 调 `discuss validate --check-source-refs`
 - `prd#...` → 读 `{prd_dir}/original.md` slug 校验
 - `knowledge#...` → knowledge-keeper read 校验
 - `repo#...` → 文件 + 行号存在校验
-- `plan#...` → legacy 兼容，warning 放行
 
 批量结果按 F16 规则计入 issues。主 agent 不必在 skill 层重复调用——审查输出 JSON 中的 `issues[].code="F16"` 已承担结果汇聚职责。
 

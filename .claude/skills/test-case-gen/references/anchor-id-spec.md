@@ -60,10 +60,10 @@ enhanced.md 中所有可被 `source_ref` 引用的段落必须带显式 `<a id="
 
 ## 历史兼容
 
-Phase D2 过渡期允许 `source_ref` 出现：
+`source_ref` 当前合法 scheme：
 - `enhanced#<anchor>`（主路径）
 - `prd#<section>`（`source_reference=none` 降级路径）
 - `knowledge#<type>.<name>`（知识库引用）
 - `repo#<short>/<path>:L<line>`（可选兜底，仅 source_consent 非空时）
 
-旧前缀 `plan#q<id>-<slug>` 在 Phase D3 完成后正式 **DEPRECATED**：所有澄清问题已迁移到 `enhanced#q{n}`，reviewer F16 检测到 `plan#` 前缀按 F16 计数（不再放行）。
+旧前缀 `plan#q<id>-<slug>` 已于 Phase D4 彻底下线，parser 直接拒绝；所有澄清问题统一使用 `enhanced#q{n}`（与 enhanced.md §4 待确认项锚点对齐）。

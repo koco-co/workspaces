@@ -70,7 +70,7 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 当 Writer Sub-Agent 返回 `<blocked_envelope>` 时，表示需求信息不足以继续编写，或输入无效。
 
-**核心变更**：Phase D2 起不再调 `discuss append-clarify`（legacy），改为调 `discuss add-pending` 把阻断条目沉淀为 enhanced.md §4 的持久记录。enhanced.md 在 `analyzing`/`writing` 下允许 add-pending，CLI 内部自动回退 status 并记 `reentry_from`。
+**核心变更**：阻断条目通过 `discuss add-pending` 沉淀为 enhanced.md §4 的持久记录。enhanced.md 在 `analyzing`/`writing` 下允许 add-pending，CLI 内部自动回退 status 并记 `reentry_from`。
 
 #### 处理流程
 
@@ -100,7 +100,7 @@ Writer Sub-Agent 完成时更新：`[write] {{模块名}} — {{n}} 条用例`
 
 4. **回到 discuss 3.7 → 3.9 → 3.10**：主 agent 按 `workflow/03-discuss.md` 3.7 节逐条向用户确认（仍是 3 选项格式），用户回答后再次自审（3.9）+ complete（3.10）。
 
-5. **重入 writer**：discuss complete 成功返回 `status=writing` 后（CLI 按 reentry_from 自动恢复），主 agent 回到节点 5 write 派发该模块 Writer。重派前构建 `<confirmed_context>`：
+5. **重入 writer**：调用方将 status 切回 `writing` 后（CLI 按 reentry_from 自动恢复），主 agent 回到节点 5 write 派发该模块 Writer。重派前构建 `<confirmed_context>`：
 
    ```xml
    <confirmed_context>

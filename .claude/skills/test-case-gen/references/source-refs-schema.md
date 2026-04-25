@@ -1,12 +1,12 @@
 # source_ref 锚点规范
 
-> 供 Phase D2 下游节点（analyze / write / review）使用。主路径为 enhanced.md 稳定锚点；Phase D3 前 `plan#` 旧前缀保留兼容。
+> 供下游节点（analyze / write / review）使用。主路径为 enhanced.md 稳定锚点。
 
 ## 语法
 
 ```
 source_ref ::= <scheme>#<anchor>
-scheme     ::= enhanced | prd | knowledge | repo | plan (legacy)
+scheme     ::= enhanced | prd | knowledge | repo
 ```
 
 ### enhanced 锚点（主路径）
@@ -53,16 +53,11 @@ repo#studio/src/approval/list.tsx:L123
 repo#backend/ApprovalController.java:L45-L60
 ```
 
-### plan 锚点（Phase D3 起 DEPRECATED）
+### plan 锚点（已下线）
 
-旧用例若仍出现 `plan#q<id>-<slug>` 格式，reviewer F16 计为不可解析（不再放行）。所有澄清问题已统一迁移到 `enhanced#q{n}`（与 enhanced.md §4 待确认项锚点对齐）。
+`plan#` 前缀已于 Phase D4 彻底下线，parser 直接拒绝；reviewer F16 检测到 `plan#` 前缀按不可解析计。所有澄清问题统一使用 `enhanced#q{n}`（与 enhanced.md §4 待确认项锚点对齐）。
 
-```
-# 已废弃，应改写为 enhanced#q3
-plan#q3-审批状态
-```
-
-## Phase D2 使用约束
+## 使用约束
 
 | 节点 | 强制字段 | 失败行为 |
 |---|---|---|
@@ -72,11 +67,10 @@ plan#q3-审批状态
 
 ### 解析优先级
 
-1. `enhanced#<anchor>` → `discuss validate --check-source-refs` 校验（D3 实装；D2 仅文档层校对）
+1. `enhanced#<anchor>` → `discuss validate --check-source-refs` 校验
 2. `prd#<slug>` → 读 original.md 比对 slug（仅 `source_reference=none` 允许）
 3. `knowledge#<type>.<name>` → knowledge-keeper read 校验条目存在
 4. `repo#<path>:L<n>` → 文件 + 行号存在性检查
-5. `plan#...`（legacy）→ 打 warning + 放行
 
 ## 在 Clarification 中使用
 

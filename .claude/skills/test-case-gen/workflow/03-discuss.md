@@ -24,7 +24,6 @@
 - 全新讨论（probe 刚创建）→ 直接进 3.2（骨架已由 probe 2.5 创建）
 - 恢复 `status=discussing` → `kata-cli discuss read --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}}` 拿到 §4 已 resolve + 未 resolve 清单 + pending_count
 - 恢复 `status=pending-review` → 进 3.7 resolve 循环（跳过 3.2-3.6）
-- `migrated_from_plan=true` → 从 3.2 开始补齐 source-facts + §2；§1 由 migrate-plan 迁入，跳过 3.3 若不空
 
 > `status=ready` 已在节点 1.2 触发跳过，不会进入本节点。
 
@@ -63,19 +62,13 @@ kata-cli repo-profile match --text "{{prd_title_or_path}}"
 kata-cli repo-sync sync-profile --name "{{profile_name}}"
 ```
 
-取返回的 SHA。然后写入 enhanced.md：
+取返回的 SHA。然后把许可信息写入 enhanced.md Appendix A 源码事实表（`discuss set-source-facts`），将 repos / branch / sha / granted_at 作为事实记录沉淀。
 
-```bash
-kata-cli discuss set-repo-consent \
-  --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}} \
-  --content '{"repos":[{"path":"workspace/{{project}}/.repos/studio","branch":"master","sha":"{{sha_1}}"}],"granted_at":"{{iso_now}}"}'
-```
+**仅引用本地副本** → 不做同步；同样把许可信息写入 source-facts，sha 省略。
 
-**仅引用本地副本** → 不做同步；直接 set-repo-consent 但 sha 省略。
+**拒绝 / 不使用源码** → 不写 source-facts 中的 consent 字段；`frontmatter.source_reference` 改由 `set-status` 或同等接口置 `none`。
 
-**拒绝 / 不使用源码** → `kata-cli discuss set-repo-consent --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}} --clear`。CLI 自动把 `frontmatter.source_reference` 置 `none`。
-
-> **切换仓库 / 重启讨论** → 强制 `set-repo-consent --clear`，下一轮重新询问。
+> **切换仓库 / 重启讨论** → 直接清掉 source-facts 中的 consent / repos 字段后再走一轮询问。
 
 ## 3.2.5 系统性素材扫描（合并原 transform + enhance 职责）
 
@@ -122,8 +115,6 @@ kata-cli discuss set-section \
 ```
 
 （uuid 由 probe 2.5 init 时预分配；可通过 `discuss read` 获取）
-
-`migrated_from_plan=true` 时 §1 已从旧 plan.md §1 摘要迁入，本步骤仅做 AskUserQuestion 复核。
 
 ## 3.4 功能细节初稿（enhanced.md §2）
 
@@ -245,7 +236,7 @@ kata-cli discuss validate \
 
 - 退出码 0 → 进入 3.10
 - 退出码 2（pending > 0）→ 回 3.7 续 resolve
-- 退出码 1（schema / 锚点异常）→ 检查是否被手改；必要时 `discuss reset`
+- 退出码 1（schema / 锚点异常）→ 检查是否被手改；必要时手动删 enhanced.md 重新 init
 
 ## 3.10 complete + 交接模式弹窗
 
@@ -260,19 +251,24 @@ kata-cli discuss validate \
 - New-Session-Driven（输出交接 prompt，结束当前会话）
 ```
 
-### 3.10.2 调 complete
+### 3.10.2 切 status=ready + 写 knowledge
 
-```bash
-kata-cli discuss complete \
-  --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}} \
-  --handoff-mode current|new \
-  --knowledge-summary '[{"type":"term","name":"..."},...]'
-```
+旧 `discuss complete` 已下线，改为分两步：
 
-- 成功 → status=ready / handoff_mode 落盘
-- 退出 1（仍有未 resolve）→ 回 3.7
+1. 把 status 切到 `ready`：
 
-若 `frontmatter.source_reference=none`，CLI stdout 会输出降级 banner：
+   ```bash
+   kata-cli discuss set-status \
+     --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}} \
+     --status ready
+   ```
+
+2. 若本轮讨论沉淀了术语 / 模块 / 踩坑（参见 3.8 的 knowledge_summary 列表），调 `knowledge-keeper` skill 写入业务知识库；handoff_mode 由主 agent 自身记录在交接 prompt 中（不再写 enhanced.md frontmatter）。
+
+- set-status 退出 0 → 进入 3.10.3 交接分支
+- set-status 退出 1（仍有未 resolve / 锚点异常）→ 回 3.7 或 3.9
+
+若 source-facts 中没有 consent / repos（即"未引用源码"），主 agent 应在终端输出降级 banner：
 
 ```
 ⚠️ 本次讨论未引用源码，待确认项的推荐值可能不够精准。
@@ -327,7 +323,7 @@ analyze / write 节点发现新疑问 / Writer `<blocked_envelope>` → 主 agen
 1. 跳 3.1-3.6，直接进 3.7 对新 Q AskUserQuestion
 2. 3.8（本轮额外沉淀的知识）
 3. 3.9 自审
-4. 3.10 complete → CLI 按 `reentry_from` 把 status 切回 `analyzing` / `writing`
+4. 3.10 set-status → CLI 按 `reentry_from` 把 status 切回 `analyzing` / `writing`
 5. 主 agent 回到对应节点增量重跑：已产出的 test_points / cases 保留，仅对新 Q 相关的 source_ref 重算
 
 ---
@@ -336,10 +332,10 @@ analyze / write 节点发现新疑问 / Writer `<blocked_envelope>` → 主 agen
 
 | 情况 | 处理 |
 |---|---|
-| `discuss read` 返回 schema 错误 | 检查 enhanced.md 是否被手改；`discuss reset` → 重新 init |
-| `set-repo-consent` 失败（enhanced.md 不存在） | 回 probe 2.5 重新 init |
+| `discuss read` 返回 schema 错误 | 检查 enhanced.md 是否被手改；手动删 enhanced.md → 重新 init |
+| 写 source-facts / set-section 失败（enhanced.md 不存在） | 回 probe 2.5 重新 init |
 | 源码同步失败 | 提示用户；降级为"仅引用本地副本"走 3.2.3 分支 2 |
 | validate 退出 2（pending > 0） | 回 3.7 |
-| validate 退出 1（锚点/schema 异常） | 检查手改痕迹；必要时 `discuss reset` |
-| 用户中途切换 PRD | 禁止当前 enhanced.md 复用；走 `discuss reset` + 节点 1/2 重跑 |
+| validate 退出 1（锚点/schema 异常） | 检查手改痕迹；必要时手动删 enhanced.md 重新 init |
+| 用户中途切换 PRD | 禁止当前 enhanced.md 复用；手动删 enhanced.md + 节点 1/2 重跑 |
 | source-facts-agent 超时 | warning 继续；必要时重跑 3.2.5 |

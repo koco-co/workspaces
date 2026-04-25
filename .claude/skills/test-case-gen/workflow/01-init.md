@@ -36,7 +36,7 @@ kata-cli discuss read \
   2>/dev/null
 ```
 
-按返回 `frontmatter.status` / `frontmatter.migrated_from_plan` / `frontmatter.reentry_from` 决定下游路由：
+按返回 `frontmatter.status` / `frontmatter.reentry_from` 决定下游路由：
 
 | 状态 | 下游 |
 |---|---|
@@ -47,7 +47,6 @@ kata-cli discuss read \
 | `status=analyzing` | 进节点 4 analyze（半冻结恢复） |
 | `status=writing` | 进节点 5 write（半冻结恢复） |
 | `status=completed` | AskUserQuestion 问用户是否重跑（默认不重跑 → 退出） |
-| `migrated_from_plan=true` | 进入节点 3 discuss；主 agent 从 3.2 补齐 source-facts + §2 |
 
 > 提示：`progress session-resume` 与 `discuss read` 互补 — 前者管"工作流上次跑到哪个节点"，后者管"需求文档状态"。两者独立判定后按各自结论行事。
 

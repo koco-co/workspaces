@@ -95,7 +95,6 @@ kata-cli discuss validate \
 | `prd#<slug>` | 读 `{prd_dir}/original.md` slug 匹配 | 仅 `source_reference=none` 允许；否则 F16 |
 | `knowledge#<type>.<name>` | knowledge-keeper read 条目存在 | 严格 |
 | `repo#<path>:L<n>` | 文件 + 行号存在 | 仅 source_consent 非空允许 |
-| `plan#...`（legacy） | 旧 plan.md 尝试解析 | **打 warning 但放行**；Phase D3 前保留 |
 
 F16 计入问题率，但**不触发自动修正**；标记为 `[F16-MANUAL]` 在 manual_items 输出。
 

@@ -16,7 +16,7 @@
                 "dimension": "string — 测试维度（功能正向/功能逆向/边界值/兼容性/性能/安全/用户体验）",
                 "priority": "string — P0/P1/P2",
                 "description": "string — 可指导 Writer 编写用例的详细说明",
-                "source_ref": "string — 必填，形如 plan#q3-数据源 / prd#2.1.3 / knowledge#overview.数据源默认 / repo#studio/src/approval/list.tsx:L45。Phase C 起 reviewer 会按 F16 规则校验可解析性。"
+                "source_ref": "string — 必填，形如 enhanced#q3 / prd#2.1.3 / knowledge#overview.数据源默认 / repo#studio/src/approval/list.tsx:L45。Phase C 起 reviewer 会按 F16 规则校验可解析性。"
               }
             ]
           }

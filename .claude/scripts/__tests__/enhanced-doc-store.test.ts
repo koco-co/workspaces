@@ -42,12 +42,6 @@ describe("enhanced-doc-store: frontmatter", () => {
     expect(doc.frontmatter.prd_slug).toBe(TEST_SLUG);
   });
 
-  test("initDoc with migrated_from_plan=true sets flag", () => {
-    initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG, { migratedFromPlan: true });
-    const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    expect(doc.frontmatter.migrated_from_plan).toBe(true);
-  });
-
   test("initDoc pre-allocates top-level section anchors", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     const raw = readFileSync(

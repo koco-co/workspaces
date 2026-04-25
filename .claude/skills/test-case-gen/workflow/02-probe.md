@@ -87,13 +87,7 @@ CLI 自动生成 `$PRD_DIR/enhanced.md` 骨架（§1 / §2 / §3 / §4 / Appendi
     --payload '{"strategy_resolution": {{resolution_json}}, "prd_dir": "'$PRD_DIR'"}'
   ```
 
-- **enhanced.md frontmatter**：
-
-  ```bash
-  kata-cli discuss set-strategy \
-    --project {{project}} --yyyymm {{YYYYMM}} --prd-slug {{prd_slug}} \
-    --strategy-resolution '{{resolution_json}}'
-  ```
+- **enhanced.md §2 自检表**：策略写入由 enhanced.md `set-section`（§2 自检表锚点）等操作完成；具体 anchor 由 probe 2.5 init 时预分配，可通过 `discuss read` 获取。
 
 ### 2.7 S5 外转处理（交互点 P1）
 
@@ -106,7 +100,7 @@ CLI 自动生成 `$PRD_DIR/enhanced.md` 骨架（§1 / §2 / §3 / §4 / Appendi
 
 **选项 1**：主 agent 立即停止当前 workflow，引导用户重新输入 `/daily-task hotfix <Bug URL>`
 **选项 2**：调 `case-strategy-resolver resolve --profile ... --force-strategy S4` 把 resolution 覆盖为 S4 后继续
-**选项 3**：`discuss reset` + `state.ts clean` + 退出
+**选项 3**：删除 enhanced.md + `state.ts clean` + 退出
 
 ### 2.8 非 S5 情况
 

@@ -119,7 +119,7 @@ XSS、SQL 注入、越权访问、敏感字段脱敏。
 3. **knowledge 锚点**：业务知识（术语或踩坑） → `knowledge#<type>.<name>`
 4. **repo 锚点**（可选兜底）：source_consent 非空且来自源码考古 → `repo#<short>/<rel_path>:L<line>`
 
-禁用旧 `plan#q<id>-<slug>` 前缀（legacy；Phase D3 前仍可被 reviewer 放行但打 warning）。
+禁用旧 `plan#q<id>-<slug>` 前缀（D4 已下线，reviewer F16 检测到按 F16 计数）。
 
 示例：
 

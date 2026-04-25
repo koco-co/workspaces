@@ -64,7 +64,7 @@ model: sonnet
                 {
                   "title": "验证填写完整表单后成功新增记录",
                   "priority": "P0",
-                  "source_ref": "plan#q3-新增流程",
+                  "source_ref": "enhanced#q3",
                   "preconditions": "当前账号具有「{{module_name}}」新增权限\n已存在可选的分类「示例分类A」",
                   "steps": [
                     {
@@ -84,7 +84,7 @@ model: sonnet
                 {
                   "title": "验证名称字段超过最大长度时提示错误",
                   "priority": "P1",
-                  "source_ref": "plan#q5-名称字段校验",
+                  "source_ref": "enhanced#q5",
                   "preconditions": "当前账号具有「{{module_name}}」新增权限",
                   "steps": [
                     {
@@ -381,7 +381,7 @@ model: sonnet
 
 ## Phase D2 阻断回射（改为 add-pending）
 
-Writer 输出 `<blocked_envelope status="needs_confirmation">` 时，主 agent 不再调 `append-clarify`（旧 plan.md），而是：
+Writer 输出 `<blocked_envelope status="needs_confirmation">` 时，主 agent 调用：
 
 1. 遍历 items：每条调 `kata-cli discuss add-pending --project {p} --yyyymm {ym} --prd-slug {slug} --location "writer 回射：{item.location}" --question "{item.question}" --recommended "{item.recommended_option.description}" --expected "..."`
 2. CLI 内部自动：

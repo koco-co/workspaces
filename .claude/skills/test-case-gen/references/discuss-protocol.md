@@ -6,12 +6,11 @@
 
 | 场景 | 来源 | 行为 |
 |---|---|---|
-| 全新需求 | 无 enhanced.md | `discuss init` → 3.2 源码许可 → 3.2.5 source-facts-agent → 3.3-3.7 讨论 → `complete` |
+| 全新需求 | 无 enhanced.md | `discuss init` → 3.2 源码许可 → 3.2.5 source-facts-agent → 3.3-3.7 讨论 → `set-status ready` |
 | 中断恢复 | enhanced.md status=discussing | `discuss read` 恢复 §4 已 resolve + 未 resolve 清单 → 续走 3.7 |
 | 已完成 | enhanced.md status=ready | 跳过 discuss，主 agent 直接进节点 4 analyze |
 | 半冻结回射 | enhanced.md status=analyzing / writing | `add-pending` 自动回退到 discussing 并记 `reentry_from`；回到 3.7 续问 |
-| 迁移恢复 | enhanced.md migrated_from_plan=true | 从 3.2 开始补齐 Appendix A + §2 + §3 |
-| obsolete | enhanced.md updated_at < original.md mtime 且超 5 分钟 | `discuss reset` → `init` 重新讨论 |
+| obsolete | enhanced.md updated_at < original.md mtime 且超 5 分钟 | 手动重新 `init` 重新讨论 |
 
 ## 10 维度自检清单
 
@@ -55,19 +54,19 @@ kata-cli knowledge-keeper write \
   --confirmed
 ```
 
-3. 收集所有落地条目 → 构造 `[{"type":"term","name":"..."},...]` JSON
-4. `discuss complete --knowledge-summary '<json>'` 时 CLI 自动写入 enhanced.md frontmatter.knowledge_dropped
+3. 收集所有落地条目 → 调用方在节点收尾时直接把 `[{"type":"term","name":"..."},...]` 追加进 enhanced.md frontmatter.knowledge_dropped
 
 严禁主 agent 直接写 `workspace/{project}/knowledge/` 下任何文件。
 
-## complete 前置守卫
+## ready 切换前置守卫
 
 - 调 `discuss validate --require-zero-pending` 验证 §4 所有 Q 均已 resolve（或为"默认采用"状态）
 - 检查锚点完整性（validate 内置的 6 项检查）
-- 收集本轮沉淀的 knowledge 列表 → 构造 `--knowledge-summary` JSON
-- 选 `--handoff-mode current|new`：
+- 收集本轮沉淀的 knowledge 列表 → 调用方追加进 frontmatter.knowledge_dropped
+- 调用方根据上下文决定 handoff_mode：
   - `current`：主 agent 在当前会话进节点 4 analyze
   - `new`：输出交接 prompt，结束当前会话，由用户新开会话接力
+- 通过校验后调用方调 `set-status ready`
 - `source_reference=none` 时输出降级 banner：
 
   ```
@@ -87,7 +86,7 @@ analyze 或 write 节点发现新疑问 / Writer 输出 `<blocked_envelope>`：
    - §4 追加新 Q 区块，脚注插入到对应 `s-*` 锚点段落
 3. 主 agent 回到 discuss 3.7 对新 Q 逐条 AskUserQuestion + resolve
 4. 所有新 Q 解决 → 3.9 自审 + `discuss validate --require-zero-pending`
-5. `discuss complete --handoff-mode current` → CLI 按 `reentry_from` 把 status 恢复到 `analyzing` / `writing`
+5. 调用方读取 `reentry_from`，调 `set-status` 把 status 恢复到 `analyzing` / `writing`
 6. 主 agent 回到节点 4 / 5 增量重跑：已产出的 test_points / cases 保留，仅对新 Q 相关的 source_ref 重算
 
 Writer `<blocked_envelope>` 回射的 item → add-pending 映射：
@@ -107,7 +106,7 @@ Writer `<blocked_envelope>` 回射的 item → add-pending 映射：
 }
 ```
 
-complete 后回到 writing，writer-agent 重跑构建 `<confirmed_context>`：
+恢复到 writing 后，writer-agent 重跑构建 `<confirmed_context>`：
 
 ```xml
 <confirmed_context>

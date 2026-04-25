@@ -39,17 +39,9 @@ export const program = createCli({
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--yyyymm <ym>", description: "月份 YYYYMM", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--migrated-from-plan", description: "从 plan.md 迁移", defaultValue: false },
       ],
-      action: (opts: {
-        project: string;
-        yyyymm: string;
-        prdSlug: string;
-        migratedFromPlan: boolean;
-      }) => {
-        initDoc(opts.project, opts.yyyymm, opts.prdSlug, {
-          migratedFromPlan: opts.migratedFromPlan,
-        });
+      action: (opts: { project: string; yyyymm: string; prdSlug: string }) => {
+        initDoc(opts.project, opts.yyyymm, opts.prdSlug);
         process.stdout.write(JSON.stringify({ ok: true }) + "\n");
       },
     },
