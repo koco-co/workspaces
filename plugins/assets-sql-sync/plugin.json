@@ -1,5 +1,0 @@
-{
-  "name": "assets-sql-sync",
-  "description": "DTStack 平台前置条件插件 — Meta/非Meta 数据源建表、引入、元数据同步",
-  "version": "0.1.0"
-}

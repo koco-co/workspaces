@@ -11,4 +11,5 @@ export { ensureProject } from "./sdk/ensure-project";
 export type { EnsureProjectOptions } from "./sdk/ensure-project";
 export type { Session } from "./core/auth/login";
 export type { Project } from "./core/platform/project";
-export type { DtStackClientLike } from "./core/http/client";
+export { DtStackClient } from "./core/http/client";
+export type { DtStackClientLike, DtStackClientOptions, DtStackResponse } from "./core/http/client";

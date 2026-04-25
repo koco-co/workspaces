@@ -65,7 +65,7 @@ kata-cli progress task-add \
 当用例的 `preconditions` 包含 SQL 建表/数据准备时：
 
 1. **分析建表语句**：从前置条件中提取 CREATE TABLE + INSERT 语句，忽略数据库名
-2. **通过 API 建表**：在脚本的 `test.beforeAll` 中使用 `setupPreconditions`（来自 `assets-sql-sync` 插件），它会自动：查找离线项目 → 获取数据源 → 执行 DDL → 引入数据源 → 元数据同步
+2. **通过 API 建表**：在脚本的 `test.beforeAll` 中使用 `setupPreconditions`（来自 `dtstack-cli` 包），它会自动：查找离线项目 → 获取数据源 → 执行 DDL → 引入数据源 → 元数据同步
 3. **数据源引入**：`setupPreconditions` 自动处理，无需额外操作
 4. **判断是否涉及数据质量**：如果需求与数据质量模块相关（规则集、规则任务、质量报告等），需要额外创建资产项目（命名：`Story_{{prd_id}}`）
 5. **数据源授权**：将测试数据源授权给资产项目

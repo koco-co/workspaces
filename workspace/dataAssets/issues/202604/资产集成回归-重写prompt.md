@@ -161,8 +161,8 @@ MD 中的用例描述普遍简陋:
 | `tests/e2e/202604/资产-集成测试用例/sql/*.sql` | 4 个 Doris 建表 SQL |
 | `tests/e2e/fixtures/step-screenshot.ts` | step + 截图 fixture（已有红框能力, 需正确使用） |
 | `tests/e2e/helpers/test-setup.ts` | URL 构建、Cookie 注入、Ant Design helpers |
-| `tests/e2e/helpers/preconditions.ts` | `setupPreconditions` 导出 |
-| `plugins/assets-sql-sync/src/` | 平台 API 封装（Batch DDL、资产引入、元数据同步） |
+| `tests/e2e/helpers/preconditions.ts` | `setupPreconditions` 导出（来自 `dtstack-cli`） |
+| `tools/dtstack-cli/src/` | dtstack-cli 统一包（Batch DDL、资产引入、元数据同步） |
 | `workspace/archive/202604/资产-集成测试用例.md` | MD 源用例（需反向补全） |
 | `.env` | 环境配置（cookie、baseUrl） |
 
