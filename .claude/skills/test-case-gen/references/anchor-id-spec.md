@@ -66,4 +66,4 @@ Phase D2 过渡期允许 `source_ref` 出现：
 - `knowledge#<type>.<name>`（知识库引用）
 - `repo#<short>/<path>:L<line>`（可选兜底，仅 source_consent 非空时）
 
-旧前缀 `plan#q<id>-<slug>` 已于 Phase D3 前移到 `enhanced#q{n}`；如旧用例中仍出现，reviewer F16 放行但打 warning。
+旧前缀 `plan#q<id>-<slug>` 在 Phase D3 完成后正式 **DEPRECATED**：所有澄清问题已迁移到 `enhanced#q{n}`，reviewer F16 检测到 `plan#` 前缀按 F16 计数（不再放行）。
