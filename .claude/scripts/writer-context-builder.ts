@@ -1,15 +1,24 @@
 #!/usr/bin/env bun
 /**
  * writer-context-builder.ts — 按模块切分 PRD，为每个 writer 构建精简上下文。
+ *
  * Usage:
- *   kata-cli writer-context-builder build \
- *     --prd <path> --test-points <path> --writer-id <module> [--rules <path>]
- *     [--strategy-id <id>] [--knowledge-injection <mode>] [--project <name>]
+ *   主路径 (enhanced.md):
+ *     kata-cli writer-context-builder build \
+ *       --project <name> --yyyymm <ym> --prd-slug <slug> \
+ *       --test-points <path> --writer-id <module> [--rules <path>] \
+ *       [--workspace-dir <dir>] [--strategy-id <id>] \
+ *       [--knowledge-injection <mode>]
+ *
+ *   legacy (任意 PRD 文件):
+ *     kata-cli writer-context-builder build \
+ *       --prd <path> --test-points <path> --writer-id <module> [--rules <path>] \
+ *       [--strategy-id <id>] [--knowledge-injection <mode>] [--project <name>]
  */
 
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
 import { repoRoot } from "./lib/paths.ts";
 
@@ -186,7 +195,10 @@ function writerIdToKebab(writerId: string): string {
 // ─── Command ───────────────────────────────────────────────────────────────────
 
 function runBuild(opts: {
-  prd: string;
+  prd?: string;
+  prdSlug?: string;
+  yyyymm?: string;
+  workspaceDir?: string;
   testPoints: string;
   writerId: string;
   rules?: string;
@@ -194,16 +206,38 @@ function runBuild(opts: {
   knowledgeInjection: string;
   project?: string;
 }): void {
-  const prdPath = resolve(opts.prd);
   const tpPath = resolve(opts.testPoints);
 
-  // Read PRD
+  // Read PRD —— primary path resolves enhanced.md from --prd-slug + --yyyymm + --project;
+  // legacy --prd <path> remains as a compatibility branch.
   let prdContent: string;
-  try {
-    prdContent = readFileSync(prdPath, "utf8");
-  } catch {
-    process.stderr.write(`Error: cannot read PRD file "${prdPath}"\n`);
+  if (opts.prdSlug && opts.yyyymm && opts.project) {
+    const wsRaw = opts.workspaceDir ?? process.env.WORKSPACE_DIR ?? "workspace";
+    const enhancedPath = isAbsolute(wsRaw)
+      ? join(wsRaw, opts.project, "prds", opts.yyyymm, opts.prdSlug, "enhanced.md")
+      : resolve(wsRaw, opts.project, "prds", opts.yyyymm, opts.prdSlug, "enhanced.md");
+    try {
+      prdContent = readFileSync(enhancedPath, "utf8");
+    } catch {
+      process.stderr.write(`Error: cannot read enhanced.md "${enhancedPath}"\n`);
+      process.exit(1);
+      return;
+    }
+  } else if (opts.prd) {
+    const prdPath = resolve(opts.prd);
+    try {
+      prdContent = readFileSync(prdPath, "utf8");
+    } catch {
+      process.stderr.write(`Error: cannot read PRD file "${prdPath}"\n`);
+      process.exit(1);
+      return;
+    }
+  } else {
+    process.stderr.write(
+      "Error: must provide --prd-slug + --yyyymm + --project (primary) or --prd <path> (legacy)\n",
+    );
     process.exit(1);
+    return;
   }
 
   // Read test-points
@@ -288,13 +322,16 @@ export const program = createCli({
       name: "build",
       description: "Build writer context for a specific module",
       options: [
-        { flag: "--prd <path>", description: "Path to the PRD Markdown file", required: true },
+        { flag: "--prd <path>", description: "[legacy] Path to PRD Markdown file (prefer --prd-slug + --yyyymm)" },
+        { flag: "--prd-slug <slug>", description: "PRD slug (primary path; pairs with --yyyymm + --project to read enhanced.md)" },
+        { flag: "--yyyymm <ym>", description: "PRD month directory (primary path)" },
+        { flag: "--workspace-dir <dir>", description: "Workspace root (primary path; overrides WORKSPACE_DIR env)" },
         { flag: "--test-points <path>", description: "Path to the test-points JSON file", required: true },
         { flag: "--writer-id <module>", description: "Module name (fuzzy-matched against PRD ## headings)", required: true },
         { flag: "--rules <path>", description: "Optional path to merged rules JSON" },
         { flag: "--strategy-id <id>", description: "Strategy id from router", defaultValue: "S1" },
         { flag: "--knowledge-injection <mode>", description: "read-core|read-module|none", defaultValue: "read-core" },
-        { flag: "--project <name>", description: "Project name (for knowledge-keeper)" },
+        { flag: "--project <name>", description: "Project name (for knowledge-keeper / primary path)" },
       ],
       action: runBuild,
     },

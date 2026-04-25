@@ -464,6 +464,129 @@ describe("writer-context-builder build — knowledge fallback when project not f
   });
 });
 
+describe("writer-context-builder build — --prd-slug + --yyyymm (enhanced.md primary path)", () => {
+  const ENH_TMP = join(tmpdir(), `kata-wcb-enh-${process.pid}`);
+  const PROJECT = "wcb-enh-fixture";
+  const YM = "202604";
+  const SLUG = "demo-feature";
+  const PRD_DIR_ABS = join(ENH_TMP, PROJECT, "prds", YM, SLUG);
+  const ENHANCED_PATH = join(PRD_DIR_ABS, "enhanced.md");
+  const TP_PATH = join(ENH_TMP, "test-points-enh.json");
+  const LEGACY_PRD = join(ENH_TMP, "legacy.md");
+
+  before(() => {
+    mkdirSync(PRD_DIR_ABS, { recursive: true });
+
+    writeFileSync(
+      ENHANCED_PATH,
+      [
+        "---",
+        "schema_version: 1",
+        "---",
+        "",
+        '## 1. 概述 <a id="s-1"></a>',
+        "",
+        "项目背景内容",
+        "",
+        '## 2. 用户登录 <a id="s-2-1-a1b2"></a>',
+        "",
+        "用户登录模块详细描述",
+        "",
+        '## 3. 数据看板 <a id="s-3-1-c3d4"></a>',
+        "",
+        "数据看板模块描述",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    writeFileSync(
+      TP_PATH,
+      JSON.stringify({
+        modules: [
+          {
+            name: "用户登录",
+            test_points: [{ id: "TP-1", description: "正向登录" }],
+          },
+          {
+            name: "数据看板",
+            test_points: [{ id: "TP-2", description: "看板加载" }],
+          },
+        ],
+      }),
+      "utf8",
+    );
+
+    writeFileSync(
+      LEGACY_PRD,
+      [
+        "# 标题",
+        "",
+        "## 用户登录",
+        "",
+        "legacy 模块描述",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+  });
+
+  after(() => {
+    try {
+      rmSync(ENH_TMP, { recursive: true, force: true });
+    } catch {
+      // ignore
+    }
+  });
+
+  it("reads enhanced.md when --prd-slug + --yyyymm + --workspace-dir given", () => {
+    const { code, stdout, stderr } = run([
+      "build",
+      "--prd-slug", SLUG,
+      "--yyyymm", YM,
+      "--project", PROJECT,
+      "--workspace-dir", ENH_TMP,
+      "--test-points", TP_PATH,
+      "--writer-id", "用户登录",
+      "--knowledge-injection", "none",
+    ]);
+
+    assert.equal(code, 0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
+    const ctx = JSON.parse(stdout) as {
+      module_prd_section: string;
+      fallback: boolean;
+    };
+    assert.match(ctx.module_prd_section, /用户登录模块详细描述/);
+    assert.equal(ctx.fallback, false);
+  });
+
+  it("falls back to legacy --prd <path> when --prd-slug omitted", () => {
+    const { code, stdout, stderr } = run([
+      "build",
+      "--prd", LEGACY_PRD,
+      "--test-points", TP_PATH,
+      "--writer-id", "用户登录",
+      "--knowledge-injection", "none",
+    ]);
+
+    assert.equal(code, 0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
+    const ctx = JSON.parse(stdout) as { module_prd_section: string };
+    assert.match(ctx.module_prd_section, /legacy 模块描述/);
+  });
+
+  it("errors when neither --prd nor --prd-slug given", () => {
+    const { code, stdout, stderr } = run([
+      "build",
+      "--test-points", TP_PATH,
+      "--writer-id", "用户登录",
+      "--knowledge-injection", "none",
+    ]);
+
+    assert.notEqual(code, 0);
+    assert.match(stdout + stderr, /--prd|--prd-slug/);
+  });
+});
+
 describe("writer-context-builder build — 8KB truncation", () => {
   afterEach(() => {
     cleanupFixtureKnowledge();
