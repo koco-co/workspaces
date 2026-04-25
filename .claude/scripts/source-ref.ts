@@ -3,7 +3,7 @@
  * source-ref.ts — CLI 入口，封装 lib/source-ref.ts 的 parse + resolve。
  *
  * Usage:
- *   kata-cli source-ref resolve --ref <ref> [--plan <p>] [--prd <p>] [--project <n>] [--workspace-dir <d>] [--yyyymm <ym>] [--prd-slug <slug>]
+ *   kata-cli source-ref resolve --ref <ref> [--prd <p>] [--project <n>] [--workspace-dir <d>] [--yyyymm <ym>] [--prd-slug <slug>]
  *   kata-cli source-ref batch   --refs-json <p>  [同上]
  *
  * Exit codes:
@@ -25,7 +25,6 @@ function buildCtx(opts: Record<string, unknown>): ResolveContext {
   const prdSlug = opts.prdSlug as string | undefined;
 
   const ctx: ResolveContext = {
-    planPath: (opts.plan as string | undefined) ?? undefined,
     prdPath: (opts.prd as string | undefined) ?? undefined,
     projectName,
     workspaceDir,
@@ -45,14 +44,13 @@ function buildCtx(opts: Record<string, unknown>): ResolveContext {
 
 export const program = createCli({
   name: "source-ref",
-  description: "Parse and resolve source_ref anchors (plan / prd / knowledge / repo / enhanced).",
+  description: "Parse and resolve source_ref anchors (prd / knowledge / repo / enhanced).",
   commands: [
     {
       name: "resolve",
       description: "Resolve a single source_ref. Exit 0 if OK, 1 if unresolvable.",
       options: [
         { flag: "--ref <ref>", description: "source_ref string", required: true },
-        { flag: "--plan <path>", description: "plan.md path (for plan scheme)" },
         { flag: "--prd <path>", description: "prd file path (for prd scheme)" },
         { flag: "--project <name>", description: "project name" },
         { flag: "--workspace-dir <dir>", description: "workspace dir override" },
@@ -78,7 +76,6 @@ export const program = createCli({
           description: "JSON file: [{ref: string, ...}]",
           required: true,
         },
-        { flag: "--plan <path>", description: "plan.md path" },
         { flag: "--prd <path>", description: "prd path" },
         { flag: "--project <name>", description: "project name" },
         { flag: "--workspace-dir <dir>", description: "workspace dir override" },

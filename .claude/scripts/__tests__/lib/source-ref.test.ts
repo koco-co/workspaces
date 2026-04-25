@@ -6,13 +6,6 @@ import { join } from "node:path";
 import { parseSourceRef, resolveSourceRef } from "../../lib/source-ref.ts";
 
 describe("parseSourceRef", () => {
-  it("parses plan scheme", () => {
-    assert.deepEqual(parseSourceRef("plan#q3-数据源"), {
-      scheme: "plan",
-      anchor: "q3-数据源",
-    });
-  });
-
   it("parses prd scheme with section number", () => {
     assert.deepEqual(parseSourceRef("prd#section-2.1.3"), {
       scheme: "prd",
@@ -39,11 +32,15 @@ describe("parseSourceRef", () => {
   });
 
   it("returns null for missing separator", () => {
-    assert.equal(parseSourceRef("planq3"), null);
+    assert.equal(parseSourceRef("prdq3"), null);
   });
 
   it("returns null for empty anchor", () => {
-    assert.equal(parseSourceRef("plan#"), null);
+    assert.equal(parseSourceRef("prd#"), null);
+  });
+
+  it("rejects deprecated plan scheme", () => {
+    assert.equal(parseSourceRef("plan#q3-数据源"), null);
   });
 
   it("parses enhanced scheme with section anchor", () => {
@@ -59,35 +56,6 @@ describe("parseSourceRef", () => {
       anchor: "q7",
     });
   });
-});
-
-describe("resolveSourceRef — plan scheme", () => {
-  const tmp = mkdtempSync(join(tmpdir(), "kata-sr-"));
-  const planPath = join(tmp, "smoke.plan.md");
-
-  writeFileSync(
-    planPath,
-    `---\nplan_version: 2\nstatus: ready\n---\n\n## 3. 澄清问答清单\n\n\`\`\`json\n[{"id":"Q1","severity":"blocking_unknown","question":"审批状态?","location":"功能层 → 字段定义 → 审批状态"}]\n\`\`\`\n`,
-  );
-
-  it("resolves plan#q1-审批状态 OK when id exists", () => {
-    const r = resolveSourceRef("plan#q1-审批状态", { planPath });
-    assert.equal(r.ok, true);
-  });
-
-  it("fails resolve when q-id absent in plan §3", () => {
-    const r = resolveSourceRef("plan#q99-不存在", { planPath });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /plan §3 未找到 id=Q99/);
-  });
-
-  it("fails resolve when plan file missing", () => {
-    const r = resolveSourceRef("plan#q1-x", { planPath: join(tmp, "nope.md") });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /plan.md 不存在/);
-  });
-
-  after(() => rmSync(tmp, { recursive: true, force: true }));
 });
 
 describe("resolveSourceRef — prd / knowledge / repo schemes", () => {

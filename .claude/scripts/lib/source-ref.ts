@@ -5,21 +5,21 @@
  *
  * Syntax:
  *   source_ref ::= <scheme>#<anchor>
- *   scheme     ::= plan | prd | knowledge | repo | enhanced
+ *   scheme     ::= prd | knowledge | repo | enhanced
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isValidSectionAnchor, isValidQAnchor } from "./enhanced-doc-anchors.ts";
 
-export type SourceRefScheme = "plan" | "prd" | "knowledge" | "repo" | "enhanced";
+export type SourceRefScheme = "prd" | "knowledge" | "repo" | "enhanced";
 
 export interface ParsedSourceRef {
   scheme: SourceRefScheme;
   anchor: string;
 }
 
-const SCHEMES: readonly SourceRefScheme[] = ["plan", "prd", "knowledge", "repo", "enhanced"];
+const SCHEMES: readonly SourceRefScheme[] = ["prd", "knowledge", "repo", "enhanced"];
 
 export function parseSourceRef(raw: string): ParsedSourceRef | null {
   if (typeof raw !== "string") return null;
@@ -33,7 +33,6 @@ export function parseSourceRef(raw: string): ParsedSourceRef | null {
 }
 
 export interface ResolveContext {
-  planPath?: string;
   prdPath?: string;
   enhancedDocPath?: string;
   workspaceDir?: string;
@@ -54,8 +53,6 @@ export function resolveSourceRef(raw: string, ctx: ResolveContext): ResolveResul
     return { ok: false, reason: `锚点格式非法: ${raw}` };
   }
   switch (parsed.scheme) {
-    case "plan":
-      return resolvePlan(parsed.anchor, ctx);
     case "prd":
       return resolvePrd(parsed.anchor, ctx);
     case "knowledge":
@@ -82,40 +79,6 @@ function resolveEnhanced(anchor: string, ctx: ResolveContext): ResolveResult {
     return { ok: true };
   }
   return { ok: false, reason: `enhanced.md 未找到锚点: ${anchor}` };
-}
-
-function resolvePlan(anchor: string, ctx: ResolveContext): ResolveResult {
-  if (ctx.planPath === undefined) {
-    return { ok: false, reason: "plan scheme 需要 ctx.planPath" };
-  }
-  if (!existsSync(ctx.planPath)) {
-    return { ok: false, reason: `plan.md 不存在: ${ctx.planPath}` };
-  }
-  const m = anchor.match(/^q(\d+)(?:-.*)?$/i);
-  if (m === null) {
-    return { ok: false, reason: `plan 锚点需为 q<id> 或 q<id>-<slug>: ${anchor}` };
-  }
-  const qId = `Q${m[1]}`;
-  const text = readFileSync(ctx.planPath, "utf8");
-  const jsonBlock = text.match(/## 3\. 澄清问答清单[\s\S]*?```json\s*([\s\S]*?)```/);
-  if (jsonBlock === null) {
-    return { ok: false, reason: "plan.md §3 JSON 块未找到" };
-  }
-  try {
-    const arr = JSON.parse(jsonBlock[1]) as Array<{ id?: string }>;
-    if (!Array.isArray(arr)) {
-      return { ok: false, reason: "plan §3 期待数组" };
-    }
-    const found = arr.some(
-      (item) => typeof item?.id === "string" && item.id.toUpperCase() === qId,
-    );
-    if (!found) {
-      return { ok: false, reason: `plan §3 未找到 id=${qId}` };
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, reason: `plan §3 JSON 解析失败: ${(e as Error).message}` };
-  }
 }
 
 function resolvePrd(anchor: string, ctx: ResolveContext): ResolveResult {
