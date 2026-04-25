@@ -3,7 +3,7 @@
  * source-ref.ts — CLI 入口，封装 lib/source-ref.ts 的 parse + resolve。
  *
  * Usage:
- *   kata-cli source-ref resolve --ref <ref> [--plan <p>] [--prd <p>] [--project <n>] [--workspace-dir <d>]
+ *   kata-cli source-ref resolve --ref <ref> [--plan <p>] [--prd <p>] [--project <n>] [--workspace-dir <d>] [--yyyymm <ym>] [--prd-slug <slug>]
  *   kata-cli source-ref batch   --refs-json <p>  [同上]
  *
  * Exit codes:
@@ -12,23 +12,40 @@
  */
 
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
 import { getEnv } from "./lib/env.ts";
 import { resolveSourceRef, type ResolveContext } from "./lib/source-ref.ts";
 
 function buildCtx(opts: Record<string, unknown>): ResolveContext {
-  return {
+  const projectName = (opts.project as string | undefined) ?? undefined;
+  const workspaceDir =
+    (opts.workspaceDir as string | undefined) ?? getEnv("WORKSPACE_DIR");
+  const yyyymm = opts.yyyymm as string | undefined;
+  const prdSlug = opts.prdSlug as string | undefined;
+
+  const ctx: ResolveContext = {
     planPath: (opts.plan as string | undefined) ?? undefined,
     prdPath: (opts.prd as string | undefined) ?? undefined,
-    projectName: (opts.project as string | undefined) ?? undefined,
-    workspaceDir:
-      (opts.workspaceDir as string | undefined) ?? getEnv("WORKSPACE_DIR"),
+    projectName,
+    workspaceDir,
   };
+  if (projectName && yyyymm && prdSlug && workspaceDir) {
+    ctx.enhancedDocPath = join(
+      workspaceDir,
+      projectName,
+      "prds",
+      yyyymm,
+      prdSlug,
+      "enhanced.md",
+    );
+  }
+  return ctx;
 }
 
 export const program = createCli({
   name: "source-ref",
-  description: "Parse and resolve source_ref anchors (plan / prd / knowledge / repo).",
+  description: "Parse and resolve source_ref anchors (plan / prd / knowledge / repo / enhanced).",
   commands: [
     {
       name: "resolve",
@@ -39,6 +56,8 @@ export const program = createCli({
         { flag: "--prd <path>", description: "prd file path (for prd scheme)" },
         { flag: "--project <name>", description: "project name" },
         { flag: "--workspace-dir <dir>", description: "workspace dir override" },
+        { flag: "--yyyymm <ym>", description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）" },
+        { flag: "--prd-slug <slug>", description: "PRD slug（同上）" },
       ],
       action: (opts) => {
         const o = opts as Record<string, unknown>;
@@ -63,6 +82,8 @@ export const program = createCli({
         { flag: "--prd <path>", description: "prd path" },
         { flag: "--project <name>", description: "project name" },
         { flag: "--workspace-dir <dir>", description: "workspace dir override" },
+        { flag: "--yyyymm <ym>", description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）" },
+        { flag: "--prd-slug <slug>", description: "PRD slug（同上）" },
       ],
       action: (opts) => {
         const o = opts as Record<string, unknown>;
