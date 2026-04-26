@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  html, body, #root { height: 100%; }
+  body {
+    @apply font-sans antialiased text-[15px] leading-[1.4];
+    background: transparent; /* allow vibrancy */
+  }
+  ::selection {
+    background-color: rgba(10, 132, 255, 0.25);
+  }
+}
+
+@layer components {
+  .vibrancy-sidebar { background: transparent; }
+  .vibrancy-window { background: transparent; }
+}
