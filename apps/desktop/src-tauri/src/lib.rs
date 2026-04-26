@@ -23,6 +23,9 @@ pub fn run() {
             commands::preflight::recheck,
             commands::projects::list_projects_cmd,
             commands::projects::switch_project_cmd,
+            commands::workbench::send_input,
+            commands::workbench::stop_task,
+            commands::workbench::list_recent_tasks_cmd,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
