@@ -26,6 +26,10 @@ pub fn run() {
             commands::workbench::send_input,
             commands::workbench::stop_task,
             commands::workbench::list_recent_tasks_cmd,
+            commands::files::list_files,
+            commands::files::read_file_text,
+            commands::files::open_with_default,
+            commands::files::open_in_finder,
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
