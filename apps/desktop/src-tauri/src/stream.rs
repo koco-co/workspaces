@@ -69,6 +69,15 @@ mod tests {
     }
 
     #[test]
+    fn parses_user_message() {
+        let line = r#"{"type":"user","message":"hello"}"#;
+        assert!(matches!(
+            parse_line(line),
+            ParseOutcome::Event(StreamEvent::User { .. })
+        ));
+    }
+
+    #[test]
     fn parses_result() {
         let line = r#"{"type":"result","total_cost_usd":0.1,"duration_ms":4200}"#;
         assert!(matches!(
