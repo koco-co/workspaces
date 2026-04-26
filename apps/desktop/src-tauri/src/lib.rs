@@ -4,7 +4,6 @@ pub mod preflight;
 pub mod projects;
 pub mod state;
 
-use std::sync::Arc;
 use tauri::Manager;
 #[cfg(target_os = "macos")]
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
