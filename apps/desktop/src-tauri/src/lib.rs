@@ -3,6 +3,7 @@ use tauri::Manager;
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
 
 pub mod db;
+pub mod preflight;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
