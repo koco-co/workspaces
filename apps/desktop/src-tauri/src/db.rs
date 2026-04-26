@@ -72,7 +72,7 @@ pub fn list_projects(pool: &DbPool) -> Result<Vec<ProjectRow>> {
             metadata: r.get(4)?,
         })
     })?;
-    Ok(rows.filter_map(|r| r.ok()).collect())
+    Ok(rows.collect::<Result<Vec<_>, _>>()?)
 }
 
 pub fn touch_project_active(pool: &DbPool, name: &str, when: i64) -> Result<()> {
