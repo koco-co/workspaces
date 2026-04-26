@@ -49,9 +49,13 @@ pub fn errors_log_path() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn kata_root_uses_env_when_set() {
+        let _guard = ENV_LOCK.lock().unwrap();
         std::env::set_var("KATA_ROOT", "/tmp/test-kata");
         assert_eq!(kata_root(), PathBuf::from("/tmp/test-kata"));
         std::env::remove_var("KATA_ROOT");
@@ -59,6 +63,7 @@ mod tests {
 
     #[test]
     fn project_paths_resolve_under_kata_data_root() {
+        let _guard = ENV_LOCK.lock().unwrap();
         std::env::set_var("KATA_ROOT", "/tmp/x");
         assert_eq!(project_data_dir("foo"), PathBuf::from("/tmp/x/.kata/foo"));
         assert_eq!(project_db_path("foo"), PathBuf::from("/tmp/x/.kata/foo/tasks.db"));
