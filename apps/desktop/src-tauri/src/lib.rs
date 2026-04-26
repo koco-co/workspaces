@@ -1,10 +1,13 @@
+pub mod db;
+pub mod paths;
+pub mod preflight;
+pub mod projects;
+pub mod state;
+
+use std::sync::Arc;
 use tauri::Manager;
 #[cfg(target_os = "macos")]
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
-
-pub mod db;
-pub mod preflight;
-pub mod projects;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,6 +27,10 @@ pub fn run() {
                 )
                 .expect("vibrancy unsupported on this macOS version");
             }
+            let ui_db_path = paths::ui_db_path();
+            let ui_db = db::open_pool(&ui_db_path).expect("ui.db open failed");
+            let state = state::AppState::new(ui_db);
+            app.manage(state);
             Ok(())
         })
         .run(tauri::generate_context!())
