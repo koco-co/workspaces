@@ -118,6 +118,34 @@
 - G7 [必] 默认每页条数 = 源码 `Table pagination.defaultPageSize`，**不要**按 PRD 「每页 20 条」之类的描述写
   - json 格式配置：`pageSizeOptions=['10','20','50','100']`，默认 10
 
+- G8 [必] TreeSelect / Select 选项查找**优先用 dropdown 内置搜索框**，不要逐层展开+滚动翻找
+  - 适用：校验 key TreeSelect、字段 Select、规则集表名 Select 等所有 Ant Design 带搜索的下拉
+  - 反例：展开 dropdown 后用 `dropdown.locator(".ant-select-tree-switcher").click()` 逐节点展开 + scroll 找文本——慢且易丢失上下文（数据规模上百时直接 timeout）
+  - 正例：dropdown 出现后立刻 fill 搜索框，等 400ms 树自动过滤再 click 目标节点
+    ```ts
+    // dropdown trigger 点击展开后
+    const dropdown = page.locator(".ant-tree-select-dropdown:visible, .ant-select-dropdown:visible").first();
+    await dropdown.waitFor({ state: "visible", timeout: 10000 });
+
+    // 优先精确匹配搜索 input（按优先级降序）
+    const searchInput = dropdown
+      .locator("input.ant-select-tree-input, .ant-select-tree-search input, input[type='search']")
+      .first()
+      .or(dropdown.locator("input:visible").first());
+
+    if (await searchInput.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await searchInput.fill(keyName);
+      await page.waitForTimeout(400); // 树自动过滤
+    }
+
+    const node = dropdown.locator(".ant-select-tree-title, .ant-select-tree-node-content-wrapper")
+      .filter({ hasText: keyName }).first();
+    await expect(node).toBeVisible({ timeout: 5000 });
+    // 用 ancestor 拿到对应 checkbox 再 click
+    ```
+  - 多 key 选择必须在 fill 之间清空 input（`await searchInput.fill("")` + 200ms wait），否则下次搜索叠加上次输入
+  - 现 15693 `selectJsonKeys` 已实现该模式（key-range-utils.ts:725-733），15694/15695 helper 必须对齐
+
 ## 关联背景文档
 
 详细的撞坑过程、根因分析、复现步骤见：
