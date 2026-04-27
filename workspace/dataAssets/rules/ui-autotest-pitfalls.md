@@ -83,6 +83,40 @@
       bunx playwright test "<spec path>" --reporter=list --workers=1
     ```
 - F2 [必] LTQC 环境对应 `pw_test` 租户；ltqcdev 环境对应 `DT_demo` 租户。本 suite 期望 `pw_test`，必须用 ltqc
+- F3 [必] MD → xmind 同步用 `kata-cli xmind-gen --input <md_path> --output <xmind_path> --mode replace`，**不是** `case-format reverse-sync`（那是 xmind→MD 反方向）
+  - 正例：`bun run .claude/scripts/kata-cli.ts xmind-gen --input "workspace/dataAssets/archive/202604/xxx.md" --output "workspace/dataAssets/xmind/202604/xxx.xmind" --mode replace`
+  - 反例：`case-format reverse-sync xxx.md`（这是 xmind 改了同步回 MD 的反向流程）
+
+## G. CRUD UI 通用细则（来自 通用配置 json 格式配置 试点）
+
+> 本节规则适用于所有 dataAssets 项目 CRUD 类 suite。试点期间（2026-04-27）发现 PRD 文案与源码实际渲染常有偏差，按本节执行可避免重复撞坑。
+
+- G1 [必] 数据源类型 select 选项**大小写敏感**：UI 实际显示首字母大写
+  - 正例：`Hive2.x`、`SparkThrift2.x`、`Doris3.x`
+  - 反例：`hive2.x`、`sparkthrift2.x`（会导致 `selectAntOption` 内部 `toContainText` 断言失败）
+
+- G2 [必] Ant Modal title 文案以**源码常量**为准，不要按 PRD/原 MD 直觉猜
+  - 「**新建**」（不是「新增」；源码常量 BM）
+  - 「**新建子层级**」（源码常量 CH）
+  - 「**编辑**」（不是「编辑 - {名称}」；源码 EditModal title 仅 `I18N.get(CZ)`，**不**拼接记录名/中文名）
+
+- G3 [必] 正则匹配测试（含 value 格式校验场景）结果文案为「**符合正则**」/「**不符合正则**」（源码常量 CF/CG）；PRD 文档常误写「匹配成功 / 失败」
+
+- G4 [必] form-item filter 拿到的是 label 元素，里面的动态渲染 input 不能直接 `.locator("input")` 即时定位
+  - 反例：`modal.locator(".ant-form-item").filter({ hasText: "测试数据" }).locator("input")` ← 找不到
+  - 正例：动态 input 出现位置不确定时，用 `modal.locator("input:visible, textarea:visible").last()` 兜底
+
+- G5 [必] Popconfirm / Modal 的提示与按钮文案以源码常量为准：
+  - 单条删除 Popconfirm：「请确认是否删除key信息,」+「若存在子层级key信息会联动删除」（AS+AT）
+  - 批量删除 Modal：「是否批量删除key信息?」+「确认删除后，若存在子层级key信息会联动删除」（DQ+DR）
+  - 导出 Popconfirm 按钮：「**确认**」（不是「确定」；DY）
+  - 不要按 PRD 截图里"看着差不多"的文字写断言
+
+- G6 [必] 表单字段顺序按源码 `<Form>` JSX 实际顺序，不要按 PRD 截图猜
+  - json 格式配置 CreateModal 实际顺序：**数据源类型 → key → 中文名称 → value 格式**
+
+- G7 [必] 默认每页条数 = 源码 `Table pagination.defaultPageSize`，**不要**按 PRD 「每页 20 条」之类的描述写
+  - json 格式配置：`pageSizeOptions=['10','20','50','100']`，默认 10
 
 ## 关联背景文档
 

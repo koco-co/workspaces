@@ -228,3 +228,46 @@ INSERT INTO {table_name} VALUES
 > 使用 Doris3.x 数据源重复以上步骤，将 `info` 字段类型从 `STRING` 改为 `JSON`，其余 UI 操作不变；预期结果与 SparkThrift2.x 一致。
 
 仅当本条用例确实需双数据源验证时保留此句式；纯 UI 验证（如表单校验、下拉滚动加载）删除此句。
+
+---
+
+## 9. R7 — CRUD-only suite 的前置 SQL 例外
+
+来自 2026-04-27 通用配置 json 格式配置 试点的反馈。
+
+适用场景：suite 主题为「通用配置 / 系统设置」类纯 CRUD（key 表 / 字典 / 配置项的增删改查），**不是**基于业务数据的校验逻辑。
+
+规则：
+- R1（前置条件 SQL 自洽）放宽：纯表单/UI 验证用例（输入校验、字段切换、Modal 文案、按钮 disabled 等）**不强求** SQL 前置
+- 仅当用例描述含「列表已存在 N 条数据」/「先有一条记录再 …」时，前置必须给出可机械准备的路径（推荐：通过 UI `addKey()` helper 在 `beforeEach` 准备，使用 `uniqueName()` 唯一化 + `afterEach` 清理）
+- 不要写「假设环境中已有 5 条数据」/「列表非空即可」等无法机械执行的前置
+
+---
+
+## 10. R8 — frontmatter case_count 与解析结果对账
+
+来自 2026-04-27 通用配置 json 格式配置 试点的反馈。
+
+规则：
+- 修 MD 后、xmind 反向同步前，必须运行 parse-cases.ts 验证 `stats.total` 与 frontmatter `case_count` 一致
+- 不一致时**以解析结果为准**，先改 frontmatter 再做 reverse-sync（避免 xmind 节点数与 MD 不对齐）
+- 命令：
+  ```bash
+  bun run .claude/skills/ui-autotest/scripts/parse-cases.ts \
+    --file "workspace/{project}/archive/{YYYYMM}/xxx.md" | jq '.stats.total'
+  ```
+- frontmatter 修正后单独 commit，不要捆绑到 R1-R6 内容修改
+
+---
+
+## 11. R6 — 模糊点拍板范本（已用例）
+
+来自 2026-04-27 通用配置 json 格式配置 试点。Sub-agent 上抛 ambiguous，主 agent 拍板时常见模式：
+
+| 冲突类型 | 决策默认 | 例外 |
+|---|---|---|
+| 源码 vs PRD 文案不一致 | **保源码**（按钮名/文案/title） | PRD 仅在「列名」/「字段是否存在」场景偶尔保留 |
+| 源码常量缺映射、PRD 描述清晰 | **保 PRD** | 但用例预期需注明「待与开发确认」 |
+| 默认值（pageSize / 默认数据源） | **保源码** | 避免 UI 改了源码后用例不变成漏检 |
+
+> 仍是冲突且无法决断时，按 R6 留 `<!-- TODO[ambiguous]: ... -->` 上抛主 agent。
