@@ -28,6 +28,20 @@ function loadDotEnv() {
 
 loadDotEnv();
 
+// §3.4 F7: outputDir 必须按项目隔离，不允许多 project 共用根 test-results/
+function resolveOutputDir(): string {
+  const project = process.env.KATA_ACTIVE_PROJECT;
+  if (!project) {
+    // 兼容期：未设置时仍写到仓库根（CI 不应该走到这）
+    console.warn(
+      "[playwright.config] KATA_ACTIVE_PROJECT not set; falling back to ./test-results. " +
+      "This will be rejected in P11 lint."
+    );
+    return "test-results";
+  }
+  return `workspace/${project}/.runs/test-results`;
+}
+
 // 根据 ACTIVE_ENV 自动桥接 Cookie / BaseURL，无需命令行传参
 // 向后兼容：优先读新名 ACTIVE_ENV，回退到旧名 QA_ACTIVE_ENV
 const env = (
@@ -58,6 +72,9 @@ if (baseUrl) process.env.UI_AUTOTEST_BASE_URL = baseUrl;
 const yyyymm = new Date().toISOString().slice(0, 7).replace(/-/g, ""); // YYYYMM
 const suiteName = process.env.QA_SUITE_NAME ?? "report";
 const project = process.env.QA_PROJECT ?? "dataAssets";
+// TODO(P10/§10.11): Playwright 测试体系治理时归一化此路径。
+// 当前的 month/suite/env 分区有运维价值（多次 run 不互相覆盖），
+// 在 P0.5 不做收敛，避免越界。Spec §3.4 P0.5 仅强制 outputDir 归位。
 const reportDir = `workspace/${project}/reports/allure/${yyyymm}/${suiteName}/${envLower}`;
 const allureResultsDir = `${reportDir}/allure-results`;
 
@@ -96,6 +113,7 @@ export default defineConfig({
     `.kata/${project}/ui-blocks/**/*-helpers.ts`,
     `workspace/${project}/tests/**/*-helpers.ts`,
   ],
+  outputDir: resolveOutputDir(),
   fullyParallel,
   ...(workers !== undefined ? { workers } : {}),
   timeout: 60000,
