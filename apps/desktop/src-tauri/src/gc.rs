@@ -7,7 +7,7 @@ pub const IDLE_TIMEOUT_SECS: i64 = 30 * 60;
 pub const DEFAULT_RETENTION_DAYS: i64 = 30;
 
 pub fn spawn_idle_gc(manager: Arc<PtyManager>) {
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(60)).await;
             let now = std::time::SystemTime::now()
@@ -74,7 +74,7 @@ pub async fn sweep_task_logs() -> anyhow::Result<usize> {
 }
 
 pub fn spawn_log_gc_on_startup() {
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let _ = sweep_task_logs().await;
     });
 }
