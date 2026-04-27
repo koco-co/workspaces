@@ -6,7 +6,7 @@ import { after, before, describe, it } from "node:test";
 
 // 文件位置：.claude/scripts/__tests__/ui-autotest/merge-specs.test.ts
 // REPO_ROOT 需要向上 4 层
-const REPO_ROOT_MERGE = resolve(import.meta.dirname, "../../../..");
+const REPO_ROOT_MERGE = resolve(import.meta.dirname, "../../..");
 const MERGE_SPECS_PATH = resolve(
   REPO_ROOT_MERGE,
   ".claude/skills/ui-autotest/scripts/merge-specs.ts",

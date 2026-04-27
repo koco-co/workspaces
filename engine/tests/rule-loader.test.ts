@@ -18,7 +18,7 @@ function runLoader(
       "kata-cli",
       ["rule-loader", ...args],
       {
-        cwd: resolve(import.meta.dirname, "../../.."),
+        cwd: resolve(import.meta.dirname, "../.."),
         encoding: "utf8",
         env: {
           ...process.env,

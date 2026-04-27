@@ -5,7 +5,7 @@ import {
   isValidSectionAnchor,
   isValidQAnchor,
   parseAnchor,
-} from "../lib/enhanced-doc-anchors.ts";
+} from "../src/lib/enhanced-doc-anchors.ts";
 
 describe("enhanced-doc-anchors", () => {
   test("generateSectionAnchor top-level", () => {

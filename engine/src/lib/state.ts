@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { kataDir } from "../paths.ts";
+import { kataDir } from "./paths.ts";
 import type { WorkflowState } from "./types.ts";
 
 function stateDir(project: string): string {

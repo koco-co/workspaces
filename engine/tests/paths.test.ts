@@ -9,7 +9,7 @@ import {
   repoRoot,
   sessionFilePath,
   sessionsDir,
-} from "../lib/paths.ts";
+} from "../src/lib/paths.ts";
 
 describe("kata paths", () => {
   it("kataDir resolves to .kata/{project} under repo root", () => {
@@ -57,7 +57,7 @@ import {
   resolvedMd,
   prdImagesDir,
   originalPrdMd,
-} from "../lib/paths.ts";
+} from "../src/lib/paths.ts";
 
 describe("enhanced doc paths", () => {
   test("prdDir returns {project}/prds/{yyyymm}/{slug}/", () => {

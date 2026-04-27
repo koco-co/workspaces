@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:f
 import { join, resolve } from "node:path";
 
 // From .claude/scripts/__tests__/ → up 3 levels to repo root
-const repoRoot = resolve(import.meta.dirname, "../../..");
+const repoRoot = resolve(import.meta.dirname, "../..");
 
 const project = "probe-fixture";
 

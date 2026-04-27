@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { describe, it } from "node:test";
-import { parseGitUrl } from "../lib/paths.ts";
+import { parseGitUrl } from "../src/lib/paths.ts";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const repoRoot = resolve(import.meta.dirname, "../../../..");
+const repoRoot = resolve(import.meta.dirname, "../../..");
 const templatesPath = resolve(repoRoot, ".claude/references/strategy-templates.md");
 
 describe("strategy-templates.md", () => {

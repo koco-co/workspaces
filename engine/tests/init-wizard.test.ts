@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 
-const ROOT = join(import.meta.dirname, "../../..");
+const ROOT = join(import.meta.dirname, "../..");
 const SCRIPT = ".claude/scripts/init-wizard.ts";
 
 function run(

@@ -4,9 +4,9 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
-import { parseFrontMatter } from "../lib/frontmatter.js";
+import { parseFrontMatter } from "../src/lib/frontmatter.js";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const FIXTURE = join(import.meta.dirname, "fixtures/sample-cases.json");
 const TMP_DIR = join(tmpdir(), `kata-archive-test-${process.pid}`);
 

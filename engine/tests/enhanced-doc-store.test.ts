@@ -15,8 +15,8 @@ import {
   validateDoc,
   setSourceFacts,
   readSourceFacts,
-} from "../lib/enhanced-doc-store.ts";
-import { repoRoot, enhancedMd, sourceFactsJson } from "../lib/paths.ts";
+} from "../src/lib/enhanced-doc-store.ts";
+import { repoRoot, enhancedMd, sourceFactsJson } from "../src/lib/paths.ts";
 
 const TEST_PROJECT = "test-d1-project";
 const TEST_YM = "202604";

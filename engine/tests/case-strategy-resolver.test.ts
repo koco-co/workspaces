@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 
 // dirname = /<repo>/.claude/scripts/__tests__
 // ../../.. → /<repo>
-const repoRoot = resolve(import.meta.dirname, "../../..");
+const repoRoot = resolve(import.meta.dirname, "../..");
 
 function runCli(args: string[]) {
   return spawnSync("kata-cli", ["case-strategy-resolver", ...args], {

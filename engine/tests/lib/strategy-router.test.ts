@@ -5,13 +5,13 @@ import {
   buildOverrides,
   composeResolution,
   STRATEGY_NAMES,
-} from "../../lib/strategy-router.ts";
+} from "../../src/lib/strategy-router.ts";
 import type {
   StrategyId,
   StrategyOverrides,
   StrategyResolution,
-} from "../../lib/strategy-router.ts";
-import type { SignalLevel, SignalProfile, SignalEntry } from "../../lib/signal-probe.ts";
+} from "../../src/lib/strategy-router.ts";
+import type { SignalLevel, SignalProfile, SignalEntry } from "../../src/lib/signal-probe.ts";
 
 // ---------------------------------------------------------------------------
 // Test helper

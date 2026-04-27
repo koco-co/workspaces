@@ -6,7 +6,7 @@ import { after, before, describe, it } from "node:test";
 import {
   collectAllureStats,
   snapshotResultFiles,
-} from "../lib/allure-stats.ts";
+} from "../src/lib/allure-stats.ts";
 
 const TMP = join(tmpdir(), `kata-allure-stats-${process.pid}`);
 

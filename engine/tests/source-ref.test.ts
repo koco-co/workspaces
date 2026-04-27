@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve as resolvePath } from "node:path";
 
-const REPO_ROOT = resolvePath(import.meta.dirname, "../../..");
+const REPO_ROOT = resolvePath(import.meta.dirname, "../..");
 const CLI_BIN = "bun";
 const CLI_ARGS = [join(REPO_ROOT, ".claude/scripts/kata-cli.ts"), "source-ref"];
 

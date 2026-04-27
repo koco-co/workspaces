@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { repoRoot } from "../paths.ts";
+import { repoRoot } from "./paths.ts";
 
 let _db: Database.Database | null = null;
 

@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildPhasePlans,
   extractTenantFromCookie,
-} from "../run-tests-notify.ts";
+} from "../src/run-tests-notify.ts";
 
 describe("extractTenantFromCookie", () => {
   it("parses dt_tenant_name from a real DTStack cookie", () => {

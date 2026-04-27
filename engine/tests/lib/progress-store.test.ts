@@ -17,8 +17,8 @@ import {
   setArtifact,
   getArtifact,
   resumeSession,
-} from "../../lib/progress-store.ts";
-import type { Session } from "../../lib/progress-types.ts";
+} from "../../src/lib/progress-store.ts";
+import type { Session } from "../../src/lib/progress-types.ts";
 
 const TMP = join(tmpdir(), `progress-store-test-${process.pid}`);
 

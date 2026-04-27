@@ -15,9 +15,9 @@ import {
   extractStepLabel,
   buildPrintableHtml,
   findCases,
-} from "../report-to-pdf.ts";
+} from "../src/report-to-pdf.ts";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-report-to-pdf-test-${process.pid}`);
 
 function run(

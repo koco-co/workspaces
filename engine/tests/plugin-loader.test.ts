@@ -11,7 +11,7 @@ import { after, before, describe, it } from "node:test";
 
 const TMP_DIR = join(tmpdir(), `kata-plugin-loader-test-${process.pid}`);
 
-const REPO_ROOT = join(import.meta.dirname, "../../..");
+const REPO_ROOT = join(import.meta.dirname, "../..");
 
 function runPluginLoader(
   args: string[],

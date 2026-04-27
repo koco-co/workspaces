@@ -27,7 +27,7 @@ import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import sharp from "sharp";
-import { initEnv, getEnv } from "../../.claude/scripts/lib/env.ts";
+import { initEnv, getEnv } from "../../engine/src/lib/env.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = fileURLToPath(new URL(".", import.meta.url));

@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
-import { loadXmindRules, buildRootName } from "../../lib/rules.ts";
+import { loadXmindRules, buildRootName } from "../../src/lib/rules.ts";
 
-const ROOT = resolve(import.meta.dirname, "../../../..");
+const ROOT = resolve(import.meta.dirname, "../../..");
 const PROJECT = "test-rules-project";
 const PROJECT_RULES_DIR = join(ROOT, "workspace", PROJECT, "rules");
 

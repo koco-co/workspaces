@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseSourceRef, resolveSourceRef } from "../../lib/source-ref.ts";
+import { parseSourceRef, resolveSourceRef } from "../../src/lib/source-ref.ts";
 
 describe("parseSourceRef", () => {
   it("parses prd scheme with section number", () => {

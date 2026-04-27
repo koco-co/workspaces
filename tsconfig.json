@@ -10,7 +10,6 @@
     "types": ["node"]
   },
   "include": [
-    ".claude/scripts/**/*.ts",
     ".claude/skills/**/*.ts",
     "plugins/**/*.ts",
     "tests/**/*.ts",

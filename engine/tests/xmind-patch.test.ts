@@ -6,7 +6,7 @@ import { join, resolve } from "node:path";
 import { after, before, describe, it } from "node:test";
 import JSZip from "jszip";
 
-const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const FIXTURE = join(import.meta.dirname, "fixtures/sample-cases.json");
 const TMP_DIR = join(tmpdir(), `kata-xmind-patch-test-${process.pid}`);
 

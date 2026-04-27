@@ -19,7 +19,7 @@ import {
   type ContentModule,
   type ContentPitfall,
   type IndexData,
-} from "../../lib/knowledge.ts";
+} from "../../src/lib/knowledge.ts";
 
 describe("parseFrontmatter", () => {
   it("parses a valid frontmatter block", () => {

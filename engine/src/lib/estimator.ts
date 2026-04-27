@@ -1,4 +1,4 @@
-import { getDb } from "../db/client.ts";
+import { getDb } from "./client.ts";
 
 const RATES: Record<string, { input: number; output: number }> = {
   haiku: { input: 0.25, output: 1.25 },

@@ -1,4 +1,4 @@
-import type { WorkflowStep, GateConfig } from "../orchestrator/types.ts";
+import type { WorkflowStep, GateConfig } from "./orchestrator-types.ts";
 
 export const uiAutotestSteps: WorkflowStep[] = [
   { id: "parse-and-scope", executor: "direct", dependsOn: [] },

@@ -15,7 +15,7 @@ function makePlugin(name: string, json: Record<string, unknown>): void {
   writeFileSync(join(dir, "plugin.json"), JSON.stringify(json), "utf8");
 }
 
-const REPO_ROOT = join(import.meta.dirname, "../../..");
+const REPO_ROOT = join(import.meta.dirname, "../..");
 
 function runConfig(extraEnv: Record<string, string> = {}): {
   stdout: string;
