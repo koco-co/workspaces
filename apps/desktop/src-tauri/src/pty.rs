@@ -15,23 +15,45 @@ pub enum PtyState {
     Closed,
 }
 
+fn now_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 pub struct PtyHandle {
     pub project: String,
     pub state: RwLock<PtyState>,
     pub stdin: Mutex<Option<Box<dyn std::io::Write + Send>>>,
     pub session_id: RwLock<Option<String>>,
     pub child_killer: Mutex<Option<Box<dyn portable_pty::ChildKiller + Send + Sync>>>,
+    pub last_activity: RwLock<i64>,
 }
 
 impl PtyHandle {
     pub fn new(project: String) -> Arc<Self> {
+        let now = now_secs();
         Arc::new(Self {
             project,
             state: RwLock::new(PtyState::NotSpawned),
             stdin: Mutex::new(None),
             session_id: RwLock::new(None),
             child_killer: Mutex::new(None),
+            last_activity: RwLock::new(now),
         })
+    }
+
+    pub async fn touch(&self) {
+        *self.last_activity.write().await = now_secs();
+    }
+
+    pub async fn set_state(&self, app: &tauri::AppHandle, new_state: PtyState) {
+        *self.state.write().await = new_state.clone();
+        use tauri::Emitter;
+        let _ = app.emit("pty:status", serde_json::json!({
+            "project": self.project, "state": new_state,
+        }));
     }
 
     pub async fn write_input(&self, text: &str) -> Result<()> {
@@ -42,6 +64,7 @@ impl PtyHandle {
             stdin.write_all(b"\n")?;
         }
         stdin.flush()?;
+        self.touch().await;
         Ok(())
     }
 
@@ -56,7 +79,7 @@ impl PtyHandle {
 }
 
 pub struct PtyManager {
-    handles: RwLock<HashMap<String, Arc<PtyHandle>>>,
+    pub handles: RwLock<HashMap<String, Arc<PtyHandle>>>,
 }
 
 impl PtyManager {
@@ -115,7 +138,7 @@ impl PtyManager {
                     Ok(0) => break,
                     Ok(_) => {
                         if tx.send(line.clone()).is_err() {
-                            break; // receiver dropped, stop reading
+                            break;
                         }
                     }
                     Err(_) => break,
@@ -172,5 +195,13 @@ mod tests {
     async fn pty_manager_get_returns_none_for_unknown() {
         let m = PtyManager::new();
         assert!(m.get("ghost").await.is_none());
+    }
+
+    #[tokio::test]
+    async fn kill_transitions_to_closed() {
+        let h = PtyHandle::new("test".into());
+        *h.state.write().await = PtyState::Active;
+        h.kill().await.unwrap();
+        assert_eq!(*h.state.read().await, PtyState::Closed);
     }
 }

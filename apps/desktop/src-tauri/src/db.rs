@@ -22,6 +22,31 @@ pub fn run_migrations(pool: &DbPool) -> Result<()> {
     Ok(())
 }
 
+pub fn open_pool_with_recovery(path: &Path) -> Result<DbPool> {
+    match open_pool(path) {
+        Ok(pool) => {
+            let conn = pool.get()?;
+            let result: rusqlite::Result<String> = conn.query_row("PRAGMA integrity_check", [], |r| r.get(0));
+            match result {
+                Ok(s) if s == "ok" => Ok(pool),
+                _ => {
+                    drop(conn);
+                    let backup = path.with_extension("db.corrupted");
+                    let _ = std::fs::rename(path, &backup);
+                    open_pool(path)
+                }
+            }
+        }
+        Err(_) => {
+            let backup = path.with_extension("db.corrupted");
+            if path.exists() {
+                let _ = std::fs::rename(path, &backup);
+            }
+            open_pool(path)
+        }
+    }
+}
+
 pub fn open_project_pool(path: &Path) -> Result<DbPool> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
@@ -151,6 +176,51 @@ pub fn pin_task(pool: &DbPool, id: &str, pinned: bool) -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionRow {
+    pub session_id: String,
+    pub first_task_id: String,
+    pub first_input_summary: Option<String>,
+    pub created_at: i64,
+    pub last_active_at: i64,
+    pub task_count: i64,
+}
+
+pub fn upsert_session(pool: &DbPool, row: &SessionRow) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "INSERT INTO sessions (session_id, first_task_id, first_input_summary, created_at, last_active_at, task_count)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(session_id) DO UPDATE SET
+           last_active_at = excluded.last_active_at,
+           task_count = sessions.task_count + 1",
+        rusqlite::params![
+            row.session_id, row.first_task_id, row.first_input_summary,
+            row.created_at, row.last_active_at, row.task_count,
+        ],
+    )?;
+    Ok(())
+}
+
+pub fn list_sessions(pool: &DbPool, limit: usize) -> Result<Vec<SessionRow>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT session_id, first_task_id, first_input_summary, created_at, last_active_at, task_count
+         FROM sessions ORDER BY last_active_at DESC LIMIT ?1",
+    )?;
+    let rows = stmt.query_map([limit as i64], |r| {
+        Ok(SessionRow {
+            session_id: r.get(0)?,
+            first_task_id: r.get(1)?,
+            first_input_summary: r.get(2)?,
+            created_at: r.get(3)?,
+            last_active_at: r.get(4)?,
+            task_count: r.get(5)?,
+        })
+    })?;
+    Ok(rows.filter_map(|r| r.ok()).collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,5 +330,33 @@ mod tests {
         pin_task(&pool, "t1", true).unwrap();
         let list = list_recent_tasks(&pool, 10).unwrap();
         assert!(list[0].pinned);
+    }
+
+    #[test]
+    fn recovery_creates_pool_when_file_corrupt() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("ui.db");
+        std::fs::write(&path, b"this is not sqlite").unwrap();
+        let pool = open_pool_with_recovery(&path).unwrap();
+        let conn = pool.get().unwrap();
+        let count: i64 = conn.query_row("SELECT count(*) FROM projects", [], |r| r.get(0)).unwrap();
+        assert_eq!(count, 0);
+        assert!(path.with_extension("db.corrupted").exists());
+    }
+
+    #[test]
+    fn upsert_and_list_sessions() {
+        let dir = tempdir().unwrap();
+        let pool = open_project_pool(&dir.path().join("tasks.db")).unwrap();
+        upsert_session(&pool, &SessionRow {
+            session_id: "s1".into(),
+            first_task_id: "t1".into(),
+            first_input_summary: Some("hi".into()),
+            created_at: 100,
+            last_active_at: 100,
+            task_count: 1,
+        }).unwrap();
+        let list = list_sessions(&pool, 10).unwrap();
+        assert_eq!(list[0].session_id, "s1");
     }
 }

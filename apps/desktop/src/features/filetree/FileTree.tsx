@@ -1,5 +1,5 @@
-import { useEffect, useState, type DragEvent } from "react";
-import { ChevronRight, File, Folder } from "lucide-react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
+import { ChevronRight, File, Folder, Loader2 } from "lucide-react";
 import { filesIpc } from "@/lib/ipc";
 import { useProjectStore } from "@/stores/projectStore";
 import type { FileEntry } from "@/lib/types";
@@ -21,18 +21,25 @@ function relPathFor(project: string, fullPath: string): string {
 function Node({ entry, project, sub, onPreview }: NodeProps) {
   const [open, setOpen] = useState(false);
   const [children, setChildren] = useState<FileEntry[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadChildren = async () => {
+    if (children !== null) return;
+    setLoading(true);
+    const subPath = sub ? `${sub}/${entry.name}` : entry.name;
+    const items = await filesIpc.listFiles(project, subPath);
+    setChildren(items);
+    setLoading(false);
+  };
 
   const onClick = async () => {
-    if (entry.is_dir) {
-      const next = !open;
-      setOpen(next);
-      if (next && children === null) {
-        const subPath = sub ? `${sub}/${entry.name}` : entry.name;
-        const items = await filesIpc.listFiles(project, subPath);
-        setChildren(items);
-      }
-    } else {
-      onPreview(entry.path);
+    const next = !open;
+    setOpen(next);
+    if (next && children === null) {
+      const subPath = sub ? `${sub}/${entry.name}` : entry.name;
+      const items = await filesIpc.listFiles(project, subPath);
+      setChildren(items);
     }
   };
 
@@ -47,6 +54,24 @@ function Node({ entry, project, sub, onPreview }: NodeProps) {
     e.dataTransfer.effectAllowed = "copy";
   };
 
+  const onMouseEnter = () => {
+    if (!entry.is_dir || children !== null || loading) return;
+    hoverTimer.current = setTimeout(() => { loadChildren(); }, 200);
+  };
+
+  const onMouseLeave = () => {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    };
+  }, []);
+
   return (
     <div>
       <div
@@ -54,6 +79,8 @@ function Node({ entry, project, sub, onPreview }: NodeProps) {
         onDragStart={onDragStart}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         className="px-2 py-1 text-[12.5px] hover:bg-black/5 dark:hover:bg-white/10 rounded cursor-pointer flex items-center gap-1.5 select-none"
       >
         {entry.is_dir
@@ -65,12 +92,16 @@ function Node({ entry, project, sub, onPreview }: NodeProps) {
           : <File className="size-3.5 opacity-70" />
         }
         <span className="truncate">{entry.name}</span>
+        {loading && <Loader2 className="size-3 animate-spin ml-auto opacity-50" />}
       </div>
-      {open && children && (
+      {open && (
         <div className="ml-4">
-          {children.map((c) => (
-            <Node key={c.path} entry={c} project={project} sub={sub ? `${sub}/${entry.name}` : entry.name} onPreview={onPreview} />
-          ))}
+          {children === null || children.length === 0
+            ? <div className="px-2 py-1 text-[11px] opacity-40">空目录</div>
+            : children.map((c) => (
+                <Node key={c.path} entry={c} project={project} sub={sub ? `${sub}/${entry.name}` : entry.name} onPreview={onPreview} />
+              ))
+          }
         </div>
       )}
     </div>

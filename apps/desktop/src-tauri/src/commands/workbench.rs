@@ -11,6 +11,58 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, State};
 use uuid::Uuid;
 
+#[tauri::command]
+pub async fn resume_session(
+    app: AppHandle,
+    state: State<'_, Arc<AppState>>,
+    project: String,
+    session_id: String,
+) -> Result<(), String> {
+    state.pty_manager.kill(&project).await.map_err(|e| e.to_string())?;
+    let cwd: PathBuf = workspace_root().join(&project);
+    if !cwd.exists() {
+        return Err(format!("project missing: {}", cwd.display()));
+    }
+
+    let pool = state.project_db(&project).await.map_err(|e| e.to_string())?;
+    let log_paths: Vec<String> = {
+        let conn = pool.get().map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare("SELECT log_path FROM tasks WHERE session_id = ?1 ORDER BY started_at ASC")
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map([&session_id], |r| r.get::<_, String>(0))
+            .map_err(|e| e.to_string())?;
+        let mut paths = Vec::new();
+        for row in rows {
+            if let Ok(p) = row {
+                paths.push(p);
+            }
+        }
+        paths
+    };
+
+    let mut events: Vec<serde_json::Value> = Vec::new();
+    for path in log_paths {
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            for line in content.lines() {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+                    events.push(v);
+                }
+            }
+        }
+    }
+    let _ = app.emit("session:resumed", serde_json::json!({
+        "project": project, "session_id": session_id, "events": events,
+    }));
+
+    state.pty_manager.get_or_spawn(&project, cwd, Some(&session_id))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct TaskStarted {
     pub task_id: String,
@@ -22,6 +74,16 @@ fn now_secs() -> i64 {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
+}
+
+fn text_for_summary(text: &str) -> String {
+    let trimmed = text.trim();
+    if trimmed.chars().count() > 80 {
+        let truncated: String = trimmed.chars().take(77).collect();
+        format!("{}...", truncated)
+    } else {
+        trimmed.to_string()
+    }
 }
 
 #[tauri::command]
@@ -60,6 +122,12 @@ pub async fn send_input(
     )
     .map_err(|e| e.to_string())?;
 
+    state
+        .current_task_id
+        .write()
+        .await
+        .insert(project.clone(), task_id.clone());
+
     let task_log = Arc::new(TaskLog::open(log_path).map_err(|e| e.to_string())?);
 
     let (handle, mut rx) = state
@@ -69,11 +137,17 @@ pub async fn send_input(
         .map_err(|e| e.to_string())?;
 
     *handle.state.write().await = PtyState::Active;
-    handle
-        .write_input(&text)
-        .await
-        .map_err(|e| e.to_string())?;
+    match handle.write_input(&text).await {
+        Ok(()) => {}
+        Err(e) => {
+            let _ = finish_task(&project_db, &task_id, "cancelled", now_secs());
+            *handle.state.write().await = PtyState::Closed;
+            return Err(format!("PTY write failed (will respawn on next input): {e}"));
+        }
+    }
 
+    let command_for_session = text.clone();
+    let state_arc = state.inner().clone();
     let app_for_task = app.clone();
     let task_id_for_task = task_id.clone();
     let project_for_task = project.clone();
@@ -92,26 +166,53 @@ pub async fn send_input(
                     {
                         if let Some(sid) = payload.get("session_id").and_then(|v| v.as_str()) {
                             *handle_clone.session_id.write().await = Some(sid.to_string());
+                            let summary = text_for_summary(&command_for_session);
+                            let _ = crate::sessions::record_session(&project_db_clone, &crate::db::SessionRow {
+                                session_id: sid.to_string(),
+                                first_task_id: task_id_for_task.clone(),
+                                first_input_summary: Some(summary),
+                                created_at: now_secs(),
+                                last_active_at: now_secs(),
+                                task_count: 1,
+                            });
+                            if let Ok(conn) = project_db_clone.get() {
+                                let _ = conn.execute(
+                                    "UPDATE tasks SET session_id = ?1 WHERE id = ?2",
+                                    rusqlite::params![sid, task_id_for_task],
+                                );
+                            }
                         }
                     }
-                    let is_result = matches!(ev, StreamEvent::Result { .. });
                     let _ = app_for_task.emit(
                         "task:event",
                         serde_json::json!({ "task_id": task_id_for_task, "event": ev }),
                     );
-                    if is_result {
-                        let _ = finish_task(
-                            &project_db_clone,
-                            &task_id_for_task,
-                            "success",
-                            now_secs(),
-                        );
+                    if let StreamEvent::Result { ref payload } = ev {
+                        let is_error = payload.get("is_error").and_then(|v| v.as_bool()).unwrap_or(false);
+                        let result_text = payload.get("result").and_then(|v| v.as_str()).unwrap_or("");
+                        let likely_auth = result_text.to_lowercase().contains("unauthorized")
+                            || result_text.contains("401")
+                            || result_text.to_lowercase().contains("login");
+
+                        let final_status = if is_error || likely_auth { "failed" } else { "success" };
+                        let _ = finish_task(&project_db_clone, &task_id_for_task, final_status, now_secs());
+                        state_arc
+                            .current_task_id
+                            .write()
+                            .await
+                            .remove(&project_for_task);
+
+                        if likely_auth {
+                            let _ = app_for_task.emit("preflight:changed", serde_json::json!({
+                                "status": { "kind": "not_logged_in", "version": "" }
+                            }));
+                        }
                         *handle_clone.state.write().await = PtyState::Idle;
                         let _ = app_for_task.emit(
                             "task:status",
                             serde_json::json!({
                                 "task_id": task_id_for_task,
-                                "status": "success",
+                                "status": final_status,
                                 "project": project_for_task,
                             }),
                         );
@@ -137,6 +238,11 @@ pub async fn stop_task(
     state: State<'_, Arc<AppState>>,
     project: String,
 ) -> Result<(), String> {
+    if let Some(task_id) = state.current_task_id.write().await.remove(&project) {
+        if let Ok(pool) = state.project_db(&project).await {
+            let _ = finish_task(&pool, &task_id, "cancelled", now_secs());
+        }
+    }
     state
         .pty_manager
         .kill(&project)
@@ -179,4 +285,15 @@ pub async fn list_recent_tasks_cmd(
             pinned: r.pinned,
         })
         .collect())
+}
+
+#[tauri::command]
+pub async fn pin_task_cmd(
+    state: State<'_, Arc<AppState>>,
+    project: String,
+    task_id: String,
+    pinned: bool,
+) -> Result<(), String> {
+    let pool = state.project_db(&project).await.map_err(|e| e.to_string())?;
+    crate::db::pin_task(&pool, &task_id, pinned).map_err(|e| e.to_string())
 }

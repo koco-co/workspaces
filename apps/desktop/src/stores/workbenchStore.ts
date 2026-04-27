@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { listen } from "@tauri-apps/api/event";
 import { workbenchIpc } from "@/lib/ipc";
 import type {
+  SessionResumedPayload,
   StreamEvent,
   TaskEventPayload,
   TaskStatusPayload,
@@ -70,7 +71,20 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         history: [...get().history, finished],
       });
     });
-    set({ unlisten: [off1, off2] });
+    const off3 = await listen<SessionResumedPayload>(
+      "session:resumed",
+      (e) => {
+        set({
+          activeTask: {
+            taskId: `replay-${e.payload.session_id}`,
+            events: e.payload.events,
+            status: "success",
+            startedAt: Date.now(),
+          },
+        });
+      },
+    );
+    set({ unlisten: [off1, off2, off3] });
   },
 
   stopListening: () => {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ProjectsList } from "@/features/projects/ProjectsList";
+import { SessionsList } from "@/features/sessions/SessionsList";
 import { FileTree } from "@/features/filetree/FileTree";
 import { TextPreview } from "@/features/filetree/TextPreview";
 
@@ -20,6 +21,8 @@ export function Sidebar({ className, bottomSlot }: SidebarProps) {
     )}>
       <div className="px-3 pt-12 pb-2 text-[11px] uppercase tracking-wider opacity-50">Projects</div>
       <div className="flex-shrink-0"><ProjectsList /></div>
+      <div className="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider opacity-50">Sessions</div>
+      <div className="max-h-48 overflow-y-auto"><SessionsList /></div>
       <div className="px-3 pt-3 pb-1 text-[11px] uppercase tracking-wider opacity-50">Files</div>
       <div className="flex-1 overflow-y-auto"><FileTree onPreview={setPreviewPath} /></div>
       <TextPreview path={previewPath} />

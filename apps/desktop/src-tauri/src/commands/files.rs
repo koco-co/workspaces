@@ -1,7 +1,6 @@
 use crate::paths::workspace_root;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-use tauri_plugin_shell::ShellExt;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FileEntry {
@@ -75,15 +74,15 @@ pub async fn read_file_text(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn open_with_default(app: tauri::AppHandle, path: String) -> Result<(), String> {
-    app.shell().open(&path, None).map_err(|e| e.to_string())
+pub async fn open_with_default(path: String) -> Result<(), String> {
+    tauri_plugin_opener::open_path(&path, None::<&str>).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn open_in_finder(app: tauri::AppHandle, path: String) -> Result<(), String> {
+pub async fn open_in_finder(path: String) -> Result<(), String> {
     let parent = Path::new(&path)
         .parent()
         .map(|p| p.to_string_lossy().into_owned())
-        .unwrap_or(path.clone());
-    app.shell().open(&parent, None).map_err(|e| e.to_string())
+        .unwrap_or(path);
+    tauri_plugin_opener::open_path(&parent, None::<&str>).map_err(|e| e.to_string())
 }

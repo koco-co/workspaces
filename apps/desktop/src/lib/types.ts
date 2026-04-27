@@ -66,3 +66,18 @@ export interface TaskStatusPayload {
   status: TaskStatus;
   project: string;
 }
+
+export interface SessionDto {
+  session_id: string;
+  first_task_id: string;
+  first_input_summary: string | null;
+  created_at: number;
+  last_active_at: number;
+  task_count: number;
+}
+
+export interface SessionResumedPayload {
+  project: string;
+  session_id: string;
+  events: StreamEvent[];
+}

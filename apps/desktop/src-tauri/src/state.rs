@@ -9,6 +9,7 @@ pub struct AppState {
     pub project_dbs: RwLock<HashMap<String, DbPool>>,
     pub current_project: RwLock<Option<String>>,
     pub pty_manager: Arc<PtyManager>,
+    pub current_task_id: RwLock<HashMap<String, String>>,
 }
 
 impl AppState {
@@ -18,6 +19,7 @@ impl AppState {
             project_dbs: RwLock::new(HashMap::new()),
             current_project: RwLock::new(None),
             pty_manager: PtyManager::new(),
+            current_task_id: RwLock::new(HashMap::new()),
         })
     }
 
