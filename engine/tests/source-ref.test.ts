@@ -7,7 +7,7 @@ import { join, resolve as resolvePath } from "node:path";
 
 const REPO_ROOT = resolvePath(import.meta.dirname, "../..");
 const CLI_BIN = "bun";
-const CLI_ARGS = [join(REPO_ROOT, ".claude/scripts/kata-cli.ts"), "source-ref"];
+const CLI_ARGS = [join(REPO_ROOT, "engine/src/cli/index.ts"), "source-ref"];
 
 describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", () => {
   const tmp = mkdtempSync(join(tmpdir(), "kata-sr-enh-cli-"));

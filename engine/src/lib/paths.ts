@@ -109,7 +109,7 @@ export function knowledgePitfallsDir(project: string): string {
 }
 
 export function scriptsDir(): string {
-  return resolve(repoRoot(), ".claude/scripts");
+  return resolve(repoRoot(), "engine/src");
 }
 
 export function pluginsDir(): string {

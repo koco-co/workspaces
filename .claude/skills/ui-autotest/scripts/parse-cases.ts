@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { basename } from "node:path";
 import { Command } from "commander";
-import { parseFrontMatter } from "../../../scripts/lib/frontmatter.ts";
+import { parseFrontMatter } from "../../../../engine/src/lib/frontmatter.ts";
 
 // ────────────────────────────────────────────────────────────
 // 类型定义

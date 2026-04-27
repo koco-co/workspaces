@@ -7,7 +7,7 @@ afterEach(() => {
 
 describe("logger", () => {
   it("createLogger returns object with 4 methods", async () => {
-    const { createLogger } = await import("../../lib/logger.ts");
+    const { createLogger } = await import("../../src/lib/logger.ts");
     const log = createLogger("test");
     assert.equal(typeof log.debug, "function");
     assert.equal(typeof log.info, "function");
@@ -16,7 +16,7 @@ describe("logger", () => {
   });
 
   it("setLogLevel / getLogLevel roundtrip", async () => {
-    const { setLogLevel, getLogLevel } = await import("../../lib/logger.ts");
+    const { setLogLevel, getLogLevel } = await import("../../src/lib/logger.ts");
     setLogLevel("error");
     assert.equal(getLogLevel(), "error");
     setLogLevel("debug");
@@ -26,7 +26,7 @@ describe("logger", () => {
 
   it("initLogLevel applies LOG_LEVEL env var", async () => {
     const { initLogLevel, getLogLevel, setLogLevel } = await import(
-      "../../lib/logger.ts"
+      "../../src/lib/logger.ts"
     );
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "error";
@@ -37,7 +37,7 @@ describe("logger", () => {
 
   it("initLogLevel with invalid value keeps current level", async () => {
     const { initLogLevel, getLogLevel, setLogLevel } = await import(
-      "../../lib/logger.ts"
+      "../../src/lib/logger.ts"
     );
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "garbage";
@@ -47,7 +47,7 @@ describe("logger", () => {
 
   it("initLogLevel with LOG_LEVEL unset is a no-op", async () => {
     const { initLogLevel, getLogLevel, setLogLevel } = await import(
-      "../../lib/logger.ts"
+      "../../src/lib/logger.ts"
     );
     setLogLevel("warn");
     delete process.env["LOG_LEVEL"];
@@ -58,7 +58,7 @@ describe("logger", () => {
 
   it("initLogLevel is case-insensitive", async () => {
     const { initLogLevel, getLogLevel, setLogLevel } = await import(
-      "../../lib/logger.ts"
+      "../../src/lib/logger.ts"
     );
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "DEBUG";

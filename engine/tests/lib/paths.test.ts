@@ -105,9 +105,9 @@ describe("repoRoot", () => {
 });
 
 describe("scriptsDir", () => {
-  it("points to .claude/scripts inside the repo root", () => {
+  it("points to engine/src inside the repo root", () => {
     const dir = scriptsDir();
-    assert.ok(dir.endsWith(".claude/scripts"), `Expected to end with .claude/scripts, got: ${dir}`);
+    assert.ok(dir.endsWith("engine/src"), `Expected to end with engine/src, got: ${dir}`);
     assert.ok(existsSync(dir), `scriptsDir ${dir} does not exist`);
   });
 });

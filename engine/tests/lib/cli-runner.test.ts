@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 describe("createCli", () => {
   it("registers a single command with required option", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -27,7 +27,7 @@ describe("createCli", () => {
   });
 
   it("registers multiple commands and dispatches correctly", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     let lastCmd = "";
 
     const program = createCli({
@@ -59,7 +59,7 @@ describe("createCli", () => {
   });
 
   it("supports async action via parseAsync", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const order: string[] = [];
 
     const program = createCli({
@@ -82,7 +82,7 @@ describe("createCli", () => {
   });
 
   it("routes thrown errors through onError handler", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Error[] = [];
 
     const program = createCli({
@@ -108,7 +108,7 @@ describe("createCli", () => {
   });
 
   it("passes CliContext with logger and cwd to action", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     let receivedCwd = "";
     let receivedLog: unknown = null;
 
@@ -134,7 +134,7 @@ describe("createCli", () => {
   });
 
   it("supports optional (non-required) flags with defaults", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -165,7 +165,7 @@ describe("createCli", () => {
   it("respects initEnv=false and does not read .env files", async () => {
     // Clean key up front, just to be safe
     delete process.env["__CLI_RUNNER_TEST_SENTINEL__"];
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const program = createCli({
       name: "no-env",
       description: "no-env",
@@ -183,7 +183,7 @@ describe("createCli", () => {
   });
 
   it("supports rootAction with positional arguments", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -205,7 +205,7 @@ describe("createCli", () => {
   });
 
   it("supports rootAction without positional arguments (flag-only root CLI)", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -224,7 +224,7 @@ describe("createCli", () => {
   });
 
   it("supports subcommand with positional argument", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -258,7 +258,7 @@ describe("createCli", () => {
   });
 
   it("supports hybrid (rootAction + commands) — subcommands take precedence", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const log: string[] = [];
 
     const program = createCli({
@@ -293,7 +293,7 @@ describe("createCli", () => {
     // Runtime rejection of invalid values is covered end-to-end in
     // __tests__/qa.test.ts (execFileSync subprocess, avoids commander's
     // process.exit side-effects interfering with the bun test runner).
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
     const captured: Record<string, unknown>[] = [];
 
     const program = createCli({
@@ -327,7 +327,7 @@ describe("createCli", () => {
   });
 
   it("renders choices list in the generated help output", async () => {
-    const { createCli } = await import("../../lib/cli-runner.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
 
     const program = createCli({
       name: "help-tool",
@@ -355,8 +355,8 @@ describe("createCli", () => {
 
   it("applies LOG_LEVEL env var to logger", async () => {
     process.env["LOG_LEVEL"] = "error";
-    const { createCli } = await import("../../lib/cli-runner.ts");
-    const { setLogLevel } = await import("../../lib/logger.ts");
+    const { createCli } = await import("../../src/lib/cli-runner.ts");
+    const { setLogLevel } = await import("../../src/lib/logger.ts");
 
     // reset to default after import
     setLogLevel("info");

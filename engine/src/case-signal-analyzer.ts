@@ -309,7 +309,7 @@ async function runProbe(opts: {
   const prdSlug = basename(prdPath).replace(/\.md$/, "");
   const cachePath = probeCachePath(opts.project, prdSlug);
   const prdMtimeMs = statSync(prdPath).mtimeMs;
-  const probeScriptPath = resolve(repoRoot(), ".claude/scripts/case-signal-analyzer.ts");
+  const probeScriptPath = resolve(repoRoot(), "engine/src/case-signal-analyzer.ts");
   const probeScriptMtimeMs = statSync(probeScriptPath).mtimeMs;
 
   // Check cache
