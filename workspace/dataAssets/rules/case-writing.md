@@ -178,3 +178,53 @@
 ## 7. Writer 源码参考要求
 
 Writer 编写用例时，如果增强 PRD 中包含 🔵 源码标注，必须优先采用源码中确认的信息（按钮名称、字段名称、表单结构、导航路径）。当 PRD 中的描述与本偏好规则冲突时，以源码实际实现为准，本偏好规则次之。
+
+---
+
+## 8. SparkThrift / Doris 数据源 字段类型矩阵
+
+> 本节适用于 dataAssets 项目所有 archive MD 用例的前置条件 SQL 与"使用 Doris 重复"句式。
+
+| 数据类型场景 | SparkThrift2.x | Doris3.x |
+| --- | --- | --- |
+| 主 JSON 字段 | `STRING`（必须，无 JSON 类型） | `JSON`（首选）/ `VARCHAR(65533)` 回退 |
+| 一般文本字段 | `STRING` | `VARCHAR(N)` |
+| 整数字段 | `INT` / `BIGINT` | `INT` / `BIGINT` |
+| 日期字段 | `DATE` | `DATE` |
+
+### 表 DDL 模板
+
+**SparkThrift2.x**：
+```sql
+DROP TABLE IF EXISTS pw_test.{table_name};
+CREATE TABLE pw_test.{table_name} (
+  id INT,
+  info STRING,           -- 主 JSON 字段，存 JSON 字符串
+  ...
+) STORED AS PARQUET;
+INSERT INTO TABLE pw_test.{table_name}
+SELECT 1, '{"key1":"value1"}'
+UNION ALL
+SELECT 2, '{"key1":"value2"}';
+```
+
+**Doris3.x**：
+```sql
+DROP TABLE IF EXISTS {table_name};
+CREATE TABLE {table_name} (
+  id INT,
+  info JSON,
+  ...
+) DISTRIBUTED BY HASH(id) BUCKETS 3 PROPERTIES("replication_num"="1");
+INSERT INTO {table_name} VALUES
+  (1, '{"key1":"value1"}'),
+  (2, '{"key1":"value2"}');
+```
+
+### "Doris 重复"句式精确化
+
+每条用例末尾的"使用 Doris3.x 数据源重复以上步骤"必须改写为：
+
+> 使用 Doris3.x 数据源重复以上步骤，将 `info` 字段类型从 `STRING` 改为 `JSON`，其余 UI 操作不变；预期结果与 SparkThrift2.x 一致。
+
+仅当本条用例确实需双数据源验证时保留此句式；纯 UI 验证（如表单校验、下拉滚动加载）删除此句。
