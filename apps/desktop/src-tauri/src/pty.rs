@@ -110,7 +110,8 @@ impl PtyManager {
             rows: 40, cols: 120, pixel_width: 0, pixel_height: 0,
         })?;
 
-        let mut cmd = CommandBuilder::new("claude");
+        let claude_bin = std::env::var("KATA_CLAUDE_BIN").unwrap_or_else(|_| "claude".to_string());
+        let mut cmd = CommandBuilder::new(&claude_bin);
         cmd.cwd(&cwd);
         cmd.arg("--output-format=stream-json");
         cmd.arg("--print");
@@ -128,6 +129,7 @@ impl PtyManager {
 
         let mut reader = pair.master.try_clone_reader()?;
         let (tx, rx) = mpsc::unbounded_channel::<String>();
+        let handle_for_reader = handle.clone();
         tokio::task::spawn_blocking(move || {
             use std::io::BufRead;
             let mut buf = std::io::BufReader::new(&mut reader);
@@ -137,6 +139,23 @@ impl PtyManager {
                 match buf.read_line(&mut line) {
                     Ok(0) => break,
                     Ok(_) => {
+                        // auto-detect session_id from system init events
+                        let no_session = futures::executor::block_on(async {
+                            handle_for_reader.session_id.read().await.is_none()
+                        });
+                        if no_session {
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&line) {
+                                let is_init = json.get("type").and_then(|v| v.as_str()) == Some("system")
+                                    && json.get("subtype").and_then(|v| v.as_str()) == Some("init");
+                                if is_init {
+                                    if let Some(sid) = json.get("session_id").and_then(|v| v.as_str()) {
+                                        let _ = futures::executor::block_on(async {
+                                            *handle_for_reader.session_id.write().await = Some(sid.to_string());
+                                        });
+                                    }
+                                }
+                            }
+                        }
                         if tx.send(line.clone()).is_err() {
                             break;
                         }
