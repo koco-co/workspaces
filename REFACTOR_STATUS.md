@@ -10,8 +10,8 @@
 | 阶段 | 描述 | 状态 | tag | 完成日期 |
 |------|------|------|-----|---------|
 | P0   | 写 spec | ✅ done | — | 2026-04-27 |
-| P0.5 | 散件清理 + runtime 归位 | 🚧 in-progress | — | |
-| P1   | engine 提升为顶层 npm 包 | ⏳ pending | | |
+| P0.5 | 散件清理 + runtime 归位 | ✅ done | refactor-v3-P0.5 | 2026-04-28 |
+| P1   | engine 提升为顶层 npm 包 | 🚧 in-progress | | |
 | P2   | references 拆分 | ⏳ pending | | |
 | P3   | workspace β 重排 | ⏳ pending | | |
 | P3.5 | tests 子目录重排 | ⏳ pending | | |
