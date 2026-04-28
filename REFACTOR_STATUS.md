@@ -3,7 +3,7 @@
 > 本文件仅在 `refactor/v3-architecture` 分支上维护，merge 到 main 时删除。
 
 **Spec**: [docs/superpowers/specs/2026-04-27-architecture-redesign-design.md](docs/superpowers/specs/2026-04-27-architecture-redesign-design.md)
-**当前 Plan**: [docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0-1.md](docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0-1.md)
+**当前 Plan**: [docs/superpowers/plans/2026-04-28-architecture-redesign-phase-3a-migration-script-and-dryrun.md](docs/superpowers/plans/2026-04-28-architecture-redesign-phase-3a-migration-script-and-dryrun.md)
 
 ## 阶段进度
 
@@ -13,7 +13,7 @@
 | P0.5 | 散件清理 + runtime 归位 | ✅ done | refactor-v3-P0.5 | 2026-04-28 |
 | P1   | engine 提升为顶层 npm 包 | ✅ done | refactor-v3-P1 | 2026-04-28 |
 | P2   | references 拆分 | ✅ done | refactor-v3-P2 | 2026-04-28 |
-| P3   | workspace β 重排 | 🚧 in-progress (P3-A: script + dryrun) | | |
+| P3   | workspace β 重排 | 🚧 in-progress (P3-A done; awaits P3-B real forward) | refactor-v3-P3-A | 2026-04-28 |
 | P3.5 | tests 子目录重排 | ⏳ pending | | |
 | P4   | skill workflow 合并 | ⏳ pending | | |
 | P4.5 | dtstack-cli → dtstack-sdk 改名 | ⏳ pending | | |
