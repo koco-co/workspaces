@@ -85,7 +85,9 @@ kata.addCommand(xmindPatch);
 
 // ── Features commands (§4.5 tooling) ──────────────────────────
 import { registerImportFix } from "./features-import-fix.ts";
+import { registerLintTests } from "./features-lint-tests.ts";
 registerImportFix(kata);
+registerLintTests(kata);
 
 initEnv();
 
