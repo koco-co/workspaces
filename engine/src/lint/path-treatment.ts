@@ -23,11 +23,22 @@ const EXCLUDED_PATH_FRAGMENTS = [
   "/.repos/",
   "/dist/",
   "/.runs/",
+  // workspace/ data dirs — actual files, not references
+  "/workspace/",
+  // test fixture files (reference old layout as data, not as refs to rewrite)
+  "engine/tests/fixtures/",
+  // old refactor log files
+  "refactor-v3-P3-",
+  // templates using old layout
+  "/templates/",
   "docs/superpowers/specs/",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-1",
+  "docs/superpowers/plans/2026-04-26-",
+  "docs/superpowers/plans/2026-04-27-",
+  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-2",
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-3",
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-4",
+  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0",
+  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-1",
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-5",
   "docs/superpowers/handoffs/",
 ];
@@ -37,15 +48,19 @@ function isExcluded(filePath: string): boolean {
 }
 
 function walk(root: string, out: string[]): void {
-  const st = statSync(root);
-  if (st.isFile()) {
-    if (SCAN_SUFFIXES.some((s) => root.endsWith(s)) && !isExcluded(root)) out.push(root);
-    return;
-  }
-  if (!st.isDirectory()) return;
-  if (isExcluded(root)) return;
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    walk(join(root, entry.name), out);
+  try {
+    const st = statSync(root);
+    if (st.isFile()) {
+      if (SCAN_SUFFIXES.some((s) => root.endsWith(s)) && !isExcluded(root)) out.push(root);
+      return;
+    }
+    if (!st.isDirectory()) return;
+    if (isExcluded(root)) return;
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      walk(join(root, entry.name), out);
+    }
+  } catch {
+    // skip inaccessible paths (broken symlinks, permissions, etc.)
   }
 }
 

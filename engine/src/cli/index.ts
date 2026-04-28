@@ -95,6 +95,10 @@ registerReorgTests(kata);
 import { registerSkillAudit } from "./skill-audit.ts";
 registerSkillAudit(kata);
 
+// ── Path audit (P5 §10.3) ───────────────────────────────────
+import { registerPathsAudit } from "./paths-audit.ts";
+registerPathsAudit(kata);
+
 initEnv();
 
 kata.parseAsync(process.argv).catch((err) => {
