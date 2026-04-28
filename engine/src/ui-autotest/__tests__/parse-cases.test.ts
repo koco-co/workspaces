@@ -60,8 +60,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    expect(result.includes("登录系统").toBeTruthy());
-    expect(result.includes("进入列表页").toBeTruthy());
+    expect(result.includes("登录系统")).toBeTruthy();
+    expect(result.includes("进入列表页")).toBeTruthy();
   });
 
   it("extracts preconditions from code block format", () => {
@@ -76,8 +76,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    expect(result.includes("登录系统").toBeTruthy());
-    expect(result.includes("数据准备完成").toBeTruthy());
+    expect(result.includes("登录系统")).toBeTruthy();
+    expect(result.includes("数据准备完成")).toBeTruthy();
   });
 
   it("handles preconditions containing letter z without truncation", () => {
@@ -159,7 +159,7 @@ case_count: 2
 
   it("extracts preconditions for cases that have them", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    expect(result.tasks[0].preconditions.includes("admin").toBeTruthy());
+    expect(result.tasks[0].preconditions.includes("admin")).toBeTruthy();
     expect(result.tasks[1].preconditions).toBe("");
   });
 });

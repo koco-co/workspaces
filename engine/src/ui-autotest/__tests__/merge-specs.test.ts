@@ -1,13 +1,8 @@
-import { describe, it, before, after, expect } from "bun:test";
+import { describe, it, beforeEach, afterEach, expect } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  parseBlockMeta,
-  readCodeBlocks,
-  buildSpecContent,
-  mergeSpecs,
-} from "../merge-specs.ts";
+import { parseBlockMeta, readCodeBlocks, buildSpecContent, mergeSpecs } from "../merge-specs.ts";
 
 // ────────────────────────────────────────────────────────────
 // parseBlockMeta
@@ -41,7 +36,7 @@ describe("parseBlockMeta", () => {
 describe("readCodeBlocks", () => {
   let tmpIn: string;
 
-  before(() => {
+  beforeEach(() => {
     tmpIn = join(tmpdir(), `merge-specs-test-read-${Date.now()}`);
     mkdirSync(tmpIn, { recursive: true });
     writeFileSync(
@@ -57,7 +52,7 @@ describe("readCodeBlocks", () => {
     writeFileSync(join(tmpIn, "skip.ts"), "// no meta\nexport const c = 3;\n", "utf-8");
   });
 
-  after(() => {
+  afterEach(() => {
     rmSync(tmpIn, { recursive: true, force: true });
   });
 
@@ -86,13 +81,13 @@ describe("buildSpecContent", () => {
 
   it("generates import lines for each block", () => {
     const content = buildSpecContent(blocks, "全量测试");
-    expect(content.includes('import "./t1";').toBeTruthy());
-    expect(content.includes('import "./t2";').toBeTruthy());
+    expect(content.includes('import "./t1";')).toBeTruthy();
+    expect(content.includes('import "./t2";')).toBeTruthy();
   });
 
   it("returns empty export for zero blocks", () => {
     const content = buildSpecContent([], "冒烟测试");
-    expect(content.includes("export {};").toBeTruthy());
+    expect(content.includes("export {};")).toBeTruthy();
   });
 });
 
@@ -104,7 +99,7 @@ describe("mergeSpecs (basic)", () => {
   let tmpIn: string;
   let tmpOut: string;
 
-  before(() => {
+  beforeEach(() => {
     tmpIn = join(tmpdir(), `merge-specs-test-basic-in-${Date.now()}`);
     tmpOut = join(tmpdir(), `merge-specs-test-basic-out-${Date.now()}`);
     mkdirSync(tmpIn, { recursive: true });
@@ -120,7 +115,7 @@ describe("mergeSpecs (basic)", () => {
     );
   });
 
-  after(() => {
+  afterEach(() => {
     rmSync(tmpIn, { recursive: true, force: true });
     rmSync(tmpOut, { recursive: true, force: true });
   });
@@ -133,7 +128,7 @@ describe("mergeSpecs (basic)", () => {
 
   it("smoke_spec path ends with smoke.spec.ts", () => {
     const result = mergeSpecs(tmpIn, tmpOut);
-    expect(result.smoke_spec.endsWith("smoke.spec.ts").toBeTruthy());
+    expect(result.smoke_spec.endsWith("smoke.spec.ts")).toBeTruthy();
   });
 });
 
@@ -147,7 +142,7 @@ describe("mergeSpecs compileCheck", () => {
   let tmpInGood: string;
   let tmpOutGood: string;
 
-  before(() => {
+  beforeEach(() => {
     const ts = Date.now();
     tmpInBad = join(tmpdir(), `merge-specs-bad-in-${ts}`);
     tmpOutBad = join(tmpdir(), `merge-specs-bad-out-${ts}`);
@@ -172,7 +167,7 @@ describe("mergeSpecs compileCheck", () => {
     );
   });
 
-  after(() => {
+  afterEach(() => {
     rmSync(tmpInBad, { recursive: true, force: true });
     rmSync(tmpOutBad, { recursive: true, force: true });
     rmSync(tmpInGood, { recursive: true, force: true });
@@ -180,11 +175,13 @@ describe("mergeSpecs compileCheck", () => {
   });
 
   it("throws when compileCheck=true and block has type error", () => {
-    expect(() => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true })).toThrow((err: unknown) => {
+    expect(() => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true })).toThrow(
+      (err: unknown) => {
         expect(err instanceof Error).toBeTruthy();
         expect(err.message).toMatch(/tsc|type/i);
         return true;
-      });
+      },
+    );
   });
 
   it("does not throw when compileCheck=true and block is valid TypeScript", () => {
