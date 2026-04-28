@@ -91,6 +91,10 @@ registerImportFix(kata);
 registerLintTests(kata);
 registerReorgTests(kata);
 
+// ── Skill audit (P4 §5.4 + §5.5) ────────────────────────────
+import { registerSkillAudit } from "./skill-audit.ts";
+registerSkillAudit(kata);
+
 initEnv();
 
 kata.parseAsync(process.argv).catch((err) => {

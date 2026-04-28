@@ -1,0 +1,84 @@
+
+== Skill shape (S1-S7) ==
+
+[ui-autotest] 4 violation(s):
+  S2 ./.claude/skills/ui-autotest/workflow.md — workflow.md missing
+  S3 ./.claude/skills/ui-autotest/rules.md — rules.md missing
+  S5 ./.claude/skills/ui-autotest/workflow — forbidden subdir 'workflow'; only 'references/' allowed
+  S5 ./.claude/skills/ui-autotest/scripts — forbidden subdir 'scripts'; only 'references/' allowed
+
+[playwright-cli] 3 violation(s):
+  S4 ./.claude/skills/playwright-cli/SKILL.md — SKILL.md has 360 lines (limit 100)
+  S2 ./.claude/skills/playwright-cli/workflow.md — workflow.md missing
+  S3 ./.claude/skills/playwright-cli/rules.md — rules.md missing
+
+[daily-task] 3 violation(s):
+  S2 ./.claude/skills/daily-task/workflow.md — workflow.md missing
+  S3 ./.claude/skills/daily-task/rules.md — rules.md missing
+  S5 ./.claude/skills/daily-task/modes — forbidden subdir 'modes'; only 'references/' allowed
+
+[using-kata] 3 violation(s):
+  S2 ./.claude/skills/using-kata/workflow.md — workflow.md missing
+  S3 ./.claude/skills/using-kata/rules.md — rules.md missing
+  S5 ./.claude/skills/using-kata/workflow — forbidden subdir 'workflow'; only 'references/' allowed
+
+[knowledge-keeper] 3 violation(s):
+  S2 ./.claude/skills/knowledge-keeper/workflow.md — workflow.md missing
+  S3 ./.claude/skills/knowledge-keeper/rules.md — rules.md missing
+  S5 ./.claude/skills/knowledge-keeper/workflow — forbidden subdir 'workflow'; only 'references/' allowed
+
+[test-case-gen] 3 violation(s):
+  S2 ./.claude/skills/test-case-gen/workflow.md — workflow.md missing
+  S3 ./.claude/skills/test-case-gen/rules.md — rules.md missing
+  S5 ./.claude/skills/test-case-gen/workflow — forbidden subdir 'workflow'; only 'references/' allowed
+
+[case-format] 3 violation(s):
+  S2 ./.claude/skills/case-format/workflow.md — workflow.md missing
+  S3 ./.claude/skills/case-format/rules.md — rules.md missing
+  S5 ./.claude/skills/case-format/workflow — forbidden subdir 'workflow'; only 'references/' allowed
+
+== Agent frontmatter (A1-A4) ==
+
+[backend-bug-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[bug-reporter-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[subagent-a-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[conflict-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[reviewer-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[format-checker-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[hotfix-case-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[subagent-b-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[analyze-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[source-facts-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[standardize-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[frontend-bug-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[writer-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[pattern-analyzer-agent.md] 1 violation(s):
+  A2 — owner_skill not declared
+
+[skill:audit] total violations=36
