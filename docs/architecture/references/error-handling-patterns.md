@@ -25,7 +25,7 @@
 
 | Agent                    | 负责阶段   | 处理方式                                                                                                                   |
 | ------------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **source-facts-agent**   | 源码事实探查 | `invalid_input` → clarify_envelope；`blocking_unknown` → clarify_envelope 且标记 🔴；`defaultable_unknown` → source-facts.json 中标记 🟡 |
+| **source-scanner-agent** | 源码事实探查 | `invalid_input` → clarify_envelope；`blocking_unknown` → clarify_envelope 且标记 🔴；`defaultable_unknown` → source-facts.json 中标记 🟡 |
 | **analyze-agent**        | 测试分析   | `invalid_input` → 输出警告并失败；`defaultable_unknown` → 继续分析并记录；外部脚本失败 → 跳过该步骤                        |
 | **writer-agent**         | 用例编写   | `blocking_unknown` → blocked_envelope；`defaultable_unknown` → 继续并在思路中保留依据                                      |
 | **reviewer-agent**       | 用例审查   | `invalid_input` → 返回 envelope；`blocking_unknown` → context_gaps；自动修正时若无法修正 → 标记 `[FXX-MANUAL]`             |
@@ -59,7 +59,7 @@
 }
 ```
 
-### source-facts-agent 的 clarify_envelope 格式
+### source-scanner-agent 的 clarify_envelope 格式
 
 ```xml
 <clarify_envelope>
@@ -111,7 +111,7 @@
 - 不继续处理
 - 若是可选文件（如历史用例参考），改为 `defaultable_unknown`，跳过该步骤
 
-**示例**（source-facts-agent）：
+**示例**（source-scanner-agent）：
 
 ```json
 {
@@ -196,7 +196,7 @@
 - 记录推断的依据和置信度
 - 继续处理，不阻断
 
-**示例**（source-facts-agent）：
+**示例**（source-scanner-agent）：
 
 ```
 🟡 [推测：基于 dt-insight-studio src/pages/approval/ApprovalListPage.tsx#L42 useApprovalStore.status 字段推断] 「审批状态」枚举为 pending/approving/approved/rejected

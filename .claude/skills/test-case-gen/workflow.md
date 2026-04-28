@@ -47,7 +47,7 @@ Input parsing and environment preparation:
 
 ## <a id="step-2"></a>Step 2: Probe
 
-Executor: subagent (`source-facts-agent`, haiku)
+Executor: subagent (`source-scanner-agent`, haiku)
 Gate after: [R1](#gate-r1)
 
 Collect 4 signals from the source system:

@@ -5,7 +5,7 @@ export const testCaseGenSteps: WorkflowStep[] = [
   {
     id: "probe",
     executor: "subagent",
-    subagentConfig: { agentRef: "source-facts-agent", model: "haiku" },
+    subagentConfig: { agentRef: "source-scanner-agent", model: "haiku" },
     dependsOn: ["init"],
   },
   {

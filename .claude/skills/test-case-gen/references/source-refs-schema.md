@@ -95,4 +95,4 @@ repo#backend/ApprovalController.java:L45-L60
 - `source_consent.repos = []`，`frontmatter.source_reference = none`
 - analyze / write 允许 `prd#` / `knowledge#` 前缀（不要求 `enhanced#` 锚点解析）
 - reviewer F16 放宽：`prd#` / `knowledge#` 可解析即放行
-- `enhanced#` 锚点仍建议使用（当 source-facts-agent 仅扫 images 时 §3 锚点依然存在）
+- `enhanced#` 锚点仍建议使用（当 source-scanner-agent 仅扫源码时 §3 锚点依然存在）

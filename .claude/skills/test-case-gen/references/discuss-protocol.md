@@ -6,7 +6,7 @@
 
 | 场景 | 来源 | 行为 |
 |---|---|---|
-| 全新需求 | 无 enhanced.md | `discuss init` → 3.2 源码许可 → 3.2.5 source-facts-agent → 3.3-3.7 讨论 → `set-status ready` |
+| 全新需求 | 无 enhanced.md | `discuss init` → 3.2 源码许可 → 3.2.5 source-scanner-agent → 3.3-3.7 讨论 → `set-status ready` |
 | 中断恢复 | enhanced.md status=discussing | `discuss read` 恢复 §4 已 resolve + 未 resolve 清单 → 续走 3.7 |
 | 已完成 | enhanced.md status=ready | 跳过 discuss，主 agent 直接进节点 4 analyze |
 | 半冻结回射 | enhanced.md status=analyzing / writing | `add-pending` 自动回退到 discussing 并记 `reentry_from`；回到 3.7 续问 |
