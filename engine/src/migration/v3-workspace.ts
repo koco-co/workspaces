@@ -112,8 +112,75 @@ export function discoverFeatures(projectDir: string, kataRoot?: string): Feature
   );
 }
 
+function featureTarget(projectDir: string, f: Feature): string {
+  return join(projectDir, "features", `${f.yyyymm}-${f.slug}`);
+}
+
+function listFiles(dir: string): string[] {
+  return safeReaddir(dir).map((name) => join(dir, name));
+}
+
 export function planMigration(features: Feature[], projectDir: string): MigrationOp[] {
-  throw new Error("not implemented");
+  const ops: MigrationOp[] = [];
+  const dirsToCreate = new Set<string>();
+
+  // Phase A: collect all dirs to mkdir
+  dirsToCreate.add(join(projectDir, "features"));
+  for (const f of features) dirsToCreate.add(featureTarget(projectDir, f));
+
+  const fixturesSrc = join(projectDir, "tests", "fixtures");
+  const helpersSrc = join(projectDir, "tests", "helpers");
+  const sharedDir = join(projectDir, "shared");
+  const willMoveShared = isDir(fixturesSrc) || isDir(helpersSrc);
+  if (willMoveShared) dirsToCreate.add(sharedDir);
+
+  for (const d of [...dirsToCreate].sort()) {
+    ops.push({ type: "mkdir", dst: d });
+  }
+
+  ops.push({ type: "log", message: "── feature migrations ──" });
+
+  // Phase B: per-feature mvs
+  for (const f of features) {
+    const target = featureTarget(projectDir, f);
+    ops.push({ type: "log", message: `feature ${f.yyyymm}-${f.slug}` });
+
+    if (f.prdDir) {
+      for (const item of listFiles(f.prdDir)) {
+        const base = item.split("/").pop()!;
+        let dstName: string;
+        if (item === f.prdMdPath) dstName = "prd.md";
+        else dstName = base;
+        ops.push({ type: "mv", src: item, dst: join(target, dstName) });
+      }
+    }
+    if (f.archivePath) {
+      ops.push({ type: "mv", src: f.archivePath, dst: join(target, "archive.md") });
+    }
+    if (f.xmindPath) {
+      ops.push({ type: "mv", src: f.xmindPath, dst: join(target, "cases.xmind") });
+    }
+    if (f.testsPath) {
+      ops.push({ type: "mv", src: f.testsPath, dst: join(target, "tests") });
+    }
+    if (f.kataSessionPaths && f.kataSessionPaths.length > 0) {
+      const stateDir = join(target, ".state");
+      ops.push({ type: "mkdir", dst: stateDir });
+      for (const sess of f.kataSessionPaths) {
+        const base = sess.split("/").pop()!;
+        ops.push({ type: "mv", src: sess, dst: join(stateDir, base) });
+      }
+    }
+  }
+
+  // Phase C: shared/
+  if (willMoveShared) {
+    ops.push({ type: "log", message: "── shared/ migrations ──" });
+    if (isDir(fixturesSrc)) ops.push({ type: "mv", src: fixturesSrc, dst: join(sharedDir, "fixtures") });
+    if (isDir(helpersSrc)) ops.push({ type: "mv", src: helpersSrc, dst: join(sharedDir, "helpers") });
+  }
+
+  return ops;
 }
 
 export function applyMigration(
