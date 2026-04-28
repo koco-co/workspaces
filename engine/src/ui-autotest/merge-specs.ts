@@ -176,7 +176,7 @@ export function mergeSpecs(
         noImplicitAny: true,
         noEmit: true,
         baseUrl,
-        types: ["node"],
+        types: [],
       },
       files: blockFiles,
     });
