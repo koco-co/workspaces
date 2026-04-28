@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   currentYYYYMM,
+  enhancedMd,
   parseGitUrl,
   projectDir,
   projectPath,
@@ -27,6 +28,14 @@ import {
   repoRoot,
   scriptsDir,
   skillsDir,
+} from "../../src/lib/paths.ts";
+
+import {
+  featureDir,
+  featureFile,
+  incidentDir,
+  projectShared,
+  regressionDir,
 } from "../../src/lib/paths.ts";
 
 describe("parseGitUrl", () => {
@@ -272,5 +281,53 @@ describe("listProjects", () => {
     for (const p of projects) {
       assert.ok(!p.startsWith("."), `${p} should not start with dot`);
     }
+  });
+});
+
+describe("featureDir / featureFile (new v3 API)", () => {
+  test("featureDir returns workspace/{p}/features/{ym}-{slug}/", () => {
+    const result = featureDir("dataAssets", "202604", "【test】slug-with-中文");
+    expect(result).toMatch(/workspace\/dataAssets\/features\/202604-【test】slug-with-中文$/);
+  });
+
+  test("featureFile joins additional segments", () => {
+    const result = featureFile("dataAssets", "202604", "myslug", "tests", "t01.ts");
+    expect(result).toMatch(/workspace\/dataAssets\/features\/202604-myslug\/tests\/t01\.ts$/);
+  });
+
+  test("featureFile with single segment returns file inside feature dir", () => {
+    const result = featureFile("dataAssets", "202604", "myslug", "archive.md");
+    expect(result).toMatch(/workspace\/dataAssets\/features\/202604-myslug\/archive\.md$/);
+  });
+});
+
+describe("projectShared (new v3 API)", () => {
+  test("projectShared returns workspace/{p}/shared/{kind}/...", () => {
+    const result = projectShared("dataAssets", "fixtures", "auth", "session.json");
+    expect(result).toMatch(/workspace\/dataAssets\/shared\/fixtures\/auth\/session\.json$/);
+  });
+
+  test("projectShared with no segments returns the kind dir", () => {
+    const result = projectShared("dataAssets", "helpers");
+    expect(result).toMatch(/workspace\/dataAssets\/shared\/helpers$/);
+  });
+});
+
+describe("incidentDir / regressionDir (new v3 API)", () => {
+  test("incidentDir returns workspace/{p}/incidents/{date}-{slug}/", () => {
+    const result = incidentDir("dataAssets", "20260428", "console-error");
+    expect(result).toMatch(/workspace\/dataAssets\/incidents\/20260428-console-error$/);
+  });
+
+  test("regressionDir returns workspace/{p}/regressions/{date}-{batch}/", () => {
+    const result = regressionDir("dataAssets", "20260428", "smoke");
+    expect(result).toMatch(/workspace\/dataAssets\/regressions\/20260428-smoke$/);
+  });
+});
+
+describe("deprecated alias: enhancedMd routes to feature path", () => {
+  test("enhancedMd returns features/{ym}-{slug}/enhanced.md (post-v3 redirect)", () => {
+    const result = enhancedMd("dataAssets", "202604", "myslug");
+    expect(result).toMatch(/workspace\/dataAssets\/features\/202604-myslug\/enhanced\.md$/);
   });
 });
