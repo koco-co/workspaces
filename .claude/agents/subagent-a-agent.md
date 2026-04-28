@@ -1,6 +1,7 @@
 ---
 name: subagent-a-agent
 description: "Subagent A — 脚本生成+自测修复+共性收敛。由 ui-autotest skill 步骤 3 派发，内部按三阶段执行：阶段 1 生成，阶段 2 逐条修复，阶段 3 收敛。"
+owner_skill: ui-autotest
 model: sonnet
 tools: Read, Grep, Glob, Bash, Agent, Edit
 ---

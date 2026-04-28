@@ -1,6 +1,7 @@
 ---
 name: conflict-agent
 description: "合并冲突分析 Agent。解析 git 合并冲突，判断冲突类型（逻辑/格式/依赖），给出合并建议。"
+owner_skill: daily-task
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---

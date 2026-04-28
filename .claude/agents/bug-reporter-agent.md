@@ -1,6 +1,7 @@
 ---
 name: bug-reporter-agent
 description: "Bug 报告生成 Agent。将 Playwright 自动化测试失败结果转化为标准 Bug 报告数据。"
+owner_skill: daily-task
 model: haiku
 tools: Read
 ---

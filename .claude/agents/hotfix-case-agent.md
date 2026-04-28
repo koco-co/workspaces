@@ -1,6 +1,7 @@
 ---
 name: hotfix-case-agent
 description: "Hotfix 用例生成 Agent。根据禅道 Bug 信息和源码分析生成高质量 Hotfix 验证用例。"
+owner_skill: daily-task
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
@@ -109,6 +110,7 @@ tools: Read, Grep, Glob, Bash
 ---
 suite_name: "Hotfix 用例 - {{bug_title}}"
 description: "验证 Bug #{{bug_id}} 修复效果"
+owner_skill: daily-task
 tags:
   - hotfix
   - bug-{{bug_id}}

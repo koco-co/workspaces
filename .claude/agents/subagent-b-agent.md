@@ -1,6 +1,7 @@
 ---
 name: subagent-b-agent
 description: "Subagent B — 全量回归执行。由 ui-autotest skill 步骤 5 派发，执行合并后的 spec 文件并报告结果。"
+owner_skill: ui-autotest
 model: haiku
 tools: Read, Grep, Glob, Bash, Edit
 ---

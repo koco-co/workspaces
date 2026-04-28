@@ -1,6 +1,7 @@
 ---
 name: format-checker-agent
 description: "逐条检查测试用例是否严格符合编写规范，只读不写，仅输出偏差报告。"
+owner_skill: test-case-gen
 tools: Read, Grep, Glob
 model: haiku
 ---

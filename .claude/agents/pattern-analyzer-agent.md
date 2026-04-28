@@ -1,6 +1,7 @@
 ---
 name: pattern-analyzer-agent
 description: "Pattern Analyzer Agent。读多份 fixer summary 归纳共性失败模式，输出结构化 helpers diff 建议。由 ui-autotest skill 步骤 3 阶段 3 派发。"
+owner_skill: ui-autotest
 model: haiku
 tools: Read, Grep, Glob
 ---

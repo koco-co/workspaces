@@ -1,6 +1,7 @@
 ---
 name: reviewer-agent
 description: "对 Writer 输出的测试用例执行设计逻辑审查和自动修正，计算问题率并根据阈值决策。"
+owner_skill: test-case-gen
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

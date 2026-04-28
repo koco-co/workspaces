@@ -1,6 +1,7 @@
 ---
 name: analyze-agent
 description: "从 enhanced.md 中系统性提取测试点，结合历史用例生成结构化测试点清单。"
+owner_skill: test-case-gen
 tools: Read, Grep, Glob, Bash
 model: opus
 ---

@@ -1,6 +1,7 @@
 ---
 name: source-facts-agent
 description: "源码系统扫描 + 图像语义化 + 页面要点提取。在 discuss 3.2.5 步骤由主 agent 派发，产出 enhanced.md Appendix A + §3。"
+owner_skill: test-case-gen
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---

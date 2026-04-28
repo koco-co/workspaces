@@ -1,6 +1,7 @@
 ---
 name: frontend-bug-agent
 description: "前端 Bug 分析 Agent。解析浏览器 Console 错误、React/Vue 运行时警告，定位根因并生成结构化报告数据。"
+owner_skill: daily-task
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---

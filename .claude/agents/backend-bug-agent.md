@@ -1,6 +1,7 @@
 ---
 name: backend-bug-agent
 description: "后端 Bug 分析 Agent。解析 Java 异常堆栈、HTTP 错误响应，定位根因并生成结构化报告数据。"
+owner_skill: daily-task
 model: sonnet
 tools: Read, Grep, Glob, Bash
 ---

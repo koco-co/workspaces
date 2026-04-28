@@ -1,6 +1,7 @@
 ---
 name: writer-agent
 description: "将测试点清单细化为可执行的结构化测试用例，严格遵循用例编写规范。"
+owner_skill: test-case-gen
 tools: Read, Grep, Glob
 model: sonnet
 ---
