@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdtempSync, cpSync, readdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -92,7 +93,6 @@ describe("applyMigration dry mode", () => {
 describe("applyMigration real mode + rollback (inverse property)", () => {
   test("apply(real) then rollbackFromLog produces a tree byte-identical to original", () => {
     const projectDir = freshShadow();
-    const { createHash } = require("node:crypto");
 
     function snap(root: string): Map<string, string> {
       const out = new Map<string, string>();

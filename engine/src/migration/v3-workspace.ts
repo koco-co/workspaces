@@ -1,4 +1,4 @@
-import { readdirSync, statSync, existsSync, mkdirSync, renameSync, writeFileSync, readFileSync } from "node:fs";
+import { readdirSync, statSync, existsSync, mkdirSync, renameSync, writeFileSync, readFileSync, rmdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { Feature, MigrationLog, MigrationOp } from "./types.ts";
@@ -237,5 +237,24 @@ export function applyMigration(
 }
 
 export function rollbackFromLog(logPath: string): MigrationLog {
-  throw new Error("not implemented");
+  const log: MigrationLog = JSON.parse(readFileSync(logPath, "utf8"));
+  if (log.mode !== "real") {
+    throw new Error(`rollbackFromLog: log mode must be 'real', got '${log.mode}'`);
+  }
+  for (const op of [...log.operations].reverse()) {
+    if (op.type === "mv") {
+      if (!existsSync(op.dst!)) {
+        log.warnings.push(`rollback mv: dst missing ${op.dst}`);
+        continue;
+      }
+      renameSync(op.dst!, op.src!);
+    } else if (op.type === "mkdir") {
+      try {
+        rmdirSync(op.dst!);
+      } catch {
+        log.warnings.push(`rollback mkdir: dir not empty ${op.dst}`);
+      }
+    }
+  }
+  return log;
 }
