@@ -29,7 +29,7 @@ playwright-report/
 t*-debug.spec.ts
 *-repro.spec.ts
 diag_*.spec.ts
-/.debug/
+**/.debug/
 
 # ── workspace 内运行时产物（§3.4 F6）─────────────────────
 workspace/*/.runs/
