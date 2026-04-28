@@ -32,7 +32,7 @@ kata-cli config
 
 ## 符号使用规则（强制）
 
-参见 `.claude/references/unicode-symbols.md`。所有报告输出必须遵守该规范。
+参见 `.claude/skills/daily-task/references/unicode-symbols.md`。所有报告输出必须遵守该规范。
 
 ## 异常处理
 

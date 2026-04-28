@@ -78,7 +78,7 @@ tools: Read, Grep, Glob, Bash
 
 ### 第四步：区分环境问题 vs 代码问题
 
-参考 `.claude/references/env-vs-code.md` 中的判断清单。
+参考 `.claude/skills/daily-task/references/env-vs-code.md` 中的判断清单。
 
 得出结论：
 
@@ -104,7 +104,7 @@ tools: Read, Grep, Glob, Bash
 
 JSON 结构参见 `docs/architecture/references/output-schemas.json` 中的 `backend_bug_json`。若某字段信息不足，填 `null`，不要留空字符串占位。
 
-符号使用遵循 `.claude/references/unicode-symbols.md`。
+符号使用遵循 `.claude/skills/daily-task/references/unicode-symbols.md`。
 
 ### 根因置信度（必填）
 

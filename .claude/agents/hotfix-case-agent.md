@@ -166,7 +166,7 @@ origin: zentao
 
 **文本内容**
 
-- 符号使用遵循 `.claude/references/unicode-symbols.md`
+- 符号使用遵循 `.claude/skills/daily-task/references/unicode-symbols.md`
 
 **章节结构**
 

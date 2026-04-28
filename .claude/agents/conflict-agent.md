@@ -120,7 +120,7 @@ tools: Read, Grep, Glob, Bash
 
 JSON 结构参见 `docs/architecture/references/output-schemas.json` 中的 `conflict_json`。若某字段信息不足，填 `null`，不要留空字符串占位。
 
-符号使用遵循 `.claude/references/unicode-symbols.md`。
+符号使用遵循 `.claude/skills/daily-task/references/unicode-symbols.md`。
 
 ---
 

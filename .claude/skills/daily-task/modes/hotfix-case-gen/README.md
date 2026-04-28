@@ -33,7 +33,7 @@ argument-hint: "[禅道 Bug URL | Bug ID]"
 
 ## 执行前准备
 
-参见 [`.claude/references/skill-preamble.md`](../../../references/skill-preamble.md)（项目选择、读取配置、符号规则、异常处理通用片段）。
+参见 [`.claude/skills/daily-task/references/skill-preamble.md`](../../../references/skill-preamble.md)（项目选择、读取配置、符号规则、异常处理通用片段）。
 
 输入解析格式与输出目录约定详见 [`zentao-input.md`](zentao-input.md)。
 
@@ -51,7 +51,7 @@ kata-cli rule-loader load --project {{project}} > workspace/{{project}}/.temp/ru
 - `rules/case-writing.md` / `workspace/{{project}}/rules/case-writing.md` — 用例编写通用规范
 - `workspace/{{project}}/rules/hotfix-frontmatter.md` — Hotfix frontmatter 约束（如 `keywords` 字段）
 - `workspace/{{project}}/rules/hotfix-prerequisites.md` — **Hotfix 前置条件 SQL 示例约束**
-- `.claude/references/unicode-symbols.md` — 符号规范
+- `.claude/skills/daily-task/references/unicode-symbols.md` — 符号规范
 
 <precedence>
 用户当前指令 > 项目级 rules（workspace/{{project}}/rules/） > 全局 rules/ > agent 内置模板
