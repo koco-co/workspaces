@@ -1,10 +1,69 @@
-# knowledge-keeper · 写入场景与维护
+# knowledge-keeper — Workflow
 
-> 由 SKILL.md 路由后加载。共享的前置加载、知识层级、CLI 命令总览在 SKILL.md 中定义，本文件不重复。
+This skill supports 2 operations:
+
+- [Read knowledge](#workflow-read) — query existing knowledge
+- [Write knowledge](#workflow-write) — persist new knowledge
 
 ---
 
-## B1. 写入流程（所有 type 通用）
+## <a id="workflow-read"></a>Workflow: Read
+
+> 共享的前置加载、知识层级、CLI 命令总览在 SKILL.md 中定义，本文件不重复。
+
+---
+
+### A1. 查术语
+
+```bash
+kata-cli knowledge-keeper read-core --project {{project}}
+```
+
+从返回 JSON 的 `terms` 字段中过滤用户关键词并 Markdown 渲染。
+
+---
+
+### A2. 查模块知识
+
+```bash
+kata-cli knowledge-keeper read-module --project {{project}} --module {{name}}
+```
+
+渲染 `frontmatter` + `content`。文件不存在时给用户建议（列出已有 modules）。
+
+---
+
+### A3. 查踩坑
+
+```bash
+kata-cli knowledge-keeper read-pitfall --project {{project}} --query {{keyword}}
+```
+
+空结果时提示"未找到，建议：补充关键词 / 列出已有 pitfalls / 新增踩坑"。
+
+---
+
+### 其他 skill 集成
+
+其他 skill 如需业务背景，在 SKILL.md 顶部新增：
+
+```bash
+kata-cli knowledge-keeper read-core --project {{project}}
+```
+
+返回的 overview / terms / index 作为业务背景注入后续决策。
+
+**本阶段仅在本 SKILL.md 提供标准调用块**，其他 skill 的集成不做强制修改。
+
+---
+
+## <a id="workflow-write"></a>Workflow: Write
+
+> 共享的前置加载、知识层级、CLI 命令总览在 SKILL.md 中定义，本文件不重复。
+
+---
+
+### B1. 写入流程（所有 type 通用）
 
 1. **识别触发词 + 解析意图**
    - "记一下 X 是 Y" → type=term，confidence=high
@@ -65,7 +124,7 @@
 
 ---
 
-## B2. 覆盖已有 module/pitfall
+### B2. 覆盖已有 module/pitfall
 
 CLI 默认拒绝覆盖。选择：
 
@@ -74,7 +133,7 @@ CLI 默认拒绝覆盖。选择：
 
 ---
 
-## B3. low 置信度升级流程
+### B3. low 置信度升级流程
 
 当主 agent 判断置信度为 low 时（信息不足/推断性结论），使用 AskUserQuestion：
 
@@ -91,7 +150,7 @@ CLI 默认拒绝覆盖。选择：
 
 ---
 
-## B4. medium 置信度 AskUser 模板
+### B4. medium 置信度 AskUser 模板
 
 ```
 检测到新的业务知识条目（置信度：medium）
@@ -110,7 +169,7 @@ CLI 默认拒绝覆盖。选择：
 
 ---
 
-## B5. 冲突仲裁流程（verify 返回 block）
+### B5. 冲突仲裁流程（verify 返回 block）
 
 当 step 4 `verify` 检测到 block 级冲突时，**禁止**直接 `--force` 写入。走以下流程：
 
@@ -136,7 +195,7 @@ CLI 默认拒绝覆盖。选择：
 
 ---
 
-## C1. 刷新 \_index.md
+### C1. 刷新 \_index.md
 
 ```bash
 kata-cli knowledge-keeper index --project {{project}}
@@ -146,7 +205,7 @@ kata-cli knowledge-keeper index --project {{project}}
 
 ---
 
-## C2. 健康检查
+### C2. 健康检查
 
 ```bash
 kata-cli knowledge-keeper lint --project {{project}}
@@ -158,7 +217,7 @@ kata-cli knowledge-keeper lint --project {{project}}
 
 ---
 
-## C3. 历史查询 + 回滚
+### C3. 历史查询 + 回滚
 
 ```bash
 # 查看最近 N 条写入/更新/回滚记录
@@ -182,7 +241,7 @@ kata-cli knowledge-keeper rollback --project {{project}} \
 
 ---
 
-## Subagent 调用守则
+### Subagent 调用守则
 
 - subagent **禁止**直接调 `write` / `update`
 - subagent 发现需沉淀知识时，在返回报告中标注：

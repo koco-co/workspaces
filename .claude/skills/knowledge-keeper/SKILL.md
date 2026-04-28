@@ -54,14 +54,14 @@ kata-cli rule-loader load --project {{project}}
 | `index`        | 刷新 `_index.md`                  | 是    |
 | `lint`         | 健康检查                          | 否    |
 
-**防污染三件套：** `verify`（写前检测）+ `.history/` 快照 + `.audit.jsonl` 审计。详见 `workflow/write.md` 的 B5 仲裁流程与 C3 回滚流程。
+**防污染三件套：** `verify`（写前检测）+ `.history/` 快照 + `.audit.jsonl` 审计。详见 `workflow.md#workflow-write` 的 B5 仲裁流程与 C3 回滚流程。
 
 ---
 
 ## 工作流分支
 
-- 查询场景（A1 查术语 / A2 查模块知识 / A3 查踩坑）：详见 [`workflow/read.md`](workflow/read.md)
-- 写入场景（B1-B5 写入流程、覆盖策略、置信度分流、冲突仲裁）与维护场景（C1 索引刷新 / C2 健康检查 / C3 历史查询 + 回滚）：详见 [`workflow/write.md`](workflow/write.md)
+- 查询场景（A1 查术语 / A2 查模块知识 / A3 查踩坑）：详见 [`workflow.md#workflow-read`](workflow.md#workflow-read)
+- 写入场景（B1-B5 写入流程、覆盖策略、置信度分流、冲突仲裁）与维护场景（C1 索引刷新 / C2 健康检查 / C3 历史查询 + 回滚）：详见 [`workflow.md#workflow-write`](workflow.md#workflow-write)
 
 ---
 
@@ -72,4 +72,4 @@ kata-cli rule-loader load --project {{project}}
 - 主 agent 收到后由本 skill 统一处理写入流程
 - subagent 可自由调 `read-core` / `read-module` / `read-pitfall`（只读安全）
 
-完整守则与其他 skill 集成方式详见 [`workflow/write.md`](workflow/write.md) 与 [`workflow/read.md`](workflow/read.md)。
+完整守则与其他 skill 集成方式详见 [`workflow.md#workflow-write`](workflow.md#workflow-write) 与 [`workflow.md#workflow-read`](workflow.md#workflow-read)。
