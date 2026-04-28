@@ -10,12 +10,12 @@ argument-hint: "[PRD 路径或蓝湖 URL] [--quick]"
 生成测试用例、写用例、为 <需求名称> 生成用例
 
 ## 工作流
-主 agent 遵循 `workflow/main.md` 中的编排定义执行。
+主 agent 遵循 `workflow.md` 中的编排定义执行。
 步骤分为三种执行模式：
 - `direct` → 主 agent 直接执行
 - `subagent` → 派发 subagent 执行
 - `gate` → 执行 review 后继续
-共享协议（Task 可视化、Writer 阻断中转、产物契约等）见 [`workflow/protocols.md`](workflow/protocols.md)。
+共享协议（Task 可视化、Writer 阻断中转、产物契约等）见 [`workflow.md#protocols`](workflow.md#protocols)。
 
 ## 编排定义
-详见 [`workflow/main.md`](workflow/main.md)
+详见 [`workflow.md`](workflow.md)
