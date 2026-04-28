@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 
-const CLI = "tools/dtstack-cli/src/cli.ts";
+const CLI = "src/cli.ts";
 
 function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
@@ -13,7 +13,7 @@ function runCli(args: string[]): Promise<{ stdout: string; stderr: string; code:
   });
 }
 
-describe("dtstack-cli help", () => {
+describe("dtstack-sdk help", () => {
   test("--help prints root usage", async () => {
     const { stdout, code } = await runCli(["--help"]);
     expect(code).toBe(0);

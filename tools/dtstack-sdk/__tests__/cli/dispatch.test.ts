@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 
 function runCli(args: string[], env: Record<string, string> = {}): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
-    const p = spawn("bun", ["run", "tools/dtstack-cli/src/cli.ts", ...args], {
+    const p = spawn("bun", ["run", "src/cli.ts", ...args], {
       env: { ...process.env, DTSTACK_CLI_TEST_DRY: "1", ...env },
     });
     let stdout = ""; let stderr = "";

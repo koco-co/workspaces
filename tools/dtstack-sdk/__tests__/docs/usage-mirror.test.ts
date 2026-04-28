@@ -5,7 +5,7 @@ import {
   PRECOND_SETUP_HELP, LOGIN_HELP, LOGOUT_HELP, WHOAMI_HELP,
 } from "../../src/help/index";
 
-const usage = readFileSync("tools/dtstack-cli/docs/usage.md", "utf-8");
+const usage = readFileSync("docs/usage.md", "utf-8");
 
 describe("docs/usage.md mirrors help texts", () => {
   for (const [name, text] of [

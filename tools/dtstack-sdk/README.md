@@ -1,4 +1,4 @@
-# dtstack-cli
+# dtstack-sdk
 
 DTStack 平台前置条件 CLI + SDK。覆盖 SQL 执行（平台 API / 直连 DB）、离线项目幂等创建、资产元数据同步。
 
@@ -7,7 +7,7 @@ DTStack 平台前置条件 CLI + SDK。覆盖 SQL 执行（平台 API / 直连 D
 已通过根 workspace 链接，无需单独安装。在测试代码里：
 
 ```ts
-import { precondSetup } from "dtstack-cli";
+import { precondSetup } from "dtstack-sdk";
 ```
 
 ## 配置
@@ -38,5 +38,5 @@ datasources:
 ## 测试
 
 ```bash
-bun test tools/dtstack-cli/__tests__
+bun test tools/dtstack-sdk/__tests__
 ```
