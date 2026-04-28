@@ -10,10 +10,27 @@ interface RuleDef {
 
 const RULES: RuleDef[] = [
   // P-S2 must come before P-S1 (more specific match)
-  { id: "P-S2", regex: /bun\s+test\s+\.\/\.claude\/scripts\/__tests__/g, message: "stale `bun test ./.claude/scripts/__tests__`; use `bun test --cwd engine`" },
-  { id: "P-S4", regex: /bun\s+run\s+\.claude\/scripts\//g, message: "stale `bun run .claude/scripts/...`; use `kata-cli {subcommand}` or `bunx kata-cli ...`" },
-  { id: "P-S1", regex: /\.claude\/scripts\//g, message: "stale `.claude/scripts/` reference; use `engine/src/` or specific relocated path" },
-  { id: "P-S3", regex: /workspace\/[^/\s]+\/(prds|archive|xmind|tests)\//g, message: "old workspace subdir layout; use `workspace/{p}/features/{ym-slug}/...`" },
+  {
+    id: "P-S2",
+    regex: /bun\s+test\s+\.\/\.claude\/scripts\/__tests__/g,
+    message: "stale `bun test ./.claude/scripts/__tests__`; use `bun test --cwd engine`",
+  },
+  {
+    id: "P-S4",
+    regex: /bun\s+run\s+\.claude\/scripts\//g,
+    message:
+      "stale `bun run .claude/scripts/...`; use `kata-cli {subcommand}` or `bunx kata-cli ...`",
+  },
+  {
+    id: "P-S1",
+    regex: /\.claude\/scripts\//g,
+    message: "stale `.claude/scripts/` reference; use `engine/src/` or specific relocated path",
+  },
+  {
+    id: "P-S3",
+    regex: /workspace\/[^/\s]+\/(prds|archive|xmind|tests)\//g,
+    message: "old workspace subdir layout; use `workspace/{p}/features/{ym-slug}/...`",
+  },
 ];
 
 const SCAN_SUFFIXES = [".md", ".ts", ".tsx", ".js", ".json"];
@@ -27,6 +44,16 @@ const EXCLUDED_PATH_FRAGMENTS = [
   "/workspace/",
   // engine test fixture data (v2 paths as test input for backward-compat migration logic)
   "engine/tests/fixtures/",
+  // v2 path strings used as fixture input data — test v2 path resolution in migration logic
+  // These are NOT real code paths; they're literal strings passed to path helpers.
+  "engine/tests/lib/signal-probe.test.ts",
+  "engine/tests/lib/paths.test.ts",
+  "engine/tests/lib/progress-migrator.test.ts",
+  "engine/tests/lib/progress-store.test.ts",
+  "engine/tests/plan.test.ts",
+  "engine/tests/progress.test.ts",
+  "engine/tests/run-tests-notify.test.ts",
+  "engine/tests/search-filter.test.ts",
   // plugins test files — reference v2 paths as input data
   "plugins/",
   // old refactor log files
@@ -42,6 +69,7 @@ const EXCLUDED_PATH_FRAGMENTS = [
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0",
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-1",
   "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-5",
+  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-7.6",
   "docs/superpowers/handoffs/",
 ];
 
