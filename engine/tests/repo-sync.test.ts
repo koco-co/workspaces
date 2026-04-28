@@ -73,9 +73,7 @@ describe("repo-sync target directory calculation", () => {
     const expectedSuffix = `customItem/dt-center-assets`;
     const computedPath = `workspace/.repos/${group}/${repo}`;
     expect(
-      computedPath.endsWith(expectedSuffix).toBeTruthy(),
-      `Expected path ending with ${expectedSuffix}, got: ${computedPath}`,
-    );
+      computedPath.endsWith(expectedSuffix)).toBeTruthy();
   });
 
   it("constructs project-scoped target path when --project is provided", () => {

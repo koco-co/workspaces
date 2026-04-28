@@ -29,7 +29,8 @@ function parseRuleFile(content: string): Record<string, string> {
   for (const raw of content.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
-    if (line.startsWith("#") || line.startsWith(">") || line.startsWith("(")) continue;
+    if (line.startsWith("#") || line.startsWith(">") || line.startsWith("("))
+      continue;
     const colonIdx = line.indexOf(":");
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim();
@@ -102,10 +103,13 @@ export const program = createCli({
       name: "load",
       description: "Load rules for a project and output merged JSON to stdout",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
       ],
       action: runLoad,
     },
   ],
 });
-

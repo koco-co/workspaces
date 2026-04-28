@@ -83,7 +83,10 @@ function runResolve(opts: { url: string }): void {
 
       const command = fetchCmd
         .replace(/\{\{url\}\}/g, shellEscape(opts.url))
-        .replace(/\{\{output\}\}/g, shellEscape(`${workspaceDir}/../.kata/plugin-output`));
+        .replace(
+          /\{\{output\}\}/g,
+          shellEscape(`${workspaceDir}/../.kata/plugin-output`),
+        );
 
       process.stdout.write(
         `${JSON.stringify({ plugin: plugin.name, command }, null, 2)}\n`,
@@ -143,7 +146,8 @@ export const program = createCli({
     },
     {
       name: "check",
-      description: "Check if an input URL matches any active plugin's url_patterns",
+      description:
+        "Check if an input URL matches any active plugin's url_patterns",
       options: [
         {
           flag: "--input <url>",

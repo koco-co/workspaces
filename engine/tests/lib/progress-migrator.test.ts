@@ -112,7 +112,7 @@ describe("migrateKataState", () => {
       writers: {}, created_at: "now", updated_at: "now",
     });
     await expect(
-      () => migrateKataState({ legacyPath: legacyPath2, project: "dataAssets", env: "default", dryRun: false }),
+migrateKataState({ legacyPath: legacyPath2, project: "dataAssets", env: "default", dryRun: false }),
     ).rejects.toThrow(/already exists/i);
   });
 });
@@ -213,7 +213,7 @@ function seedSession(opts: {
 }
 
 function writeEnhancedMd(project: string, yyyymm: string, slug: string): void {
-  const dir = join(WS, project, "prds", yyyymm, slug);
+  const dir = join(WS, project, "features", yyyymm + "-" + slug);
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "enhanced.md"), "---\nschema_version: 1\n---\n");
 }

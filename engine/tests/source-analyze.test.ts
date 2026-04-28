@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process";
 import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,14 +10,10 @@ const TMP_DIR = join(tmpdir(), `kata-source-analyze-test-${process.pid}`);
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
-    const stdout = execFileSync(
-      "kata-cli",
-      ["source-analyze", ...args],
-      {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-      },
-    );
+    const stdout = execFileSync("kata-cli", ["source-analyze", ...args], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
     return { stdout, stderr: "", code: 0 };
   } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; status?: number };
@@ -72,11 +68,7 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       `export function createTable(name: string) {\n  return name;\n}\n`,
       "utf8",
     );
-    writeFileSync(
-      join(repoDir, "unrelated.ts"),
-      `const x = 1;\nconst y = 2;\n`,
-      "utf8",
-    );
+    writeFileSync(join(repoDir, "unrelated.ts"), `const x = 1;\nconst y = 2;\n`, "utf8");
 
     const { code, stdout, stderr } = run([
       "analyze",
@@ -93,19 +85,14 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
     expect(match.keyword).toBe("createTable");
     expect(match.file.endsWith("table.ts")).toBeTruthy();
     expect(match.line > 0).toBeTruthy();
-    expect(
-      match.content.includes("createTable")).toBeTruthy();
+    expect(match.content.includes("createTable")).toBeTruthy();
     expect(match.confidence >= 0.9).toBeTruthy();
   });
 
   it("detects 'class UserService' as A-level match", () => {
     const repoDir = join(TMP_DIR, "repo-a-class");
     mkdirSync(repoDir, { recursive: true });
-    writeFileSync(
-      join(repoDir, "service.ts"),
-      `class UserService {\n  getUser() {}\n}\n`,
-      "utf8",
-    );
+    writeFileSync(join(repoDir, "service.ts"), `class UserService {\n  getUser() {}\n}\n`, "utf8");
 
     const { code, stdout, stderr } = run([
       "analyze",
@@ -170,19 +157,9 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
   it("detects Python 'def fetchData' as A-level match", () => {
     const repoDir = join(TMP_DIR, "repo-a-python");
     mkdirSync(repoDir, { recursive: true });
-    writeFileSync(
-      join(repoDir, "data.py"),
-      `def fetchData(url):\n    return url\n`,
-      "utf8",
-    );
+    writeFileSync(join(repoDir, "data.py"), `def fetchData(url):\n    return url\n`, "utf8");
 
-    const { code, stdout, stderr } = run([
-      "analyze",
-      "--repo",
-      repoDir,
-      "--keywords",
-      "fetchData",
-    ]);
+    const { code, stdout, stderr } = run(["analyze", "--repo", repoDir, "--keywords", "fetchData"]);
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
@@ -228,20 +205,19 @@ describe("source-analyze analyze — B-level fuzzy match", () => {
       "utf8",
     );
 
-    const { code, stdout, stderr } = run([
-      "analyze",
-      "--repo",
-      repoDir,
-      "--keywords",
-      "myService",
-    ]);
+    const { code, stdout, stderr } = run(["analyze", "--repo", repoDir, "--keywords", "myService"]);
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     // Line 1 (function declaration) must only be in a_level
     const aLines = result.a_level.map((m) => m.line);
     const bLines = result.b_level.map((m) => m.line);
-    const duplicates = aLines.filter((l) => bLines.includes(l) && result.a_level.find((m) => m.line === l)?.file === result.b_level.find((m) => m.line === l)?.file);
+    const duplicates = aLines.filter(
+      (l) =>
+        bLines.includes(l) &&
+        result.a_level.find((m) => m.line === l)?.file ===
+          result.b_level.find((m) => m.line === l)?.file,
+    );
     expect(duplicates.length).toBe(0);
   });
 });
@@ -258,22 +234,13 @@ describe("source-analyze analyze — coverage_rate calculation", () => {
     writeFileSync(join(repoDir, "match2.ts"), `// myFunc reference\nconst x = 1;\n`, "utf8");
     writeFileSync(join(repoDir, "nomatch.ts"), `const y = 2;\nconst z = 3;\n`, "utf8");
 
-    const { code, stdout, stderr } = run([
-      "analyze",
-      "--repo",
-      repoDir,
-      "--keywords",
-      "myFunc",
-    ]);
+    const { code, stdout, stderr } = run(["analyze", "--repo", repoDir, "--keywords", "myFunc"]);
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     expect(result.searched_files).toBe(3);
     expect(result.matched_files).toBe(2);
-    expect(
-      Math.abs(result.coverage_rate - 2 / 3).toBeTruthy() < 0.001,
-      `coverage_rate should be ~0.667, got ${result.coverage_rate}`,
-    );
+    expect(result.coverage_rate).toBeCloseTo(2 / 3, 3);
   });
 
   it("coverage_rate is 0 when no files match", () => {
@@ -322,11 +289,7 @@ describe("source-analyze analyze — ignores node_modules", () => {
     mkdirSync(nmDir, { recursive: true });
 
     // Place keyword ONLY in node_modules — should not match
-    writeFileSync(
-      join(nmDir, "index.ts"),
-      `export function ignoredFunction() {}\n`,
-      "utf8",
-    );
+    writeFileSync(join(nmDir, "index.ts"), `export function ignoredFunction() {}\n`, "utf8");
     // A real source file without the keyword
     writeFileSync(join(repoDir, "src.ts"), `const x = 1;\n`, "utf8");
 
@@ -340,8 +303,7 @@ describe("source-analyze analyze — ignores node_modules", () => {
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    expect(
-      result.a_level.length + result.b_level.length).toBe(0);
+    expect(result.a_level.length + result.b_level.length).toBe(0);
     expect(result.matched_files).toBe(0);
   });
 
@@ -350,11 +312,7 @@ describe("source-analyze analyze — ignores node_modules", () => {
     const gitDir = join(repoDir, ".git", "hooks");
     mkdirSync(gitDir, { recursive: true });
 
-    writeFileSync(
-      join(gitDir, "pre-commit"),
-      `function gitHookFunc() {}\n`,
-      "utf8",
-    );
+    writeFileSync(join(gitDir, "pre-commit"), `function gitHookFunc() {}\n`, "utf8");
     writeFileSync(join(repoDir, "main.ts"), `const a = 1;\n`, "utf8");
 
     const { code, stdout, stderr } = run([
@@ -367,8 +325,7 @@ describe("source-analyze analyze — ignores node_modules", () => {
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    expect(
-      result.a_level.length + result.b_level.length).toBe(0);
+    expect(result.a_level.length + result.b_level.length).toBe(0);
   });
 });
 
@@ -378,16 +335,8 @@ describe("source-analyze analyze — multiple keywords", () => {
   it("searches all keywords when comma-separated", () => {
     const repoDir = join(TMP_DIR, "repo-multi-kw");
     mkdirSync(repoDir, { recursive: true });
-    writeFileSync(
-      join(repoDir, "alpha.ts"),
-      `export function alphaFunc() {}\n`,
-      "utf8",
-    );
-    writeFileSync(
-      join(repoDir, "beta.ts"),
-      `export function betaFunc() {}\n`,
-      "utf8",
-    );
+    writeFileSync(join(repoDir, "alpha.ts"), `export function alphaFunc() {}\n`, "utf8");
+    writeFileSync(join(repoDir, "beta.ts"), `export function betaFunc() {}\n`, "utf8");
 
     const { code, stdout, stderr } = run([
       "analyze",

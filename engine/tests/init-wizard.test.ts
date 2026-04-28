@@ -186,9 +186,7 @@ describe("init-wizard verify", () => {
     for (const c of result.checks) {
       expect(typeof c.name).toBe("string");
       expect(
-        ["pass", "fail", "skip"].includes(c.status).toBeTruthy(),
-        `check.status "${c.status}" should be pass/fail/skip`,
-      );
+        ["pass", "fail", "skip"].includes(c.status)).toBeTruthy();
       expect(
         typeof c.detail).toBe("string");
     }

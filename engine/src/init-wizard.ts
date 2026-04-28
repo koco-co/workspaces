@@ -236,7 +236,9 @@ function runScan(): ScanResult {
     issues.push("node_modules/ not found — run: bun install");
   }
   if (!workspaceExists) {
-    issues.push("workspace/ directory not found — see INSTALL.md for setup instructions");
+    issues.push(
+      "workspace/ directory not found — see INSTALL.md for setup instructions",
+    );
   }
   if (!envConfigured) {
     issues.push(

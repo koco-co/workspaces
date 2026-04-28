@@ -58,24 +58,67 @@ type WorkflowType = "test-case-gen" | "ui-autotest";
 
 // ── Step Templates ───────────────────────────────────────────────────────────
 
-const STEP_TEMPLATES: Record<WorkflowType, ReadonlyArray<Omit<PlanStep, "status" | "id">>> = {
+const STEP_TEMPLATES: Record<
+  WorkflowType,
+  ReadonlyArray<Omit<PlanStep, "status" | "id">>
+> = {
   "test-case-gen": [
     { name: "init", description: "识别 PRD，确定运行模式", depends_on: [] },
     { name: "probe", description: "源码分析探测", depends_on: ["step-1"] },
-    { name: "discuss", description: "讨论澄清（消除歧义、决策记录）", depends_on: ["step-2"] },
+    {
+      name: "discuss",
+      description: "讨论澄清（消除歧义、决策记录）",
+      depends_on: ["step-2"],
+    },
     { name: "analyze", description: "测试点提取", depends_on: ["step-3"] },
-    { name: "write", description: "用例编写（按模块并行）", depends_on: ["step-4"] },
+    {
+      name: "write",
+      description: "用例编写（按模块并行）",
+      depends_on: ["step-4"],
+    },
     { name: "review", description: "质量审查", depends_on: ["step-5"] },
-    { name: "format-check", description: "格式规范检查", depends_on: ["step-6"] },
-    { name: "output", description: "输出归档（XMind + Archive MD）", depends_on: ["step-7"] },
+    {
+      name: "format-check",
+      description: "格式规范检查",
+      depends_on: ["step-6"],
+    },
+    {
+      name: "output",
+      description: "输出归档（XMind + Archive MD）",
+      depends_on: ["step-7"],
+    },
   ],
   "ui-autotest": [
-    { name: "解析输入与范围确认", description: "解析 Archive MD，确认优先级范围", depends_on: [] },
-    { name: "登录态准备", description: "准备登录 session", depends_on: ["step-1"] },
-    { name: "Script Writer + Fixer + Convergence", description: "逐条生成脚本、修复、收敛", depends_on: ["step-2"] },
-    { name: "合并脚本", description: "合并验证通过的脚本为 spec 文件", depends_on: ["step-3"] },
-    { name: "Regression Runner（执行测试）", description: "全量回归执行", depends_on: ["step-4"] },
-    { name: "处理结果与通知", description: "生成报告、启动 Allure、发送通知", depends_on: ["step-5"] },
+    {
+      name: "解析输入与范围确认",
+      description: "解析 Archive MD，确认优先级范围",
+      depends_on: [],
+    },
+    {
+      name: "登录态准备",
+      description: "准备登录 session",
+      depends_on: ["step-1"],
+    },
+    {
+      name: "Script Writer + Fixer + Convergence",
+      description: "逐条生成脚本、修复、收敛",
+      depends_on: ["step-2"],
+    },
+    {
+      name: "合并脚本",
+      description: "合并验证通过的脚本为 spec 文件",
+      depends_on: ["step-3"],
+    },
+    {
+      name: "Regression Runner（执行测试）",
+      description: "全量回归执行",
+      depends_on: ["step-4"],
+    },
+    {
+      name: "处理结果与通知",
+      description: "生成报告、启动 Allure、发送通知",
+      depends_on: ["step-5"],
+    },
   ],
 };
 
@@ -125,13 +168,22 @@ function buildSteps(workflow: WorkflowType): PlanStep[] {
   }));
 }
 
-function generatePlanId(workflow: string, inputs: Record<string, unknown>): string {
-  const prefix = workflow === "test-case-gen" ? "tcg" : workflow === "ui-autotest" ? "uat" : slugify(workflow);
-  const hint = typeof inputs.prd === "string"
-    ? basename(inputs.prd as string, ".md")
-    : typeof inputs.archive === "string"
-      ? basename(inputs.archive as string, ".md")
-      : "plan";
+function generatePlanId(
+  workflow: string,
+  inputs: Record<string, unknown>,
+): string {
+  const prefix =
+    workflow === "test-case-gen"
+      ? "tcg"
+      : workflow === "ui-autotest"
+        ? "uat"
+        : slugify(workflow);
+  const hint =
+    typeof inputs.prd === "string"
+      ? basename(inputs.prd as string, ".md")
+      : typeof inputs.archive === "string"
+        ? basename(inputs.archive as string, ".md")
+        : "plan";
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   return `${prefix}-${slugify(hint)}-${date}`;
 }
@@ -140,19 +192,27 @@ function generatePlanId(workflow: string, inputs: Record<string, unknown>): stri
 
 function statusEmoji(status: StepStatus): string {
   switch (status) {
-    case "completed": return "\u2705";
-    case "in_progress": return "\uD83D\uDD04";
-    case "skipped": return "\u23ED\uFE0F";
-    default: return "\u23F3";
+    case "completed":
+      return "\u2705";
+    case "in_progress":
+      return "\uD83D\uDD04";
+    case "skipped":
+      return "\u23ED\uFE0F";
+    default:
+      return "\u23F3";
   }
 }
 
 function statusLabel(status: StepStatus): string {
   switch (status) {
-    case "completed": return "完成";
-    case "in_progress": return "进行中";
-    case "skipped": return "跳过";
-    default: return "待开始";
+    case "completed":
+      return "完成";
+    case "in_progress":
+      return "进行中";
+    case "skipped":
+      return "跳过";
+    default:
+      return "待开始";
   }
 }
 
@@ -218,7 +278,9 @@ function runCreate(opts: {
   stateFile?: string;
 }): void {
   if (!isValidWorkflow(opts.workflow)) {
-    errorExit(`[plan:create] unknown workflow "${opts.workflow}". Available: ${Object.keys(STEP_TEMPLATES).join(", ")}`);
+    errorExit(
+      `[plan:create] unknown workflow "${opts.workflow}". Available: ${Object.keys(STEP_TEMPLATES).join(", ")}`,
+    );
   }
 
   let inputs: Record<string, unknown>;
@@ -261,14 +323,23 @@ function runUpdate(opts: {
     errorExit(`[plan:update] plan "${opts.planId}" not found`);
   }
 
-  const validStatuses: StepStatus[] = ["pending", "in_progress", "completed", "skipped"];
+  const validStatuses: StepStatus[] = [
+    "pending",
+    "in_progress",
+    "completed",
+    "skipped",
+  ];
   if (!validStatuses.includes(opts.status as StepStatus)) {
-    errorExit(`[plan:update] invalid status "${opts.status}". Available: ${validStatuses.join(", ")}`);
+    errorExit(
+      `[plan:update] invalid status "${opts.status}". Available: ${validStatuses.join(", ")}`,
+    );
   }
 
   const stepIndex = plan.steps.findIndex((s) => s.id === opts.step);
   if (stepIndex === -1) {
-    errorExit(`[plan:update] step "${opts.step}" not found in plan "${opts.planId}"`);
+    errorExit(
+      `[plan:update] step "${opts.step}" not found in plan "${opts.planId}"`,
+    );
   }
 
   let metadata: Record<string, unknown>;
@@ -285,18 +356,23 @@ function runUpdate(opts: {
   const updatedStep: PlanStep = {
     ...existingStep,
     status: newStatus,
-    started_at: newStatus === "in_progress" && !existingStep.started_at
-      ? now
-      : existingStep.started_at,
-    completed_at: newStatus === "completed" || newStatus === "skipped"
-      ? now
-      : existingStep.completed_at,
-    metadata: Object.keys(metadata).length > 0
-      ? { ...(existingStep.metadata ?? {}), ...metadata }
-      : existingStep.metadata,
+    started_at:
+      newStatus === "in_progress" && !existingStep.started_at
+        ? now
+        : existingStep.started_at,
+    completed_at:
+      newStatus === "completed" || newStatus === "skipped"
+        ? now
+        : existingStep.completed_at,
+    metadata:
+      Object.keys(metadata).length > 0
+        ? { ...(existingStep.metadata ?? {}), ...metadata }
+        : existingStep.metadata,
   };
 
-  const updatedSteps = plan.steps.map((s, i) => i === stepIndex ? updatedStep : s);
+  const updatedSteps = plan.steps.map((s, i) =>
+    i === stepIndex ? updatedStep : s,
+  );
 
   const updated: Plan = {
     ...plan,
@@ -325,8 +401,9 @@ function runSummary(opts: { project: string; planId: string }): void {
   const pending = countByStatus("pending");
   const skipped = countByStatus("skipped");
 
-  const currentStep = plan.steps.find((s) => s.status === "in_progress")
-    ?? plan.steps.find((s) => s.status === "pending");
+  const currentStep =
+    plan.steps.find((s) => s.status === "in_progress") ??
+    plan.steps.find((s) => s.status === "pending");
 
   const summary = {
     plan_id: plan.plan_id,
@@ -338,7 +415,9 @@ function runSummary(opts: { project: string; planId: string }): void {
     pending,
     skipped,
     progress_pct: total > 0 ? Math.round((completed / total) * 100) : 0,
-    current_step: currentStep ? { id: currentStep.id, name: currentStep.name } : null,
+    current_step: currentStep
+      ? { id: currentStep.id, name: currentStep.name }
+      : null,
     created_at: plan.created_at,
     updated_at: plan.updated_at,
   };
@@ -363,7 +442,9 @@ function runList(opts: { project: string; workflow?: string }): void {
     return;
   }
 
-  const files = readdirSync(dir).filter((f) => f.startsWith("plan-") && f.endsWith(".json"));
+  const files = readdirSync(dir).filter(
+    (f) => f.startsWith("plan-") && f.endsWith(".json"),
+  );
 
   const plans: Array<{
     plan_id: string;
@@ -377,11 +458,16 @@ function runList(opts: { project: string; workflow?: string }): void {
       const plan = JSON.parse(readFileSync(join(dir, file), "utf8")) as Plan;
       if (opts.workflow && plan.workflow !== opts.workflow) continue;
 
-      const completed = plan.steps.filter((s) => s.status === "completed").length;
+      const completed = plan.steps.filter(
+        (s) => s.status === "completed",
+      ).length;
       plans.push({
         plan_id: plan.plan_id,
         workflow: plan.workflow,
-        progress_pct: plan.steps.length > 0 ? Math.round((completed / plan.steps.length) * 100) : 0,
+        progress_pct:
+          plan.steps.length > 0
+            ? Math.round((completed / plan.steps.length) * 100)
+            : 0,
         updated_at: plan.updated_at,
       });
     } catch {
@@ -400,11 +486,29 @@ export const program = createCli({
       name: "create",
       description: "Create a new plan for a workflow",
       options: [
-        { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
-        { flag: "--workflow <type>", description: "Workflow type (test-case-gen | ui-autotest)", required: true },
-        { flag: "--inputs <json>", description: "JSON object of workflow inputs", defaultValue: "{}" },
-        { flag: "--plan-id <id>", description: "Custom plan ID (auto-generated if omitted)" },
-        { flag: "--state-file <path>", description: "Path to associated state file" },
+        {
+          flag: "--project <name>",
+          description: "Project name (e.g. dataAssets)",
+          required: true,
+        },
+        {
+          flag: "--workflow <type>",
+          description: "Workflow type (test-case-gen | ui-autotest)",
+          required: true,
+        },
+        {
+          flag: "--inputs <json>",
+          description: "JSON object of workflow inputs",
+          defaultValue: "{}",
+        },
+        {
+          flag: "--plan-id <id>",
+          description: "Custom plan ID (auto-generated if omitted)",
+        },
+        {
+          flag: "--state-file <path>",
+          description: "Path to associated state file",
+        },
       ],
       action: runCreate,
     },
@@ -412,11 +516,28 @@ export const program = createCli({
       name: "update",
       description: "Update a step status in an existing plan",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--plan-id <id>", description: "Plan ID", required: true },
-        { flag: "--step <id>", description: "Step ID (e.g. step-1)", required: true },
-        { flag: "--status <status>", description: "New status (pending | in_progress | completed | skipped)", required: true },
-        { flag: "--metadata <json>", description: "JSON to merge into step metadata", defaultValue: "{}" },
+        {
+          flag: "--step <id>",
+          description: "Step ID (e.g. step-1)",
+          required: true,
+        },
+        {
+          flag: "--status <status>",
+          description:
+            "New status (pending | in_progress | completed | skipped)",
+          required: true,
+        },
+        {
+          flag: "--metadata <json>",
+          description: "JSON to merge into step metadata",
+          defaultValue: "{}",
+        },
       ],
       action: runUpdate,
     },
@@ -424,7 +545,11 @@ export const program = createCli({
       name: "summary",
       description: "Output aggregated progress summary for a plan",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--plan-id <id>", description: "Plan ID", required: true },
       ],
       action: runSummary,
@@ -433,7 +558,11 @@ export const program = createCli({
       name: "render",
       description: "Re-generate the MD file from current plan JSON",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--plan-id <id>", description: "Plan ID", required: true },
       ],
       action: runRender,
@@ -442,7 +571,11 @@ export const program = createCli({
       name: "list",
       description: "List all plans for a project",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--workflow <type>", description: "Filter by workflow type" },
       ],
       action: runList,

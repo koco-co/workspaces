@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; cd \"$ROOT\"; bun run engine/hooks/post-edit-debug-naming.ts; bun run engine/hooks/post-edit-md-link.ts'"
+            "command": "bash -c 'ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0; cd \"$ROOT\"; PAYLOAD=$(cat); echo \"$PAYLOAD\" | bun run engine/hooks/post-edit-debug-naming.ts; echo \"$PAYLOAD\" | bun run engine/hooks/post-edit-md-link.ts; echo \"$PAYLOAD\" | bun run engine/hooks/post-edit-format.ts'"
           }
         ]
       }

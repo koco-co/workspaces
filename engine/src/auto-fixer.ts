@@ -128,7 +128,10 @@ function fixF12(tc: TestCase): TestCase {
     // Try semicolons first (Chinese full-width and ASCII), then commas
     const delimiters = [/；|;/, /，|,/];
     for (const delim of delimiters) {
-      const parts = expected.split(delim).map((p) => p.trim()).filter(Boolean);
+      const parts = expected
+        .split(delim)
+        .map((p) => p.trim())
+        .filter(Boolean);
       if (parts.length >= 3) {
         const numbered = parts.map((p, i) => `${i + 1}) ${p}`).join("\n");
         return { ...s, expected: numbered };
@@ -196,7 +199,9 @@ function runFix(opts: { input: string; issues: string; output: string }): void {
   let issuesData: IssuesJson;
 
   try {
-    writerData = JSON.parse(readFileSync(inputPath, "utf8")) as IntermediateJson;
+    writerData = JSON.parse(
+      readFileSync(inputPath, "utf8"),
+    ) as IntermediateJson;
   } catch (error) {
     process.stderr.write(`Error reading writer JSON: ${error}\n`);
     process.exit(1);
@@ -229,9 +234,21 @@ export const program = createCli({
       name: "fix",
       description: "执行自动修正",
       options: [
-        { flag: "--input <path>", description: "writer JSON 输入路径", required: true },
-        { flag: "--issues <path>", description: "issues JSON 输入路径", required: true },
-        { flag: "--output <path>", description: "修正后 JSON 输出路径", required: true },
+        {
+          flag: "--input <path>",
+          description: "writer JSON 输入路径",
+          required: true,
+        },
+        {
+          flag: "--issues <path>",
+          description: "issues JSON 输入路径",
+          required: true,
+        },
+        {
+          flag: "--output <path>",
+          description: "修正后 JSON 输出路径",
+          required: true,
+        },
       ],
       action: runFix,
     },

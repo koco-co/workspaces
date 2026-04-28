@@ -6,7 +6,13 @@
  * Actions: read-core | read-module | read-pitfall | write | update | index | lint
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
 import {
@@ -69,7 +75,10 @@ function parseTermsTable(body: string): TermRow[] {
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
-      const cells = trimmed.slice(1, -1).split("|").map((c) => c.trim());
+      const cells = trimmed
+        .slice(1, -1)
+        .split("|")
+        .map((c) => c.trim());
       if (cells.some((c) => /^-+$/.test(c))) {
         inTable = true;
         continue;
@@ -77,16 +86,22 @@ function parseTermsTable(body: string): TermRow[] {
       if (!inTable) continue;
       if (cells[0] === "术语" || cells[0] === "Term") continue;
       if (cells.length >= 4) {
-        rows.push({ term: cells[0], zh: cells[1], desc: cells[2], alias: cells[3] });
+        rows.push({
+          term: cells[0],
+          zh: cells[1],
+          desc: cells[2],
+          alias: cells[3],
+        });
       }
     }
   }
   return rows;
 }
 
-function gatherIndexData(
-  projectName: string,
-): { data: IndexData; fixedFiles: string[] } {
+function gatherIndexData(projectName: string): {
+  data: IndexData;
+  fixedFiles: string[];
+} {
   const kdir = knowledgeDir(projectName);
   const today = todayIso();
   const fixedFiles: string[] = [];
@@ -257,7 +272,11 @@ function upsertTermRow(body: string, newRow: string, term: string): string {
   }
 
   if (replacedIdx !== -1) {
-    return [...lines.slice(0, replacedIdx), newRow, ...lines.slice(replacedIdx + 1)].join("\n");
+    return [
+      ...lines.slice(0, replacedIdx),
+      newRow,
+      ...lines.slice(replacedIdx + 1),
+    ].join("\n");
   }
 
   // Find last table row (| ... |) and insert after it
@@ -274,7 +293,11 @@ function upsertTermRow(body: string, newRow: string, term: string): string {
     const trailingNewline = body.endsWith("\n") ? "" : "\n";
     return `${body}${trailingNewline}${newRow}\n`;
   }
-  return [...lines.slice(0, lastRowIdx + 1), newRow, ...lines.slice(lastRowIdx + 1)].join("\n");
+  return [
+    ...lines.slice(0, lastRowIdx + 1),
+    newRow,
+    ...lines.slice(lastRowIdx + 1),
+  ].join("\n");
 }
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
@@ -414,7 +437,9 @@ function runWrite(opts: {
   if (opts.type === "term") {
     const parsed = parseContentJson<ContentTerm>("term", opts.content);
     targetPath = knowledgePath(opts.project, "terms.md");
-    beforeContent = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+    beforeContent = existsSync(targetPath)
+      ? readFileSync(targetPath, "utf8")
+      : "";
     const file = parseFrontmatter(beforeContent);
     const existingFm = file.frontmatter;
     const newFm: Frontmatter = existingFm
@@ -436,7 +461,9 @@ function runWrite(opts: {
   } else if (opts.type === "overview") {
     const parsed = parseContentJson<ContentOverview>("overview", opts.content);
     targetPath = knowledgePath(opts.project, "overview.md");
-    beforeContent = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+    beforeContent = existsSync(targetPath)
+      ? readFileSync(targetPath, "utf8")
+      : "";
     const file = parseFrontmatter(beforeContent);
     const existingFm = file.frontmatter;
     const newFm: Frontmatter = existingFm
@@ -450,16 +477,31 @@ function runWrite(opts: {
           updated: today,
         };
     const baseBody = existingFm ? file.body : `\n# ${newFm.title}\n`;
-    conflict = detectOverviewConflict(baseBody, parsed.section, parsed.body, parsed.mode);
-    const newBody = upsertOverviewSection(baseBody, parsed.section, parsed.body, parsed.mode);
+    conflict = detectOverviewConflict(
+      baseBody,
+      parsed.section,
+      parsed.body,
+      parsed.mode,
+    );
+    const newBody = upsertOverviewSection(
+      baseBody,
+      parsed.section,
+      parsed.body,
+      parsed.mode,
+    );
     afterContent = serializeFrontmatter(newFm) + newBody;
   } else if (opts.type === "module" || opts.type === "pitfall") {
-    const parsed = parseContentJson<ContentModule | ContentPitfall>(opts.type, opts.content);
+    const parsed = parseContentJson<ContentModule | ContentPitfall>(
+      opts.type,
+      opts.content,
+    );
     const subdir = opts.type === "module" ? "modules" : "pitfalls";
     targetPath = knowledgePath(opts.project, subdir, `${parsed.name}.md`);
     const exists = existsSync(targetPath);
     if (exists && !opts.overwrite) {
-      process.stderr.write(`[knowledge-keeper] File exists: ${targetPath} (use --overwrite)\n`);
+      process.stderr.write(
+        `[knowledge-keeper] File exists: ${targetPath} (use --overwrite)\n`,
+      );
       process.exit(1);
     }
     beforeContent = exists ? readFileSync(targetPath, "utf8") : "";
@@ -471,7 +513,11 @@ function runWrite(opts: {
       source: parsed.source,
       updated: today,
     };
-    afterContent = serializeFrontmatter(newFm) + "\n" + parsed.body + (parsed.body.endsWith("\n") ? "" : "\n");
+    afterContent =
+      serializeFrontmatter(newFm) +
+      "\n" +
+      parsed.body +
+      (parsed.body.endsWith("\n") ? "" : "\n");
     if (exists) {
       conflict = detectBodyRewrite(beforeContent, afterContent);
     }
@@ -591,12 +637,16 @@ function runUpdate(opts: {
   try {
     patch = JSON.parse(opts.content) as UpdateContentShape;
   } catch (err) {
-    process.stderr.write(`[knowledge-keeper] Invalid JSON for update: ${err}\n`);
+    process.stderr.write(
+      `[knowledge-keeper] Invalid JSON for update: ${err}\n`,
+    );
     process.exit(1);
     return;
   }
   if (patch.mode !== "patch" && patch.mode !== "replace") {
-    process.stderr.write(`[knowledge-keeper] Invalid mode "${patch.mode}"; must be patch|replace\n`);
+    process.stderr.write(
+      `[knowledge-keeper] Invalid mode "${patch.mode}"; must be patch|replace\n`,
+    );
     process.exit(1);
   }
 
@@ -604,7 +654,9 @@ function runUpdate(opts: {
   const beforeContent = readFileSync(full, "utf8");
   const parsed = parseFrontmatter(beforeContent);
   if (!parsed.frontmatter) {
-    process.stderr.write(`[knowledge-keeper] File has no valid frontmatter: ${opts.path}\n`);
+    process.stderr.write(
+      `[knowledge-keeper] File has no valid frontmatter: ${opts.path}\n`,
+    );
     process.exit(1);
     return;
   }
@@ -623,26 +675,53 @@ function runUpdate(opts: {
   if (patch.body_patch) {
     const bp = patch.body_patch;
     const fmType = newFm.type;
-    if ((fmType === "module" || fmType === "pitfall") && typeof bp.new_body === "string") {
+    if (
+      (fmType === "module" || fmType === "pitfall") &&
+      typeof bp.new_body === "string"
+    ) {
       if (bp.section) {
         // section 指定：section 级 upsert（不存在则追加，存在则替换）
-        newBody = upsertOverviewSection(parsed.body, bp.section, bp.new_body, "replace");
+        newBody = upsertOverviewSection(
+          parsed.body,
+          bp.section,
+          bp.new_body,
+          "replace",
+        );
       } else {
         // 无 section：整体替换 body
         newBody = bp.new_body;
       }
-    } else if (fmType === "overview" && bp.section && typeof bp.new_body === "string") {
-      newBody = upsertOverviewSection(parsed.body, bp.section, bp.new_body, "replace");
-    } else if (fmType === "term" && bp.row_id && typeof bp.new_body === "string") {
+    } else if (
+      fmType === "overview" &&
+      bp.section &&
+      typeof bp.new_body === "string"
+    ) {
+      newBody = upsertOverviewSection(
+        parsed.body,
+        bp.section,
+        bp.new_body,
+        "replace",
+      );
+    } else if (
+      fmType === "term" &&
+      bp.row_id &&
+      typeof bp.new_body === "string"
+    ) {
       newBody = upsertTermRow(parsed.body, bp.new_body, bp.row_id);
     }
   }
 
   const afterContent =
-    serializeFrontmatter(newFm) + "\n" + newBody + (newBody.endsWith("\n") ? "" : "\n");
+    serializeFrontmatter(newFm) +
+    "\n" +
+    newBody +
+    (newBody.endsWith("\n") ? "" : "\n");
 
   // 8. 冲突检测（update 主要看 body-rewrite）
-  const conflict: Conflict | null = detectBodyRewrite(beforeContent, afterContent);
+  const conflict: Conflict | null = detectBodyRewrite(
+    beforeContent,
+    afterContent,
+  );
   if (conflict && conflict.severity === "block" && !opts.force) {
     process.stdout.write(
       JSON.stringify(
@@ -723,17 +802,29 @@ function runVerify(opts: {
   if (opts.type === "term") {
     const parsed = parseContentJson<ContentTerm>("term", opts.content);
     targetPath = knowledgePath(opts.project, "terms.md");
-    const existing = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+    const existing = existsSync(targetPath)
+      ? readFileSync(targetPath, "utf8")
+      : "";
     const file = parseFrontmatter(existing);
     conflict = detectTermConflict(file.body, parsed);
   } else if (opts.type === "overview") {
     const parsed = parseContentJson<ContentOverview>("overview", opts.content);
     targetPath = knowledgePath(opts.project, "overview.md");
-    const existing = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+    const existing = existsSync(targetPath)
+      ? readFileSync(targetPath, "utf8")
+      : "";
     const file = parseFrontmatter(existing);
-    conflict = detectOverviewConflict(file.body, parsed.section, parsed.body, parsed.mode);
+    conflict = detectOverviewConflict(
+      file.body,
+      parsed.section,
+      parsed.body,
+      parsed.mode,
+    );
   } else if (opts.type === "module" || opts.type === "pitfall") {
-    const parsed = parseContentJson<ContentModule | ContentPitfall>(opts.type, opts.content);
+    const parsed = parseContentJson<ContentModule | ContentPitfall>(
+      opts.type,
+      opts.content,
+    );
     const subdir = opts.type === "module" ? "modules" : "pitfalls";
     targetPath = knowledgePath(opts.project, subdir, `${parsed.name}.md`);
     if (existsSync(targetPath)) {
@@ -802,7 +893,9 @@ function runRollback(opts: {
   const targetIdx = opts.index >= 0 ? opts.index : records.length - 1;
   const record = records[targetIdx];
   if (!record) {
-    process.stderr.write(`[knowledge-keeper] Index out of range: ${targetIdx}\n`);
+    process.stderr.write(
+      `[knowledge-keeper] Index out of range: ${targetIdx}\n`,
+    );
     process.exit(1);
   }
   if (!record.snapshot) {
@@ -896,7 +989,11 @@ export const program = createCli({
       name: "read-core",
       description: "Load core knowledge (overview + terms + index)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
       ],
       action: runReadCore,
     },
@@ -904,8 +1001,16 @@ export const program = createCli({
       name: "read-module",
       description: "Load a single module by name",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--module <name>", description: "Module name (without .md)", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--module <name>",
+          description: "Module name (without .md)",
+          required: true,
+        },
       ],
       action: runReadModule,
     },
@@ -913,8 +1018,16 @@ export const program = createCli({
       name: "read-pitfall",
       description: "Search pitfalls by query (filename + tags)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--query <keyword>", description: "Search keyword", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--query <keyword>",
+          description: "Search keyword",
+          required: true,
+        },
       ],
       action: runReadPitfall,
     },
@@ -922,7 +1035,11 @@ export const program = createCli({
       name: "index",
       description: "Rebuild _index.md (and auto-fix phase-0 templates)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
       ],
       action: runIndex,
     },
@@ -930,14 +1047,48 @@ export const program = createCli({
       name: "write",
       description: "Write knowledge entry (term/overview/module/pitfall)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--type <type>", description: "Entry type", required: true, choices: ENTRY_TYPES },
-        { flag: "--content <json>", description: "Content as JSON string", required: true },
-        { flag: "--confidence <level>", description: "Confidence level", defaultValue: "medium", choices: CONFIDENCE_LEVELS },
-        { flag: "--confirmed", description: "Confirm medium-confidence write", defaultValue: false },
-        { flag: "--dry-run", description: "Preview without writing", defaultValue: false },
-        { flag: "--overwrite", description: "Allow overwriting existing module/pitfall file", defaultValue: false },
-        { flag: "--force", description: "Bypass conflict detection (term/overview/body-rewrite)", defaultValue: false },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--type <type>",
+          description: "Entry type",
+          required: true,
+          choices: ENTRY_TYPES,
+        },
+        {
+          flag: "--content <json>",
+          description: "Content as JSON string",
+          required: true,
+        },
+        {
+          flag: "--confidence <level>",
+          description: "Confidence level",
+          defaultValue: "medium",
+          choices: CONFIDENCE_LEVELS,
+        },
+        {
+          flag: "--confirmed",
+          description: "Confirm medium-confidence write",
+          defaultValue: false,
+        },
+        {
+          flag: "--dry-run",
+          description: "Preview without writing",
+          defaultValue: false,
+        },
+        {
+          flag: "--overwrite",
+          description: "Allow overwriting existing module/pitfall file",
+          defaultValue: false,
+        },
+        {
+          flag: "--force",
+          description: "Bypass conflict detection (term/overview/body-rewrite)",
+          defaultValue: false,
+        },
       ],
       action: runWrite,
     },
@@ -945,22 +1096,60 @@ export const program = createCli({
       name: "update",
       description: "Update an existing knowledge file (frontmatter / body)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--path <rel>", description: "Relative path under knowledge/", required: true },
-        { flag: "--content <json>", description: "JSON patch spec", required: true },
-        { flag: "--confirmed", description: "Confirm update", defaultValue: false },
-        { flag: "--dry-run", description: "Preview without persisting", defaultValue: false },
-        { flag: "--force", description: "Bypass body-rewrite conflict detection", defaultValue: false },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--path <rel>",
+          description: "Relative path under knowledge/",
+          required: true,
+        },
+        {
+          flag: "--content <json>",
+          description: "JSON patch spec",
+          required: true,
+        },
+        {
+          flag: "--confirmed",
+          description: "Confirm update",
+          defaultValue: false,
+        },
+        {
+          flag: "--dry-run",
+          description: "Preview without persisting",
+          defaultValue: false,
+        },
+        {
+          flag: "--force",
+          description: "Bypass body-rewrite conflict detection",
+          defaultValue: false,
+        },
       ],
       action: runUpdate,
     },
     {
       name: "verify",
-      description: "Dry-run conflict check against existing knowledge (no write, no side effect)",
+      description:
+        "Dry-run conflict check against existing knowledge (no write, no side effect)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--type <type>", description: "Entry type", required: true, choices: ENTRY_TYPES },
-        { flag: "--content <json>", description: "Content as JSON string", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--type <type>",
+          description: "Entry type",
+          required: true,
+          choices: ENTRY_TYPES,
+        },
+        {
+          flag: "--content <json>",
+          description: "Content as JSON string",
+          required: true,
+        },
       ],
       action: runVerify,
     },
@@ -968,19 +1157,43 @@ export const program = createCli({
       name: "history",
       description: "List recent write/update/rollback audit entries",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--limit <n>", description: "How many recent entries to show (default 20)" },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--limit <n>",
+          description: "How many recent entries to show (default 20)",
+        },
       ],
       action: runHistory,
     },
     {
       name: "rollback",
-      description: "Restore a file from the snapshot referenced by an audit entry",
+      description:
+        "Restore a file from the snapshot referenced by an audit entry",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--index <n>", description: "Audit entry index (default: latest)", defaultValue: -1 },
-        { flag: "--confirmed", description: "Confirm rollback (required for real run)", defaultValue: false },
-        { flag: "--dry-run", description: "Preview without restoring", defaultValue: false },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--index <n>",
+          description: "Audit entry index (default: latest)",
+          defaultValue: -1,
+        },
+        {
+          flag: "--confirmed",
+          description: "Confirm rollback (required for real run)",
+          defaultValue: false,
+        },
+        {
+          flag: "--dry-run",
+          description: "Preview without restoring",
+          defaultValue: false,
+        },
       ],
       action: runRollback,
     },
@@ -988,11 +1201,14 @@ export const program = createCli({
       name: "lint",
       description: "Health check for knowledge files",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--strict", description: "Treat warnings as errors" },
       ],
       action: runLint,
     },
   ],
 });
-

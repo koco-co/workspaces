@@ -13,8 +13,12 @@ const filePath = payload.tool_input?.file_path;
 if (!filePath) process.exit(0);
 
 if (filePath.includes("/.repos/")) {
-  console.error(`[pre-edit-guard] BLOCKED: writes to .repos/ are forbidden (read-only source). Path: ${filePath}`);
-  console.error(`[pre-edit-guard] Override: KATA_BYPASS_HOOK=1 (use only for emergency).`);
+  console.error(
+    `[pre-edit-guard] BLOCKED: writes to .repos/ are forbidden (read-only source). Path: ${filePath}`,
+  );
+  console.error(
+    `[pre-edit-guard] Override: KATA_BYPASS_HOOK=1 (use only for emergency).`,
+  );
   process.exit(2);
 }
 

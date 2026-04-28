@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process";
 import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -251,10 +251,7 @@ describe("report-to-pdf with minimal report", () => {
 
     const pdfContent = readFileSync(expectedPdf);
     expect(pdfContent.length > 0).toBeTruthy();
-    expect(
-      pdfContent.subarray(0, 5).toBeTruthy().toString() === "%PDF-",
-      "File should start with PDF header",
-    );
+    expect(pdfContent.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   it("generates PDF with custom output path", () => {

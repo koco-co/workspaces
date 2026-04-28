@@ -151,7 +151,8 @@ describe("parseContentJson", () => {
   });
 
   it("parses valid pitfall content", () => {
-    const raw = '{"name":"dom-drift","title":"DOM 漂移","tags":["ui"],"body":"...","source":"x.ts:1"}';
+    const raw =
+      '{"name":"dom-drift","title":"DOM 漂移","tags":["ui"],"body":"...","source":"x.ts:1"}';
     const result = parseContentJson<ContentPitfall>("pitfall", raw);
     expect(result.name).toBe("dom-drift");
     expect(result.tags).toEqual(["ui"]);
@@ -190,8 +191,20 @@ describe("renderIndex", () => {
   it("lists module entries sorted by name", () => {
     const data: IndexData = {
       modules: [
-        { name: "quality", title: "质量管理", tags: ["q"], updated: "2026-04-16", confidence: "medium" },
-        { name: "data-source", title: "数据源", tags: ["ds"], updated: "2026-04-17", confidence: "high" },
+        {
+          name: "quality",
+          title: "质量管理",
+          tags: ["q"],
+          updated: "2026-04-16",
+          confidence: "medium",
+        },
+        {
+          name: "data-source",
+          title: "数据源",
+          tags: ["ds"],
+          updated: "2026-04-17",
+          confidence: "high",
+        },
       ],
       pitfalls: [],
       overview_updated: "2026-04-17",
@@ -211,7 +224,13 @@ describe("renderIndex", () => {
     const data: IndexData = {
       modules: [],
       pitfalls: [
-        { name: "ui-drift", title: "UI 漂移", tags: ["ui", "playwright"], updated: "2026-04-15", confidence: "high" },
+        {
+          name: "ui-drift",
+          title: "UI 漂移",
+          tags: ["ui", "playwright"],
+          updated: "2026-04-15",
+          confidence: "high",
+        },
       ],
       overview_updated: "2026-04-17",
       terms_updated: "2026-04-17",
@@ -304,8 +323,8 @@ describe("confidenceGate", () => {
   });
 
   it("rejects low always (even with --confirmed)", () => {
-    expect(confidenceGate("low").toBe(false).allowed, false);
-    expect(confidenceGate("low").toBe(true).allowed, false);
+    expect(confidenceGate("low").allowed).toBe(false);
+    expect(confidenceGate("low", true).allowed).toBe(false);
   });
 
   it("rejects unknown confidence", () => {
@@ -322,7 +341,11 @@ describe("autoFixFrontmatter", () => {
 
 模块正文。
 `;
-    const result = autoFixFrontmatter(raw, "/path/workspace/p/knowledge/modules/foo.md", "2026-04-17");
+    const result = autoFixFrontmatter(
+      raw,
+      "/path/workspace/p/knowledge/modules/foo.md",
+      "2026-04-17",
+    );
     expect(result.fixed).toBe(true);
     expect(result.content.startsWith("---\n")).toBeTruthy();
     expect(result.content.includes("title: 某模块标题")).toBeTruthy();
@@ -386,7 +409,11 @@ describe("lintChecks", () => {
     mkdirSync(join(knowledgeDirPath, "pitfalls"), { recursive: true });
   });
   afterEach(() => {
-    try { rmSync(TMP, { recursive: true, force: true }); } catch { /* ignore */ }
+    try {
+      rmSync(TMP, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
   });
 
   it("reports missing frontmatter field as error", () => {
@@ -410,7 +437,11 @@ body`,
       const result = lintChecks("p", knowledgeDirPath);
       expect(result.errors.some((e) => e.rule === "missing-frontmatter-field")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -436,7 +467,11 @@ body`,
       const result = lintChecks("p", knowledgeDirPath);
       expect(result.errors.some((e) => e.rule === "type-dir-mismatch")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -462,7 +497,11 @@ body`,
       const result = lintChecks("p", knowledgeDirPath);
       expect(result.errors.some((e) => e.rule === "non-kebab-case-name")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -489,7 +528,11 @@ body`,
       expect(result.errors.length).toBe(0);
       expect(result.warnings.some((w) => w.rule === "empty-tags")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -515,7 +558,11 @@ body`,
       const result = lintChecks("p", knowledgeDirPath);
       expect(result.warnings.some((w) => w.rule === "empty-source")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -541,7 +588,11 @@ body`,
       const result = lintChecks("p", knowledgeDirPath);
       expect(result.warnings.some((w) => w.rule === "orphan-file")).toBeTruthy();
     } finally {
-      try { rmSync(modulePath); } catch { /* ignore */ }
+      try {
+        rmSync(modulePath);
+      } catch {
+        /* ignore */
+      }
     }
   });
 });

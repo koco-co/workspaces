@@ -47,7 +47,12 @@ function gitClone(url: string, targetDir: string): void {
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
-function runSync(opts: { url?: string; branch?: string; project?: string; baseDir?: string }): void {
+function runSync(opts: {
+  url?: string;
+  branch?: string;
+  project?: string;
+  baseDir?: string;
+}): void {
   const { url, branch } = opts;
   if (!opts.baseDir && !opts.project) {
     const out: ErrorOutput = {
@@ -153,17 +158,29 @@ function runSync(opts: { url?: string; branch?: string; project?: string; baseDi
 function runSyncProfile(opts: { name: string }): void {
   const configPath = join(repoRoot(), "config.json");
   if (!existsSync(configPath)) {
-    const out: ErrorOutput = { error: "config.json not found", step: "read-config" };
+    const out: ErrorOutput = {
+      error: "config.json not found",
+      step: "read-config",
+    };
     process.stderr.write(`${JSON.stringify(out, null, 2)}\n`);
     process.exit(1);
   }
 
-  let profiles: Record<string, { repos: Array<{ path: string; branch: string }> }>;
+  let profiles: Record<
+    string,
+    { repos: Array<{ path: string; branch: string }> }
+  >;
   try {
-    const raw = JSON.parse(readFileSync(configPath, "utf8")) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync(configPath, "utf8")) as Record<
+      string,
+      unknown
+    >;
     profiles = (raw.repo_profiles ?? {}) as typeof profiles;
   } catch (err) {
-    const out: ErrorOutput = { error: `Failed to parse config.json: ${err}`, step: "read-config" };
+    const out: ErrorOutput = {
+      error: `Failed to parse config.json: ${err}`,
+      step: "read-config",
+    };
     process.stderr.write(`${JSON.stringify(out, null, 2)}\n`);
     process.exit(1);
     return;
@@ -242,7 +259,8 @@ export const program = createCli({
       { flag: "--project <name>", description: "Project name" },
       {
         flag: "--base-dir <dir>",
-        description: "Base directory for repositories (overrides project default)",
+        description:
+          "Base directory for repositories (overrides project default)",
       },
     ],
     action: runSync,
@@ -252,10 +270,13 @@ export const program = createCli({
       name: "sync-profile",
       description: "Sync all repositories in a named profile from config.json",
       options: [
-        { flag: "--name <name>", description: "Profile name (e.g. 岚图)", required: true },
+        {
+          flag: "--name <name>",
+          description: "Profile name (e.g. 岚图)",
+          required: true,
+        },
       ],
       action: runSyncProfile,
     },
   ],
 });
-

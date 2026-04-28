@@ -16,7 +16,7 @@ import {
   setSourceFacts,
   readSourceFacts,
 } from "../src/lib/enhanced-doc-store.ts";
-import { repoRoot, enhancedMd, sourceFactsJson } from "../src/lib/paths.ts";
+import { repoRoot, enhancedMd, sourceFactsJson, resolvedMd } from "../src/lib/paths.ts";
 
 const TEST_PROJECT = "test-d1-project";
 const TEST_YM = "202604";
@@ -45,7 +45,7 @@ describe("enhanced-doc-store: frontmatter", () => {
   test("initDoc pre-allocates top-level section anchors", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     const raw = readFileSync(
-      join(repoRoot(), "workspace", TEST_PROJECT, "prds", TEST_YM, TEST_SLUG, "enhanced.md"),
+      enhancedMd(TEST_PROJECT, TEST_YM, TEST_SLUG),
       "utf8",
     );
     expect(raw).toContain('<a id="s-1"></a>');
@@ -86,27 +86,28 @@ describe("enhanced-doc-store: set-section", () => {
     const anchor11 = doc.overview[0].anchor;
     setSection(TEST_PROJECT, TEST_YM, TEST_SLUG, anchor11, "业务侧新需求说明……");
     const doc2 = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    const sec = doc2.overview.find(s => s.anchor === anchor11);
+    const sec = doc2.overview.find((s) => s.anchor === anchor11);
     expect(sec?.body.trim()).toBe("业务侧新需求说明……");
     expect(sec?.anchor).toBe(anchor11);
   });
 
   test("setSection on unknown anchor throws", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    expect(() =>
-      setSection(TEST_PROJECT, TEST_YM, TEST_SLUG, "s-9-9-dead", "..."),
-    ).toThrow(/anchor not found/i);
+    expect(() => setSection(TEST_PROJECT, TEST_YM, TEST_SLUG, "s-9-9-dead", "...")).toThrow(
+      /anchor not found/i,
+    );
   });
 
   test("addSection creates new sub-section under §2 with fresh anchor", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    const anchor = addSection(
-      TEST_PROJECT, TEST_YM, TEST_SLUG,
-      { parentLevel: 2, title: "新功能块", body: "字段 ..." },
-    );
+    const anchor = addSection(TEST_PROJECT, TEST_YM, TEST_SLUG, {
+      parentLevel: 2,
+      title: "新功能块",
+      body: "字段 ...",
+    });
     expect(anchor).toMatch(/^s-2-\d+-[0-9a-f]{4}$/);
     const doc = readDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    const sec = doc.functional.find(s => s.anchor === anchor);
+    const sec = doc.functional.find((s) => s.anchor === anchor);
     expect(sec?.title).toBe("新功能块");
     expect(sec?.body).toContain("字段");
   });
@@ -212,17 +213,18 @@ describe("enhanced-doc-store: resolve", () => {
 
   test("resolvePending on unknown q id throws", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
-    expect(() =>
-      resolvePending(TEST_PROJECT, TEST_YM, TEST_SLUG, "q99", { answer: "x" }),
-    ).toThrow(/q99 not found/i);
+    expect(() => resolvePending(TEST_PROJECT, TEST_YM, TEST_SLUG, "q99", { answer: "x" })).toThrow(
+      /q99 not found/i,
+    );
   });
 
   test("resolvePending on already resolved throws", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     const qid = addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
     resolvePending(TEST_PROJECT, TEST_YM, TEST_SLUG, qid, { answer: "a" });
-    expect(() => resolvePending(TEST_PROJECT, TEST_YM, TEST_SLUG, qid, { answer: "b" }))
-      .toThrow(/already resolved/i);
+    expect(() => resolvePending(TEST_PROJECT, TEST_YM, TEST_SLUG, qid, { answer: "b" })).toThrow(
+      /already resolved/i,
+    );
   });
 });
 
@@ -257,7 +259,7 @@ describe("enhanced-doc-store: list-pending + compact", () => {
     }
     const moved = compactDoc(TEST_PROJECT, TEST_YM, TEST_SLUG, { threshold: 2 });
     expect(moved).toBe(3);
-    const resolvedPath = join(repoRoot(), "workspace", TEST_PROJECT, "prds", TEST_YM, TEST_SLUG, "resolved.md");
+    const resolvedPath = resolvedMd(TEST_PROJECT, TEST_YM, TEST_SLUG);
     expect(existsSync(resolvedPath)).toBe(true);
     const enhanced = readFileSync(enhancedMd(TEST_PROJECT, TEST_YM, TEST_SLUG), "utf8");
     expect(enhanced).not.toContain("<del>Q1</del>");
@@ -289,7 +291,7 @@ describe("enhanced-doc-store: validate", () => {
     writeFrontmatter(TEST_PROJECT, TEST_YM, TEST_SLUG, { pending_count: 99 });
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     expect(r.ok).toBe(false);
-    expect(r.issues.some(i => i.includes("pending_count"))).toBe(true);
+    expect(r.issues.some((i) => i.includes("pending_count"))).toBe(true);
   });
 
   test("validateDoc catches q_counter regression", () => {
@@ -299,7 +301,7 @@ describe("enhanced-doc-store: validate", () => {
     writeFrontmatter(TEST_PROJECT, TEST_YM, TEST_SLUG, { q_counter: 1 });
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     expect(r.ok).toBe(false);
-    expect(r.issues.some(i => i.includes("q_counter"))).toBe(true);
+    expect(r.issues.some((i) => i.includes("q_counter"))).toBe(true);
   });
 
   test("validateDoc catches orphan q footnote", () => {
@@ -309,7 +311,7 @@ describe("enhanced-doc-store: validate", () => {
     writeFileSync(p, raw.replace("## 2. 功能细节", "## 2. 功能细节\n\n[^q99]"), "utf8");
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     expect(r.ok).toBe(false);
-    expect(r.issues.some(i => i.includes("orphan") && i.includes("q99"))).toBe(true);
+    expect(r.issues.some((i) => i.includes("orphan") && i.includes("q99"))).toBe(true);
   });
 
   test("validateDoc catches broken location anchor in Q", () => {
@@ -323,7 +325,7 @@ describe("enhanced-doc-store: validate", () => {
     writeFileSync(p, raw.replace('<a id="s-1"></a>', ""), "utf8");
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     expect(r.ok).toBe(false);
-    expect(r.issues.some(i => i.includes("broken location"))).toBe(true);
+    expect(r.issues.some((i) => i.includes("broken location"))).toBe(true);
   });
 
   test("validateDoc with requireZeroPending flag", () => {
@@ -331,7 +333,7 @@ describe("enhanced-doc-store: validate", () => {
     addPending(TEST_PROJECT, TEST_YM, TEST_SLUG, sampleQ());
     const r = validateDoc(TEST_PROJECT, TEST_YM, TEST_SLUG, { requireZeroPending: true });
     expect(r.ok).toBe(false);
-    expect(r.issues.some(i => i.includes("pending_count > 0"))).toBe(true);
+    expect(r.issues.some((i) => i.includes("pending_count > 0"))).toBe(true);
   });
 });
 
@@ -359,9 +361,15 @@ describe("enhanced-doc-store: source-facts blob", () => {
     initDoc(TEST_PROJECT, TEST_YM, TEST_SLUG);
     const big = {
       fields: Array.from({ length: 2000 }, (_, i) => ({
-        name: `f${i}`, type: "string", path: `file${i}.ts`, note: "x".repeat(50),
+        name: `f${i}`,
+        type: "string",
+        path: `file${i}.ts`,
+        note: "x".repeat(50),
       })),
-      routes: [], state_enums: [], permissions: [], api_signatures: [],
+      routes: [],
+      state_enums: [],
+      permissions: [],
+      api_signatures: [],
     };
     setSourceFacts(TEST_PROJECT, TEST_YM, TEST_SLUG, big);
     const raw = readFileSync(enhancedMd(TEST_PROJECT, TEST_YM, TEST_SLUG), "utf8");

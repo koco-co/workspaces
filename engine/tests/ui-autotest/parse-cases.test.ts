@@ -184,9 +184,7 @@ describe("extractPreconditions", () => {
 
     const preconditions = extractPreconditions(block);
     expect(
-      preconditions.includes("环境已部署").toBeTruthy(),
-      `应包含前置条件内容，实际：${preconditions}`,
-    );
+      preconditions.includes("环境已部署")).toBeTruthy();
   });
 
   it("无前置条件时返回空字符串", () => {
@@ -221,9 +219,7 @@ describe("parseArchiveMd", () => {
     expect(firstTask).toBeTruthy();
     expect(firstTask.priority).toBe("P0");
     expect(
-      firstTask.title.includes("默认加载").toBeTruthy(),
-      `标题应包含关键词，实际：${firstTask.title}`,
-    );
+      firstTask.title.includes("默认加载")).toBeTruthy();
     expect(Array.isArray(firstTask.steps)).toBeTruthy();
     expect(firstTask.steps.length > 0).toBeTruthy();
   });

@@ -117,7 +117,8 @@ export const program = createCli({
   commands: [
     {
       name: "normalize",
-      description: "Ensure required front-matter fields are present and normalized",
+      description:
+        "Ensure required front-matter fields are present and normalized",
       options: [
         {
           flag: "--file <md-path>",

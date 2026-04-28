@@ -67,7 +67,12 @@ export const program = createCli({
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
         { flag: "--status <s>", description: "新状态", required: true },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string; status: string }) => {
+      action: (opts: {
+        project: string;
+        yyyymm: string;
+        prdSlug: string;
+        status: string;
+      }) => {
         setStatus(opts.project, opts.yyyymm, opts.prdSlug, opts.status as any);
         process.stdout.write(JSON.stringify({ ok: true }) + "\n");
       },
@@ -80,10 +85,26 @@ export const program = createCli({
         { flag: "--yyyymm <ym>", description: "月份", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
         { flag: "--anchor <a>", description: "目标锚点", required: true },
-        { flag: "--content <str>", description: "Markdown 正文", required: true },
+        {
+          flag: "--content <str>",
+          description: "Markdown 正文",
+          required: true,
+        },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string; anchor: string; content: string }) => {
-        setSection(opts.project, opts.yyyymm, opts.prdSlug, opts.anchor, opts.content);
+      action: (opts: {
+        project: string;
+        yyyymm: string;
+        prdSlug: string;
+        anchor: string;
+        content: string;
+      }) => {
+        setSection(
+          opts.project,
+          opts.yyyymm,
+          opts.prdSlug,
+          opts.anchor,
+          opts.content,
+        );
         process.stdout.write(JSON.stringify({ ok: true }) + "\n");
       },
     },
@@ -98,7 +119,14 @@ export const program = createCli({
         { flag: "--title <s>", description: "小节标题", required: true },
         { flag: "--body <s>", description: "小节正文", required: true },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string; parentLevel: string; title: string; body: string }) => {
+      action: (opts: {
+        project: string;
+        yyyymm: string;
+        prdSlug: string;
+        parentLevel: string;
+        title: string;
+        body: string;
+      }) => {
         const anchor = addSection(opts.project, opts.yyyymm, opts.prdSlug, {
           parentLevel: Number(opts.parentLevel) as 2 | 3,
           title: opts.title,
@@ -114,13 +142,27 @@ export const program = createCli({
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--yyyymm <ym>", description: "月份", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--content <json>", description: "SourceFacts JSON 或 @<path>", required: true },
+        {
+          flag: "--content <json>",
+          description: "SourceFacts JSON 或 @<path>",
+          required: true,
+        },
       ],
-      action: (opts: { project: string; yyyymm: string; prdSlug: string; content: string }) => {
+      action: (opts: {
+        project: string;
+        yyyymm: string;
+        prdSlug: string;
+        content: string;
+      }) => {
         const raw = opts.content.startsWith("@")
           ? readFileSync(opts.content.slice(1), "utf8")
           : opts.content;
-        setSourceFacts(opts.project, opts.yyyymm, opts.prdSlug, JSON.parse(raw));
+        setSourceFacts(
+          opts.project,
+          opts.yyyymm,
+          opts.prdSlug,
+          JSON.parse(raw),
+        );
         process.stdout.write(JSON.stringify({ ok: true }) + "\n");
       },
     },
@@ -136,7 +178,12 @@ export const program = createCli({
         { flag: "--question <s>", description: "问题文本", required: true },
         { flag: "--recommended <s>", description: "推荐方案", required: true },
         { flag: "--expected <s>", description: "预期", required: true },
-        { flag: "--severity <s>", description: "blocking_unknown | defaultable_unknown | pending_for_pm", required: true },
+        {
+          flag: "--severity <s>",
+          description:
+            "blocking_unknown | defaultable_unknown | pending_for_pm",
+          required: true,
+        },
       ],
       action: (opts: any) => {
         const id = addPending(opts.project, opts.yyyymm, opts.prdSlug, {
@@ -157,9 +204,17 @@ export const program = createCli({
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--yyyymm <ym>", description: "月份", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--id <qid>", description: "Q ID (q1, q2, ...)", required: true },
+        {
+          flag: "--id <qid>",
+          description: "Q ID (q1, q2, ...)",
+          required: true,
+        },
         { flag: "--answer <s>", description: "回答", required: true },
-        { flag: "--as-default", description: "标记为默认采用", defaultValue: false },
+        {
+          flag: "--as-default",
+          description: "标记为默认采用",
+          defaultValue: false,
+        },
       ],
       action: (opts: any) => {
         resolvePending(opts.project, opts.yyyymm, opts.prdSlug, opts.id, {
@@ -176,8 +231,16 @@ export const program = createCli({
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--yyyymm <ym>", description: "月份", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--format <f>", description: "json | table", defaultValue: "json" },
-        { flag: "--include-resolved", description: "包含已解决", defaultValue: false },
+        {
+          flag: "--format <f>",
+          description: "json | table",
+          defaultValue: "json",
+        },
+        {
+          flag: "--include-resolved",
+          description: "包含已解决",
+          defaultValue: false,
+        },
       ],
       action: (opts: any) => {
         const items = listPending(opts.project, opts.yyyymm, opts.prdSlug, {
@@ -215,17 +278,29 @@ export const program = createCli({
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--yyyymm <ym>", description: "月份", required: true },
         { flag: "--prd-slug <slug>", description: "PRD slug", required: true },
-        { flag: "--require-zero-pending", description: "pending>0 则退 3", defaultValue: false },
-        { flag: "--check-source-refs <csv>", description: "逗号分隔的 source_ref 列表", defaultValue: "" },
+        {
+          flag: "--require-zero-pending",
+          description: "pending>0 则退 3",
+          defaultValue: false,
+        },
+        {
+          flag: "--check-source-refs <csv>",
+          description: "逗号分隔的 source_ref 列表",
+          defaultValue: "",
+        },
       ],
       action: (opts: any) => {
         const r = validateDoc(opts.project, opts.yyyymm, opts.prdSlug, {
           requireZeroPending: !!opts.requireZeroPending,
-          checkSourceRefs: opts.checkSourceRefs ? opts.checkSourceRefs.split(",") : undefined,
+          checkSourceRefs: opts.checkSourceRefs
+            ? opts.checkSourceRefs.split(",")
+            : undefined,
         });
         process.stdout.write(JSON.stringify(r) + "\n");
         if (!r.ok) {
-          const zeroPendingIssue = r.issues.some((i: string) => i.includes("requireZeroPending"));
+          const zeroPendingIssue = r.issues.some((i: string) =>
+            i.includes("requireZeroPending"),
+          );
           process.exit(zeroPendingIssue ? 3 : 1);
         }
       },

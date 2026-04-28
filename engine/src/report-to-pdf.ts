@@ -140,7 +140,11 @@ export function extractStepLabel(name: string): string {
 
 // ─── Summary helpers ─────────────────────────────────────────────────
 
-function summaryCardColor(key: string): { bg: string; fg: string; accent: string } {
+function summaryCardColor(key: string): {
+  bg: string;
+  fg: string;
+  accent: string;
+} {
   switch (key) {
     case "tests":
       return { bg: "#f0f4ff", fg: "#1a237e", accent: "#3f51b5" };
@@ -194,7 +198,8 @@ export function buildPrintableHtml(
   const total = summary.tests?.value ?? 0;
   const passed = summary.passed?.value ?? 0;
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
-  const rateColor = passRate >= 80 ? "#2e7d32" : passRate >= 50 ? "#e65100" : "#c62828";
+  const rateColor =
+    passRate >= 80 ? "#2e7d32" : passRate >= 50 ? "#e65100" : "#c62828";
 
   // --- Test case cards ---
   const caseSections = cases.map((tc, idx) => {
@@ -407,7 +412,11 @@ export const program = createCli({
   description: "Convert monocart HTML/JSON report to self-contained PDF",
   rootAction: {
     arguments: [
-      { name: "sourcePath", description: "Path to the HTML or JSON report file", required: true },
+      {
+        name: "sourcePath",
+        description: "Path to the HTML or JSON report file",
+        required: true,
+      },
     ],
     options: [
       { flag: "-o, --output <path>", description: "Custom output PDF path" },

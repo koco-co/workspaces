@@ -71,7 +71,9 @@ function parseArchiveMd(content: string): ParsedCase[] {
     if (line.startsWith("##### ")) {
       if (currentStart !== -1) {
         const rawContent = lines.slice(currentStart, i).join("\n");
-        cases.push(buildCase(cases.length, currentTitle, rawContent, currentLineOffset));
+        cases.push(
+          buildCase(cases.length, currentTitle, rawContent, currentLineOffset),
+        );
       }
       currentTitle = line.slice(6).trim();
       currentStart = i;
@@ -81,13 +83,20 @@ function parseArchiveMd(content: string): ParsedCase[] {
 
   if (currentStart !== -1) {
     const rawContent = lines.slice(currentStart).join("\n");
-    cases.push(buildCase(cases.length, currentTitle, rawContent, currentLineOffset));
+    cases.push(
+      buildCase(cases.length, currentTitle, rawContent, currentLineOffset),
+    );
   }
 
   return cases;
 }
 
-function buildCase(idx: number, title: string, rawContent: string, lineOffset: number): ParsedCase {
+function buildCase(
+  idx: number,
+  title: string,
+  rawContent: string,
+  lineOffset: number,
+): ParsedCase {
   return {
     title,
     idx,
@@ -109,7 +118,10 @@ function parseStepTable(content: string, lineOffset: number): StepRow[] {
     const line = lines[i].trim();
     if (!inTable) {
       // detect table header: | 编号 | 步骤 | 预期 |
-      if (line.startsWith("|") && (line.includes("步骤") || line.includes("Step"))) {
+      if (
+        line.startsWith("|") &&
+        (line.includes("步骤") || line.includes("Step"))
+      ) {
         inTable = true;
         headerPassed = false;
         continue;
@@ -123,7 +135,10 @@ function parseStepTable(content: string, lineOffset: number): StepRow[] {
     }
     // data rows
     if (headerPassed && line.startsWith("|")) {
-      const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+      const cells = line
+        .split("|")
+        .slice(1, -1)
+        .map((c) => c.trim());
       if (cells.length >= 3) {
         rowNum++;
         rows.push({
@@ -208,7 +223,17 @@ function checkFC03(c: ParsedCase): DefiniteIssue[] {
 /**
  * FC04: 模糊词检测 — 归入 suspect（非 definite）
  */
-const FUZZY_WORDS = ["尝试", "相关", "某个", "适当的", "正常的", "一些", "若干", "等等", "其他"];
+const FUZZY_WORDS = [
+  "尝试",
+  "相关",
+  "某个",
+  "适当的",
+  "正常的",
+  "一些",
+  "若干",
+  "等等",
+  "其他",
+];
 const FUZZY_RE = new RegExp(FUZZY_WORDS.join("|"), "g");
 
 function checkFC04(c: ParsedCase): SuspectItem[] {
@@ -236,12 +261,14 @@ function checkFC04(c: ParsedCase): SuspectItem[] {
 /**
  * FC05: 占位符检测（test1/abc/xxx/123456 等）→ definite
  */
-const PLACEHOLDER_RE = /\b(test\d+|abc|xxx|yyy|zzz|foo|bar|qwerty|123456|password123|demo\d*)\b/i;
+const PLACEHOLDER_RE =
+  /\b(test\d+|abc|xxx|yyy|zzz|foo|bar|qwerty|123456|password123|demo\d*)\b/i;
 
 function checkFC05(c: ParsedCase): DefiniteIssue[] {
   const issues: DefiniteIssue[] = [];
   for (const step of c.steps) {
-    const match = step.step.match(PLACEHOLDER_RE) ?? step.expected.match(PLACEHOLDER_RE);
+    const match =
+      step.step.match(PLACEHOLDER_RE) ?? step.expected.match(PLACEHOLDER_RE);
     if (match) {
       issues.push({
         rule: "FC05",
@@ -409,7 +436,11 @@ export const program = createCli({
       name: "check",
       description: "检查 Archive MD 文件的格式规则",
       options: [
-        { flag: "--input <path>", description: "Archive MD 文件路径", required: true },
+        {
+          flag: "--input <path>",
+          description: "Archive MD 文件路径",
+          required: true,
+        },
       ],
       action: runCheck,
     },

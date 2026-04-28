@@ -44,17 +44,29 @@ function buildCtx(opts: Record<string, unknown>): ResolveContext {
 
 export const program = createCli({
   name: "source-ref",
-  description: "Parse and resolve source_ref anchors (prd / knowledge / repo / enhanced).",
+  description:
+    "Parse and resolve source_ref anchors (prd / knowledge / repo / enhanced).",
   commands: [
     {
       name: "resolve",
-      description: "Resolve a single source_ref. Exit 0 if OK, 1 if unresolvable.",
+      description:
+        "Resolve a single source_ref. Exit 0 if OK, 1 if unresolvable.",
       options: [
-        { flag: "--ref <ref>", description: "source_ref string", required: true },
+        {
+          flag: "--ref <ref>",
+          description: "source_ref string",
+          required: true,
+        },
         { flag: "--prd <path>", description: "prd file path (for prd scheme)" },
         { flag: "--project <name>", description: "project name" },
-        { flag: "--workspace-dir <dir>", description: "workspace dir override" },
-        { flag: "--yyyymm <ym>", description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）" },
+        {
+          flag: "--workspace-dir <dir>",
+          description: "workspace dir override",
+        },
+        {
+          flag: "--yyyymm <ym>",
+          description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）",
+        },
         { flag: "--prd-slug <slug>", description: "PRD slug（同上）" },
       ],
       action: (opts) => {
@@ -78,8 +90,14 @@ export const program = createCli({
         },
         { flag: "--prd <path>", description: "prd path" },
         { flag: "--project <name>", description: "project name" },
-        { flag: "--workspace-dir <dir>", description: "workspace dir override" },
-        { flag: "--yyyymm <ym>", description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）" },
+        {
+          flag: "--workspace-dir <dir>",
+          description: "workspace dir override",
+        },
+        {
+          flag: "--yyyymm <ym>",
+          description: "PRD 月份目录（与 --prd-slug 配套，定位 enhanced.md）",
+        },
         { flag: "--prd-slug <slug>", description: "PRD slug（同上）" },
       ],
       action: (opts) => {

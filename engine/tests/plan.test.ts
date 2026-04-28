@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process";
 import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,20 +13,16 @@ function runPlan(
   extraEnv: Record<string, string> = {},
 ): { stdout: string; stderr: string; code: number } {
   try {
-    const stdout = execFileSync(
-      "kata-cli",
-      ["plan", ...args],
-      {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          KATA_ROOT_OVERRIDE: TMP_DIR,
-          WORKSPACE_DIR: join(TMP_DIR, "workspace"),
-          ...extraEnv,
-        },
+    const stdout = execFileSync("kata-cli", ["plan", ...args], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        KATA_ROOT_OVERRIDE: TMP_DIR,
+        WORKSPACE_DIR: join(TMP_DIR, "workspace"),
+        ...extraEnv,
       },
-    );
+    });
     return { stdout, stderr: "", code: 0 };
   } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; status?: number };
@@ -64,10 +60,14 @@ describe("plan.ts create", () => {
   it("creates plan JSON and MD for test-case-gen workflow", () => {
     const { stdout, code } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--inputs", '{"prd":"workspace/dataAssets/prds/202604/my-feature.md","mode":"normal"}',
-      "--plan-id", "tcg-my-feature-create",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--inputs",
+      '{"prd":"workspace/dataAssets/prds/202604/my-feature.md","mode":"normal"}',
+      "--plan-id",
+      "tcg-my-feature-create",
     ]);
 
     expect(code).toBe(0);
@@ -86,10 +86,14 @@ describe("plan.ts create", () => {
   it("creates plan JSON and MD for ui-autotest workflow", () => {
     const { stdout, code } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "ui-autotest",
-      "--inputs", '{"archive":"workspace/dataAssets/archive/test.md"}',
-      "--plan-id", "uat-test-create",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "ui-autotest",
+      "--inputs",
+      '{"archive":"workspace/dataAssets/archive/test.md"}',
+      "--plan-id",
+      "uat-test-create",
     ]);
 
     expect(code).toBe(0);
@@ -103,34 +107,42 @@ describe("plan.ts create", () => {
     const planId = "tcg-disk-check";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
-    expect(existsSync(planJsonPath("dataAssets", planId).toBeTruthy()), "JSON file should exist");
-    expect(existsSync(planMdPath("dataAssets", planId).toBeTruthy()), "MD file should exist");
+    expect(existsSync(planJsonPath("dataAssets", planId)), "JSON file should exist").toBeTruthy();
+    expect(existsSync(planMdPath("dataAssets", planId)), "MD file should exist").toBeTruthy();
   });
 
   it("auto-generates plan-id when not provided", () => {
     const { stdout, code } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--inputs", '{"prd":"workspace/dataAssets/prds/202604/auto-id-test.md"}',
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--inputs",
+      '{"prd":"workspace/dataAssets/prds/202604/auto-id-test.md"}',
     ]);
 
     expect(code).toBe(0);
     const result = JSON.parse(stdout);
-    expect(result.plan_id.startsWith("tcg-").toBeTruthy(), `plan_id should start with tcg-, got: ${result.plan_id}`);
-    expect(result.plan_id.includes("auto-id-test").toBeTruthy(), `plan_id should contain input hint, got: ${result.plan_id}`);
+    expect(result.plan_id.startsWith("tcg-")).toBeTruthy();
+    expect(result.plan_id.includes("auto-id-test")).toBeTruthy();
   });
 
   it("exits 1 for unknown workflow", () => {
     const { code, stderr } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "unknown-workflow",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "unknown-workflow",
     ]);
 
     expect(code).toBe(1);
@@ -140,9 +152,12 @@ describe("plan.ts create", () => {
   it("exits 1 for invalid inputs JSON", () => {
     const { code, stderr } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--inputs", "{bad json",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--inputs",
+      "{bad json",
     ]);
 
     expect(code).toBe(1);
@@ -153,10 +168,14 @@ describe("plan.ts create", () => {
     const planId = "tcg-state-file";
     const { stdout } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
-      "--state-file", "/some/state/path.json",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
+      "--state-file",
+      "/some/state/path.json",
     ]);
 
     const result = JSON.parse(stdout);
@@ -166,9 +185,12 @@ describe("plan.ts create", () => {
   it("all steps have pending status and correct depends_on", () => {
     const { stdout } = runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", "tcg-deps-check",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      "tcg-deps-check",
     ]);
 
     const result = JSON.parse(stdout);
@@ -189,17 +211,24 @@ describe("plan.ts update", () => {
   it("updates step status to in_progress with started_at", () => {
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", PLAN_ID,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      PLAN_ID,
     ]);
 
     const { stdout, code } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", PLAN_ID,
-      "--step", "step-1",
-      "--status", "in_progress",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      PLAN_ID,
+      "--step",
+      "step-1",
+      "--status",
+      "in_progress",
     ]);
 
     expect(code).toBe(0);
@@ -214,25 +243,36 @@ describe("plan.ts update", () => {
     const planId = "tcg-complete-test";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "in_progress",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "in_progress",
     ]);
 
     const { stdout } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "completed",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
     ]);
 
     const result = JSON.parse(stdout);
@@ -246,18 +286,26 @@ describe("plan.ts update", () => {
     const planId = "tcg-metadata-test";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     const { stdout } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "completed",
-      "--metadata", '{"confidence":0.95,"modules":3}',
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
+      "--metadata",
+      '{"confidence":0.95,"modules":3}',
     ]);
 
     const result = JSON.parse(stdout);
@@ -270,28 +318,43 @@ describe("plan.ts update", () => {
     const planId = "tcg-no-overwrite-start";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     const { stdout: first } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "in_progress",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "in_progress",
     ]);
-    const firstStartedAt = JSON.parse(first).steps.find((s: { id: string }) => s.id === "step-1").started_at;
+    const firstStartedAt = JSON.parse(first).steps.find(
+      (s: { id: string }) => s.id === "step-1",
+    ).started_at;
 
     const { stdout: second } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "in_progress",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "in_progress",
     ]);
-    const secondStartedAt = JSON.parse(second).steps.find((s: { id: string }) => s.id === "step-1").started_at;
+    const secondStartedAt = JSON.parse(second).steps.find(
+      (s: { id: string }) => s.id === "step-1",
+    ).started_at;
 
     expect(firstStartedAt).toBe(secondStartedAt);
   });
@@ -299,10 +362,14 @@ describe("plan.ts update", () => {
   it("exits 1 for nonexistent plan", () => {
     const { code, stderr } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", "nonexistent-plan",
-      "--step", "step-1",
-      "--status", "completed",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      "nonexistent-plan",
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
     ]);
     expect(code).toBe(1);
     expect(stderr).toMatch(/not found/);
@@ -312,17 +379,24 @@ describe("plan.ts update", () => {
     const planId = "tcg-bad-step";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     const { code, stderr } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-99",
-      "--status", "completed",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-99",
+      "--status",
+      "completed",
     ]);
     expect(code).toBe(1);
     expect(stderr).toMatch(/step.*not found/);
@@ -332,17 +406,24 @@ describe("plan.ts update", () => {
     const planId = "tcg-bad-status";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     const { code, stderr } = runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "invalid-status",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "invalid-status",
     ]);
     expect(code).toBe(1);
     expect(stderr).toMatch(/invalid status/);
@@ -352,17 +433,24 @@ describe("plan.ts update", () => {
     const planId = "tcg-md-update";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-1",
-      "--status", "completed",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
@@ -378,20 +466,49 @@ describe("plan.ts summary", () => {
     const planId = "tcg-summary-test";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
-    runPlan(["update", "--project", "dataAssets", "--plan-id", planId, "--step", "step-1", "--status", "completed"]);
-    runPlan(["update", "--project", "dataAssets", "--plan-id", planId, "--step", "step-2", "--status", "completed"]);
-    runPlan(["update", "--project", "dataAssets", "--plan-id", planId, "--step", "step-3", "--status", "in_progress"]);
-
-    const { stdout, code } = runPlan([
-      "summary",
-      "--project", "dataAssets",
-      "--plan-id", planId,
+    runPlan([
+      "update",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
     ]);
+    runPlan([
+      "update",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-2",
+      "--status",
+      "completed",
+    ]);
+    runPlan([
+      "update",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-3",
+      "--status",
+      "in_progress",
+    ]);
+
+    const { stdout, code } = runPlan(["summary", "--project", "dataAssets", "--plan-id", planId]);
 
     expect(code).toBe(0);
     const summary = JSON.parse(stdout);
@@ -408,8 +525,10 @@ describe("plan.ts summary", () => {
   it("exits 1 for nonexistent plan", () => {
     const { code } = runPlan([
       "summary",
-      "--project", "dataAssets",
-      "--plan-id", "nonexistent-summary",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      "nonexistent-summary",
     ]);
     expect(code).toBe(1);
   });
@@ -418,16 +537,15 @@ describe("plan.ts summary", () => {
     const planId = "tcg-all-pending";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
-    const { stdout } = runPlan([
-      "summary",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-    ]);
+    const { stdout } = runPlan(["summary", "--project", "dataAssets", "--plan-id", planId]);
 
     const summary = JSON.parse(stdout);
     expect(summary.progress_pct).toBe(0);
@@ -442,18 +560,27 @@ describe("plan.ts render", () => {
     const planId = "tcg-render-test";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
-    runPlan(["update", "--project", "dataAssets", "--plan-id", planId, "--step", "step-1", "--status", "completed"]);
-
-    const { stdout, code } = runPlan([
-      "render",
-      "--project", "dataAssets",
-      "--plan-id", planId,
+    runPlan([
+      "update",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
     ]);
+
+    const { stdout, code } = runPlan(["render", "--project", "dataAssets", "--plan-id", planId]);
 
     expect(code).toBe(0);
     const result = JSON.parse(stdout);
@@ -468,8 +595,10 @@ describe("plan.ts render", () => {
   it("exits 1 for nonexistent plan", () => {
     const { code } = runPlan([
       "render",
-      "--project", "dataAssets",
-      "--plan-id", "nonexistent-render",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      "nonexistent-render",
     ]);
     expect(code).toBe(1);
   });
@@ -481,21 +610,24 @@ describe("plan.ts list", () => {
   it("lists all plans for a project", () => {
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", "tcg-list-a",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      "tcg-list-a",
     ]);
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "ui-autotest",
-      "--plan-id", "uat-list-b",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "ui-autotest",
+      "--plan-id",
+      "uat-list-b",
     ]);
 
-    const { stdout, code } = runPlan([
-      "list",
-      "--project", "dataAssets",
-    ]);
+    const { stdout, code } = runPlan(["list", "--project", "dataAssets"]);
 
     expect(code).toBe(0);
     const plans = JSON.parse(stdout) as Array<{ plan_id: string }>;
@@ -507,22 +639,24 @@ describe("plan.ts list", () => {
   it("filters by workflow type", () => {
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", "tcg-filter-only",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      "tcg-filter-only",
     ]);
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "ui-autotest",
-      "--plan-id", "uat-filter-only",
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "ui-autotest",
+      "--plan-id",
+      "uat-filter-only",
     ]);
 
-    const { stdout } = runPlan([
-      "list",
-      "--project", "dataAssets",
-      "--workflow", "ui-autotest",
-    ]);
+    const { stdout } = runPlan(["list", "--project", "dataAssets", "--workflow", "ui-autotest"]);
 
     const plans = JSON.parse(stdout) as Array<{ plan_id: string; workflow: string }>;
     for (const p of plans) {
@@ -532,10 +666,7 @@ describe("plan.ts list", () => {
   });
 
   it("returns empty array for nonexistent project", () => {
-    const { stdout, code } = runPlan([
-      "list",
-      "--project", "nonexistent-project",
-    ]);
+    const { stdout, code } = runPlan(["list", "--project", "nonexistent-project"]);
 
     expect(code).toBe(0);
     const plans = JSON.parse(stdout);
@@ -546,11 +677,24 @@ describe("plan.ts list", () => {
     const planId = "tcg-list-pct";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
-    runPlan(["update", "--project", "dataAssets", "--plan-id", planId, "--step", "step-1", "--status", "completed"]);
+    runPlan([
+      "update",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-1",
+      "--status",
+      "completed",
+    ]);
 
     const { stdout } = runPlan(["list", "--project", "dataAssets"]);
     const plans = JSON.parse(stdout) as Array<{ plan_id: string; progress_pct: number }>;
@@ -567,10 +711,14 @@ describe("plan.ts MD rendering", () => {
     const planId = "tcg-md-content";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
-      "--inputs", '{"prd":"test.md"}',
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
+      "--inputs",
+      '{"prd":"test.md"}',
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
@@ -586,17 +734,24 @@ describe("plan.ts MD rendering", () => {
     const planId = "tcg-md-skip";
     runPlan([
       "create",
-      "--project", "dataAssets",
-      "--workflow", "test-case-gen",
-      "--plan-id", planId,
+      "--project",
+      "dataAssets",
+      "--workflow",
+      "test-case-gen",
+      "--plan-id",
+      planId,
     ]);
 
     runPlan([
       "update",
-      "--project", "dataAssets",
-      "--plan-id", planId,
-      "--step", "step-3",
-      "--status", "skipped",
+      "--project",
+      "dataAssets",
+      "--plan-id",
+      planId,
+      "--step",
+      "step-3",
+      "--status",
+      "skipped",
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");

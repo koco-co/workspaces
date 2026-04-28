@@ -119,7 +119,7 @@ describe("auto-fixer fix — FC01 标题缺少优先级前缀", () => {
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const title =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].title as string;
-    expect(title.startsWith("【P0】").toBeTruthy(), `Expected title to start with 【P0】, got: ${title}`);
+    expect(title.startsWith("【P0】")).toBeTruthy();
 
     const report = JSON.parse(stdout) as { fixed: number; skipped_manual: number; total: number };
     expect(report.fixed).toBe(1);
@@ -165,7 +165,7 @@ describe("auto-fixer fix — FC01 标题缺少优先级前缀", () => {
     const title =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].title as string;
     // Should not double-prefix
-    expect(!title.startsWith("【P1】【P1】").toBeTruthy(), `Title has double prefix: ${title}`);
+    expect(!title.startsWith("【P1】【P1】")).toBeTruthy();
   });
 });
 
@@ -307,7 +307,7 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    expect(!expected.includes("或等价").toBeTruthy(), `Expected result still has 或等价: ${expected}`);
+    expect(!expected.includes("或等价")).toBeTruthy();
     expect(expected).toBe("显示成功提示");
 
     const report = JSON.parse(stdout) as { fixed: number };
@@ -357,7 +357,7 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    expect(!expected.includes("或类似").toBeTruthy(), `Expected result still has 或类似: ${expected}`);
+    expect(!expected.includes("或类似")).toBeTruthy();
     expect(expected).toBe("弹出确认对话框");
   });
 
@@ -404,7 +404,7 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    expect(!expected.includes("或等效").toBeTruthy(), `Expected result still has 或等效: ${expected}`);
+    expect(!expected.includes("或等效")).toBeTruthy();
     expect(expected).toBe("数据保存成功");
   });
 });

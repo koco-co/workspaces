@@ -112,7 +112,7 @@ describe("configJsonPath", () => {
     process.env.CONFIG_JSON_PATH = "";
     try {
       const p = configJsonPath();
-      expect(p.endsWith("/config.json").toBeTruthy(), `expected default, got ${p}`);
+      expect(p.endsWith("/config.json")).toBeTruthy();
     } finally {
       if (original === undefined) delete process.env.CONFIG_JSON_PATH;
       else process.env.CONFIG_JSON_PATH = original;
@@ -294,7 +294,7 @@ describe("mergeProjectConfig", () => {
 
 describe("renderTemplate", () => {
   it("replaces single {{project}} placeholder", () => {
-    expect(renderTemplate("Hello {{project}}").toBe({ project: "myProj" }), "Hello myProj");
+    expect(renderTemplate("Hello {{project}}", { project: "myProj" })).toBe("Hello myProj");
   });
 
   it("replaces multiple occurrences", () => {
@@ -305,15 +305,15 @@ describe("renderTemplate", () => {
 
   it("returns original string when no placeholder", () => {
     const raw = "Plain content without placeholder";
-    expect(renderTemplate(raw).toBe({ project: "p" }), raw);
+    expect(renderTemplate(raw, { project: "p" })).toBe(raw);
   });
 
   it("handles empty string", () => {
-    expect(renderTemplate("").toBe({ project: "x" }), "");
+    expect(renderTemplate("", { project: "x" })).toBe("");
   });
 
   it("does not replace {{ project }} with spaces (strict token)", () => {
     const raw = "{{ project }}";
-    expect(renderTemplate(raw).toBe({ project: "x" }), "{{ project }}");
+    expect(renderTemplate(raw, { project: "x" })).toBe("{{ project }}");
   });
 });

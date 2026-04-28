@@ -58,7 +58,9 @@ interface Paths {
 }
 
 /** Extract `dt_tenant_name` value from a DTStack cookie string (URL-decoded). */
-export function extractTenantFromCookie(cookie: string | undefined): string | undefined {
+export function extractTenantFromCookie(
+  cookie: string | undefined,
+): string | undefined {
   if (!cookie) return undefined;
   const match = cookie.match(/(?:^|[;\s])dt_tenant_name=([^;]+)/);
   if (!match) return undefined;
@@ -276,9 +278,7 @@ async function main(pwArgs: readonly string[]): Promise<void> {
 
   const envKey = paths.env.toUpperCase();
   const envLabel =
-    getEnv(`${envKey}_BASE_URL`) ??
-    getEnv("UI_AUTOTEST_BASE_URL") ??
-    "";
+    getEnv(`${envKey}_BASE_URL`) ?? getEnv("UI_AUTOTEST_BASE_URL") ?? "";
   const tenant =
     getEnv("QA_TENANT") ??
     extractTenantFromCookie(getEnv(`${envKey}_COOKIE`)) ??
@@ -286,7 +286,9 @@ async function main(pwArgs: readonly string[]): Promise<void> {
   const projectLabel = getEnv("QA_PROJECT_LABEL") ?? tenant ?? paths.project;
 
   const durationMs =
-    effectiveStats.durationMs > 0 ? effectiveStats.durationMs : runEnd - runStart;
+    effectiveStats.durationMs > 0
+      ? effectiveStats.durationMs
+      : runEnd - runStart;
 
   const payload = {
     env: paths.env,
@@ -305,10 +307,7 @@ async function main(pwArgs: readonly string[]): Promise<void> {
     failedCases: effectiveStats.failedCases,
   };
 
-  const notifyScript = resolve(
-    repoRoot(),
-    "plugins/notify/send.ts",
-  );
+  const notifyScript = resolve(repoRoot(), "plugins/notify/send.ts");
   const notifyCode = await runCommand("bun", [
     "run",
     notifyScript,
@@ -332,7 +331,12 @@ export const program = createCli({
   description: "跑 Playwright，自动刷新 Allure HTML 报告并推送 IM 通知",
   rootAction: {
     arguments: [
-      { name: "playwrightArgs", description: "Playwright 参数（透传）", required: false, variadic: true },
+      {
+        name: "playwrightArgs",
+        description: "Playwright 参数（透传）",
+        required: false,
+        variadic: true,
+      },
     ],
     action: async (opts) => {
       const pwArgs = Array.isArray(opts.playwrightArgs)

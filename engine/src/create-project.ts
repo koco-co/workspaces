@@ -21,7 +21,12 @@ import {
   TEMPLATE_ROOT_REL,
   validateProjectName,
 } from "./lib/create-project.ts";
-import { knowledgeDir, parseGitUrl, projectDir, reposDir } from "./lib/paths.ts";
+import {
+  knowledgeDir,
+  parseGitUrl,
+  projectDir,
+  reposDir,
+} from "./lib/paths.ts";
 
 function repoRoot(): string {
   return resolve(fileURLToPath(import.meta.url), "../../..");
@@ -102,7 +107,8 @@ function runCreate(project: string, dryRun: boolean, confirmed: boolean): void {
     fail(`Invalid project name: ${nameCheck.error}`);
   }
 
-  const { plan, skeleton_complete, config_registered } = computeCreatePlan(project);
+  const { plan, skeleton_complete, config_registered } =
+    computeCreatePlan(project);
 
   if (skeleton_complete && config_registered) {
     process.stdout.write(
@@ -137,16 +143,11 @@ function runCreate(project: string, dryRun: boolean, confirmed: boolean): void {
   }
 
   if (!confirmed) {
-    fail(
-      "Add --confirmed to apply. Run with --dry-run to preview.",
-      2,
-    );
+    fail("Add --confirmed to apply. Run with --dry-run to preview.", 2);
   }
 
   const result = applyCreate(project);
-  process.stdout.write(
-    JSON.stringify({ project, ...result }, null, 2) + "\n",
-  );
+  process.stdout.write(JSON.stringify({ project, ...result }, null, 2) + "\n");
 }
 
 function applyCreate(project: string): {
@@ -212,12 +213,7 @@ function applyCreate(project: string): {
   const indexPath = join(knowledgeDir(project), "_index.md");
   const kk = spawnSync(
     "kata-cli",
-    [
-      "knowledge-keeper",
-      "index",
-      "--project",
-      project,
-    ],
+    ["knowledge-keeper", "index", "--project", project],
     {
       cwd: repoRoot(),
       env: process.env,
@@ -314,7 +310,11 @@ export const program = createCli({
         { flag: "--dry-run", description: "预览将要创建的内容，不落盘" },
         { flag: "--confirmed", description: "真实执行写入" },
       ],
-      action: (opts: { project: string; dryRun?: boolean; confirmed?: boolean }) => {
+      action: (opts: {
+        project: string;
+        dryRun?: boolean;
+        confirmed?: boolean;
+      }) => {
         runCreate(opts.project, opts.dryRun === true, opts.confirmed === true);
       },
     },
@@ -324,7 +324,11 @@ export const program = createCli({
       options: [
         { flag: "--project <name>", description: "项目名", required: true },
         { flag: "--url <git-url>", description: "Git URL", required: true },
-        { flag: "--branch <branch>", description: "分支（默认 main）", defaultValue: "" },
+        {
+          flag: "--branch <branch>",
+          description: "分支（默认 main）",
+          defaultValue: "",
+        },
       ],
       action: (opts: { project: string; url: string; branch?: string }) => {
         runCloneRepo(opts.project, opts.url, opts.branch ?? "");

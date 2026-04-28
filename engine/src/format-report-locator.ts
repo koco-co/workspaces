@@ -8,12 +8,7 @@
  *   kata-cli format-report-locator --help
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
 
@@ -121,17 +116,23 @@ function formatTerminalReport(
 
   lines.push("+--------------------------------------------------+");
   lines.push(
-    `|  Format Check Report -- Round ${report.round}/${report.max_rounds}  ·  ${verdict}`.padEnd(51) + "|",
+    `|  Format Check Report -- Round ${report.round}/${report.max_rounds}  ·  ${verdict}`.padEnd(
+      51,
+    ) + "|",
   );
   lines.push(
-    `|  ${report.issues_count} issues in ${report.total_cases} cases`.padEnd(51) + "|",
+    `|  ${report.issues_count} issues in ${report.total_cases} cases`.padEnd(
+      51,
+    ) + "|",
   );
   lines.push("+--------------------------------------------------+");
   lines.push("");
 
   for (const issue of enrichedIssues) {
     const lineRef = issue.location.line > 0 ? `:${issue.location.line}` : "";
-    lines.push(`[${issue.rule}] ${issue.rule_name}  -- ${archiveName}${lineRef}`);
+    lines.push(
+      `[${issue.rule}] ${issue.rule_name}  -- ${archiveName}${lineRef}`,
+    );
     lines.push(`  用例：${issue.case_title}`);
 
     if (issue.step_number !== null) {
@@ -173,7 +174,9 @@ function readReport(reportPath: string): FormatReport {
   try {
     return JSON.parse(readFileSync(absPath, "utf8")) as FormatReport;
   } catch (err) {
-    process.stderr.write(`[format-report-locator] Failed to read report: ${err}\n`);
+    process.stderr.write(
+      `[format-report-locator] Failed to read report: ${err}\n`,
+    );
     process.exit(1);
   }
 }
@@ -183,7 +186,9 @@ function readArchive(archivePath: string): string {
   try {
     return readFileSync(absPath, "utf8");
   } catch (err) {
-    process.stderr.write(`[format-report-locator] Failed to read archive: ${err}\n`);
+    process.stderr.write(
+      `[format-report-locator] Failed to read archive: ${err}\n`,
+    );
     process.exit(1);
   }
 }
@@ -248,13 +253,30 @@ export const program = createCli({
   commands: [
     {
       name: "locate",
-      description: "Enrich format-checker report with line numbers from Archive MD",
+      description:
+        "Enrich format-checker report with line numbers from Archive MD",
       options: [
-        { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
-        { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
-        { flag: "--output <path>", description: "Path to write enriched JSON report", required: true },
+        {
+          flag: "--report <path>",
+          description: "Path to format-checker JSON report",
+          required: true,
+        },
+        {
+          flag: "--archive <path>",
+          description: "Path to Archive MD file",
+          required: true,
+        },
+        {
+          flag: "--output <path>",
+          description: "Path to write enriched JSON report",
+          required: true,
+        },
       ],
-      action: async (opts: { report: string; archive: string; output: string }) => {
+      action: async (opts: {
+        report: string;
+        archive: string;
+        output: string;
+      }) => {
         await runLocate(opts);
       },
     },
@@ -262,8 +284,16 @@ export const program = createCli({
       name: "print",
       description: "Print terminal-readable format check report",
       options: [
-        { flag: "--report <path>", description: "Path to format-checker JSON report", required: true },
-        { flag: "--archive <path>", description: "Path to Archive MD file", required: true },
+        {
+          flag: "--report <path>",
+          description: "Path to format-checker JSON report",
+          required: true,
+        },
+        {
+          flag: "--archive <path>",
+          description: "Path to Archive MD file",
+          required: true,
+        },
       ],
       action: async (opts: { report: string; archive: string }) => {
         await runPrint(opts);

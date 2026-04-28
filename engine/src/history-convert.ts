@@ -242,7 +242,9 @@ async function parseCsvFile(filePath: string): Promise<CsvRow[]> {
   const headerRow = records[0];
   const colMap = new Map<string, number>();
   for (let i = 0; i < headerRow.length; i++) {
-    const normalized = CSV_HEADER_MAP[headerRow[i]] ?? headerRow[i].toLowerCase().replace(/\s+/g, "_");
+    const normalized =
+      CSV_HEADER_MAP[headerRow[i]] ??
+      headerRow[i].toLowerCase().replace(/\s+/g, "_");
     colMap.set(normalized, i);
   }
 
@@ -287,7 +289,10 @@ function cleanRichText(text: string): string {
       .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
       // Strip HTML tags
       .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/?(p|div|span|font|b|i|u|em|strong|li|ul|ol|table|tr|td|th|thead|tbody|a|img|h[1-6])[^>]*>/gi, "\n")
+      .replace(
+        /<\/?(p|div|span|font|b|i|u|em|strong|li|ul|ol|table|tr|td|th|thead|tbody|a|img|h[1-6])[^>]*>/gi,
+        "\n",
+      )
       .replace(/<[^>]+>/g, "")
       // Collapse excessive blank lines
       .replace(/\n{3,}/g, "\n\n")
@@ -372,7 +377,10 @@ function extractDevVersions(sources: string[]): string[] {
 }
 
 /** Parse product string like 数据资产_STD(#23) */
-function parseProduct(product: string): { productName: string; iterationId?: string } {
+function parseProduct(product: string): {
+  productName: string;
+  iterationId?: string;
+} {
   const m = product.match(/^(.+?)\(#(\d+)\)\s*$/);
   if (m) return { productName: m[1], iterationId: m[2] };
   return { productName: product };
@@ -382,7 +390,10 @@ function parseProduct(product: string): { productName: string; iterationId?: str
 function parseNumberedLines(text: string): string[] {
   if (!text.trim()) return [];
   // Split by numbered prefix: "1. xxx\n2. xxx" or "1、xxx"
-  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
   const result: string[] = [];
   let current = "";
 
@@ -407,11 +418,12 @@ function parseNumberedLines(text: string): string[] {
  * Pattern B: 数据质量-规则库管理 自定义SQL模版 新增 验证xxx → headings=[数据质量-规则库管理,自定义SQL模版,新增], caseTitle=验证xxx
  * Pattern C: 验证xxx (no path prefix) → headings=[], caseTitle=验证xxx
  */
-function splitCsvTitle(title: string): { headings: string[]; caseTitle: string } {
+function splitCsvTitle(title: string): {
+  headings: string[];
+  caseTitle: string;
+} {
   // Pattern A: 验证「X」-「Y」-「Z」rest  or  验证「X」-「Y」rest
-  const patA = title.match(
-    /^验证((?:「[^」]+」[-,\-—]+)+)(.+)$/,
-  );
+  const patA = title.match(/^验证((?:「[^」]+」[-,\-—]+)+)(.+)$/);
   if (patA) {
     const pathPart = patA[1];
     const rest = patA[2];
@@ -472,9 +484,7 @@ function deriveArchiveYYYYMM(rows: CsvRow[]): string {
  * Group CSV rows by L1 (requirement) and convert each group to a separate archive MD.
  * Returns array of { fileName, content, caseCount, caseId, version, archiveYYYYMM }.
  */
-function csvRowsToArchives(
-  rows: CsvRow[],
-): Array<{
+function csvRowsToArchives(rows: CsvRow[]): Array<{
   fileName: string;
   content: string;
   caseCount: number;
@@ -518,8 +528,10 @@ function csvRowsToArchives(
   } else {
     // Simple module names: merge all rows into one L1 group,
     // module column becomes H2 heading in the body
-    const suiteName = basename(rows[0]?.product || "", ".csv") ||
-      [...new Set(rows.map((r) => r.module).filter(Boolean))].join("、") || "未命名";
+    const suiteName =
+      basename(rows[0]?.product || "", ".csv") ||
+      [...new Set(rows.map((r) => r.module).filter(Boolean))].join("、") ||
+      "未命名";
     for (const row of rows) {
       if (!productName && row.product) {
         const parsed = parseProduct(row.product);
@@ -558,7 +570,10 @@ function csvRowsToArchives(
       description: `${l1Name}用例归档`,
       tags,
       prd_version: version ? `v${version}` : "",
-      dev_version: extractDevVersions([l1Name, ...group.rows.map((r) => r.requirement)]),
+      dev_version: extractDevVersions([
+        l1Name,
+        ...group.rows.map((r) => r.requirement),
+      ]),
       create_at: todayString(),
       status: "草稿",
       origin: "csv",
@@ -577,9 +592,10 @@ function csvRowsToArchives(
       .map((r) => {
         const { headings, caseTitle } = splitCsvTitle(r.title);
         // When modules are simple names (no path structure), use module column as H2 fallback
-        const effectiveHeadings = !hasPathModules && headings.length === 0 && r.module
-          ? [r.module, ...headings]
-          : headings;
+        const effectiveHeadings =
+          !hasPathModules && headings.length === 0 && r.module
+            ? [r.module, ...headings]
+            : headings;
         return { headings: effectiveHeadings, caseTitle, row: r };
       });
 
@@ -665,8 +681,20 @@ function csvRowsToArchives(
 
 function normalizePriority(raw: string): string {
   const v = raw.trim();
-  if (v === "1" || v.toUpperCase() === "P0" || v === "高" || v.toUpperCase() === "HIGH") return "P0";
-  if (v === "2" || v.toUpperCase() === "P1" || v === "中" || v.toUpperCase() === "MEDIUM") return "P1";
+  if (
+    v === "1" ||
+    v.toUpperCase() === "P0" ||
+    v === "高" ||
+    v.toUpperCase() === "HIGH"
+  )
+    return "P0";
+  if (
+    v === "2" ||
+    v.toUpperCase() === "P1" ||
+    v === "中" ||
+    v.toUpperCase() === "MEDIUM"
+  )
+    return "P1";
   return "P2";
 }
 
@@ -1270,7 +1298,9 @@ function buildUniqueOutputPath(
     }
   }
 
-  throw new Error(`failed to allocate unique output path for L1 title: ${title}`);
+  throw new Error(
+    `failed to allocate unique output path for L1 title: ${title}`,
+  );
 }
 
 // ─── Conversion ───────────────────────────────────────────────────────────────
@@ -1310,7 +1340,12 @@ async function convertFile(
         const slug = archive.fileName.replace(/\.md$/, "");
         const targetDir = featureDir(project, archive.archiveYYYYMM, slug);
         mkdir(targetDir, { recursive: true });
-        const outputPath = featureFile(project, archive.archiveYYYYMM, slug, "archive.md");
+        const outputPath = featureFile(
+          project,
+          archive.archiveYYYYMM,
+          slug,
+          "archive.md",
+        );
         if (existsSync(outputPath) && !force) {
           results.push({
             input: inputPath,
@@ -1471,7 +1506,13 @@ async function runConvert(opts: {
 
   const results: FileConvertResult[] = [];
   for (const f of files) {
-    const fileResults = await convertFile(f, force, opts.project, prdVersion, noSplit);
+    const fileResults = await convertFile(
+      f,
+      force,
+      opts.project,
+      prdVersion,
+      noSplit,
+    );
     results.push(...fileResults);
   }
 
@@ -1490,13 +1531,31 @@ export const program = createCli({
   description: "Convert historical CSV/XMind files to Archive Markdown",
   rootAction: {
     options: [
-      { flag: "--path <file-or-dir>", description: "File or directory to convert", required: true },
-      { flag: "--project <name>", description: "Project name (e.g. dataAssets)", required: true },
-      { flag: "--module <key>", description: "Filter files by module name keyword" },
+      {
+        flag: "--path <file-or-dir>",
+        description: "File or directory to convert",
+        required: true,
+      },
+      {
+        flag: "--project <name>",
+        description: "Project name (e.g. dataAssets)",
+        required: true,
+      },
+      {
+        flag: "--module <key>",
+        description: "Filter files by module name keyword",
+      },
       { flag: "--version <ver>", description: "PRD version (e.g. v6.4.8)" },
-      { flag: "--detect", description: "Scan only, report what would be converted (no write)" },
+      {
+        flag: "--detect",
+        description: "Scan only, report what would be converted (no write)",
+      },
       { flag: "--force", description: "Overwrite existing archive files" },
-      { flag: "--no-split", description: "Merge all L1 nodes into a single archive file instead of splitting by L1" },
+      {
+        flag: "--no-split",
+        description:
+          "Merge all L1 nodes into a single archive file instead of splitting by L1",
+      },
     ],
     action: runConvert,
   },

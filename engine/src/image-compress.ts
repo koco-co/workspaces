@@ -83,7 +83,11 @@ function scanImageFiles(dir: string): string[] {
 
 // ─── Action ───────────────────────────────────────────────────────────────────
 
-function runCompress(opts: { dir: string; maxSize: string; dryRun?: boolean }): void {
+function runCompress(opts: {
+  dir: string;
+  maxSize: string;
+  dryRun?: boolean;
+}): void {
   if (!isSipsAvailable()) {
     const out: SipsUnavailableOutput = {
       error: "sips not available on this platform",

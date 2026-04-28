@@ -173,9 +173,7 @@ describe("buildMarkdown", () => {
     const body = "## Body";
     const result = buildMarkdown(fm, body);
     expect(
-      result.includes("---\n\n##").toBeTruthy(),
-      `Expected blank line between --- and body, got:\n${result}`,
-    );
+      result.includes("---\n\n##")).toBeTruthy();
   });
 });
 
@@ -221,7 +219,7 @@ describe("todayString", () => {
     const result = todayString();
     const now = new Date();
     const year = now.getFullYear().toString();
-    expect(result.startsWith(year).toBeTruthy(), `Expected result to start with ${year}, got ${result}`);
+    expect(result.startsWith(year)).toBeTruthy();
   });
 
   it("returns a 10-character string", () => {

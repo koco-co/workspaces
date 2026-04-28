@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync, writeFileSync as fsWriteFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, beforeEach, describe, it, expect } from "bun:test";
+import { afterEach, beforeEach, beforeEach, describe, it, test, expect } from "bun:test";
 import {
   createSession,
   readSession,
@@ -217,7 +217,7 @@ describe("removeTask", () => {
     writeSession(project, s);
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
     removeTask(project, s.session_id, "t1");
-    expect(readSession(project).toBe(s.session_id)!.tasks.length, 0);
+    expect(readSession(project, s.session_id)!.tasks.length).toBe(0);
   });
 });
 
@@ -368,7 +368,7 @@ describe("artifacts inline + overflow", () => {
     setArtifact(project, s.session_id, "k1", { a: 1 });
     const cur = readSession(project, s.session_id)!;
     expect(cur.artifacts.k1).toEqual({ a: 1 });
-    expect(getArtifact(project).toEqual(s.session_id), { a: 1 });
+    expect(getArtifact(project, s.session_id, "k1")).toEqual({ a: 1 });
   });
 
   it("spills large artifact to blocks/ and stores $ref inline", () => {
@@ -399,7 +399,7 @@ describe("resumeSession", () => {
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
     updateTask(project, s.session_id, "t1", { status: "running" });
     resumeSession(project, s.session_id, {});
-    expect(readSession(project).toBe(s.session_id)!.tasks[0].status, "pending");
+    expect(readSession(project, s.session_id)!.tasks[0].status).toBe("pending");
   });
 
   it("--retry-failed clears errors and resets attempts", () => {
@@ -453,9 +453,7 @@ describe("resumeSession", () => {
     expect(cur.artifacts.cached_parse_result).toBe(undefined);
   });
 
-  it("--payload-path-check: missing file → reset task", () => {
-    // TODO: implement payload path check test
-  });
+  test.todo("--payload-path-check: missing file → reset task");
 
   it("rejects updateTask --depends-on introducing cycle", () => {
     const s = createSession({
@@ -519,7 +517,7 @@ describe("artifacts inline + overflow", () => {
     setArtifact(project, s.session_id, "k1", { a: 1 });
     const cur = readSession(project, s.session_id)!;
     expect(cur.artifacts.k1).toEqual({ a: 1 });
-    expect(getArtifact(project).toEqual(s.session_id), { a: 1 });
+    expect(getArtifact(project, s.session_id, "k1")).toEqual({ a: 1 });
   });
 
   it("spills large artifact to blocks/ and stores $ref inline", () => {
@@ -550,7 +548,7 @@ describe("resumeSession", () => {
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
     updateTask(project, s.session_id, "t1", { status: "running" });
     resumeSession(project, s.session_id, {});
-    expect(readSession(project).toBe(s.session_id)!.tasks[0].status, "pending");
+    expect(readSession(project, s.session_id)!.tasks[0].status).toBe("pending");
   });
 
   it("--retry-failed clears errors and resets attempts", () => {

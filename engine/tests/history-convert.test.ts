@@ -415,13 +415,9 @@ describe("history-convert --no-split XMind", () => {
 
     const outputs = out.files.map((entry) => entry.output).sort();
     expect(
-      outputs[0].endsWith("/需求A.md").toBeTruthy(),
-      `first output should strip full-width case_id suffix, got: ${outputs[0]}`,
-    );
+      outputs[0].endsWith("/需求A.md")).toBeTruthy();
     expect(
-      outputs[1].endsWith("/需求B.md").toBeTruthy(),
-      `second output should strip full-width case_id suffix, got: ${outputs[1]}`,
-    );
+      outputs[1].endsWith("/需求B.md")).toBeTruthy();
 
     const firstContent = readFileSync(outputs[0], "utf8");
     const secondContent = readFileSync(outputs[1], "utf8");
@@ -536,9 +532,7 @@ describe("history-convert --no-split XMind", () => {
       out.converted).toBe(1);
     expect(out.files[0].caseCount).toBe(2);
     expect(
-      out.files[0].output.endsWith("/重复需求.md").toBeTruthy(),
-      `merged output should use the requirement title as file name, got: ${out.files[0].output}`,
-    );
+      out.files[0].output.endsWith("/重复需求.md")).toBeTruthy();
 
     const contentText = readFileSync(out.files[0].output, "utf8");
     expect(contentText).toMatch(/suite_name: "重复需求（#2001）"/);
@@ -613,9 +607,7 @@ describe("history-convert --no-split XMind", () => {
     };
     expect(out.converted).toBe(1);
     expect(
-      out.files[0].output.endsWith("/需求A【需求变更】.md").toBeTruthy(),
-      `output should strip the embedded ticket token, got: ${out.files[0].output}`,
-    );
+      out.files[0].output.endsWith("/需求A【需求变更】.md")).toBeTruthy();
 
     const contentText = readFileSync(out.files[0].output, "utf8");
     expect(contentText).toMatch(/suite_name: "需求A（#3001）【需求变更】"/);

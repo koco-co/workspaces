@@ -7,18 +7,29 @@
 import { basename } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
 import {
-  createSession, readSession, writeSession, deleteSession,
-  listSessions, resumeSession,
-  addTasks, updateTask, removeTask,
-  queryTasks, isExecutable, rollupTask,
+  createSession,
+  readSession,
+  writeSession,
+  deleteSession,
+  listSessions,
+  resumeSession,
+  addTasks,
+  updateTask,
+  removeTask,
+  queryTasks,
+  isExecutable,
+  rollupTask,
   withSessionLock,
-  setArtifact, getArtifact,
+  setArtifact,
+  getArtifact,
 } from "./lib/progress-store.ts";
 import type { TaskInput, TaskUpdatePatch } from "./lib/progress-store.ts";
 import { ExitCode } from "./lib/progress-types.ts";
 import type { TaskStatus } from "./lib/progress-types.ts";
 import {
-  migrateKataState, migrateUiAutotest, discoverLegacyFiles,
+  migrateKataState,
+  migrateUiAutotest,
+  discoverLegacyFiles,
   migrateSession,
 } from "./lib/progress-migrator.ts";
 import type { MigrateSessionReport } from "./lib/progress-migrator.ts";
@@ -49,14 +60,18 @@ function runSessionCreate(opts: {
   const env = opts.env ?? "default";
   let meta: Record<string, unknown> = {};
   if (opts.meta) {
-    try { meta = JSON.parse(opts.meta) as Record<string, unknown>; }
-    catch { fail("session-create", `invalid --meta JSON`, ExitCode.ARG_ERROR); }
+    try {
+      meta = JSON.parse(opts.meta) as Record<string, unknown>;
+    } catch {
+      fail("session-create", `invalid --meta JSON`, ExitCode.ARG_ERROR);
+    }
   }
   const slug = slugFromPath(opts.sourcePath);
   const session = createSession({
     project: opts.project,
     workflow: opts.workflow,
-    slug, env,
+    slug,
+    env,
     source: { type: opts.sourceType, path: opts.sourcePath, mtime: null },
     meta,
   });
@@ -68,7 +83,12 @@ function runSessionCreate(opts: {
 
 function runSessionRead(opts: { project: string; session: string }): void {
   const s = readSession(opts.project, opts.session);
-  if (!s) fail("session-read", `session not found: ${opts.session}`, ExitCode.NOT_FOUND);
+  if (!s)
+    fail(
+      "session-read",
+      `session not found: ${opts.session}`,
+      ExitCode.NOT_FOUND,
+    );
   emit(s);
 }
 
@@ -89,8 +109,14 @@ function runSessionList(opts: { project: string; workflow?: string }): void {
 
 function runSessionSummary(opts: { project: string; session: string }): void {
   const s = readSession(opts.project, opts.session);
-  if (!s) fail("session-summary", `session not found: ${opts.session}`, ExitCode.NOT_FOUND);
-  const count = (status: string) => s!.tasks.filter((t) => t.status === status).length;
+  if (!s)
+    fail(
+      "session-summary",
+      `session not found: ${opts.session}`,
+      ExitCode.NOT_FOUND,
+    );
+  const count = (status: string) =>
+    s!.tasks.filter((t) => t.status === status).length;
   emit({
     session_id: s!.session_id,
     workflow: s!.workflow,
@@ -110,8 +136,11 @@ function runSessionSummary(opts: { project: string; session: string }): void {
 // ── session-resume ──────────────────────────────────────
 
 function runSessionResume(opts: {
-  project: string; session: string;
-  retryFailed?: boolean; retryBlocked?: boolean; payloadPathCheck?: string;
+  project: string;
+  session: string;
+  retryFailed?: boolean;
+  retryBlocked?: boolean;
+  payloadPathCheck?: string;
 }): void {
   resumeSession(opts.project, opts.session, {
     retryFailed: opts.retryFailed,
@@ -125,18 +154,25 @@ function runSessionResume(opts: {
 // ── task-add ────────────────────────────────────────────
 
 async function runTaskAdd(opts: {
-  project: string; session: string; tasks: string;
+  project: string;
+  session: string;
+  tasks: string;
 }): Promise<void> {
   let inputs: TaskInput[];
   try {
     inputs = JSON.parse(opts.tasks) as TaskInput[];
     if (!Array.isArray(inputs)) throw new Error("--tasks must be a JSON array");
   } catch (err) {
-    fail("task-add", `invalid --tasks JSON: ${(err as Error).message}`, ExitCode.ARG_ERROR);
+    fail(
+      "task-add",
+      `invalid --tasks JSON: ${(err as Error).message}`,
+      ExitCode.ARG_ERROR,
+    );
   }
   try {
     await withSessionLock(opts.project, opts.session, () =>
-      addTasks(opts.project, opts.session, inputs));
+      addTasks(opts.project, opts.session, inputs),
+    );
   } catch (err) {
     fail("task-add", (err as Error).message, ExitCode.ARG_ERROR);
   }
@@ -146,26 +182,46 @@ async function runTaskAdd(opts: {
 // ── task-update ─────────────────────────────────────────
 
 async function runTaskUpdate(opts: {
-  project: string; session: string; task: string;
-  status?: string; reason?: string; payload?: string;
-  dependsOn?: string; error?: string; force?: boolean;
+  project: string;
+  session: string;
+  task: string;
+  status?: string;
+  reason?: string;
+  payload?: string;
+  dependsOn?: string;
+  error?: string;
+  force?: boolean;
 }): Promise<void> {
   const patch: Record<string, unknown> = {};
   if (opts.status) {
-    if (!["pending","running","done","blocked","failed","skipped"].includes(opts.status)) {
-      fail("task-update", `invalid --status ${opts.status}`, ExitCode.ARG_ERROR);
+    if (
+      !["pending", "running", "done", "blocked", "failed", "skipped"].includes(
+        opts.status,
+      )
+    ) {
+      fail(
+        "task-update",
+        `invalid --status ${opts.status}`,
+        ExitCode.ARG_ERROR,
+      );
     }
     patch.status = opts.status;
   }
   if (opts.reason !== undefined) patch.reason = opts.reason;
   if (opts.error !== undefined) patch.error = opts.error;
   if (opts.payload) {
-    try { patch.payload = JSON.parse(opts.payload); }
-    catch { fail("task-update", `invalid --payload JSON`, ExitCode.ARG_ERROR); }
+    try {
+      patch.payload = JSON.parse(opts.payload);
+    } catch {
+      fail("task-update", `invalid --payload JSON`, ExitCode.ARG_ERROR);
+    }
   }
   if (opts.dependsOn !== undefined) {
     patch.depends_on = opts.dependsOn
-      ? opts.dependsOn.split(",").map((s) => s.trim()).filter(Boolean)
+      ? opts.dependsOn
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
       : [];
   }
 
@@ -174,9 +230,11 @@ async function runTaskUpdate(opts: {
     const gate = isExecutable(opts.project, opts.session, opts.task);
     if (!gate.ok) {
       if (!opts.force) {
-        fail("task-update",
+        fail(
+          "task-update",
           `cannot start ${opts.task}: blocked_by ${gate.blocked_by.join(",")}`,
-          ExitCode.DEPENDENCY_UNSATISFIED);
+          ExitCode.DEPENDENCY_UNSATISFIED,
+        );
       }
       // --force: record forced-start in errors
       patch.error = `forced-start: blocked_by ${gate.blocked_by.join(",")}`;
@@ -185,7 +243,13 @@ async function runTaskUpdate(opts: {
 
   try {
     await withSessionLock(opts.project, opts.session, () =>
-      updateTask(opts.project, opts.session, opts.task, patch as TaskUpdatePatch));
+      updateTask(
+        opts.project,
+        opts.session,
+        opts.task,
+        patch as TaskUpdatePatch,
+      ),
+    );
   } catch (err) {
     fail("task-update", (err as Error).message, ExitCode.ARG_ERROR);
   }
@@ -195,19 +259,27 @@ async function runTaskUpdate(opts: {
 // ── task-remove ─────────────────────────────────────────
 
 async function runTaskRemove(opts: {
-  project: string; session: string; task: string;
+  project: string;
+  session: string;
+  task: string;
 }): Promise<void> {
   await withSessionLock(opts.project, opts.session, () =>
-    removeTask(opts.project, opts.session, opts.task));
+    removeTask(opts.project, opts.session, opts.task),
+  );
   emit(readSession(opts.project, opts.session));
 }
 
 // ── task-query ──────────────────────────────────────────
 
 function runTaskQuery(opts: {
-  project: string; session: string;
-  status?: string; kind?: string; parent?: string;
-  includeAll?: boolean; includeBlocked?: boolean; format?: string;
+  project: string;
+  session: string;
+  status?: string;
+  kind?: string;
+  parent?: string;
+  includeAll?: boolean;
+  includeBlocked?: boolean;
+  format?: string;
 }): void {
   const results = queryTasks(opts.project, opts.session, {
     status: opts.status
@@ -222,10 +294,16 @@ function runTaskQuery(opts: {
   if (opts.format === "table") {
     const lines = [
       ["id", "name", "status", "kind", "parent", "blocked_by"].join("\t"),
-      ...results.map((r) => [
-        r.task.id, r.task.name, r.task.status, r.task.kind,
-        r.task.parent ?? "-", (r.blocked_by ?? []).join(",") || "-",
-      ].join("\t")),
+      ...results.map((r) =>
+        [
+          r.task.id,
+          r.task.name,
+          r.task.status,
+          r.task.kind,
+          r.task.parent ?? "-",
+          (r.blocked_by ?? []).join(",") || "-",
+        ].join("\t"),
+      ),
     ];
     process.stdout.write(`${lines.join("\n")}\n`);
     return;
@@ -236,33 +314,45 @@ function runTaskQuery(opts: {
 // ── task-block / task-unblock ───────────────────────────
 
 async function runTaskBlock(opts: {
-  project: string; session: string; task: string; reason: string;
+  project: string;
+  session: string;
+  task: string;
+  reason: string;
 }): Promise<void> {
   await withSessionLock(opts.project, opts.session, () =>
     updateTask(opts.project, opts.session, opts.task, {
-      status: "blocked", reason: opts.reason,
-    }));
+      status: "blocked",
+      reason: opts.reason,
+    }),
+  );
   emit(readSession(opts.project, opts.session));
 }
 
 async function runTaskUnblock(opts: {
-  project: string; session: string; task: string;
+  project: string;
+  session: string;
+  task: string;
 }): Promise<void> {
   await withSessionLock(opts.project, opts.session, () =>
     updateTask(opts.project, opts.session, opts.task, {
-      status: "pending", reason: null,
-    }));
+      status: "pending",
+      reason: null,
+    }),
+  );
   emit(readSession(opts.project, opts.session));
 }
 
 // ── task-rollup ─────────────────────────────────────────
 
 async function runTaskRollup(opts: {
-  project: string; session: string; task: string;
+  project: string;
+  session: string;
+  task: string;
 }): Promise<void> {
   try {
     await withSessionLock(opts.project, opts.session, () =>
-      rollupTask(opts.project, opts.session, opts.task));
+      rollupTask(opts.project, opts.session, opts.task),
+    );
   } catch (err) {
     const msg = (err as Error).message;
     if (/unfinished/i.test(msg)) {
@@ -276,17 +366,28 @@ async function runTaskRollup(opts: {
 // ── artifact-set / artifact-get ─────────────────────────
 
 async function runArtifactSet(opts: {
-  project: string; session: string; key: string; value: string;
+  project: string;
+  session: string;
+  key: string;
+  value: string;
 }): Promise<void> {
   let parsed: unknown;
-  try { parsed = JSON.parse(opts.value); }
-  catch { fail("artifact-set", `invalid --value JSON`, ExitCode.ARG_ERROR); }
+  try {
+    parsed = JSON.parse(opts.value);
+  } catch {
+    fail("artifact-set", `invalid --value JSON`, ExitCode.ARG_ERROR);
+  }
   await withSessionLock(opts.project, opts.session, () =>
-    setArtifact(opts.project, opts.session, opts.key, parsed));
+    setArtifact(opts.project, opts.session, opts.key, parsed),
+  );
   emit(readSession(opts.project, opts.session));
 }
 
-function runArtifactGet(opts: { project: string; session: string; key: string }): void {
+function runArtifactGet(opts: {
+  project: string;
+  session: string;
+  key: string;
+}): void {
   const v = getArtifact(opts.project, opts.session, opts.key);
   emit(v);
 }
@@ -299,7 +400,11 @@ async function runMigrate(opts: {
   dryRun?: boolean;
 }): Promise<void> {
   if (opts.from !== "legacy") {
-    fail("migrate", `unsupported --from value: ${opts.from}`, ExitCode.ARG_ERROR);
+    fail(
+      "migrate",
+      `unsupported --from value: ${opts.from}`,
+      ExitCode.ARG_ERROR,
+    );
   }
   const entries = discoverLegacyFiles(opts.project);
 
@@ -311,15 +416,26 @@ async function runMigrate(opts: {
   let migrated = 0;
   const results: Array<{ path: string; sessionId: string; kind: string }> = [];
   for (const entry of entries) {
-    const result = entry.kind === "kata-state"
-      ? await migrateKataState({
-          legacyPath: entry.path, project: opts.project, env: entry.env, dryRun: false,
-        })
-      : await migrateUiAutotest({
-          legacyPath: entry.path, project: opts.project, env: entry.env, dryRun: false,
-        });
+    const result =
+      entry.kind === "kata-state"
+        ? await migrateKataState({
+            legacyPath: entry.path,
+            project: opts.project,
+            env: entry.env,
+            dryRun: false,
+          })
+        : await migrateUiAutotest({
+            legacyPath: entry.path,
+            project: opts.project,
+            env: entry.env,
+            dryRun: false,
+          });
     migrated++;
-    results.push({ path: entry.path, sessionId: result.sessionId, kind: entry.kind });
+    results.push({
+      path: entry.path,
+      sessionId: result.sessionId,
+      kind: entry.kind,
+    });
   }
   emit({ migrated, results });
 }
@@ -351,11 +467,31 @@ export const program = createCli({
       name: "session-create",
       description: "Create a new progress session",
       options: [
-        { flag: "--workflow <name>", description: "Workflow name (e.g. test-case-gen)", required: true },
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--source-type <type>", description: "Source type (prd/archive/bug)", required: true },
-        { flag: "--source-path <path>", description: "Source file path", required: true },
-        { flag: "--env <name>", description: "Environment tag", defaultValue: "default" },
+        {
+          flag: "--workflow <name>",
+          description: "Workflow name (e.g. test-case-gen)",
+          required: true,
+        },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--source-type <type>",
+          description: "Source type (prd/archive/bug)",
+          required: true,
+        },
+        {
+          flag: "--source-path <path>",
+          description: "Source file path",
+          required: true,
+        },
+        {
+          flag: "--env <name>",
+          description: "Environment tag",
+          defaultValue: "default",
+        },
         { flag: "--meta <json>", description: "Arbitrary metadata JSON" },
       ],
       action: runSessionCreate,
@@ -364,7 +500,11 @@ export const program = createCli({
       name: "session-read",
       description: "Read full session JSON",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
       ],
       action: runSessionRead,
@@ -373,7 +513,11 @@ export const program = createCli({
       name: "session-delete",
       description: "Delete a session",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
       ],
       action: runSessionDelete,
@@ -382,7 +526,11 @@ export const program = createCli({
       name: "session-list",
       description: "List sessions under a project",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--workflow <name>", description: "Filter by workflow" },
       ],
       action: runSessionList,
@@ -391,7 +539,11 @@ export const program = createCli({
       name: "session-summary",
       description: "Aggregate counts by task status",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
       ],
       action: runSessionSummary,
@@ -400,11 +552,26 @@ export const program = createCli({
       name: "session-resume",
       description: "Resume session: running → pending, optional retry flags",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
-        { flag: "--retry-failed", description: "Reset failed tasks to pending", defaultValue: false },
-        { flag: "--retry-blocked", description: "Reset blocked tasks to pending", defaultValue: false },
-        { flag: "--payload-path-check <key>", description: "Reset task if payload[key] file is missing" },
+        {
+          flag: "--retry-failed",
+          description: "Reset failed tasks to pending",
+          defaultValue: false,
+        },
+        {
+          flag: "--retry-blocked",
+          description: "Reset blocked tasks to pending",
+          defaultValue: false,
+        },
+        {
+          flag: "--payload-path-check <key>",
+          description: "Reset task if payload[key] file is missing",
+        },
       ],
       action: runSessionResume,
     },
@@ -412,9 +579,17 @@ export const program = createCli({
       name: "task-add",
       description: "Add tasks (batch via --tasks JSON array)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
-        { flag: "--tasks <json>", description: "JSON array of TaskInput", required: true },
+        {
+          flag: "--tasks <json>",
+          description: "JSON array of TaskInput",
+          required: true,
+        },
       ],
       action: runTaskAdd,
     },
@@ -422,15 +597,32 @@ export const program = createCli({
       name: "task-update",
       description: "Update task fields",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--task <id>", description: "Task id", required: true },
-        { flag: "--status <s>", description: "pending|running|done|blocked|failed|skipped" },
+        {
+          flag: "--status <s>",
+          description: "pending|running|done|blocked|failed|skipped",
+        },
         { flag: "--reason <msg>", description: "Block / skip reason" },
         { flag: "--payload <json>", description: "Merge into task payload" },
-        { flag: "--depends-on <csv>", description: "Replace depends_on list (comma-separated)" },
-        { flag: "--error <msg>", description: "Append to errors (with failed/blocked status)" },
-        { flag: "--force", description: "Bypass dependency check when starting", defaultValue: false },
+        {
+          flag: "--depends-on <csv>",
+          description: "Replace depends_on list (comma-separated)",
+        },
+        {
+          flag: "--error <msg>",
+          description: "Append to errors (with failed/blocked status)",
+        },
+        {
+          flag: "--force",
+          description: "Bypass dependency check when starting",
+          defaultValue: false,
+        },
       ],
       action: runTaskUpdate,
     },
@@ -438,7 +630,11 @@ export const program = createCli({
       name: "task-remove",
       description: "Remove a task by id",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--task <id>", description: "Task id", required: true },
       ],
@@ -448,14 +644,30 @@ export const program = createCli({
       name: "task-query",
       description: "Query tasks with visibility rules",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--status <csv>", description: "Comma-separated statuses" },
         { flag: "--kind <k>", description: "Filter by kind" },
         { flag: "--parent <id>", description: "Filter by parent id" },
-        { flag: "--include-all", description: "Bypass all visibility filters", defaultValue: false },
-        { flag: "--include-blocked", description: "Show hidden (blocked) tasks with reasons", defaultValue: false },
-        { flag: "--format <fmt>", description: "json | table", defaultValue: "json" },
+        {
+          flag: "--include-all",
+          description: "Bypass all visibility filters",
+          defaultValue: false,
+        },
+        {
+          flag: "--include-blocked",
+          description: "Show hidden (blocked) tasks with reasons",
+          defaultValue: false,
+        },
+        {
+          flag: "--format <fmt>",
+          description: "json | table",
+          defaultValue: "json",
+        },
       ],
       action: runTaskQuery,
     },
@@ -463,7 +675,11 @@ export const program = createCli({
       name: "task-block",
       description: "Shortcut: set status=blocked with reason",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--task <id>", description: "Task id", required: true },
         { flag: "--reason <msg>", description: "Block reason", required: true },
@@ -474,7 +690,11 @@ export const program = createCli({
       name: "task-unblock",
       description: "Shortcut: clear blocked, return to pending",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--task <id>", description: "Task id", required: true },
       ],
@@ -484,7 +704,11 @@ export const program = createCli({
       name: "task-rollup",
       description: "Mark parent done if all children done/skipped",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--task <id>", description: "Parent task id", required: true },
       ],
@@ -494,7 +718,11 @@ export const program = createCli({
       name: "artifact-set",
       description: "Set session-level artifact (auto-spill > 64KB)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--key <k>", description: "Artifact key", required: true },
         { flag: "--value <json>", description: "Value JSON", required: true },
@@ -505,7 +733,11 @@ export const program = createCli({
       name: "artifact-get",
       description: "Read artifact (dereferences blob $ref automatically)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
         { flag: "--session <id>", description: "Session id", required: true },
         { flag: "--key <k>", description: "Artifact key", required: true },
       ],
@@ -515,19 +747,44 @@ export const program = createCli({
       name: "migrate",
       description: "Migrate legacy kata-state / ui-autotest-progress files",
       options: [
-        { flag: "--from <source>", description: "Migration source (only 'legacy' supported)", required: true },
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--dry-run", description: "Show plan without writing anything", defaultValue: false },
+        {
+          flag: "--from <source>",
+          description: "Migration source (only 'legacy' supported)",
+          required: true,
+        },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--dry-run",
+          description: "Show plan without writing anything",
+          defaultValue: false,
+        },
       ],
       action: runMigrate,
     },
     {
       name: "migrate-session",
-      description: "Migrate in-flight session(s) per enhanced.md presence (auto-done | revert-to-discuss | noop)",
+      description:
+        "Migrate in-flight session(s) per enhanced.md presence (auto-done | revert-to-discuss | noop)",
       options: [
-        { flag: "--project <name>", description: "Project name", required: true },
-        { flag: "--session-id <id>", description: "Target session id; if omitted, all sessions of the project" },
-        { flag: "--dry-run", description: "Report only, no writes", defaultValue: false },
+        {
+          flag: "--project <name>",
+          description: "Project name",
+          required: true,
+        },
+        {
+          flag: "--session-id <id>",
+          description:
+            "Target session id; if omitted, all sessions of the project",
+        },
+        {
+          flag: "--dry-run",
+          description: "Report only, no writes",
+          defaultValue: false,
+        },
       ],
       action: runMigrateSession,
     },

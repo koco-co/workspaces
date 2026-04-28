@@ -210,8 +210,16 @@ export const program = createCli({
       name: "analyze",
       description: "Analyze a repo directory for keyword matches",
       options: [
-        { flag: "--repo <path>", description: "Path to the source code repository", required: true },
-        { flag: "--keywords <keywords>", description: "Comma-separated list of keywords to search", required: true },
+        {
+          flag: "--repo <path>",
+          description: "Path to the source code repository",
+          required: true,
+        },
+        {
+          flag: "--keywords <keywords>",
+          description: "Comma-separated list of keywords to search",
+          required: true,
+        },
       ],
       action: runAnalyze,
     },

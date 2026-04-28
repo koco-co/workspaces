@@ -1,4 +1,4 @@
-import { describe, it, afterEach, expect } from "bun:test";
+import { describe, it, afterAll, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,8 +20,10 @@ describe("parseSourceRef", () => {
   });
 
   it("parses repo scheme with line range", () => {
-    expect(
-      parseSourceRef("repo#studio/src/approval/list.tsx:L45-L60")).toEqual({ scheme: "repo", anchor: "studio/src/approval/list.tsx:L45-L60" });
+    expect(parseSourceRef("repo#studio/src/approval/list.tsx:L45-L60")).toEqual({
+      scheme: "repo",
+      anchor: "studio/src/approval/list.tsx:L45-L60",
+    });
   });
 
   it("returns null for unknown scheme", () => {
@@ -124,7 +126,7 @@ describe("resolveSourceRef — prd / knowledge / repo schemes", () => {
     expect(r.ok).toBe(false);
   });
 
-  afterEach(() => rmSync(tmp, { recursive: true, force: true }));
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 });
 
 describe("resolveSourceRef — enhanced scheme", () => {
@@ -200,5 +202,5 @@ describe("resolveSourceRef — enhanced scheme", () => {
     expect(r.reason ?? "").toMatch(/不存在/);
   });
 
-  afterEach(() => rmSync(tmp, { recursive: true, force: true }));
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 });

@@ -16,8 +16,7 @@ describe("kata paths", () => {
   });
 
   it("sessionsDir returns .kata/{project}/sessions/{workflow}", () => {
-    expect(
-      sessionsDir("dataAssets").toBe("test-case-gen"),
+    expect(sessionsDir("dataAssets", "test-case-gen")).toBe(
       join(repoRoot(), ".kata", "dataAssets", "sessions", "test-case-gen"),
     );
   });
@@ -27,21 +26,19 @@ describe("kata paths", () => {
   });
 
   it("blocksDir returns .kata/{project}/blocks/{workflow}/{slug}", () => {
-    expect(
-      blocksDir("dataAssets").toBe("ui-autotest"),
+    expect(blocksDir("dataAssets", "ui-autotest", "suite-x")).toBe(
       join(repoRoot(), ".kata", "dataAssets", "blocks", "ui-autotest", "suite-x"),
     );
   });
 
   it("legacyBackupDir returns .kata/{project}/legacy-backup", () => {
-    expect(
-      legacyBackupDir("dataAssets")).toBe(join(repoRoot(), ".kata", "dataAssets", "legacy-backup"),
+    expect(legacyBackupDir("dataAssets")).toBe(
+      join(repoRoot(), ".kata", "dataAssets", "legacy-backup"),
     );
   });
 
   it("sessionFilePath returns .kata/{project}/sessions/{workflow}/{slug}.json", () => {
-    expect(
-      sessionFilePath("dataAssets").toBe("test-case-gen"),
+    expect(sessionFilePath("dataAssets", "test-case-gen", "prd-xxx-default")).toBe(
       join(repoRoot(), ".kata", "dataAssets", "sessions", "test-case-gen", "prd-xxx-default.json"),
     );
   });
@@ -69,22 +66,20 @@ describe("enhanced doc paths", () => {
   });
 
   test("sourceFactsJson is {prdDir}/source-facts.json", () => {
-    expect(sourceFactsJson("dataAssets", "202604", "my-prd"))
-      .toMatch(/my-prd\/source-facts\.json$/);
+    expect(sourceFactsJson("dataAssets", "202604", "my-prd")).toMatch(
+      /my-prd\/source-facts\.json$/,
+    );
   });
 
   test("resolvedMd is {prdDir}/resolved.md", () => {
-    expect(resolvedMd("dataAssets", "202604", "my-prd"))
-      .toMatch(/my-prd\/resolved\.md$/);
+    expect(resolvedMd("dataAssets", "202604", "my-prd")).toMatch(/my-prd\/resolved\.md$/);
   });
 
   test("prdImagesDir is {prdDir}/images/", () => {
-    expect(prdImagesDir("dataAssets", "202604", "my-prd"))
-      .toMatch(/my-prd\/images$/);
+    expect(prdImagesDir("dataAssets", "202604", "my-prd")).toMatch(/my-prd\/images$/);
   });
 
   test("originalPrdMd is {featureDir}/prd.md (v3 redirect, renamed original.md -> prd.md)", () => {
-    expect(originalPrdMd("dataAssets", "202604", "my-prd"))
-      .toMatch(/my-prd\/prd\.md$/);
+    expect(originalPrdMd("dataAssets", "202604", "my-prd")).toMatch(/my-prd\/prd\.md$/);
   });
 });

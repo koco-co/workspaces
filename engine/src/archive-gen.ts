@@ -184,7 +184,9 @@ function buildBodyFromModules(modules: Module[]): string {
           lines.push("");
 
           for (const tc of sg.test_cases) {
-            lines.push(`##### 【${tc.priority}】${stripPriorityPrefix(tc.title)}`);
+            lines.push(
+              `##### 【${tc.priority}】${stripPriorityPrefix(tc.title)}`,
+            );
             lines.push("");
             lines.push(buildCaseBody(tc));
             lines.push("");
@@ -207,10 +209,7 @@ function buildBodyFromModules(modules: Module[]): string {
 
 // ─── Built-in template renderer ───────────────────────────────────────────────
 
-function renderBuiltIn(
-  data: IntermediateJson,
-  project?: string,
-): string {
+function renderBuiltIn(data: IntermediateJson, project?: string): string {
   const { meta, modules } = data;
   const caseCount = countCasesInModules(modules);
   const rootName = buildRootName(meta.version);
@@ -438,9 +437,20 @@ export const program = createCli({
       name: "convert",
       description: "Convert intermediate JSON test cases to Archive Markdown",
       options: [
-        { flag: "--input <path>", description: "Path to input JSON file", required: true },
-        { flag: "--output <path>", description: "Path to output Markdown file", required: true },
-        { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+        {
+          flag: "--input <path>",
+          description: "Path to input JSON file",
+          required: true,
+        },
+        {
+          flag: "--output <path>",
+          description: "Path to output Markdown file",
+          required: true,
+        },
+        {
+          flag: "--project <name>",
+          description: "Project name (e.g. dataAssets)",
+        },
         {
           flag: "--template <path>",
           description: "Path to Handlebars template (uses built-in if omitted)",
@@ -459,13 +469,25 @@ export const program = createCli({
       name: "search",
       description: "Search archive Markdown files by keyword",
       options: [
-        { flag: "--query <keywords>", description: "Search keyword(s)", required: true },
-        { flag: "--project <name>", description: "Project name (e.g. dataAssets)" },
+        {
+          flag: "--query <keywords>",
+          description: "Search keyword(s)",
+          required: true,
+        },
+        {
+          flag: "--project <name>",
+          description: "Project name (e.g. dataAssets)",
+        },
         {
           flag: "--dir <path>",
-          description: "Archive directory to search (overrides project default)",
+          description:
+            "Archive directory to search (overrides project default)",
         },
-        { flag: "--limit <n>", description: "Maximum results to return", defaultValue: "20" },
+        {
+          flag: "--limit <n>",
+          description: "Maximum results to return",
+          defaultValue: "20",
+        },
       ],
       action: async (opts: {
         query: string;

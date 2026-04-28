@@ -64,7 +64,10 @@ function getProfiles(config: ConfigJson): RepoProfiles {
 
 // ─── Match Logic ─────────────────────────────────────────────────────────────
 
-function matchProfile(text: string, profiles: RepoProfiles): { name: string; profile: RepoProfile } | null {
+function matchProfile(
+  text: string,
+  profiles: RepoProfiles,
+): { name: string; profile: RepoProfile } | null {
   const lowerText = text.toLowerCase();
   for (const [name, profile] of Object.entries(profiles)) {
     if (lowerText.includes(name.toLowerCase())) {
@@ -105,7 +108,9 @@ function runSave(opts: { name: string; repos: string }): void {
     repo_profiles: { ...profiles, [opts.name]: { repos } },
   };
   writeConfig(updated);
-  process.stdout.write(`${JSON.stringify({ saved: opts.name, repos }, null, 2)}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ saved: opts.name, repos }, null, 2)}\n`,
+  );
 }
 
 function runList(): void {
@@ -140,7 +145,11 @@ export const program = createCli({
       description: "Save or update a repo profile in config.json",
       options: [
         { flag: "--name <name>", description: "Profile name", required: true },
-        { flag: "--repos <json>", description: "Repos JSON array", required: true },
+        {
+          flag: "--repos <json>",
+          description: "Repos JSON array",
+          required: true,
+        },
       ],
       action: runSave,
     },

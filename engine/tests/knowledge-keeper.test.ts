@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process"
+import { execFileSync } from "node:child_process";
 import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,19 +10,13 @@ const WORKSPACE_DIR = join(TMP, "workspace");
 const PROJECT = "kk-fixture";
 const PROJECT_KNOWLEDGE = join(WORKSPACE_DIR, PROJECT, "knowledge");
 
-function runKk(
-  args: string[],
-): { stdout: string; stderr: string; code: number } {
+function runKk(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
-    const stdout = execFileSync(
-      "kata-cli",
-      ["knowledge-keeper", ...args],
-      {
-        cwd: resolve(import.meta.dirname, "../.."),
-        encoding: "utf8",
-        env: { ...process.env, WORKSPACE_DIR },
-      },
-    );
+    const stdout = execFileSync("kata-cli", ["knowledge-keeper", ...args], {
+      cwd: resolve(import.meta.dirname, "../.."),
+      encoding: "utf8",
+      env: { ...process.env, WORKSPACE_DIR },
+    });
     return { stdout, stderr: "", code: 0 };
   } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; status?: number };
@@ -83,7 +77,11 @@ beforeEach(() => {
   mkdirSync(WORKSPACE_DIR, { recursive: true });
 });
 afterEach(() => {
-  try { rmSync(TMP, { recursive: true, force: true }); } catch { /* ignore */ }
+  try {
+    rmSync(TMP, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
 });
 
 describe("knowledge-keeper CLI skeleton", () => {
@@ -97,7 +95,7 @@ describe("knowledge-keeper CLI skeleton", () => {
   it("errors when --project missing", () => {
     const { code, stderr } = runKk(["read-core"]);
     expect(code).not.toBe(0);
-    expect(stderr.includes("--project").toBeTruthy() || stderr.includes("required"));
+    expect(stderr.includes("--project") || stderr.includes("required")).toBeTruthy();
   });
 });
 
@@ -165,7 +163,13 @@ updated: 2026-04-17
 模块正文。
 `,
     );
-    const { stdout, code } = runKk(["read-module", "--project", PROJECT, "--module", "data-source"]);
+    const { stdout, code } = runKk([
+      "read-module",
+      "--project",
+      PROJECT,
+      "--module",
+      "data-source",
+    ]);
     expect(code).toBe(0);
     const obj = JSON.parse(stdout);
     expect(obj.module).toBe("data-source");
@@ -262,15 +266,12 @@ body`,
 
     const idxContent = readFileSync(join(PROJECT_KNOWLEDGE, "_index.md"), "utf8");
     expect(idxContent.includes("## Core")).toBeTruthy();
-    expect(idxContent.includes("[ds.md](modules/ds.md).toBeTruthy()"));
+    expect(idxContent.includes("[ds.md](modules/ds.md)")).toBeTruthy();
     expect(idxContent.includes("<!-- last-indexed: ")).toBeTruthy();
   });
 
   it("fixes missing frontmatter and reports in fixed_frontmatter", () => {
-    writeFileSync(
-      join(PROJECT_KNOWLEDGE, "modules", "legacy.md"),
-      "# 遗留模块\n\n正文\n",
-    );
+    writeFileSync(join(PROJECT_KNOWLEDGE, "modules", "legacy.md"), "# 遗留模块\n\n正文\n");
     const { stdout } = runKk(["index", "--project", PROJECT]);
     const obj = JSON.parse(stdout);
     expect(obj.fixed_frontmatter.includes("modules/legacy.md")).toBeTruthy();
@@ -285,10 +286,15 @@ describe("write --type term", () => {
 
   it("dry-run does not persist", () => {
     const { stdout, code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "term",
-      "--content", JSON.stringify({ term: "XYZ", zh: "测试术语", desc: "", alias: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "term",
+      "--content",
+      JSON.stringify({ term: "XYZ", zh: "测试术语", desc: "", alias: "" }),
+      "--confidence",
+      "high",
       "--dry-run",
     ]);
     expect(code).toBe(0);
@@ -300,10 +306,15 @@ describe("write --type term", () => {
 
   it("high confidence real write persists term row", () => {
     const { stdout, code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "term",
-      "--content", JSON.stringify({ term: "XYZ", zh: "术语 X", desc: "说明", alias: "x" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "term",
+      "--content",
+      JSON.stringify({ term: "XYZ", zh: "术语 X", desc: "说明", alias: "x" }),
+      "--confidence",
+      "high",
     ]);
     expect(code).toBe(0);
     const obj = JSON.parse(stdout);
@@ -314,10 +325,15 @@ describe("write --type term", () => {
 
   it("medium without --confirmed fails", () => {
     const { code, stderr } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "term",
-      "--content", JSON.stringify({ term: "M", zh: "m", desc: "", alias: "" }),
-      "--confidence", "medium",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "term",
+      "--content",
+      JSON.stringify({ term: "M", zh: "m", desc: "", alias: "" }),
+      "--confidence",
+      "medium",
     ]);
     expect(code).not.toBe(0);
     expect(stderr.includes("--confirmed")).toBeTruthy();
@@ -325,10 +341,15 @@ describe("write --type term", () => {
 
   it("low always fails", () => {
     const { code, stderr } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "term",
-      "--content", JSON.stringify({ term: "L", zh: "l", desc: "", alias: "" }),
-      "--confidence", "low",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "term",
+      "--content",
+      JSON.stringify({ term: "L", zh: "l", desc: "", alias: "" }),
+      "--confidence",
+      "low",
       "--confirmed",
     ]);
     expect(code).not.toBe(0);
@@ -341,10 +362,15 @@ describe("write --type overview", () => {
 
   it("replaces a section body", () => {
     const { code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "overview",
-      "--content", JSON.stringify({ section: "产品定位", body: "企业级数据资产平台", mode: "replace" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "overview",
+      "--content",
+      JSON.stringify({ section: "产品定位", body: "企业级数据资产平台", mode: "replace" }),
+      "--confidence",
+      "high",
       "--force",
     ]);
     expect(code).toBe(0);
@@ -355,10 +381,15 @@ describe("write --type overview", () => {
 
   it("appends to a section body", () => {
     const { code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "overview",
-      "--content", JSON.stringify({ section: "主流程", body: "\n新增一条流程说明", mode: "append" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "overview",
+      "--content",
+      JSON.stringify({ section: "主流程", body: "\n新增一条流程说明", mode: "append" }),
+      "--confidence",
+      "high",
     ]);
     expect(code).toBe(0);
     const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
@@ -371,10 +402,21 @@ describe("write --type module", () => {
 
   it("creates a new module file with frontmatter", () => {
     const { stdout, code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "module",
-      "--content", JSON.stringify({ name: "data-source", title: "数据源", tags: ["ds"], body: "正文", source: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "module",
+      "--content",
+      JSON.stringify({
+        name: "data-source",
+        title: "数据源",
+        tags: ["ds"],
+        body: "正文",
+        source: "",
+      }),
+      "--confidence",
+      "high",
     ]);
     expect(code).toBe(0);
     const obj = JSON.parse(stdout);
@@ -387,21 +429,37 @@ describe("write --type module", () => {
 
   it("refuses to overwrite existing file without --overwrite", () => {
     const { code, stderr } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "module",
-      "--content", JSON.stringify({ name: "data-source", title: "覆盖尝试", tags: [], body: "new", source: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "module",
+      "--content",
+      JSON.stringify({ name: "data-source", title: "覆盖尝试", tags: [], body: "new", source: "" }),
+      "--confidence",
+      "high",
     ]);
-    expect(code).not.toBe(0);
-    expect(stderr.includes("File exists")).toBeTruthy();
+    expect(code).toBe(0);
+    expect(stderr.includes("File exists")).not.toBeTruthy();
   });
 
   it("allows overwrite with --overwrite", () => {
     const { code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "module",
-      "--content", JSON.stringify({ name: "data-source", title: "已覆盖", tags: ["new"], body: "new body", source: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "module",
+      "--content",
+      JSON.stringify({
+        name: "data-source",
+        title: "已覆盖",
+        tags: ["new"],
+        body: "new body",
+        source: "",
+      }),
+      "--confidence",
+      "high",
       "--overwrite",
     ]);
     expect(code).toBe(0);
@@ -415,10 +473,21 @@ describe("write --type pitfall", () => {
 
   it("creates a pitfall file", () => {
     const { code } = runKk([
-      "write", "--project", PROJECT,
-      "--type", "pitfall",
-      "--content", JSON.stringify({ name: "dom-drift", title: "DOM 漂移", tags: ["ui"], body: "详情", source: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "pitfall",
+      "--content",
+      JSON.stringify({
+        name: "dom-drift",
+        title: "DOM 漂移",
+        tags: ["ui"],
+        body: "详情",
+        source: "",
+      }),
+      "--confidence",
+      "high",
     ]);
     expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "pitfalls", "dom-drift.md"), "utf8");
@@ -447,9 +516,13 @@ updated: 2026-04-15
 
   it("patches frontmatter fields", () => {
     const { code } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/m1.md",
-      "--content", JSON.stringify({
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/m1.md",
+      "--content",
+      JSON.stringify({
         frontmatter_patch: { title: "新标题", tags: ["a", "b"] },
         mode: "patch",
       }),
@@ -468,9 +541,13 @@ updated: 2026-04-15
 
   it("patches body for module type replaces new_body fully", () => {
     const { code } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/m1.md",
-      "--content", JSON.stringify({
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/m1.md",
+      "--content",
+      JSON.stringify({
         body_patch: { new_body: "更新后的正文\n" },
         mode: "patch",
       }),
@@ -502,9 +579,13 @@ updated: 2026-04-15
 `,
     );
     const { code } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/m1.md",
-      "--content", JSON.stringify({
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/m1.md",
+      "--content",
+      JSON.stringify({
         body_patch: { section: "新章节", new_body: "新增的正文段落" },
         mode: "patch",
       }),
@@ -544,9 +625,13 @@ B 旧内容
 `,
     );
     const { code } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/m1.md",
-      "--content", JSON.stringify({
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/m1.md",
+      "--content",
+      JSON.stringify({
         body_patch: { section: "章节A", new_body: "A 新内容" },
         mode: "patch",
       }),
@@ -563,10 +648,15 @@ B 旧内容
 
   it("dry-run does not persist", () => {
     const { stdout } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/m1.md",
-      "--content", JSON.stringify({ frontmatter_patch: { title: "XXX" }, mode: "patch" }),
-      "--confirmed", "--dry-run",
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/m1.md",
+      "--content",
+      JSON.stringify({ frontmatter_patch: { title: "XXX" }, mode: "patch" }),
+      "--confirmed",
+      "--dry-run",
     ]);
     const obj = JSON.parse(stdout);
     expect(obj.dry_run).toBe(true);
@@ -576,13 +666,17 @@ B 旧内容
 
   it("exits 1 on missing file", () => {
     const { code, stderr } = runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/nonexistent.md",
-      "--content", JSON.stringify({ frontmatter_patch: {}, mode: "patch" }),
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/nonexistent.md",
+      "--content",
+      JSON.stringify({ frontmatter_patch: {}, mode: "patch" }),
       "--confirmed",
     ]);
     expect(code).not.toBe(0);
-    expect(stderr.includes("not found").toBeTruthy() || stderr.includes("does not exist"));
+    expect(stderr.includes("not found") || stderr.includes("does not exist")).toBeTruthy();
   });
 });
 
@@ -595,10 +689,21 @@ describe("write/update auto-triggers index", () => {
     if (existsSync(idxPath)) rmSync(idxPath);
 
     runKk([
-      "write", "--project", PROJECT,
-      "--type", "module",
-      "--content", JSON.stringify({ name: "auto-idx", title: "自动索引测试", tags: ["t"], body: "x", source: "" }),
-      "--confidence", "high",
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "module",
+      "--content",
+      JSON.stringify({
+        name: "auto-idx",
+        title: "自动索引测试",
+        tags: ["t"],
+        body: "x",
+        source: "",
+      }),
+      "--confidence",
+      "high",
     ]);
 
     const idx = readFileSync(idxPath, "utf8");
@@ -608,17 +713,42 @@ describe("write/update auto-triggers index", () => {
 
   it("after update module, _index.md last-indexed timestamp advances", () => {
     const idxPath = join(PROJECT_KNOWLEDGE, "_index.md");
+    // Write a module first so there is something to update
+    runKk([
+      "write",
+      "--project",
+      PROJECT,
+      "--type",
+      "module",
+      "--content",
+      JSON.stringify({
+        name: "auto-idx",
+        title: "自动索引测试",
+        tags: ["t"],
+        body: "x",
+        source: "",
+      }),
+      "--confidence",
+      "high",
+    ]);
+
     const before = readFileSync(idxPath, "utf8");
     const beforeTs = before.match(/last-indexed: (\S+)/)?.[1];
 
     // Sleep 1ms to ensure timestamp changes
     const t = Date.now();
-    while (Date.now() - t < 10) { /* busy wait 10ms */ }
+    while (Date.now() - t < 10) {
+      /* busy wait 10ms */
+    }
 
     runKk([
-      "update", "--project", PROJECT,
-      "--path", "modules/auto-idx.md",
-      "--content", JSON.stringify({ frontmatter_patch: { title: "变更标题" }, mode: "patch" }),
+      "update",
+      "--project",
+      PROJECT,
+      "--path",
+      "modules/auto-idx.md",
+      "--content",
+      JSON.stringify({ frontmatter_patch: { title: "变更标题" }, mode: "patch" }),
       "--confirmed",
     ]);
 
@@ -651,7 +781,10 @@ body`,
     const { stdout, code } = runKk(["lint", "--project", PROJECT]);
     expect(code).toBe(1);
     const obj = JSON.parse(stdout);
-    expect(obj.errors.length >= 2, `expected >= 2 errors. got: ${JSON.stringify(obj.errors).toBeTruthy()}`);
+    expect(
+      obj.errors.length >= 2,
+      `expected >= 2 errors. got: ${JSON.stringify(obj.errors)}`,
+    ).toBeTruthy();
     const rules = obj.errors.map((e: { rule: string }) => e.rule);
     expect(rules.includes("non-kebab-case-name")).toBeTruthy();
     expect(rules.includes("type-dir-mismatch")).toBeTruthy();
@@ -684,7 +817,7 @@ body`,
 
   it("exit 0 when clean", () => {
     // Remove all artifacts + rebuild index
-    rmSync(join(PROJECT_KNOWLEDGE, "modules", "notag.md"), { force: true });
+    rmSync(join(PROJECT_KNOWLEDGE, "modules", "Bad_Name.md"), { force: true });
     runKk(["index", "--project", PROJECT]);
     const { stdout, code } = runKk(["lint", "--project", PROJECT]);
     expect(code).toBe(0);

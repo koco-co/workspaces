@@ -26,8 +26,9 @@ while ((match = linkRe.exec(content)) !== null) {
   try {
     statSync(resolved);
   } catch {
-    console.error(`[post-edit-md-link] WARNING: broken relative link '${target}' in ${filePath}`);
+    console.error(
+      `[post-edit-md-link] WARNING: broken relative link '${target}' in ${filePath}`,
+    );
   }
 }
-
 process.exit(0);

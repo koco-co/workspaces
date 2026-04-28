@@ -175,13 +175,7 @@ describe("mergeSpecs compileCheck", () => {
   });
 
   it("throws when compileCheck=true and block has type error", () => {
-    expect(() => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true })).toThrow(
-      (err: unknown) => {
-        expect(err instanceof Error).toBeTruthy();
-        expect(err.message).toMatch(/tsc|type/i);
-        return true;
-      },
-    );
+    expect(() => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true })).toThrow(/tsc|type/i);
   });
 
   it("does not throw when compileCheck=true and block is valid TypeScript", () => {

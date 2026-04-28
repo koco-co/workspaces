@@ -824,8 +824,7 @@ async function runGenerate(opts: {
 
 export const program = createCli({
   name: "xmind-gen",
-  description:
-    "Convert intermediate JSON or Archive Markdown to .xmind files",
+  description: "Convert intermediate JSON or Archive Markdown to .xmind files",
   rootAction: {
     options: [
       {
@@ -851,7 +850,10 @@ export const program = createCli({
         flag: "--version <ver>",
         description: "PRD version (e.g. 6.4.9) for root title template",
       },
-      { flag: "--json-only", description: "Only output intermediate JSON (MD input only)" },
+      {
+        flag: "--json-only",
+        description: "Only output intermediate JSON (MD input only)",
+      },
     ],
     action: runGenerate,
   },
@@ -903,4 +905,3 @@ async function processMdFile(
 
   process.stdout.write(`XMind: ${resolve(xmindPath)} (${caseCount} cases)\n`);
 }
-

@@ -148,9 +148,7 @@ describe("prd-frontmatter normalize (actual write)", () => {
       const { code, stdout } = run(["normalize", "--file", filePath]);
       expect(code).toBe(0);
       const out = JSON.parse(stdout) as { changes: string[] };
-      expect(out.changes.some((c) => c.includes(expected)).toBeTruthy(),
-        `should normalize "${input}" to "${expected}"`,
-      );
+      expect(out.changes.some((c) => c.includes(expected))).toBeTruthy();
     }
   });
 

@@ -8,8 +8,7 @@
 
 const MATCHERS = ["toBeTruthy", "toBeFalsy", "toBeDefined", "toBeUndefined", "toBeNull"];
 const MATCHER_RE = new RegExp(`^(.*)\\.(${MATCHERS.join("|")})\\(\\)\\s*$`, "s");
-const WITH_MSG_RE = new RegExp(`^(.*)\\.(${MATCHERS.join("|")})\\(\\)\\s*,\\s*['"]`, "s");
-const STANDALONE_RE = new RegExp(`\\.(${MATCHERS.join("|")})\\(\\)`, "g");
+const WITH_MSG_RE = new RegExp(`^(.*)\\.(${MATCHERS.join("|")})\\(\\)\\s*,\\s*['"\`]`, "s");
 
 function matchCloseParen(input: string, startIdx: number): number {
   let depth = 1;

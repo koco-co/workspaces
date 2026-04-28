@@ -115,10 +115,9 @@ describe("getEnv", () => {
 describe("getEnvOrThrow", () => {
   it("throws if key is not set", async () => {
     const { getEnvOrThrow } = await import("../../src/lib/env.ts");
-    expect(() => getEnvOrThrow("__DEFINITELY_NOT_SET_KEY_THROW_TEST__")).toThrow((err: Error) => {
-        expect(err.message.includes("__DEFINITELY_NOT_SET_KEY_THROW_TEST__")).toBeTruthy();
-        return true;
-      });
+    expect(() => getEnvOrThrow("__DEFINITELY_NOT_SET_KEY_THROW_TEST__")).toThrow(
+      /__DEFINITELY_NOT_SET_KEY_THROW_TEST__/,
+    );
   });
 
   it("returns value if key is set in process.env", async () => {
@@ -176,7 +175,8 @@ describe("initEnv three-layer mode", () => {
     );
     writeFileSync(
       join(TMP_DIR, ".env.envs"),
-      ["TL_ONLY_ENVS=envs", "TL_ENV_AND_ENVS=from-envs", "TL_ALL_THREE=from-envs"].join("\n") + "\n",
+      ["TL_ONLY_ENVS=envs", "TL_ENV_AND_ENVS=from-envs", "TL_ALL_THREE=from-envs"].join("\n") +
+        "\n",
     );
     writeFileSync(
       join(TMP_DIR, ".env.local"),

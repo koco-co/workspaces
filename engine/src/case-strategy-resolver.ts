@@ -18,14 +18,20 @@ import {
 } from "./lib/strategy-router.ts";
 import type { SignalProfile } from "./lib/signal-probe.ts";
 
-function runResolve(opts: { profile: string; forceStrategy?: string; output: string }): void {
+function runResolve(opts: {
+  profile: string;
+  forceStrategy?: string;
+  output: string;
+}): void {
   // 读取 profile raw
   let raw: string;
   if (opts.profile.startsWith("@")) {
     try {
       raw = readFileSync(opts.profile.slice(1), "utf8");
     } catch (err) {
-      process.stderr.write(`[case-strategy-resolver] failed to read profile file: ${String(err)}\n`);
+      process.stderr.write(
+        `[case-strategy-resolver] failed to read profile file: ${String(err)}\n`,
+      );
       process.exit(1);
       return;
     }
@@ -38,7 +44,9 @@ function runResolve(opts: { profile: string; forceStrategy?: string; output: str
   try {
     profile = JSON.parse(raw) as SignalProfile;
   } catch (err) {
-    process.stderr.write(`[case-strategy-resolver] invalid profile JSON: ${String(err)}\n`);
+    process.stderr.write(
+      `[case-strategy-resolver] invalid profile JSON: ${String(err)}\n`,
+    );
     process.exit(1);
     return;
   }

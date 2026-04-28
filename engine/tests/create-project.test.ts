@@ -72,7 +72,7 @@ describe("create-project create --dry-run", () => {
     expect(Array.isArray(data.will_create.gitkeeps)).toBeTruthy();
     expect(data.will_create.dirs.length).toBe(12);
     // Disk must remain untouched
-    expect(existsSync(join(WORKSPACE_DIR).toBe("newProj")), false);
+    expect(existsSync(join(WORKSPACE_DIR, "newProj"))).toBe(false);
     // Config must remain unchanged
     const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
     expect(cfg).toEqual({ projects: {} });
@@ -365,13 +365,12 @@ describe("create-project create --confirmed", () => {
     const data = JSON.parse(stdout);
     expect(data.legacy_renamed).toBe(true);
     expect(data.legacy_conflict).toBe(false);
-    expect(existsSync(join(projDir).toBe("history")), true);
-    expect(existsSync(join(projDir).toBe("historys")), false);
+    expect(existsSync(join(projDir, "history"))).toBe(true);
+    expect(existsSync(join(projDir, "historys"))).toBe(false);
     // Legacy content is preserved
     expect(
-      readFileSync(join(projDir).toBe("history"), "utf8"),
-      "legacy data",
-    );
+      readFileSync(join(projDir, "history", "old-notes.md"), "utf8"),
+    ).toContain("legacy data");
   });
 
   it("flags conflict without clobbering when both historys/ and history/ coexist", () => {
@@ -392,8 +391,8 @@ describe("create-project create --confirmed", () => {
     expect(data.legacy_renamed).toBe(false);
     expect(data.legacy_conflict).toBe(true);
     // Both survive intact
-    expect(existsSync(join(projDir).toBe("historys")), true);
-    expect(existsSync(join(projDir).toBe("history")), true);
+    expect(existsSync(join(projDir, "historys"))).toBe(true);
+    expect(existsSync(join(projDir, "history"))).toBe(true);
   });
 
   it("registers config.json alongside other existing projects", () => {
@@ -477,10 +476,13 @@ describe("create-project clone-repo", () => {
   });
 
   it("rejects when repo already cloned at target path", () => {
+    const projName = "withRepo";
+    runCp(["create", "--project", projName, "--confirmed"]);
+    runCp(["clone-repo", "--project", projName, "--url", `file://${BARE_REPO}`]);
     const { stderr, code } = runCp([
       "clone-repo",
       "--project",
-      "withRepo",
+      projName,
       "--url",
       `file://${BARE_REPO}`,
     ]);

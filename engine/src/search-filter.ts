@@ -118,10 +118,7 @@ function parseJsonArray(raw: string): SearchResult[] {
 
 // ─── Command ──────────────────────────────────────────────────────────────────
 
-async function runFilter(opts: {
-  input?: string;
-  top: number;
-}): Promise<void> {
+async function runFilter(opts: { input?: string; top: number }): Promise<void> {
   const results =
     opts.input !== undefined
       ? readInputFromFile(opts.input)
@@ -142,8 +139,15 @@ export const program = createCli({
       description:
         "Filter archive search results: deduplicate by suite_name, sort by case_count desc, truncate to top-N",
       options: [
-        { flag: "--input <file>", description: "Path to JSON file with search results (default: stdin)" },
-        { flag: "--top <n>", description: "Maximum number of results to return", defaultValue: "5" },
+        {
+          flag: "--input <file>",
+          description: "Path to JSON file with search results (default: stdin)",
+        },
+        {
+          flag: "--top <n>",
+          description: "Maximum number of results to return",
+          defaultValue: "5",
+        },
       ],
       action: async (opts: { input?: string; top: string }) => {
         const topN = parseInt(opts.top, 10);

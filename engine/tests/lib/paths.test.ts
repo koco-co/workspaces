@@ -98,38 +98,32 @@ describe("currentYYYYMM", () => {
 describe("repoRoot", () => {
   it("returns an existing directory", () => {
     const root = repoRoot();
-    expect(existsSync(root).toBeTruthy(), `repoRoot ${root} does not exist`);
+    expect(existsSync(root)).toBeTruthy();
   });
 
   it("resolves to the kata project root (contains package.json)", () => {
     const root = repoRoot();
-    expect(
-      existsSync(`${root}/package.json`).toBeTruthy(),
-      `Expected package.json in repoRoot: ${root}`,
-    );
+    expect(existsSync(`${root}/package.json`)).toBeTruthy();
   });
 
   it("resolves to a directory containing .claude/", () => {
     const root = repoRoot();
-    expect(existsSync(`${root}/.claude`).toBeTruthy(), `Expected .claude/ in repoRoot: ${root}`);
+    expect(existsSync(`${root}/.claude`)).toBeTruthy();
   });
 });
 
 describe("scriptsDir", () => {
   it("points to engine/src inside the repo root", () => {
     const dir = scriptsDir();
-    expect(dir.endsWith("engine/src").toBeTruthy(), `Expected to end with engine/src, got: ${dir}`);
-    expect(existsSync(dir).toBeTruthy(), `scriptsDir ${dir} does not exist`);
+    expect(dir.endsWith("engine/src")).toBeTruthy();
+    expect(existsSync(dir)).toBeTruthy();
   });
 });
 
 describe("skillsDir", () => {
   it("points to .claude/skills inside the repo root", () => {
     const dir = skillsDir();
-    expect(
-      dir.endsWith(".claude/skills").toBeTruthy(),
-      `Expected to end with .claude/skills, got: ${dir}`,
-    );
+    expect(dir.endsWith(".claude/skills")).toBeTruthy();
   });
 });
 
@@ -137,7 +131,7 @@ describe("projectDir", () => {
   it("returns workspace/{project} under repoRoot", () => {
     const dir = projectDir("dataAssets");
     const root = repoRoot();
-    expect(dir).toBe(join(root, "workspace"));
+    expect(dir).toBe(join(root, "workspace", "dataAssets"));
   });
 
   it("works with different project names", () => {
@@ -245,36 +239,33 @@ describe("projectRulesDir", () => {
 describe("knowledgeDir", () => {
   it("returns <workspace>/<project>/knowledge", () => {
     const dir = knowledgeDir("dataAssets");
-    expect(dir.endsWith("workspace/dataAssets/knowledge").toBeTruthy(), `got: ${dir}`);
+    expect(dir.endsWith("workspace/dataAssets/knowledge")).toBeTruthy();
   });
 });
 
 describe("knowledgePath", () => {
   it("joins segments under knowledge dir", () => {
     const p = knowledgePath("dataAssets", "modules", "data-source.md");
-    expect(
-      p.endsWith("workspace/dataAssets/knowledge/modules/data-source.md").toBeTruthy(),
-      `got: ${p}`,
-    );
+    expect(p.endsWith("workspace/dataAssets/knowledge/modules/data-source.md")).toBeTruthy();
   });
 
   it("returns knowledge dir itself when no segments", () => {
     const p = knowledgePath("dataAssets");
-    expect(p.endsWith("workspace/dataAssets/knowledge").toBeTruthy(), `got: ${p}`);
+    expect(p.endsWith("workspace/dataAssets/knowledge")).toBeTruthy();
   });
 });
 
 describe("knowledgeModulesDir", () => {
   it("returns <knowledge>/modules", () => {
     const dir = knowledgeModulesDir("dataAssets");
-    expect(dir.endsWith("workspace/dataAssets/knowledge/modules").toBeTruthy(), `got: ${dir}`);
+    expect(dir.endsWith("workspace/dataAssets/knowledge/modules")).toBeTruthy();
   });
 });
 
 describe("knowledgePitfallsDir", () => {
   it("returns <knowledge>/pitfalls", () => {
     const dir = knowledgePitfallsDir("dataAssets");
-    expect(dir.endsWith("workspace/dataAssets/knowledge/pitfalls").toBeTruthy(), `got: ${dir}`);
+    expect(dir.endsWith("workspace/dataAssets/knowledge/pitfalls")).toBeTruthy();
   });
 });
 
@@ -287,7 +278,7 @@ describe("listProjects", () => {
   it("does not include dot-prefixed directories", () => {
     const projects = listProjects();
     for (const p of projects) {
-      expect(!p.startsWith(".").toBeTruthy(), `${p} should not start with dot`);
+      expect(!p.startsWith(".")).toBeTruthy();
     }
   });
 });

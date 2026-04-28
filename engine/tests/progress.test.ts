@@ -320,7 +320,7 @@ describe("migrate-session", () => {
         { id: "discuss", name: "Discuss", kind: "node", order: 3 },
       ])]);
     if (opts.withEnhanced) {
-      const dir = join(TMP, "workspace", "dataAssets", "prds", "202604", opts.slug);
+      const dir = join(TMP, "workspace", "dataAssets", "features", `202604-${opts.slug}`);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "enhanced.md"), "---\nschema_version: 1\n---\n");
     }
@@ -489,7 +489,7 @@ describe("migrate-session", () => {
         { id: "discuss", name: "Discuss", kind: "node", order: 3 },
       ])]);
     if (opts.withEnhanced) {
-      const dir = join(TMP, "workspace", "dataAssets", "prds", "202604", opts.slug);
+      const dir = join(TMP, "workspace", "dataAssets", "features", `202604-${opts.slug}`);
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, "enhanced.md"), "---\nschema_version: 1\n---\n");
     }

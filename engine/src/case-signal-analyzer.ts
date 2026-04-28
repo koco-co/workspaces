@@ -4,7 +4,13 @@
  * Usage: kata-cli case-signal-analyzer probe \
  *   --project <name> --prd <path> [--no-cache] [--output json|summary]
  */
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { spawnSync } from "node:child_process";
 import { basename, dirname, join, resolve } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
@@ -200,7 +206,7 @@ function collectHistory(
     const score =
       rawScore !== undefined
         ? Number(rawScore)
-        : Math.min(1.0, (Number(r.case_count ?? 0) / 10));
+        : Math.min(1.0, Number(r.case_count ?? 0) / 10);
     return {
       score,
       path: String(r.path ?? ""),
@@ -216,7 +222,11 @@ function collectHistory(
 function collectKnowledge(
   project: string,
   frontMatter: Record<string, unknown>,
-): { core: KnowledgeReadCore | null; matchedModuleContent: string | null; moduleName: string | null } {
+): {
+  core: KnowledgeReadCore | null;
+  matchedModuleContent: string | null;
+  moduleName: string | null;
+} {
   // read-core
   const coreRaw = invokeJson([
     "engine/src/knowledge-keeper.ts",
@@ -237,12 +247,11 @@ function collectKnowledge(
         typeof overview === "object" && overview !== null
           ? String((overview as Record<string, unknown>).content ?? "")
           : String(overview ?? "");
-      const termsStr =
-        Array.isArray(terms)
-          ? terms.length > 0
-            ? JSON.stringify(terms)
-            : ""
-          : String(terms ?? "");
+      const termsStr = Array.isArray(terms)
+        ? terms.length > 0
+          ? JSON.stringify(terms)
+          : ""
+        : String(terms ?? "");
       core = { overview: overviewStr, terms: termsStr };
     }
   }
@@ -309,7 +318,10 @@ async function runProbe(opts: {
   const prdSlug = basename(prdPath).replace(/\.md$/, "");
   const cachePath = probeCachePath(opts.project, prdSlug);
   const prdMtimeMs = statSync(prdPath).mtimeMs;
-  const probeScriptPath = resolve(repoRoot(), "engine/src/case-signal-analyzer.ts");
+  const probeScriptPath = resolve(
+    repoRoot(),
+    "engine/src/case-signal-analyzer.ts",
+  );
   const probeScriptMtimeMs = statSync(probeScriptPath).mtimeMs;
 
   // Check cache
@@ -329,7 +341,10 @@ async function runProbe(opts: {
 
   // Collect all 4 dimensions
   // 1. Source
-  const sourceOutput = collectSource(opts.project, frontMatter as Record<string, unknown>);
+  const sourceOutput = collectSource(
+    opts.project,
+    frontMatter as Record<string, unknown>,
+  );
   const sourceSignal = classifySource(sourceOutput);
 
   // 2. PRD
@@ -348,7 +363,10 @@ async function runProbe(opts: {
   });
 
   // 3. History
-  const historyHits = collectHistory(opts.project, frontMatter as Record<string, unknown>);
+  const historyHits = collectHistory(
+    opts.project,
+    frontMatter as Record<string, unknown>,
+  );
   const historySignal = classifyHistory(historyHits);
 
   // 4. Knowledge
@@ -414,7 +432,8 @@ async function probeAction(opts: {
 
 export const program = createCli({
   name: "case-signal-analyzer",
-  description: "4-dimensional signal probe (source / PRD / history / knowledge)",
+  description:
+    "4-dimensional signal probe (source / PRD / history / knowledge)",
   commands: [
     {
       name: "probe",
