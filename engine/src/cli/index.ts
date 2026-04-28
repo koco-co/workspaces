@@ -99,6 +99,10 @@ registerSkillAudit(kata);
 import { registerPathsAudit } from "./paths-audit.ts";
 registerPathsAudit(kata);
 
+// ── Agent audit (P6 §10.2/§10.4) ───────────────────────────
+import { registerAgentsAudit } from "./agents-audit.ts";
+registerAgentsAudit(kata);
+
 initEnv();
 
 kata.parseAsync(process.argv).catch((err) => {
