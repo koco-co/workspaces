@@ -26,13 +26,26 @@ executor: direct
 executor: direct
 指令: .claude/skills/ui-autotest/workflow.md#step-2
 
-### 步骤 3: subagent A（写脚本 + 修复 + 收敛）
+### 步骤 3-1: script writer（脚本生成）
 
 executor: subagent
-agent: subagent-a-agent
+agent: script-writer-agent
 model: sonnet
-指令:
-  - .claude/skills/ui-autotest/workflow.md#step-3a
+指令: .claude/skills/ui-autotest/workflow.md#step-3a
+
+### 步骤 3-2: script fixer（自测修复）
+
+executor: subagent
+agent: script-fixer-agent
+model: sonnet
+指令: .claude/skills/ui-autotest/workflow.md#step-3b
+
+### 步骤 3-3: convergence（共性收敛）
+
+executor: subagent
+agent: convergence-agent
+model: sonnet
+指令: .claude/skills/ui-autotest/workflow.md#step-3c
   - .claude/skills/ui-autotest/workflow.md#step-3b
   - .claude/skills/ui-autotest/workflow.md#step-3c
 gate 后: gates/R1.md

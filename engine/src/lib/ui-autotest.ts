@@ -4,12 +4,24 @@ export const uiAutotestSteps: WorkflowStep[] = [
   { id: "parse-and-scope", executor: "direct", dependsOn: [] },
   { id: "login", executor: "direct", dependsOn: ["parse-and-scope"] },
   {
-    id: "subagent-a",
+    id: "script-write",
     executor: "subagent",
-    subagentConfig: { agentRef: "subagent-a-agent", model: "sonnet" },
+    subagentConfig: { agentRef: "script-writer-agent", model: "sonnet" },
     dependsOn: ["login"],
   },
-  { id: "merge", executor: "direct", dependsOn: ["subagent-a"] },
+  {
+    id: "script-fix",
+    executor: "subagent",
+    subagentConfig: { agentRef: "script-fixer-agent", model: "sonnet" },
+    dependsOn: ["script-write"],
+  },
+  {
+    id: "convergence",
+    executor: "subagent",
+    subagentConfig: { agentRef: "convergence-agent", model: "sonnet" },
+    dependsOn: ["script-fix"],
+  },
+  { id: "merge", executor: "direct", dependsOn: ["convergence"] },
   {
     id: "regression",
     executor: "subagent",

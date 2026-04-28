@@ -72,7 +72,7 @@ const STEP_TEMPLATES: Record<WorkflowType, ReadonlyArray<Omit<PlanStep, "status"
   "ui-autotest": [
     { name: "解析输入与范围确认", description: "解析 Archive MD，确认优先级范围", depends_on: [] },
     { name: "登录态准备", description: "准备登录 session", depends_on: ["step-1"] },
-    { name: "Subagent A（生成+修复+收敛）", description: "逐条生成脚本并自测修复", depends_on: ["step-2"] },
+    { name: "Script Writer + Fixer + Convergence", description: "逐条生成脚本、修复、收敛", depends_on: ["step-2"] },
     { name: "合并脚本", description: "合并验证通过的脚本为 spec 文件", depends_on: ["step-3"] },
     { name: "Regression Runner（执行测试）", description: "全量回归执行", depends_on: ["step-4"] },
     { name: "处理结果与通知", description: "生成报告、启动 Allure、发送通知", depends_on: ["step-5"] },

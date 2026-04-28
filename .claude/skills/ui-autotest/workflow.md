@@ -5,7 +5,7 @@
 - [Step 1: Parse and scope](#step-1)
 - [Step 1.5: Resume](#step-1-5)
 - [Step 2: Login](#step-2)
-- [Step 3a: Subagent A — script generation](#step-3a)
+- [Step 3a: Script writer — script generation](#step-3a)
 - [Step 3b: Test fix](#step-3b)
 - [Step 3c: Convergence](#step-3c)
 - [Step 4: Merge](#step-4)
@@ -63,9 +63,9 @@ The script creates an authenticated session state file for subsequent test runs.
 
 ---
 
-## <a id="step-3a"></a>Step 3a: Subagent A — script generation
+## <a id="step-3a"></a>Step 3a: Script writer — script generation
 
-Dispatch `subagent-a-agent` to generate Playwright scripts from Archive MD cases.
+Dispatch `script-writer-agent` to generate Playwright scripts from Archive MD cases.
 
 1. Read Archive MD feature file
 2. Generate test scripts per case block, applying:
@@ -73,6 +73,24 @@ Dispatch `subagent-a-agent` to generate Playwright scripts from Archive MD cases
    - Screenshot step integration
    - Data-driven test generation
 3. Output: individual spec files in `tests/{{feature}}/cases/`
+
+## <a id="step-3b"></a>Step 3b: Script fixer — self-test fix
+
+Dispatch `script-fixer-agent` to run generated scripts and fix failures.
+
+1. Run `bunx playwright test {file}` per spec
+2. Analyze failure (selector / timeout / assertion)
+3. Apply minimal fix via snapshot + inspect
+4. Re-verify until FIXED or STILL_FAILING
+
+## <a id="step-3c"></a>Step 3c: Convergence — pattern summarization
+
+Dispatch `convergence-agent` to summarize common failure patterns.
+
+1. Read all fixer summaries
+2. Group by error type
+3. Identify 3+ case common patterns
+4. Output helpers diff suggestion JSON
 
 Review gate: After generation, run [R1 review](#gate-r1).
 
