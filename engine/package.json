@@ -15,7 +15,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "^13.1.0"
+    "commander": "^13.1.0",
+    "gray-matter": "^4.0.3"
   },
   "devDependencies": {
     "@types/bun": "latest",
