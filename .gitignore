@@ -68,5 +68,8 @@ Thumbs.db
 # ── 日志 ────────────────────────────────────────────────
 *.log
 
+# ── P3-A dataAssets shadow（dry-run 专用，永不提交） ──────
+workspace/dataAssets-shadow/
+
 # ── 保留 workspace 目录结构 ─────────────────────────────
 !workspace/.gitkeep
