@@ -266,10 +266,10 @@ describe("create-project create --confirmed", () => {
       "knowledge/pitfalls",
       ".repos",
     ]) {
-      expect(existsSync(join(projDir, d)).toBeTruthy());
+      expect(existsSync(join(projDir, d))).toBeTruthy();
     }
-    expect(existsSync(join(projDir, "prds")).toBeTruthy());
-    expect(existsSync(join(projDir, "knowledge", "modules")).toBeTruthy());
+    expect(existsSync(join(projDir, "prds"))).toBeTruthy();
+    expect(existsSync(join(projDir, "knowledge", "modules"))).toBeTruthy();
     const rulesReadme = readFileSync(
       join(projDir, "rules", "README.md"),
       "utf8",
@@ -280,7 +280,7 @@ describe("create-project create --confirmed", () => {
       "utf8",
     );
     expect(overview).toMatch(/# fresh 业务概览/);
-    expect(existsSync(join(projDir, "knowledge")).toBeTruthy());
+    expect(existsSync(join(projDir, "knowledge"))).toBeTruthy();
     const indexContent = readFileSync(
       join(projDir, "knowledge", "_index.md"),
       "utf8",

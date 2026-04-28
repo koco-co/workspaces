@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { transformNodeTestToBunTest } from "../codemod/node-test-to-bun-test.ts";
 import { stripMatcherMessage } from "../codemod/strip-matcher-message.ts";
+import { fixTruthyCorruption } from "../codemod/fix-truthy-corruption.ts";
 import { repoRoot } from "../lib/paths.ts";
 
 function findTestFiles(root: string, out: string[], indicator: RegExp): void {
@@ -26,17 +27,34 @@ function findTestFiles(root: string, out: string[], indicator: RegExp): void {
 export function registerCodemodApply(program: Command): void {
   program
     .command("codemod:node-test")
-    .description("Transform engine test files (P7.5 node:test→bun:test, P7.6 strip-msg)")
+    .description(
+      "Transform engine test files (P7.5 node:test→bun:test, P7.6 strip-msg, P8.1 fix-truthy)",
+    )
     .option("--apply", "write changes (default: dry-run)", false)
     .option("--scope <p>", "scan path", join(repoRoot(), "engine"))
-    .option("--mode <m>", "transformation mode (node-test|strip-msg)", "node-test")
+    .option("--mode <m>", "transformation mode (node-test|strip-msg|fix-truthy)", "node-test")
     .action((opts: { apply: boolean; scope: string; mode: string }) => {
       const isStrip = opts.mode === "strip-msg";
-      const transform = isStrip ? stripMatcherMessage : transformNodeTestToBunTest;
-      const indicator = isStrip ? /\.(toBe|toEqual|toMatch|toThrow)\([^)]*,/ : /from "node:test"/;
+      const isFixTruthy = opts.mode === "fix-truthy";
+      const transform = isStrip
+        ? stripMatcherMessage
+        : isFixTruthy
+          ? fixTruthyCorruption
+          : transformNodeTestToBunTest;
+      const indicator = isStrip
+        ? /\.(toBe|toEqual|toMatch|toThrow)\([^)]*,/
+        : isFixTruthy
+          ? /expect\(.*\.toBeTruthy\(\)/
+          : /from "node:test"/;
 
       const files: string[] = [];
-      findTestFiles(opts.scope, files, indicator);
+      if (isFixTruthy) {
+        // fix-truthy must scan both engine/tests/ and engine/src/**/__tests__/
+        findTestFiles(join(repoRoot(), "engine", "tests"), files, indicator);
+        findTestFiles(join(repoRoot(), "engine", "src"), files, indicator);
+      } else {
+        findTestFiles(opts.scope, files, indicator);
+      }
       let changed = 0;
       for (const f of files) {
         const before = readFileSync(f, "utf8");
