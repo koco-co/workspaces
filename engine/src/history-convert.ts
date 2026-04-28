@@ -18,7 +18,13 @@ import { basename, extname, join, resolve } from "node:path";
 import JSZip from "jszip";
 import { createCli } from "./lib/cli-runner.ts";
 import { buildMarkdown, todayString } from "./lib/frontmatter.ts";
-import { currentYYYYMM, repoRoot, validateFilePath } from "./lib/paths.ts";
+import {
+  currentYYYYMM,
+  featureDir,
+  featureFile,
+  repoRoot,
+  validateFilePath,
+} from "./lib/paths.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1300,17 +1306,11 @@ async function convertFile(
       const results: FileConvertResult[] = [];
 
       for (const archive of archives) {
-        // Use date-based directory derived from createDate
-        const archiveDir = join(
-          repoRoot(),
-          "workspace",
-          project,
-          "archive",
-          archive.archiveYYYYMM,
-        );
-        mkdir(archiveDir, { recursive: true });
-
-        const outputPath = join(archiveDir, archive.fileName);
+        // NEW: route per-PRD to features/{ym}-{slug}/archive.md
+        const slug = archive.fileName.replace(/\.md$/, "");
+        const targetDir = featureDir(project, archive.archiveYYYYMM, slug);
+        mkdir(targetDir, { recursive: true });
+        const outputPath = featureFile(project, archive.archiveYYYYMM, slug, "archive.md");
         if (existsSync(outputPath) && !force) {
           results.push({
             input: inputPath,
