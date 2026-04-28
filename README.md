@@ -72,7 +72,7 @@
 | 特性                            | 说明                                                                                 |
 | ------------------------------- | ------------------------------------------------------------------------------------ |
 | **7 个 Skill / 5 个核心工作流** | `using-kata` + `create-project` + 5 个核心执行工作流，覆盖菜单/初始化、生成、分析、格式转换、Bug/冲突/Hotfix 诊断和回归 |
-| **15 Agent 架构**              | 独立 Agent 通过 frontmatter 声明 model/tools，按复杂度动态匹配 haiku / sonnet / opus；含 pattern-analyzer 等动态派发 |
+| **7 Skill 四件套**              | 每个 skill 含 SKILL.md / workflow.md / rules.md / references/；sub-agent prompts 通过 `owner_skill:` frontmatter 归属 skill；`kata-cli skill audit` 验证契约 |
 | **项目级工作区**                | 所有产物统一输出到 `workspace/&lt;project&gt;/...`，多项目互不污染                   |
 | **A/B 双契约**                  | XMind / intermediate 使用 Contract A；Archive MD / 展示标题使用 Contract B           |
 | **写前预览**                    | XMind `patch` / `add` / `delete` 统一先 `--dry-run` 预览，再确认真实写入             |
