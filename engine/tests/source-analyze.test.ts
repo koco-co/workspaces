@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -90,12 +91,10 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
     expect(result.a_level.length > 0).toBeTruthy();
     const match = result.a_level[0];
     expect(match.keyword).toBe("createTable");
-    expect(match.file.endsWith("table.ts").toBeTruthy(), "file should be table.ts");
+    expect(match.file.endsWith("table.ts")).toBeTruthy();
     expect(match.line > 0).toBeTruthy();
     expect(
-      match.content.includes("createTable").toBeTruthy(),
-      "content should include keyword",
-    );
+      match.content.includes("createTable")).toBeTruthy();
     expect(match.confidence >= 0.9).toBeTruthy();
   });
 
@@ -401,8 +400,8 @@ describe("source-analyze analyze — multiple keywords", () => {
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     const keywords = new Set(result.a_level.map((m) => m.keyword));
-    expect(keywords.has("alphaFunc").toBeTruthy(), "should find alphaFunc");
-    expect(keywords.has("betaFunc").toBeTruthy(), "should find betaFunc");
+    expect(keywords.has("alphaFunc")).toBeTruthy();
+    expect(keywords.has("betaFunc")).toBeTruthy();
   });
 });
 
@@ -424,8 +423,8 @@ describe("source-analyze analyze — output JSON schema", () => {
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    expect(Array.isArray(result.a_level).toBeTruthy(), "a_level should be array");
-    expect(Array.isArray(result.b_level).toBeTruthy(), "b_level should be array");
+    expect(Array.isArray(result.a_level)).toBeTruthy();
+    expect(Array.isArray(result.b_level)).toBeTruthy();
     expect(typeof result.coverage_rate === "number").toBeTruthy();
     expect(typeof result.searched_files === "number").toBeTruthy();
     expect(typeof result.matched_files === "number").toBeTruthy();

@@ -1,5 +1,6 @@
-import { describe, it, afterEach, expect } from "bun:test";
+import { describe, it, afterAll, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve as resolvePath } from "node:path";
@@ -13,14 +14,7 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
   const project = "test-project";
   const ym = "202604";
   const slug = "demo-feature";
-  const enhancedPath = join(
-    tmp,
-    project,
-    "prds",
-    ym,
-    slug,
-    "enhanced.md",
-  );
+  const enhancedPath = join(tmp, project, "prds", ym, slug, "enhanced.md");
   // 创建目录结构
   mkdirSync(join(tmp, project, "prds", ym, slug), { recursive: true });
   writeFileSync(
@@ -103,10 +97,7 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
 
   it("batch supports enhanced scheme with --prd-slug/--yyyymm", () => {
     const refsJson = join(tmp, "refs-enh.json");
-    writeFileSync(
-      refsJson,
-      JSON.stringify([{ ref: "enhanced#s-1" }, { ref: "enhanced#s-99" }]),
-    );
+    writeFileSync(refsJson, JSON.stringify([{ ref: "enhanced#s-1" }, { ref: "enhanced#s-99" }]));
     const r = spawnSync(
       CLI_BIN,
       [
@@ -129,5 +120,5 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
     expect(r.stdout + r.stderr).toMatch(/"total":\s*2/);
   });
 
-  afterEach(() => rmSync(tmp, { recursive: true, force: true }));
+  afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 });

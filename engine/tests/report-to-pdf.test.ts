@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -11,7 +12,7 @@ const TMP_DIR = join(tmpdir(), `kata-report-to-pdf-test-${process.pid}`);
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
-    const stdout = execFileSync("kata-cli", ["report-to-pdf", ...args], {
+    const stdout = execFileSync(KATA_CLI, ["report-to-pdf", ...args], {
       cwd: REPO_ROOT,
       encoding: "utf8",
       timeout: 60_000,
@@ -195,9 +196,9 @@ describe("buildPrintableHtml", () => {
     expect(html).toMatch(/should work correctly/);
 
     // Should NOT contain error details or file paths
-    expect(!html.includes("Error: test failed").toBeTruthy(), "Should not include error text");
-    expect(!html.includes("test-file.spec.ts").toBeTruthy(), "Should not include file paths");
-    expect(!html.includes("error-context").toBeTruthy(), "Should not include error markdown name");
+    expect(!html.includes("Error: test failed")).toBeTruthy();
+    expect(!html.includes("test-file.spec.ts")).toBeTruthy();
+    expect(!html.includes("error-context")).toBeTruthy();
 
     // Should contain base64 image
     expect(html).toMatch(/data:image\/png;base64,/);
@@ -246,7 +247,7 @@ describe("report-to-pdf with minimal report", () => {
     expect(stdout).toMatch(/PDF saved/);
 
     const expectedPdf = jsonPath.replace(/\.json$/, ".pdf");
-    expect(existsSync(expectedPdf).toBeTruthy(), "PDF file should exist");
+    expect(existsSync(expectedPdf)).toBeTruthy();
 
     const pdfContent = readFileSync(expectedPdf);
     expect(pdfContent.length > 0).toBeTruthy();
@@ -262,7 +263,7 @@ describe("report-to-pdf with minimal report", () => {
     const { stdout, code } = run([jsonPath, "-o", customOutput]);
     expect(code).toBe(0);
     expect(stdout).toMatch(/PDF saved/);
-    expect(existsSync(customOutput).toBeTruthy(), "Custom PDF path should exist");
+    expect(existsSync(customOutput)).toBeTruthy();
   });
 
   it("resolves JSON from HTML path", () => {

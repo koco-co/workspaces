@@ -62,9 +62,7 @@ describe("init-wizard scan", () => {
     const result = JSON.parse(stdout) as { node_version: string };
     expect(typeof result.node_version).toBe("string");
     expect(
-      result.node_version.startsWith("v").toBeTruthy(),
-      "node_version should start with v",
-    );
+      result.node_version.startsWith("v")).toBeTruthy();
   });
 
   it("node_ok is a boolean", () => {
@@ -76,7 +74,7 @@ describe("init-wizard scan", () => {
   it("plugins is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { plugins: unknown[] };
-    expect(Array.isArray(result.plugins).toBeTruthy(), "plugins should be an array");
+    expect(Array.isArray(result.plugins)).toBeTruthy();
   });
 
   it("each plugin entry has name and active fields", () => {
@@ -94,7 +92,7 @@ describe("init-wizard scan", () => {
   it("repos is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { repos: unknown[] };
-    expect(Array.isArray(result.repos).toBeTruthy(), "repos should be an array");
+    expect(Array.isArray(result.repos)).toBeTruthy();
   });
 
   it("each repo entry has group, repo, path fields", () => {
@@ -112,7 +110,7 @@ describe("init-wizard scan", () => {
   it("projects is an array of strings", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { projects: unknown[] };
-    expect(Array.isArray(result.projects).toBeTruthy(), "projects should be an array");
+    expect(Array.isArray(result.projects)).toBeTruthy();
     for (const p of result.projects) {
       expect(typeof p).toBe("string");
     }
@@ -121,16 +119,16 @@ describe("init-wizard scan", () => {
   it("issues is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { issues: unknown[] };
-    expect(Array.isArray(result.issues).toBeTruthy(), "issues should be an array");
+    expect(Array.isArray(result.issues)).toBeTruthy();
   });
 
   it("discovers the three built-in plugins", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { plugins: Array<{ name: string }> };
     const names = result.plugins.map((p) => p.name);
-    expect(names.includes("lanhu").toBeTruthy(), "should include lanhu plugin");
-    expect(names.includes("notify").toBeTruthy(), "should include notify plugin");
-    expect(names.includes("zentao").toBeTruthy(), "should include zentao plugin");
+    expect(names.includes("lanhu")).toBeTruthy();
+    expect(names.includes("notify")).toBeTruthy();
+    expect(names.includes("zentao")).toBeTruthy();
   });
 
   it("lanhu is inactive when LANHU_COOKIE is empty", () => {
@@ -175,7 +173,7 @@ describe("init-wizard verify", () => {
       checks: unknown[];
       all_pass: boolean;
     };
-    expect(Array.isArray(result.checks).toBeTruthy(), "checks should be an array");
+    expect(Array.isArray(result.checks)).toBeTruthy();
     expect(
       typeof result.all_pass).toBe("boolean");
   });
@@ -201,15 +199,9 @@ describe("init-wizard verify", () => {
     const result = JSON.parse(stdout) as { checks: Array<{ name: string }> };
     const names = result.checks.map((c) => c.name);
     expect(names.some((n) => n.toLowerCase().includes("node"))).toBeTruthy();
-    expect(names.some((n) => n.includes("依赖安装")).toBeTruthy(),
-      "should have deps check",
-    );
-    expect(names.some((n) => n.includes("工作区")).toBeTruthy(),
-      "should have workspace check",
-    );
-    expect(names.some((n) => n.includes(".env")).toBeTruthy(),
-      "should have .env check",
-    );
+    expect(names.some((n) => n.includes("依赖安装"))).toBeTruthy();
+    expect(names.some((n) => n.includes("工作区"))).toBeTruthy();
+    expect(names.some((n) => n.includes(".env"))).toBeTruthy();
   });
 
   it("checks array has at least 4 items", () => {

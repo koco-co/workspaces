@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import {
   existsSync,
   mkdirSync,
@@ -75,7 +76,7 @@ describe("xmind-gen.ts create mode", () => {
     const output = join(TMP_DIR, "test-create.xmind");
     const { code, stderr } = run(["--input", FIXTURE, "--output", output]);
     expect(code).toBe(0);
-    expect(existsSync(output).toBeTruthy(), ".xmind file was not created");
+    expect(existsSync(output)).toBeTruthy();
     expect(statSync(output).toBeTruthy().size > 0, ".xmind file is empty");
   });
 
@@ -225,9 +226,7 @@ describe("xmind-gen.ts content.json validation", () => {
 
     const sheets = await readContentJson(output);
     expect(
-      Array.isArray(sheets).toBeTruthy(),
-      "content.json should be an array of sheets",
-    );
+      Array.isArray(sheets)).toBeTruthy();
     expect(
       (sheets as unknown[]).toBeTruthy().length > 0,
       "content.json should have at least one sheet",
@@ -350,8 +349,8 @@ describe("xmind-gen.ts append mode", () => {
     expect(attached.length >= 2).toBeTruthy();
 
     const titles = attached.map((n) => n.title);
-    expect(titles.includes("质量问题台账").toBeTruthy(), "Original L1 should be present");
-    expect(titles.includes("数据质量规则").toBeTruthy(), "Appended L1 should be present");
+    expect(titles.includes("质量问题台账")).toBeTruthy();
+    expect(titles.includes("数据质量规则")).toBeTruthy();
   });
 
   it("creates new file if output does not exist in append mode", () => {
@@ -367,7 +366,7 @@ describe("xmind-gen.ts append mode", () => {
       "append",
     ]);
     expect(code).toBe(0);
-    expect(existsSync(output).toBeTruthy(), "file should have been created");
+    expect(existsSync(output)).toBeTruthy();
   });
 });
 
@@ -408,13 +407,9 @@ describe("xmind-gen.ts <br> tag sanitization", () => {
     // Preconditions should have <br> converted to \n
     expect(caseNode.notes?.plain?.content).toBeTruthy();
     expect(
-      !caseNode.notes!.plain.content.includes("<br").toBeTruthy(),
-      "preconditions still contains <br> tag",
-    );
+      !caseNode.notes!.plain.content.includes("<br")).toBeTruthy();
     expect(
-      caseNode.notes!.plain.content.includes("\n").toBeTruthy(),
-      "preconditions should contain newline",
-    );
+      caseNode.notes!.plain.content.includes("\n")).toBeTruthy();
 
     // Step nodes
     const stepNodes = caseNode.children?.attached ?? [];
@@ -428,9 +423,7 @@ describe("xmind-gen.ts <br> tag sanitization", () => {
       `step title still contains <br> tag: ${step2.title}`,
     );
     expect(
-      step2.title!.includes("\n").toBeTruthy(),
-      "step title should contain newline after <br> conversion",
-    );
+      step2.title!.includes("\n")).toBeTruthy();
 
     // Expected of step 2
     const expected2 = step2.children?.attached?.[0];
@@ -440,9 +433,7 @@ describe("xmind-gen.ts <br> tag sanitization", () => {
       `expected title still contains <br> tag: ${expected2!.title}`,
     );
     expect(
-      expected2!.title!.includes("\n").toBeTruthy(),
-      "expected title should contain newline after <br> conversion",
-    );
+      expected2!.title!.includes("\n")).toBeTruthy();
   });
 });
 
@@ -546,9 +537,7 @@ describe("xmind-gen.ts replace mode", () => {
     // The original L1 should be gone, replaced by the new one
     const titles = attached.map((n) => n.title);
     expect(
-      titles.includes("质量问题台账").toBeTruthy(),
-      "L1 should be present (replaced with new version)",
-    );
+      titles.includes("质量问题台账")).toBeTruthy();
     expect(
       attached.length).toBe(1);
   });

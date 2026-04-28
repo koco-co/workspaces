@@ -64,10 +64,9 @@ function classify(
   if (!fileMatch) return null;
   const fileSlug = fileMatch[1]!;
 
-  // Reconstruct file path
-  const fullPath = stdout.match(
-    new RegExp(`/Users/poco/Projects/kata/engine/(tests/[^:]+):(\\d+)`),
-  );
+  // Reconstruct file path dynamically
+  const enginePath = escapeRegex(join(repoRoot(), "engine"));
+  const fullPath = stdout.match(new RegExp(`${enginePath}/(tests/[^:]+):(\\d+)`));
   const line = fullPath ? Number(fullPath[2]) : 0;
 
   // Heuristic classification
@@ -88,7 +87,12 @@ function classify(
   }
 
   // E3: toBeTruthy on non-expect (remaining codemod corruption)
-  if (/\.(includes|endsWith|startsWith)\(.*\)\.toBeTruthy/.test(testName)) {
+  // Scan stdout for TypeError about .toBeTruthy related to this file
+  const e3Re = new RegExp(
+    `error.*${escapeRegex(fileSlug)}.*toBeTruthy[^)]*\\) is not a function`,
+    "m",
+  );
+  if (e3Re.test(stdout)) {
     return { bucket: "E3", file: fileSlug, line, reason };
   }
 

@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, cpSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { KATA_CLI } from "../cli-runner.ts";
 
 const REPO = resolve(import.meta.dir, "../../..");
 const FIXTURE = resolve(import.meta.dir, "../migration/fixtures/mini-workspace");
@@ -18,11 +19,14 @@ describe("kata-cli migrate-workspace --mode dry", () => {
       "bun",
       [
         "run",
-        join(REPO, "engine/bin/kata-cli"),
+        KATA_CLI,
         "migrate-workspace",
-        "--project", "myproj",
-        "--mode", "dry",
-        "--log", logPath,
+        "--project",
+        "myproj",
+        "--mode",
+        "dry",
+        "--log",
+        logPath,
       ],
       {
         env: { ...process.env, WORKSPACE_DIR: wsDir },

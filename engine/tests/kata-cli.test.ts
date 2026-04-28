@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { resolve } from "node:path";
 import { describe, it, expect } from "bun:test";
 
@@ -8,7 +9,7 @@ function run(
   args: string[],
 ): { stdout: string; stderr: string; code: number } {
   try {
-    const stdout = execFileSync("kata-cli", args, {
+    const stdout = execFileSync(KATA_CLI, args, {
       cwd: REPO_ROOT,
       encoding: "utf8",
       env: { ...process.env },

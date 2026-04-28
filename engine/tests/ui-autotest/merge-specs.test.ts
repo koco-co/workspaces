@@ -150,8 +150,8 @@ describe("readCodeBlocks", () => {
 describe("buildSpecContent", () => {
   it("空 blocks 时生成占位内容", () => {
     const content = buildSpecContent([], "冒烟测试");
-    expect(content.includes("冒烟测试").toBeTruthy(), "应包含标签");
-    expect(content.includes("export {};").toBeTruthy(), "空文件应导出空模块");
+    expect(content.includes("冒烟测试")).toBeTruthy();
+    expect(content.includes("export {};")).toBeTruthy();
   });
 
   it("生成内容按顺序聚合导入所有独立 spec", () => {
@@ -166,8 +166,8 @@ describe("buildSpecContent", () => {
     const importCount = (content.match(/^import /gm) ?? []).length;
     expect(importCount).toBe(2);
     expect(content).toMatch(/import "\.\/t2\.spec";\nimport "\.\/t10\.spec";/);
-    expect(!content.includes("rule-editor-helpers").toBeTruthy(), "聚合文件不应内联 helper import");
-    expect(!content.includes("test.describe(").toBeTruthy(), "聚合文件不应内联测试实现");
+    expect(!content.includes("rule-editor-helpers")).toBeTruthy();
+    expect(!content.includes("test.describe(")).toBeTruthy();
   });
 });
 
@@ -184,10 +184,8 @@ describe("mergeSpecs", () => {
     const result = mergeSpecs(blocksDir, outputDir);
 
     expect(
-      result.smoke_spec.endsWith("smoke.spec.ts").toBeTruthy(),
-      "smoke_spec 路径应以 smoke.spec.ts 结尾",
-    );
-    expect(result.full_spec.endsWith("full.spec.ts").toBeTruthy(), "full_spec 路径应以 full.spec.ts 结尾");
+      result.smoke_spec.endsWith("smoke.spec.ts")).toBeTruthy();
+    expect(result.full_spec.endsWith("full.spec.ts")).toBeTruthy();
     expect(result.case_count.smoke).toBe(1);
     expect(result.case_count.full).toBe(3);
   });
@@ -203,8 +201,8 @@ describe("mergeSpecs", () => {
     const result = mergeSpecs(blocksDir, outputDir);
 
     const smokeContent = readFileSync(result.smoke_spec, "utf-8");
-    expect(smokeContent.includes('import "./t1.spec";').toBeTruthy(), "smoke spec 应包含 P0 聚合 import");
-    expect(!smokeContent.includes('import "./t2.spec";').toBeTruthy(), "smoke spec 不应包含 P1 聚合 import");
+    expect(smokeContent.includes('import "./t1.spec";')).toBeTruthy();
+    expect(!smokeContent.includes('import "./t2.spec";')).toBeTruthy();
   });
 
   it("full.spec.ts 包含所有优先级用例", () => {
@@ -219,9 +217,9 @@ describe("mergeSpecs", () => {
     const result = mergeSpecs(blocksDir, outputDir);
 
     const fullContent = readFileSync(result.full_spec, "utf-8");
-    expect(fullContent.includes('import "./t1.spec";').toBeTruthy(), "应包含 P0 import");
-    expect(fullContent.includes('import "./t2.spec";').toBeTruthy(), "应包含 P1 import");
-    expect(fullContent.includes('import "./t3.spec";').toBeTruthy(), "应包含 P2 import");
+    expect(fullContent.includes('import "./t1.spec";')).toBeTruthy();
+    expect(fullContent.includes('import "./t2.spec";')).toBeTruthy();
+    expect(fullContent.includes('import "./t3.spec";')).toBeTruthy();
   });
 
   it("输出目录不存在时自动创建", () => {

@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -118,18 +119,16 @@ describe("xmind-patch search", () => {
       priority: string;
     }[];
 
-    expect(Array.isArray(results).toBeTruthy(), "result should be an array");
+    expect(Array.isArray(results)).toBeTruthy();
     expect(results.length > 0).toBeTruthy();
 
     const match = results.find((r) => r.title === "验证默认加载列表页");
     expect(match).toBeTruthy();
     expect(match.file).toBe(xmindPath);
     expect(match.priority).toBe("P0");
-    expect(Array.isArray(match.tree_path).toBeTruthy(), "tree_path should be an array");
+    expect(Array.isArray(match.tree_path)).toBeTruthy();
     expect(
-      match.tree_path.includes("验证默认加载列表页").toBeTruthy(),
-      "tree_path should contain case title",
-    );
+      match.tree_path.includes("验证默认加载列表页")).toBeTruthy();
   });
 
   it("returns empty array when no matches found", () => {
@@ -191,11 +190,11 @@ describe("xmind-patch show", () => {
     expect(caseData.priority).toBe("P0");
     expect(caseData.preconditions).toBeTruthy();
     expect(caseData.preconditions!).toMatch(/环境已部署/);
-    expect(Array.isArray(caseData.steps).toBeTruthy(), "steps should be an array");
+    expect(Array.isArray(caseData.steps)).toBeTruthy();
     expect(caseData.steps.length > 0).toBeTruthy();
     expect(caseData.steps[0].step).toBe("进入【数据质量 → 质量问题台账】页面");
     expect(caseData.steps[0].expected).toBe("页面正常加载");
-    expect(Array.isArray(caseData.tree_path).toBeTruthy(), "tree_path should be present");
+    expect(Array.isArray(caseData.tree_path)).toBeTruthy();
   });
 
   it("exits with code 1 when title is not found", () => {

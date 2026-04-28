@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,16 +67,16 @@ describe("plugin-loader.ts list", () => {
     const { stdout, code } = runPluginLoader(["list"]);
     expect(code).toBe(0);
     const plugins = JSON.parse(stdout) as unknown[];
-    expect(Array.isArray(plugins).toBeTruthy(), "output should be an array");
+    expect(Array.isArray(plugins)).toBeTruthy();
   });
 
   it("discovers the three built-in plugins", () => {
     const { stdout } = runPluginLoader(["list"]);
     const plugins = JSON.parse(stdout) as Array<{ name: string }>;
     const names = plugins.map((p) => p.name);
-    expect(names.includes("lanhu").toBeTruthy(), "should include lanhu plugin");
-    expect(names.includes("notify").toBeTruthy(), "should include notify plugin");
-    expect(names.includes("zentao").toBeTruthy(), "should include zentao plugin");
+    expect(names.includes("lanhu")).toBeTruthy();
+    expect(names.includes("notify")).toBeTruthy();
+    expect(names.includes("zentao")).toBeTruthy();
   });
 
   it("each entry has name, active, and description fields", () => {
@@ -217,9 +218,7 @@ describe("plugin-loader.ts resolve", () => {
     const result = JSON.parse(stdout) as { plugin: string; command: string };
     expect(result.plugin).toBe("lanhu");
     expect(
-      result.command.includes(url).toBeTruthy(),
-      "command should contain the resolved URL",
-    );
+      result.command.includes(url)).toBeTruthy();
   });
 
   it("replaces {{url}} placeholder in fetch command", () => {
@@ -229,13 +228,9 @@ describe("plugin-loader.ts resolve", () => {
     });
     const result = JSON.parse(stdout) as { command: string };
     expect(
-      result.command.includes(url).toBeTruthy(),
-      "{{url}} should be replaced with actual URL",
-    );
+      result.command.includes(url)).toBeTruthy();
     expect(
-      !result.command.includes("{{url}}").toBeTruthy(),
-      "no {{url}} placeholder should remain",
-    );
+      !result.command.includes("{{url}}")).toBeTruthy();
   });
 
   it("exits 1 and returns error JSON when no plugin matches", () => {
@@ -321,17 +316,11 @@ describe("plugin-loader.ts notify", () => {
     };
     if (!result.skipped && result.command) {
       expect(
-        result.command.includes(event).toBeTruthy(),
-        "command should include event name",
-      );
+        result.command.includes(event)).toBeTruthy();
       expect(
-        !result.command.includes("{{event}}").toBeTruthy(),
-        "{{event}} placeholder should be replaced",
-      );
+        !result.command.includes("{{event}}")).toBeTruthy();
       expect(
-        !result.command.includes("{{json}}").toBeTruthy(),
-        "{{json}} placeholder should be replaced",
-      );
+        !result.command.includes("{{json}}")).toBeTruthy();
     }
   });
 

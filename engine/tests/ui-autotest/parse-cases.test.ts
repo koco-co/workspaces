@@ -224,7 +224,7 @@ describe("parseArchiveMd", () => {
       firstTask.title.includes("默认加载").toBeTruthy(),
       `标题应包含关键词，实际：${firstTask.title}`,
     );
-    expect(Array.isArray(firstTask.steps).toBeTruthy(), "steps 应为数组");
+    expect(Array.isArray(firstTask.steps)).toBeTruthy();
     expect(firstTask.steps.length > 0).toBeTruthy();
   });
 

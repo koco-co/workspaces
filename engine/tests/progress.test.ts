@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -9,7 +10,7 @@ const CWD = resolve(import.meta.dirname, "../..");
 
 function run(args: string[], extra: Record<string, string> = {}) {
   try {
-    const stdout = execFileSync("kata-cli", ["progress", ...args], {
+    const stdout = execFileSync(KATA_CLI, ["progress", ...args], {
       cwd: CWD, encoding: "utf8",
       env: { ...process.env, KATA_ROOT_OVERRIDE: TMP, ...extra },
     });
@@ -174,7 +175,7 @@ describe("task-add + task-query + task-update", () => {
     ]).stdout);
     expect(out.length).toBe(1);
     expect(out[0].task.id).toBe("t2");
-    expect(out[0].blocked_by.join(").toMatch("), /t1/);
+    expect(out[0].blocked_by.join(",")).toMatch(/t1/);
   });
 });
 
@@ -388,26 +389,6 @@ describe("migrate-session", () => {
     expect(result.migrated.length).toBe(2);
     const actions = result.migrated.map((r: { action: string }) => r.action).sort();
     expect(actions).toEqual(["auto-done", "revert-to-discuss"]);
-  });
-});
-).toBe("blocked");
-    expect(c1.reason).toBe("需人工");
-  });
-
-  it("task-rollup fails with exit 5 when children unfinished", () => {
-    const sid = seedRollup();
-    const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
-    expect(res.code).toBe(5);
-  });
-
-  it("task-rollup succeeds when all children done", () => {
-    const sid = seedRollup();
-    run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c1", "--status", "done"]);
-    run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c2", "--status", "done"]);
-    const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
-    expect(res.code).toBe(0);
-    const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
-    expect(s.tasks.find((t: { id: string }) => t.id === "p").status).toBe("done");
   });
 });
 

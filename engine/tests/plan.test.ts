@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -365,8 +366,8 @@ describe("plan.ts update", () => {
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
-    expect(md.includes("\u2705").toBeTruthy(), "MD should contain completed emoji");
-    expect(md.includes("完成").toBeTruthy(), "MD should contain completion label");
+    expect(md.includes("\u2705")).toBeTruthy();
+    expect(md.includes("完成")).toBeTruthy();
   });
 });
 

@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -116,7 +117,7 @@ describe("format-report-locator.ts error handling", () => {
       "--output", join(TMP_DIR, "out.json"),
     ]);
     expect(code).toBe(1);
-    expect(stderr.includes("Failed to read").toBeTruthy(), "should report read error");
+    expect(stderr.includes("Failed to read")).toBeTruthy();
   });
 
   it("exits with code 1 when archive file is missing", () => {
@@ -127,7 +128,7 @@ describe("format-report-locator.ts error handling", () => {
       "--output", join(TMP_DIR, "out.json"),
     ]);
     expect(code).toBe(1);
-    expect(stderr.includes("Failed to read").toBeTruthy(), "should report read error");
+    expect(stderr.includes("Failed to read")).toBeTruthy();
   });
 });
 

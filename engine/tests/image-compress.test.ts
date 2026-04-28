@@ -1,4 +1,5 @@
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";

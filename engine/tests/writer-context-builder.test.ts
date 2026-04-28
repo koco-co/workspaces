@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -112,13 +113,9 @@ describe("writer-context-builder build — module match", () => {
 
     expect(out.writer_id).toBe("商品管理");
     expect(
-      out.module_prd_section.includes("## 商品管理").toBeTruthy(),
-      "should include the module heading",
-    );
+      out.module_prd_section.includes("## 商品管理")).toBeTruthy();
     expect(
-      !out.module_prd_section.includes("## 订单管理").toBeTruthy(),
-      "should NOT include other module headings",
-    );
+      !out.module_prd_section.includes("## 订单管理")).toBeTruthy();
     expect(out.fallback).toBe(false);
     expect(out.test_points.length).toBe(2);
   });
@@ -138,7 +135,7 @@ describe("writer-context-builder build — module match", () => {
 
     expect(code).toBe(0);
     const out = JSON.parse(stdout) as { module_prd_section: string; fallback: boolean };
-    expect(out.module_prd_section.includes("## 商品管理").toBeTruthy(), "should fuzzy-match 商品 to 商品管理");
+    expect(out.module_prd_section.includes("## 商品管理")).toBeTruthy();
     expect(out.fallback).toBe(false);
   });
 });
@@ -166,13 +163,9 @@ describe("writer-context-builder build — no match fallback", () => {
 
     expect(out.fallback).toBe(true);
     expect(
-      out.module_prd_section.includes("## 商品管理").toBeTruthy(),
-      "fallback should include full PRD",
-    );
+      out.module_prd_section.includes("## 商品管理")).toBeTruthy();
     expect(
-      out.module_prd_section.includes("## 订单管理").toBeTruthy(),
-      "fallback should include full PRD",
-    );
+      out.module_prd_section.includes("## 订单管理")).toBeTruthy();
     expect(out.test_points.length).toBe(0);
   });
 });

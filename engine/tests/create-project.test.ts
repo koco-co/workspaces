@@ -1,4 +1,5 @@
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import {
   existsSync,
   mkdirSync,
@@ -344,13 +345,9 @@ describe("create-project create --confirmed", () => {
     const content = readFileSync(overviewPath, "utf8");
     // create-project must not have replaced user content with the template
     expect(
-      !content.includes("partial 业务概览").toBeTruthy(),
-      "overview.md must not be overwritten with template content",
-    );
+      !content.includes("partial 业务概览")).toBeTruthy();
     expect(
-      content.includes("user-customised").toBeTruthy(),
-      "overview.md must still contain user content",
-    );
+      content.includes("user-customised")).toBeTruthy();
   });
 
   it("renames legacy historys/ → history/ on repair", () => {
@@ -476,7 +473,7 @@ describe("create-project clone-repo", () => {
     expect(data.repo).toBe("demo");
     expect(data.branch).toBe("main");
     expect(data.local_path.endsWith("/demo")).toBeTruthy();
-    expect(existsSync(join(data.local_path)).toBeTruthy(), "cloned .git exists");
+    expect(existsSync(join(data.local_path))).toBeTruthy();
   });
 
   it("rejects when repo already cloned at target path", () => {

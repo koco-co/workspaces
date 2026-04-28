@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -62,9 +63,7 @@ describe("archive-gen.ts convert — generates valid Markdown with front-matter"
       module_count: number;
     };
     expect(
-      result.output_path.endsWith("test-convert.md").toBeTruthy(),
-      "output_path should end with .md",
-    );
+      result.output_path.endsWith("test-convert.md")).toBeTruthy();
     expect(
       typeof result.case_count === "number",
       "case_count should be a number",
@@ -294,14 +293,12 @@ origin: "xmind"
       tags: string[];
       case_count: number;
     }>;
-    expect(Array.isArray(results).toBeTruthy(), "search output should be an array");
+    expect(Array.isArray(results)).toBeTruthy();
     expect(results.length > 0).toBeTruthy();
     expect(
       results[0].suite_name).toBe("质量问题台账");
     expect(
-      results[0].path.includes("test-archive.md").toBeTruthy(),
-      "path should reference the file",
-    );
+      results[0].path.includes("test-archive.md")).toBeTruthy();
     expect(
       typeof results[0].case_count === "number",
       "case_count should be a number",
@@ -385,7 +382,7 @@ origin: "xmind"
     expect(code).toBe(0);
 
     const results = JSON.parse(stdout) as unknown[];
-    expect(Array.isArray(results).toBeTruthy(), "result should be an array");
+    expect(Array.isArray(results)).toBeTruthy();
     expect(
       results.length).toBe(0);
   });
@@ -459,9 +456,7 @@ origin: "xmind"
       expect(results.length > 0).toBeTruthy();
       expect(results[0].suite_name).toBe("项目级归档");
       expect(
-        results[0].path.includes("testProject/archive").toBeTruthy(),
-        "path should contain project-scoped archive dir",
-      );
+        results[0].path.includes("testProject/archive")).toBeTruthy();
     } finally {
       // Clean up the created project archive directory
       rmSync(join(REPO_ROOT, "workspace", "testProject"), {
@@ -579,17 +574,15 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
     const { frontMatter } = parseFrontMatter(content);
     const tags = frontMatter.tags as string[];
 
-    expect(Array.isArray(tags).toBeTruthy(), "tags should be an array");
-    expect(tags.includes("data-assets").toBeTruthy(), "tags should include module_key");
-    expect(tags.includes("v6.4.10").toBeTruthy(), "tags should include version");
+    expect(Array.isArray(tags)).toBeTruthy();
+    expect(tags.includes("data-assets")).toBeTruthy();
+    expect(tags.includes("v6.4.10")).toBeTruthy();
     expect(
-      tags.includes("质量问题台账").toBeTruthy(),
-      "tags should include module name",
-    );
-    expect(tags.includes("列表页").toBeTruthy(), "tags should include page name");
-    expect(tags.includes("新增页").toBeTruthy(), "tags should include page name");
-    expect(tags.includes("搜索筛选").toBeTruthy(), "tags should include sub_group name");
-    expect(tags.includes("#10287").toBeTruthy(), "tags should include prd_id with # prefix");
+      tags.includes("质量问题台账")).toBeTruthy();
+    expect(tags.includes("列表页")).toBeTruthy();
+    expect(tags.includes("新增页")).toBeTruthy();
+    expect(tags.includes("搜索筛选")).toBeTruthy();
+    expect(tags.includes("#10287")).toBeTruthy();
   });
 
   it("extracts bracket content from requirement_name into tags", () => {
@@ -619,13 +612,9 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
     const tags = frontMatter.tags as string[];
 
     expect(
-      tags.includes("数据质量").toBeTruthy(),
-      "tags should include bracket-extracted content '数据质量'",
-    );
+      tags.includes("数据质量")).toBeTruthy();
     expect(
-      tags.includes("问题台账优化").toBeTruthy(),
-      "tags should include text after brackets",
-    );
+      tags.includes("问题台账优化")).toBeTruthy();
   });
 
   it("excludes '未分类' module/page names from tags", () => {
@@ -672,9 +661,7 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
     const tags = frontMatter.tags as string[];
 
     expect(
-      !tags.includes("未分类").toBeTruthy(),
-      "tags should not include '未分类'",
-    );
+      !tags.includes("未分类")).toBeTruthy();
   });
 });
 
@@ -792,12 +779,8 @@ describe("archive-gen.ts convert — pipe and newline escaping in step tables", 
 
     const content = readFileSync(output, "utf8");
     expect(
-      content.includes("A\\|B\\|C").toBeTruthy(),
-      "pipe chars in step should be escaped",
-    );
+      content.includes("A\\|B\\|C")).toBeTruthy();
     expect(
-      content.includes("X\\|Y").toBeTruthy(),
-      "pipe chars in expected should be escaped",
-    );
+      content.includes("X\\|Y")).toBeTruthy();
   });
 });

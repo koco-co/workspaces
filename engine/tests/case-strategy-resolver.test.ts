@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -9,7 +10,7 @@ import { join, resolve } from "node:path";
 const repoRoot = resolve(import.meta.dirname, "../..");
 
 function runCli(args: string[]) {
-  return spawnSync("kata-cli", ["case-strategy-resolver", ...args], {
+  return spawnSync(KATA_CLI, ["case-strategy-resolver", ...args], {
     encoding: "utf8",
     cwd: repoRoot,
   });

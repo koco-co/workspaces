@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { transformNodeTestToBunTest } from "../codemod/node-test-to-bun-test.ts";
 import { stripMatcherMessage } from "../codemod/strip-matcher-message.ts";
-import { fixTruthyCorruption } from "../codemod/fix-truthy-corruption.ts";
+import { fixTruthyCorruption, fixStandaloneTruthy } from "../codemod/fix-truthy-corruption.ts";
 import { repoRoot } from "../lib/paths.ts";
 
 function findTestFiles(root: string, out: string[], indicator: RegExp): void {
@@ -39,12 +39,12 @@ export function registerCodemodApply(program: Command): void {
       const transform = isStrip
         ? stripMatcherMessage
         : isFixTruthy
-          ? fixTruthyCorruption
+          ? (s: string) => fixStandaloneTruthy(fixTruthyCorruption(s))
           : transformNodeTestToBunTest;
       const indicator = isStrip
         ? /\.(toBe|toEqual|toMatch|toThrow)\([^)]*,/
         : isFixTruthy
-          ? /expect\(.*\.toBeTruthy\(\)/
+          ? /expect\(.*\.toBeTruthy\(\)|\.toBeTruthy\(\)/
           : /from "node:test"/;
 
       const files: string[] = [];

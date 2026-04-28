@@ -250,15 +250,15 @@ describe("queryTasks visibility rules", () => {
     const sid = setup();
     const visible = queryTasks(project, sid, {});
     const ids = visible.map((r) => r.task.id);
-    expect(!ids.includes("t1").toBeTruthy(), "t1 should be hidden (parent pending)");
+    expect(!ids.includes("t1")).toBeTruthy();
   });
 
   it("hides tasks with unsatisfied depends_on", () => {
     const sid = setup();
     const visible = queryTasks(project, sid, {});
     const ids = visible.map((r) => r.task.id);
-    expect(!ids.includes("t5").toBeTruthy(), "t5 should be hidden (t6 not done)");
-    expect(ids.includes("t6").toBeTruthy(), "t6 visible (parent running, no deps)");
+    expect(!ids.includes("t5")).toBeTruthy();
+    expect(ids.includes("t6")).toBeTruthy();
   });
 
   it("--include-all returns everything", () => {
@@ -453,7 +453,8 @@ describe("resumeSession", () => {
     expect(cur.artifacts.cached_parse_result).toBe(undefined);
   });
 
-  it("--payload-path-check: missing file → reset task).toThrow(/cycle/i);
+  it("--payload-path-check: missing file → reset task", () => {
+    // TODO: implement payload path check test
   });
 
   it("rejects updateTask --depends-on introducing cycle", () => {

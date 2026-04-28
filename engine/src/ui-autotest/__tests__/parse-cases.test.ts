@@ -92,8 +92,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    expect(result.includes("zenith").toBeTruthy(), "should not truncate at letter z");
-    expect(result.includes("zookeeper").toBeTruthy(), "should include zookeeper");
+    expect(result.includes("zenith")).toBeTruthy();
+    expect(result.includes("zookeeper")).toBeTruthy();
   });
 });
 

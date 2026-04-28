@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import {
   existsSync,
   mkdirSync,
@@ -98,9 +99,7 @@ describe("history-convert --detect", () => {
     expect(entries.length > 0).toBeTruthy();
     expect(entries[0].type).toBe("csv");
     expect(
-      entries[0].outputDir.includes("archive").toBeTruthy(),
-      "outputDir should point to archive directory",
-    );
+      entries[0].outputDir.includes("archive")).toBeTruthy();
   });
 });
 
@@ -127,8 +126,8 @@ describe("history-convert CSV conversion", () => {
     const result = out.files.find((f) => f.input === FIXTURE_CSV);
     expect(result).toBeTruthy();
     expect(result.status).toBe("converted");
-    expect(result.output.endsWith(".md").toBeTruthy(), "output should be a .md file");
-    expect(existsSync(result.output).toBeTruthy(), "output file should exist");
+    expect(result.output.endsWith(".md")).toBeTruthy();
+    expect(existsSync(result.output)).toBeTruthy();
   });
 
   it("generated Markdown contains module sections and case titles", () => {
@@ -207,9 +206,7 @@ describe("history-convert directory scan", () => {
       files: { input: string }[];
     };
     expect(out.converted).toBe(2);
-    expect(out.files.every((f) => f.input.endsWith(".csv")).toBeTruthy(),
-      "should only process .csv files",
-    );
+    expect(out.files.every((f) => f.input.endsWith(".csv"))).toBeTruthy();
   });
 });
 
@@ -241,9 +238,7 @@ describe("history-convert --module filter", () => {
     const entries = JSON.parse(stdout) as { path: string }[];
     expect(entries.length).toBe(1);
     expect(
-      entries[0].path.includes("商品管理").toBeTruthy(),
-      "matched file should be 商品管理.csv",
-    );
+      entries[0].path.includes("商品管理")).toBeTruthy();
   });
 });
 

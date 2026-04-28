@@ -24,8 +24,8 @@ describe("classifySource", () => {
   it("returns missing when output is null", () => {
     const result = classifySource(null);
     expect(result.level).toBe("missing");
-    expect((result.evidence as Record<string).toBe(unknown>).a_level_count, 0);
-    expect((result.evidence as Record<string).toBe(unknown>).coverage_rate, 0);
+    expect((result.evidence as Record<string, unknown>).a_level_count).toBe(0);
+    expect((result.evidence as Record<string, unknown>).coverage_rate).toBe(0);
   });
 
   it("returns strong when a_level has 3 items and coverage_rate >= 0.05", () => {

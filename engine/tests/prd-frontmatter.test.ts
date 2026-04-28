@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -94,9 +95,7 @@ describe("prd-frontmatter normalize --dry-run", () => {
     ]);
     expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    expect(out.changes.some((c) => c.includes("create_at")).toBeTruthy(),
-      "should report added create_at",
-    );
+    expect(out.changes.some((c) => c.includes("create_at"))).toBeTruthy();
   });
 
   it("reports default status when missing", () => {
@@ -112,9 +111,7 @@ describe("prd-frontmatter normalize --dry-run", () => {
     ]);
     expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    expect(out.changes.some((c) => c.includes("status")).toBeTruthy(),
-      "should report added status",
-    );
+    expect(out.changes.some((c) => c.includes("status"))).toBeTruthy();
   });
 });
 
@@ -130,9 +127,7 @@ describe("prd-frontmatter normalize (actual write)", () => {
 
     const out = JSON.parse(stdout) as { changes: string[]; dry_run: boolean };
     expect(out.dry_run).toBe(false);
-    expect(out.changes.some((c) => c.includes("status")).toBeTruthy(),
-      "should normalize status",
-    );
+    expect(out.changes.some((c) => c.includes("status"))).toBeTruthy();
 
     const written = readFileSync(filePath, "utf8");
     expect(written).toMatch(/草稿/);

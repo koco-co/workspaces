@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -294,7 +295,7 @@ describe("write --type term", () => {
     const obj = JSON.parse(stdout);
     expect(obj.dry_run).toBe(true);
     const terms = readFileSync(join(PROJECT_KNOWLEDGE, "terms.md"), "utf8");
-    expect(!terms.includes("XYZ").toBeTruthy(), "terms.md should not contain XYZ after dry-run");
+    expect(!terms.includes("XYZ")).toBeTruthy();
   });
 
   it("high confidence real write persists term row", () => {

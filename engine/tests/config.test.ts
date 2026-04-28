@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,7 +23,7 @@ function runConfig(extraEnv: Record<string, string> = {}): {
   code: number;
 } {
   try {
-    const stdout = execFileSync("kata-cli", ["config"], {
+    const stdout = execFileSync(KATA_CLI, ["config"], {
       cwd: REPO_ROOT,
       encoding: "utf8",
       env: {
@@ -79,7 +80,7 @@ describe("config.ts — output structure", () => {
       if (k !== "WORKSPACE_DIR" && v !== undefined) spawnEnv[k] = v;
     }
     try {
-      const stdout = execFileSync("kata-cli", ["config"], {
+      const stdout = execFileSync(KATA_CLI, ["config"], {
         cwd: REPO_ROOT,
         encoding: "utf8",
         env: spawnEnv,
@@ -197,7 +198,7 @@ describe("config.ts — plugin active detection logic", () => {
 
   it("--help flag exits successfully", () => {
     try {
-      execFileSync("kata-cli", ["config", "--help"], {
+      execFileSync(KATA_CLI, ["config", "--help"], {
         cwd: REPO_ROOT,
         encoding: "utf8",
       });

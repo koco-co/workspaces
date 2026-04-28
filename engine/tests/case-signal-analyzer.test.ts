@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
@@ -38,7 +39,7 @@ function cachePath(): string {
 }
 
 function runCli(args: string[]): ReturnType<typeof spawnSync> {
-  return spawnSync("kata-cli", ["case-signal-analyzer", ...args], {
+  return spawnSync(KATA_CLI, ["case-signal-analyzer", ...args], {
     encoding: "utf8",
     cwd: repoRoot,
   });

@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { resolve } from "node:path";
 import { describe, it, expect } from "bun:test";
 import { parseGitUrl } from "../src/lib/paths.ts";

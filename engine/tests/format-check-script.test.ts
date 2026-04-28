@@ -3,22 +3,19 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, it, expect } from "bun:test";
+import { KATA_CLI } from "./cli-runner.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-format-check-test-${process.pid}`);
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
-    const kataCli = join(REPO_ROOT, "node_modules", ".bin", "kata-cli");
-    const stdout = execFileSync(
-      kataCli,
-      ["format-check-script", ...args],
-      {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-        timeout: 30_000,
-      },
-    );
+    const kataCli = KATA_CLI;
+    const stdout = execFileSync(kataCli, ["format-check-script", ...args], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      timeout: 30_000,
+    });
     return { stdout, stderr: "", code: 0 };
   } catch (err: unknown) {
     const e = err as { stdout?: string; stderr?: string; status?: number };
@@ -148,9 +145,7 @@ describe("format-check-script.ts check — FC02 首步缺少等待条件", () =>
 describe("format-check-script.ts check — FC03 步骤用文字序号而非表格", () => {
   it("detects inline step numbering (步骤1:) as FC03 issue", () => {
     // Content block (non-table) with step numbering text
-    const md = buildArchiveMd([
-      `##### 【P0】验证列表功能\n\n步骤1：进入页面\n步骤2：查看数据`,
-    ]);
+    const md = buildArchiveMd([`##### 【P0】验证列表功能\n\n步骤1：进入页面\n步骤2：查看数据`]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
     expect(code).toBe(0);
@@ -348,7 +343,12 @@ describe("format-check-script.ts check — 混合场景", () => {
     expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as {
-      definite_issues: { rule: string; case_idx: number; case_title: string; description: string }[];
+      definite_issues: {
+        rule: string;
+        case_idx: number;
+        case_title: string;
+        description: string;
+      }[];
       suspect_items: { rule: string; case_idx: number }[];
       stats: { total_cases: number; definite_count: number; suspect_count: number };
     };

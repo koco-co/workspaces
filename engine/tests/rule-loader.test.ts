@@ -1,4 +1,5 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -130,8 +131,8 @@ describe("rule-loader.ts load — parse rules", () => {
     expect("test-rules" in result).toBeTruthy();
     expect(result["test-rules"]["valid_key"]).toBe("valid_value");
     expect(result["test-rules"]["another_key"]).toBe("another_value");
-    expect(!("#" in result["test-rules"]).toBeTruthy(), "# lines should be skipped");
-    expect(!(">" in result["test-rules"]).toBeTruthy(), "> lines should be skipped");
+    expect(!("#" in result["test-rules"])).toBeTruthy();
+    expect(!(">" in result["test-rules"])).toBeTruthy();
   });
 
   it("uses filename without .md as the output key", () => {

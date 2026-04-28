@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it, expect } from "bun:test";
+import { describe, it, test, expect } from "bun:test";
 import {
   currentYYYYMM,
   enhancedMd,
@@ -103,7 +103,10 @@ describe("repoRoot", () => {
 
   it("resolves to the kata project root (contains package.json)", () => {
     const root = repoRoot();
-    expect(existsSync(`${root}/package.json`).toBeTruthy(), `Expected package.json in repoRoot: ${root}`);
+    expect(
+      existsSync(`${root}/package.json`).toBeTruthy(),
+      `Expected package.json in repoRoot: ${root}`,
+    );
   });
 
   it("resolves to a directory containing .claude/", () => {
@@ -123,7 +126,10 @@ describe("scriptsDir", () => {
 describe("skillsDir", () => {
   it("points to .claude/skills inside the repo root", () => {
     const dir = skillsDir();
-    expect(dir.endsWith(".claude/skills").toBeTruthy(), `Expected to end with .claude/skills, got: ${dir}`);
+    expect(
+      dir.endsWith(".claude/skills").toBeTruthy(),
+      `Expected to end with .claude/skills, got: ${dir}`,
+    );
   });
 });
 
@@ -246,7 +252,10 @@ describe("knowledgeDir", () => {
 describe("knowledgePath", () => {
   it("joins segments under knowledge dir", () => {
     const p = knowledgePath("dataAssets", "modules", "data-source.md");
-    expect(p.endsWith("workspace/dataAssets/knowledge/modules/data-source.md").toBeTruthy(), `got: ${p}`);
+    expect(
+      p.endsWith("workspace/dataAssets/knowledge/modules/data-source.md").toBeTruthy(),
+      `got: ${p}`,
+    );
   });
 
   it("returns knowledge dir itself when no segments", () => {

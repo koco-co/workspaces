@@ -1,4 +1,5 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process"
+import { KATA_CLI } from "./cli-runner.ts";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -173,9 +174,7 @@ describe("search-filter.ts filter — deduplicates by suite_name keeping max cas
     expect(
       bloodLineageResults[0].case_count).toBe(15);
     expect(
-      bloodLineageResults[0].path.includes("v2.md").toBeTruthy(),
-      "should keep path of larger entry",
-    );
+      bloodLineageResults[0].path.includes("v2.md")).toBeTruthy();
     expect(results.length).toBe(2);
   });
 
@@ -309,7 +308,7 @@ describe("search-filter.ts filter — handles empty input gracefully", () => {
     expect(code).toBe(0);
 
     const results = JSON.parse(stdout) as unknown[];
-    expect(Array.isArray(results).toBeTruthy(), "should return array");
+    expect(Array.isArray(results)).toBeTruthy();
     expect(results.length).toBe(0);
   });
 
@@ -322,7 +321,7 @@ describe("search-filter.ts filter — handles empty input gracefully", () => {
     expect(code).toBe(0);
 
     const results = JSON.parse(stdout) as unknown[];
-    expect(Array.isArray(results).toBeTruthy(), "should return array");
+    expect(Array.isArray(results)).toBeTruthy();
     expect(
       results.length).toBe(0);
   });
@@ -386,9 +385,7 @@ suite_name: "预览测试"
       "preview should contain at most 3 non-empty lines",
     ).toBeTruthy();
     expect(
-      results[0].preview.includes("预览测试").toBeTruthy(),
-      "preview should contain content from the file",
-    );
+      results[0].preview.includes("预览测试")).toBeTruthy();
   });
 
   it("uses empty string for preview when archive file does not exist", () => {

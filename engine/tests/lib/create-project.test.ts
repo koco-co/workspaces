@@ -125,7 +125,7 @@ describe("configJsonPath", () => {
     try {
       const p = configJsonPath();
       expect(p.endsWith("/config.json")).toBeTruthy();
-      expect(p.startsWith("/").toBeTruthy(), "absolute path");
+      expect(p.startsWith("/")).toBeTruthy();
     } finally {
       if (original !== undefined) process.env.CONFIG_JSON_PATH = original;
     }
@@ -148,7 +148,7 @@ describe("SKELETON_SPEC shape", () => {
   it("gitkeep_dirs is a subset of dirs", () => {
     for (const d of SKELETON_SPEC.gitkeep_dirs) {
       expect(
-        SKELETON_SPEC.dirs.includes(d as (typeof SKELETON_SPEC.dirs).toBeTruthy()[number]),
+        SKELETON_SPEC.dirs.includes(d as (typeof SKELETON_SPEC.dirs)[number]),
         `${d} not in dirs`,
       );
     }
@@ -251,10 +251,8 @@ describe("mergeProjectConfig", () => {
     };
     const { merged, added } = mergeProjectConfig(existing, "newProj");
     expect(added).toBe(true);
-    expect(
-      (merged as any).projects.dataAssets.repo_profiles).toEqual({ 岚图: { repos: [] } });
-    expect(
-      (merged as any).projects.newProj).toEqual({ repo_profiles: {} });
+    expect((merged as any).projects.dataAssets.repo_profiles).toEqual({ 岚图: { repos: [] } });
+    expect((merged as any).projects.newProj).toEqual({ repo_profiles: {} });
   });
 
   it("skips when project already registered", () => {
@@ -265,8 +263,9 @@ describe("mergeProjectConfig", () => {
     };
     const { merged, added } = mergeProjectConfig(existing, "existProj");
     expect(added).toBe(false);
-    expect(
-      (merged as any).projects.existProj.repo_profiles).toEqual({ foo: { repos: [{ path: "a" }] } });
+    expect((merged as any).projects.existProj.repo_profiles).toEqual({
+      foo: { repos: [{ path: "a" }] },
+    });
   });
 
   it("preserves top-level keys outside projects", () => {
