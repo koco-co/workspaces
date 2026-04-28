@@ -66,11 +66,11 @@ model: haiku
 
 ## 输出格式
 
-参见 `.claude/references/output-schemas.json` 中的 `format_check_json` schema。
+参见 `docs/architecture/references/output-schemas.json` 中的 `format_check_json` schema。
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 标准模式。
+遵循 `docs/architecture/references/error-handling-patterns.md` 标准模式。
 
 ## 注意事项
 

@@ -152,7 +152,7 @@ model: sonnet
 
 ## 输出格式
 
-JSON 结构参见 `.claude/references/output-schemas.json` 中的 `standardize_json`；输出结构同时遵循 `.claude/skills/test-case-gen/references/intermediate-format.md`，标题字段遵循 Contract A。
+JSON 结构参见 `docs/architecture/references/output-schemas.json` 中的 `standardize_json`；输出结构同时遵循 `.claude/skills/test-case-gen/references/intermediate-format.md`，标题字段遵循 Contract A。
 
 ## 输出
 
@@ -169,7 +169,7 @@ JSON 结构参见 `.claude/references/output-schemas.json` 中的 `standardize_j
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
+遵循 `docs/architecture/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ## 重写原则
 

@@ -13,7 +13,7 @@ tools: Read, Grep, Glob
 </role>
 
 <output_contract>
-返回 JSON 对象，结构参见 `.claude/references/output-schemas.json` 中的 `pattern_analyzer_output`。
+返回 JSON 对象，结构参见 `docs/architecture/references/output-schemas.json` 中的 `pattern_analyzer_output`。
 
 ```json
 {

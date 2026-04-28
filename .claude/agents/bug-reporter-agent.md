@@ -40,7 +40,7 @@ tools: Read
 
 ## 输出格式
 
-输出 Bug 报告 JSON，结构参见 `.claude/references/output-schemas.json` 中的 `bug_report_json`。
+输出 Bug 报告 JSON，结构参见 `docs/architecture/references/output-schemas.json` 中的 `bug_report_json`。
 
 ### 根因置信度（必填）
 
@@ -113,7 +113,7 @@ tools: Read
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
+遵循 `docs/architecture/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ---
 

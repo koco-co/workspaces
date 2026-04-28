@@ -12,7 +12,7 @@ tools: Read, Grep, Glob, Bash, Edit
 > </role>
 
 <output_contract>
-返回修复结果 JSON，结构参见 `.claude/references/output-schemas.json` 中的 `script_fixer_json`。
+返回修复结果 JSON，结构参见 `docs/architecture/references/output-schemas.json` 中的 `script_fixer_json`。
 
 `status` 三态：
 

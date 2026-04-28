@@ -118,7 +118,7 @@ tools: Read, Grep, Glob, Bash
 
 分析完成后，将结构化 JSON 数据返回给调用方渲染 HTML 报告。
 
-JSON 结构参见 `.claude/references/output-schemas.json` 中的 `conflict_json`。若某字段信息不足，填 `null`，不要留空字符串占位。
+JSON 结构参见 `docs/architecture/references/output-schemas.json` 中的 `conflict_json`。若某字段信息不足，填 `null`，不要留空字符串占位。
 
 符号使用遵循 `.claude/references/unicode-symbols.md`。
 
@@ -126,7 +126,7 @@ JSON 结构参见 `.claude/references/output-schemas.json` 中的 `conflict_json
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
+遵循 `docs/architecture/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ---
 

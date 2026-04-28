@@ -110,7 +110,7 @@ XSS、SQL 注入、越权访问、敏感字段脱敏。
 
 ### 步骤 4：输出测试点清单
 
-输出 JSON 格式的测试点清单（粗粒度测试方向，非最终用例）。JSON 结构参见 `.claude/references/output-schemas.json` 中的 `test_points_json`。
+输出 JSON 格式的测试点清单（粗粒度测试方向，非最终用例）。JSON 结构参见 `docs/architecture/references/output-schemas.json` 中的 `test_points_json`。
 
 **Phase D2 硬约束**：每一条 `test_points[].source_ref` 必填，语法见 `references/source-refs-schema.md`。优先级：
 
@@ -164,7 +164,7 @@ XSS、SQL 注入、越权访问、敏感字段脱敏。
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
+遵循 `docs/architecture/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ## 注意事项
 

@@ -219,7 +219,7 @@ model: sonnet
 
 ## 输出格式
 
-参见 `.claude/references/output-schemas.json` 中的 `writer_json` schema。
+参见 `docs/architecture/references/output-schemas.json` 中的 `writer_json` schema。
 
 ## 用例设计流程
 
@@ -424,7 +424,7 @@ Writer 在重派后的 `<confirmed_context>` 中：
 
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 标准模式。Writer 特有补充：遇到 `blocking_unknown` 时生成 `blocked_envelope`（格式见上方）。
+遵循 `docs/architecture/references/error-handling-patterns.md` 标准模式。Writer 特有补充：遇到 `blocking_unknown` 时生成 `blocked_envelope`（格式见上方）。
 
 ## 注意事项
 

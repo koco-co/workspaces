@@ -87,7 +87,7 @@ kata-cli progress task-add --project {{project}} --session "$SESSION_ID" \
 kata-cli progress task-update --project {{project}} --session "$SESSION_ID" --task format-check --status done --payload '{{json}}'
 ```
 
-数据结构：参见 `.claude/references/output-schemas.json` 中的 `state_format_check_data`。
+数据结构：参见 `docs/architecture/references/output-schemas.json` 中的 `state_format_check_data`。
 
 ### 交互点 D2 — 格式检查超限决策（使用 AskUserQuestion 工具）
 

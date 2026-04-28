@@ -299,7 +299,7 @@
 ```markdown
 ## 错误处理
 
-遵循 `.claude/references/error-handling-patterns.md` 中的标准分类与恢复策略。
+遵循 `docs/architecture/references/error-handling-patterns.md` 中的标准分类与恢复策略。
 
 ### 自检清单
 
