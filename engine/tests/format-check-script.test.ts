@@ -10,8 +10,9 @@ const TMP_DIR = join(tmpdir(), `kata-format-check-test-${process.pid}`);
 
 function run(args: string[]): { stdout: string; stderr: string; code: number } {
   try {
+    const kataCli = join(REPO_ROOT, "node_modules", ".bin", "kata-cli");
     const stdout = execFileSync(
-      "kata-cli",
+      kataCli,
       ["format-check-script", ...args],
       {
         cwd: REPO_ROOT,
