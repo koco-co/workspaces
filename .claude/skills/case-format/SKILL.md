@@ -34,9 +34,9 @@ argument-hint: "[edit | reverse-sync | other2md] [文件路径或关键词]"
 
 | 模式           | 触发词 / 输入                                    | 工作流文件                 |
 | -------------- | ------------------------------------------------ | -------------------------- |
-| `edit`         | 修改用例、编辑用例、新增用例、删除用例           | `workflow/edit.md`         |
-| `reverse-sync` | 同步 xmind、反向同步、XMind 文件 + Archive MD    | `workflow/reverse-sync.md` |
-| `other2md`     | 标准化归档、归档用例、`.xmind` / `.csv` 文件路径 | `workflow/other2md.md`     |
+| `edit`         | 修改用例、编辑用例、新增用例、删除用例           | `workflow.md#workflow-edit`         |
+| `reverse-sync` | 同步 xmind、反向同步、XMind 文件 + Archive MD    | `workflow.md#workflow-reverse-sync` |
+| `other2md`     | 标准化归档、归档用例、`.xmind` / `.csv` 文件路径 | `workflow.md#workflow-other2md`     |
 
 确定模式后，Read 对应 workflow 文件并按其指引继续执行。
 
