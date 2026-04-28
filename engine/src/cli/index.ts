@@ -103,6 +103,10 @@ registerPathsAudit(kata);
 import { registerAgentsAudit } from "./agents-audit.ts";
 registerAgentsAudit(kata);
 
+// ── Case lint (P7 §10.7) ───────────────────────────────────
+import { registerCasesLint } from "./cases-lint.ts";
+registerCasesLint(kata);
+
 initEnv();
 
 kata.parseAsync(process.argv).catch((err) => {
