@@ -28,3 +28,21 @@ export interface SkillReport {
   violations: SkillViolation[];
   passed: boolean;
 }
+
+// ── Path treatment lint (§4.2) ──────────────────────────────
+
+export type PathRuleId = "P-S1" | "P-S2" | "P-S3" | "P-S4";
+
+export interface PathViolation {
+  rule: PathRuleId;
+  file: string;
+  lineNumber: number;
+  matched: string;
+  message: string;
+}
+
+export interface PathReport {
+  scanRoot: string;
+  violations: PathViolation[];
+  passed: boolean;
+}
