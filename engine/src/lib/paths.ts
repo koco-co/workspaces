@@ -96,18 +96,33 @@ export function prdDir(project: string, yyyymm: string, slug: string): string {
   return featureDir(project, yyyymm, slug);
 }
 
+let warnedEnhancedMd = false;
 /** @deprecated since v3 — use featureFile(..., "enhanced.md"). */
 export function enhancedMd(project: string, yyyymm: string, slug: string): string {
+  if (!warnedEnhancedMd) {
+    console.warn("[paths] enhancedMd() is deprecated; use featureFile(..., 'enhanced.md') (spec §6.3)");
+    warnedEnhancedMd = true;
+  }
   return featureFile(project, yyyymm, slug, "enhanced.md");
 }
 
+let warnedSourceFactsJson = false;
 /** @deprecated since v3 — use featureFile(..., "source-facts.json"). */
 export function sourceFactsJson(project: string, yyyymm: string, slug: string): string {
+  if (!warnedSourceFactsJson) {
+    console.warn("[paths] sourceFactsJson() is deprecated; use featureFile(..., 'source-facts.json') (spec §6.3)");
+    warnedSourceFactsJson = true;
+  }
   return featureFile(project, yyyymm, slug, "source-facts.json");
 }
 
+let warnedResolvedMd = false;
 /** @deprecated since v3 — use featureFile(..., "resolved.md"). */
 export function resolvedMd(project: string, yyyymm: string, slug: string): string {
+  if (!warnedResolvedMd) {
+    console.warn("[paths] resolvedMd() is deprecated; use featureFile(..., 'resolved.md') (spec §6.3)");
+    warnedResolvedMd = true;
+  }
   return featureFile(project, yyyymm, slug, "resolved.md");
 }
 
@@ -121,8 +136,13 @@ export function prdImagesDir(project: string, yyyymm: string, slug: string): str
   return featureFile(project, yyyymm, slug, "images");
 }
 
+let warnedOriginalPrdMd = false;
 /** @deprecated since v3 — use featureFile(..., "prd.md"). Note rename: original.md → prd.md. */
 export function originalPrdMd(project: string, yyyymm: string, slug: string): string {
+  if (!warnedOriginalPrdMd) {
+    console.warn("[paths] originalPrdMd() is deprecated; use featureFile(..., 'prd.md') (spec §6.3)");
+    warnedOriginalPrdMd = true;
+  }
   return featureFile(project, yyyymm, slug, "prd.md");
 }
 
