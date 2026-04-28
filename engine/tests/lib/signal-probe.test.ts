@@ -37,8 +37,8 @@ describe("classifySource", () => {
       matched_files: 1,
     });
     expect(result.level).toBe("strong");
-    expect((result.evidence as Record<string, unknown>).a_level_count, 3);
-    expect((result.evidence as Record<string, unknown>).coverage_rate, 0.05);
+    expect((result.evidence as Record<string, unknown>).a_level_count).toBe(3);
+    expect((result.evidence as Record<string, unknown>).coverage_rate).toBe(0.05);
   });
 
   it("returns weak when a_level has 2 items regardless of coverage_rate", () => {
@@ -50,7 +50,7 @@ describe("classifySource", () => {
       matched_files: 2,
     });
     expect(result.level).toBe("weak");
-    expect((result.evidence as Record<string, unknown>).a_level_count, 2);
+    expect((result.evidence as Record<string, unknown>).a_level_count).toBe(2);
   });
 
   it("returns weak when a_level is empty but b_level has 1 item", () => {
@@ -62,7 +62,7 @@ describe("classifySource", () => {
       matched_files: 0,
     });
     expect(result.level).toBe("weak");
-    expect((result.evidence as Record<string, unknown>).b_level_count, 1);
+    expect((result.evidence as Record<string, unknown>).b_level_count).toBe(1);
   });
 
   it("returns missing when both a_level and b_level are empty", () => {
@@ -85,20 +85,20 @@ describe("classifyPrd", () => {
   it("returns strong when fillRate >= 0.7 and confidence >= 0.8", () => {
     const result = classifyPrd({ fieldFillRate: 0.85, confidence: 0.9, pageCount: 3 });
     expect(result.level).toBe("strong");
-    expect((result.evidence as Record<string, unknown>).field_fill_rate, 0.85);
-    expect((result.evidence as Record<string, unknown>).page_count, 3);
+    expect((result.evidence as Record<string, unknown>).field_fill_rate).toBe(0.85);
+    expect((result.evidence as Record<string, unknown>).page_count).toBe(3);
   });
 
   it("returns weak when fillRate is in [0.3, 0.7)", () => {
     const result = classifyPrd({ fieldFillRate: 0.5, confidence: 0.6, pageCount: 2 });
     expect(result.level).toBe("weak");
-    expect((result.evidence as Record<string, unknown>).confidence, 0.6);
+    expect((result.evidence as Record<string, unknown>).confidence).toBe(0.6);
   });
 
   it("returns missing when fillRate < 0.3", () => {
     const result = classifyPrd({ fieldFillRate: 0.2, confidence: 0.5, pageCount: 1 });
     expect(result.level).toBe("missing");
-    expect((result.evidence as Record<string, unknown>).field_fill_rate, 0.2);
+    expect((result.evidence as Record<string, unknown>).field_fill_rate).toBe(0.2);
   });
 });
 
@@ -115,15 +115,15 @@ describe("classifyHistory", () => {
     ];
     const result = classifyHistory(hits);
     expect(result.level).toBe("strong");
-    expect((result.evidence as Record<string, unknown>).top_hits, 3);
-    expect((result.evidence as Record<string, unknown>).best_score, 0.9);
+    expect((result.evidence as Record<string, unknown>).top_hits).toBe(3);
+    expect((result.evidence as Record<string, unknown>).best_score).toBe(0.9);
   });
 
   it("returns weak when exactly 1 hit has score >= 0.5", () => {
     const hits: ArchiveSearchHit[] = [{ score: 0.6, path: "a.md" }];
     const result = classifyHistory(hits);
     expect(result.level).toBe("weak");
-    expect((result.evidence as Record<string, unknown>).best_score, 0.6);
+    expect((result.evidence as Record<string, unknown>).best_score).toBe(0.6);
   });
 
   it("returns missing when all hits have score < 0.5", () => {
@@ -133,7 +133,7 @@ describe("classifyHistory", () => {
     ];
     const result = classifyHistory(hits);
     expect(result.level).toBe("missing");
-    expect((result.evidence as Record<string, unknown>).top_hits, 0);
+    expect((result.evidence as Record<string, unknown>).top_hits).toBe(0);
   });
 });
 
