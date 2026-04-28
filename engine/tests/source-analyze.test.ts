@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-source-analyze-test-${process.pid}`);
@@ -85,19 +84,19 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       "--keywords",
       "createTable",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.a_level.length > 0, "a_level should have matches");
+    expect(result.a_level.length > 0).toBeTruthy();
     const match = result.a_level[0];
-    assert.equal(match.keyword, "createTable");
-    assert.ok(match.file.endsWith("table.ts"), "file should be table.ts");
-    assert.ok(match.line > 0, "line should be positive");
-    assert.ok(
-      match.content.includes("createTable"),
+    expect(match.keyword).toBe("createTable");
+    expect(match.file.endsWith("table.ts").toBeTruthy(), "file should be table.ts");
+    expect(match.line > 0).toBeTruthy();
+    expect(
+      match.content.includes("createTable").toBeTruthy(),
       "content should include keyword",
     );
-    assert.ok(match.confidence >= 0.9, "A-level confidence should be >= 0.9");
+    expect(match.confidence >= 0.9).toBeTruthy();
   });
 
   it("detects 'class UserService' as A-level match", () => {
@@ -116,12 +115,12 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       "--keywords",
       "UserService",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.a_level.length > 0, "a_level should match class UserService");
-    assert.equal(result.a_level[0].keyword, "UserService");
-    assert.ok(result.a_level[0].confidence >= 0.9);
+    expect(result.a_level.length > 0).toBeTruthy();
+    expect(result.a_level[0].keyword).toBe("UserService");
+    expect(result.a_level[0].confidence >= 0.9).toBeTruthy();
   });
 
   it("detects 'interface IDataSource' as A-level match", () => {
@@ -140,11 +139,11 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       "--keywords",
       "IDataSource",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.a_level.length > 0, "a_level should match interface");
-    assert.equal(result.a_level[0].keyword, "IDataSource");
+    expect(result.a_level.length > 0).toBeTruthy();
+    expect(result.a_level[0].keyword).toBe("IDataSource");
   });
 
   it("detects 'export.*createTable' pattern as A-level match", () => {
@@ -163,10 +162,10 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       "--keywords",
       "createTable",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.a_level.length > 0, "export const should be A-level");
+    expect(result.a_level.length > 0).toBeTruthy();
   });
 
   it("detects Python 'def fetchData' as A-level match", () => {
@@ -185,11 +184,11 @@ describe("source-analyze analyze — A-level exact match (function declaration)"
       "--keywords",
       "fetchData",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.a_level.length > 0, "Python def should be A-level");
-    assert.equal(result.a_level[0].keyword, "fetchData");
+    expect(result.a_level.length > 0).toBeTruthy();
+    expect(result.a_level[0].keyword).toBe("fetchData");
   });
 });
 
@@ -212,13 +211,13 @@ describe("source-analyze analyze — B-level fuzzy match", () => {
       "--keywords",
       "createTable",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(result.b_level.length > 0, "comment should be B-level");
-    assert.equal(result.b_level[0].keyword, "createTable");
-    assert.ok(result.b_level[0].confidence < 0.9, "B-level confidence should be < 0.9");
-    assert.ok(result.b_level[0].confidence > 0, "B-level confidence should be > 0");
+    expect(result.b_level.length > 0).toBeTruthy();
+    expect(result.b_level[0].keyword).toBe("createTable");
+    expect(result.b_level[0].confidence < 0.9).toBeTruthy();
+    expect(result.b_level[0].confidence > 0).toBeTruthy();
   });
 
   it("A-level result is NOT duplicated in B-level", () => {
@@ -237,14 +236,14 @@ describe("source-analyze analyze — B-level fuzzy match", () => {
       "--keywords",
       "myService",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     // Line 1 (function declaration) must only be in a_level
     const aLines = result.a_level.map((m) => m.line);
     const bLines = result.b_level.map((m) => m.line);
     const duplicates = aLines.filter((l) => bLines.includes(l) && result.a_level.find((m) => m.line === l)?.file === result.b_level.find((m) => m.line === l)?.file);
-    assert.equal(duplicates.length, 0, "A-level lines should not be duplicated in B-level");
+    expect(duplicates.length).toBe(0);
   });
 });
 
@@ -267,13 +266,13 @@ describe("source-analyze analyze — coverage_rate calculation", () => {
       "--keywords",
       "myFunc",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.equal(result.searched_files, 3, "searched_files should be 3");
-    assert.equal(result.matched_files, 2, "matched_files should be 2");
-    assert.ok(
-      Math.abs(result.coverage_rate - 2 / 3) < 0.001,
+    expect(result.searched_files).toBe(3);
+    expect(result.matched_files).toBe(2);
+    expect(
+      Math.abs(result.coverage_rate - 2 / 3).toBeTruthy() < 0.001,
       `coverage_rate should be ~0.667, got ${result.coverage_rate}`,
     );
   });
@@ -291,11 +290,11 @@ describe("source-analyze analyze — coverage_rate calculation", () => {
       "--keywords",
       "nonExistentKeyword99999",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.equal(result.matched_files, 0);
-    assert.equal(result.coverage_rate, 0);
+    expect(result.matched_files).toBe(0);
+    expect(result.coverage_rate).toBe(0);
   });
 });
 
@@ -310,8 +309,8 @@ describe("source-analyze analyze — nonexistent repo path error", () => {
       "--keywords",
       "someKeyword",
     ]);
-    assert.equal(code, 1, "should exit with code 1 for invalid repo path");
-    assert.ok(stderr.length > 0 || code === 1, "should report error");
+    expect(code).toBe(1);
+    expect(stderr.length > 0 || code === 1).toBeTruthy();
   });
 });
 
@@ -339,15 +338,14 @@ describe("source-analyze analyze — ignores node_modules", () => {
       "--keywords",
       "ignoredFunction",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.equal(
-      result.a_level.length + result.b_level.length,
-      0,
+    expect(
+      result.a_level.length + result.b_level.length).toBe(0,
       "files in node_modules should be ignored",
     );
-    assert.equal(result.matched_files, 0);
+    expect(result.matched_files).toBe(0);
   });
 
   it("does not search files inside .git/", () => {
@@ -369,12 +367,11 @@ describe("source-analyze analyze — ignores node_modules", () => {
       "--keywords",
       "gitHookFunc",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.equal(
-      result.a_level.length + result.b_level.length,
-      0,
+    expect(
+      result.a_level.length + result.b_level.length).toBe(0,
       ".git files should be ignored",
     );
   });
@@ -404,12 +401,12 @@ describe("source-analyze analyze — multiple keywords", () => {
       "--keywords",
       "alphaFunc,betaFunc",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     const keywords = new Set(result.a_level.map((m) => m.keyword));
-    assert.ok(keywords.has("alphaFunc"), "should find alphaFunc");
-    assert.ok(keywords.has("betaFunc"), "should find betaFunc");
+    expect(keywords.has("alphaFunc").toBeTruthy(), "should find alphaFunc");
+    expect(keywords.has("betaFunc").toBeTruthy(), "should find betaFunc");
   });
 });
 
@@ -428,22 +425,22 @@ describe("source-analyze analyze — output JSON schema", () => {
       "--keywords",
       "schemaFunc",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
-    assert.ok(Array.isArray(result.a_level), "a_level should be array");
-    assert.ok(Array.isArray(result.b_level), "b_level should be array");
-    assert.ok(typeof result.coverage_rate === "number", "coverage_rate should be number");
-    assert.ok(typeof result.searched_files === "number", "searched_files should be number");
-    assert.ok(typeof result.matched_files === "number", "matched_files should be number");
+    expect(Array.isArray(result.a_level).toBeTruthy(), "a_level should be array");
+    expect(Array.isArray(result.b_level).toBeTruthy(), "b_level should be array");
+    expect(typeof result.coverage_rate === "number").toBeTruthy();
+    expect(typeof result.searched_files === "number").toBeTruthy();
+    expect(typeof result.matched_files === "number").toBeTruthy();
 
     if (result.a_level.length > 0) {
       const item = result.a_level[0];
-      assert.ok(typeof item.file === "string", "file should be string");
-      assert.ok(typeof item.line === "number", "line should be number");
-      assert.ok(typeof item.content === "string", "content should be string");
-      assert.ok(typeof item.keyword === "string", "keyword should be string");
-      assert.ok(typeof item.confidence === "number", "confidence should be number");
+      expect(typeof item.file === "string").toBeTruthy();
+      expect(typeof item.line === "number").toBeTruthy();
+      expect(typeof item.content === "string").toBeTruthy();
+      expect(typeof item.keyword === "string").toBeTruthy();
+      expect(typeof item.confidence === "number").toBeTruthy();
     }
   });
 
@@ -463,20 +460,20 @@ describe("source-analyze analyze — output JSON schema", () => {
       "--keywords",
       "sortedFunc",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as AnalyzeResult;
     for (let i = 1; i < result.a_level.length; i++) {
-      assert.ok(
+      expect(
         result.a_level[i - 1].confidence >= result.a_level[i].confidence,
         "a_level should be sorted by confidence descending",
-      );
+      ).toBeTruthy();
     }
     for (let i = 1; i < result.b_level.length; i++) {
-      assert.ok(
+      expect(
         result.b_level[i - 1].confidence >= result.b_level[i].confidence,
         "b_level should be sorted by confidence descending",
-      );
+      ).toBeTruthy();
     }
   });
 });
@@ -487,7 +484,7 @@ describe("source-analyze --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /source-analyze|analyze/i);
+    expect(code).toBe(0);
+    expect(output).toMatch(/source-analyze|analyze/i);
   });
 });

@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-prd-frontmatter-test-${process.pid}`);
@@ -51,8 +50,8 @@ describe("prd-frontmatter --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /normalize|prd-frontmatter/i);
+    expect(code).toBe(0);
+    expect(output).toMatch(/normalize|prd-frontmatter/i);
   });
 });
 
@@ -67,19 +66,19 @@ describe("prd-frontmatter normalize --dry-run", () => {
       filePath,
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       path: string;
       changes: string[];
       dry_run: boolean;
     };
-    assert.equal(out.dry_run, true);
-    assert.ok(out.changes.length > 0, "should report changes");
+    expect(out.dry_run).toBe(true);
+    expect(out.changes.length > 0).toBeTruthy();
 
     // File content should be unchanged
     const unchanged = readFileSync(filePath, "utf8");
-    assert.equal(unchanged, content);
+    expect(unchanged).toBe(content);
   });
 
   it("reports added create_at when missing", () => {
@@ -93,10 +92,10 @@ describe("prd-frontmatter normalize --dry-run", () => {
       filePath,
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    assert.ok(
-      out.changes.some((c) => c.includes("create_at")),
+    expect(
+      out.changes.some((c).toBeTruthy() => c.includes("create_at")),
       "should report added create_at",
     );
   });
@@ -112,10 +111,10 @@ describe("prd-frontmatter normalize --dry-run", () => {
       filePath,
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    assert.ok(
-      out.changes.some((c) => c.includes("status")),
+    expect(
+      out.changes.some((c).toBeTruthy() => c.includes("status")),
       "should report added status",
     );
   });
@@ -129,17 +128,17 @@ describe("prd-frontmatter normalize (actual write)", () => {
     );
 
     const { code, stdout } = run(["normalize", "--file", filePath]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as { changes: string[]; dry_run: boolean };
-    assert.equal(out.dry_run, false);
-    assert.ok(
-      out.changes.some((c) => c.includes("status")),
+    expect(out.dry_run).toBe(false);
+    expect(
+      out.changes.some((c).toBeTruthy() => c.includes("status")),
       "should normalize status",
     );
 
     const written = readFileSync(filePath, "utf8");
-    assert.match(written, /草稿/, "should contain normalized status 草稿");
+    expect(written).toMatch(/草稿/);
   });
 
   it("normalizes English status values to Chinese", () => {
@@ -155,10 +154,10 @@ describe("prd-frontmatter normalize (actual write)", () => {
         `---\nsuite_name: "Test"\ncreate_at: "2026-01-01"\nstatus: "${input}"\n---\n\n## Body\n`,
       );
       const { code, stdout } = run(["normalize", "--file", filePath]);
-      assert.equal(code, 0, `should succeed for status="${input}"`);
+      expect(code).toBe(0, `should succeed for status="${input}"`);
       const out = JSON.parse(stdout) as { changes: string[] };
-      assert.ok(
-        out.changes.some((c) => c.includes(expected)),
+      expect(
+        out.changes.some((c).toBeTruthy() => c.includes(expected)),
         `should normalize "${input}" to "${expected}"`,
       );
     }
@@ -170,12 +169,12 @@ describe("prd-frontmatter normalize (actual write)", () => {
       `---\nsuite_name: ""\ncreate_at: "2026-01-01"\nstatus: "草稿"\n---\n\n## Body\n`,
     );
     const { code, stdout } = run(["normalize", "--file", filePath]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    assert.ok(out.changes.some((c) => c.includes("suite_name")));
+    expect(out.changes.some((c).toBeTruthy() => c.includes("suite_name")));
     const written = readFileSync(filePath, "utf8");
     // Should contain the filename-derived suite_name
-    assert.match(written, /商品管理/);
+    expect(written).toMatch(/商品管理/);
   });
 
   it("makes no changes when all required fields are present and valid", () => {
@@ -184,9 +183,9 @@ describe("prd-frontmatter normalize (actual write)", () => {
       `---\nsuite_name: "已有名称"\ncreate_at: "2026-01-01"\nstatus: "草稿"\n---\n\n## Body\n`,
     );
     const { code, stdout } = run(["normalize", "--file", filePath]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { changes: string[] };
-    assert.equal(out.changes.length, 0, "should report no changes");
+    expect(out.changes.length).toBe(0);
   });
 });
 
@@ -197,7 +196,7 @@ describe("prd-frontmatter normalize errors", () => {
       "--file",
       "/tmp/non-existent-file-xyz.md",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /cannot read|Error/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/cannot read|Error/i);
   });
 });

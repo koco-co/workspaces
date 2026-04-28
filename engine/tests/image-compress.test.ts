@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync, execSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-image-compress-test-${process.pid}`);
@@ -54,11 +53,11 @@ describe("image-compress --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["compress", "--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /image-compress|Compress/i);
-    assert.match(output, /--dir/);
-    assert.match(output, /--max-size/);
-    assert.match(output, /--dry-run/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/image-compress|Compress/i);
+    expect(output).toMatch(/--dir/);
+    expect(output).toMatch(/--max-size/);
+    expect(output).toMatch(/--dry-run/);
   });
 });
 
@@ -67,17 +66,17 @@ describe("image-compress sips unavailable path", () => {
     if (!isSipsAvailable()) {
       // We ARE on non-macOS (or sips missing), run the script and check output
       const { stdout, code } = run(["--dir", TMP_DIR]);
-      assert.equal(code, 0);
+      expect(code).toBe(0);
       const out = JSON.parse(stdout) as { error: string; skipped: boolean };
-      assert.equal(out.skipped, true);
-      assert.match(out.error, /sips not available/);
+      expect(out.skipped).toBe(true);
+      expect(out.error).toMatch(/sips not available/);
     } else {
       // On macOS, just verify the script runs without error on an empty dir
       const { code, stdout } = run(["--dir", TMP_DIR]);
-      assert.equal(code, 0);
+      expect(code).toBe(0);
       const out = JSON.parse(stdout) as { processed: number; skipped: number };
-      assert.equal(typeof out.processed, "number");
-      assert.equal(typeof out.skipped, "number");
+      expect(typeof out.processed).toBe("number");
+      expect(typeof out.skipped).toBe("number");
     }
   });
 });
@@ -90,15 +89,15 @@ describe("image-compress with empty dir", () => {
     mkdirSync(emptyDir, { recursive: true });
 
     const { code, stdout } = run(["--dir", emptyDir]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       processed: number;
       skipped: number;
       files: unknown[];
     };
-    assert.equal(out.processed, 0);
-    assert.equal(out.skipped, 0);
-    assert.equal(out.files.length, 0);
+    expect(out.processed).toBe(0);
+    expect(out.skipped).toBe(0);
+    expect(out.files.length).toBe(0);
   });
 });
 
@@ -112,10 +111,10 @@ describe("image-compress --dry-run", () => {
     writeFileSync(join(dir, "readme.txt"), "hello");
 
     const { code, stdout } = run(["--dir", dir, "--dry-run"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { processed: number; skipped: number };
-    assert.equal(out.processed, 0);
-    assert.equal(out.skipped, 0);
+    expect(out.processed).toBe(0);
+    expect(out.skipped).toBe(0);
   });
 });
 
@@ -124,11 +123,11 @@ describe("image-compress JSON output shape", () => {
     if (!isSipsAvailable()) return;
 
     const { code, stdout } = run(["--dir", TMP_DIR]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("processed" in out);
-    assert.ok("skipped" in out);
-    assert.ok("files" in out);
-    assert.ok(Array.isArray(out.files));
+    expect("processed" in out).toBeTruthy();
+    expect("skipped" in out).toBeTruthy();
+    expect("files" in out).toBeTruthy();
+    expect(Array.isArray(out.files).toBeTruthy());
   });
 });

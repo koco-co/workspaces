@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "bun:test";
 
 const ROOT = join(import.meta.dirname, "../..");
 const SCRIPT = "engine/src/init-wizard.ts";
@@ -34,39 +33,38 @@ function run(
 describe("init-wizard scan", () => {
   it("exits 0 and outputs valid JSON", () => {
     const { stdout, code } = run(["scan"]);
-    assert.equal(
-      code,
-      0,
+    expect(
+      code).toBe(0,
       `expected exit 0, got stderr: ${run(["scan"]).stderr}`,
     );
     const result = JSON.parse(stdout) as unknown;
-    assert.ok(
+    expect(
       typeof result === "object" && result !== null,
       "output should be a JSON object",
-    );
+    ).toBeTruthy();
   });
 
   it("output has all required top-level fields", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as Record<string, unknown>;
 
-    assert.ok("node_version" in result, "missing node_version");
-    assert.ok("node_ok" in result, "missing node_ok");
-    assert.ok("deps_installed" in result, "missing deps_installed");
-    assert.ok("workspace_exists" in result, "missing workspace_exists");
-    assert.ok("env_configured" in result, "missing env_configured");
-    assert.ok("plugins" in result, "missing plugins");
-    assert.ok("repos" in result, "missing repos");
-    assert.ok("projects" in result, "missing projects");
-    assert.ok("issues" in result, "missing issues");
+    expect("node_version" in result).toBeTruthy();
+    expect("node_ok" in result).toBeTruthy();
+    expect("deps_installed" in result).toBeTruthy();
+    expect("workspace_exists" in result).toBeTruthy();
+    expect("env_configured" in result).toBeTruthy();
+    expect("plugins" in result).toBeTruthy();
+    expect("repos" in result).toBeTruthy();
+    expect("projects" in result).toBeTruthy();
+    expect("issues" in result).toBeTruthy();
   });
 
   it("node_version is a string starting with v", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { node_version: string };
-    assert.equal(typeof result.node_version, "string");
-    assert.ok(
-      result.node_version.startsWith("v"),
+    expect(typeof result.node_version).toBe("string");
+    expect(
+      result.node_version.startsWith("v").toBeTruthy(),
       "node_version should start with v",
     );
   });
@@ -74,13 +72,13 @@ describe("init-wizard scan", () => {
   it("node_ok is a boolean", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { node_ok: boolean };
-    assert.equal(typeof result.node_ok, "boolean");
+    expect(typeof result.node_ok).toBe("boolean");
   });
 
   it("plugins is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { plugins: unknown[] };
-    assert.ok(Array.isArray(result.plugins), "plugins should be an array");
+    expect(Array.isArray(result.plugins).toBeTruthy(), "plugins should be an array");
   });
 
   it("each plugin entry has name and active fields", () => {
@@ -89,10 +87,9 @@ describe("init-wizard scan", () => {
       plugins: Array<{ name: string; active: boolean }>;
     };
     for (const p of result.plugins) {
-      assert.equal(typeof p.name, "string", "plugin.name should be a string");
-      assert.equal(
-        typeof p.active,
-        "boolean",
+      expect(typeof p.name).toBe("string");
+      expect(
+        typeof p.active).toBe("boolean",
         "plugin.active should be a boolean",
       );
     }
@@ -101,7 +98,7 @@ describe("init-wizard scan", () => {
   it("repos is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { repos: unknown[] };
-    assert.ok(Array.isArray(result.repos), "repos should be an array");
+    expect(Array.isArray(result.repos).toBeTruthy(), "repos should be an array");
   });
 
   it("each repo entry has group, repo, path fields", () => {
@@ -110,34 +107,34 @@ describe("init-wizard scan", () => {
       repos: Array<{ group: string; repo: string; path: string }>;
     };
     for (const r of result.repos) {
-      assert.equal(typeof r.group, "string", "repo.group should be a string");
-      assert.equal(typeof r.repo, "string", "repo.repo should be a string");
-      assert.equal(typeof r.path, "string", "repo.path should be a string");
+      expect(typeof r.group).toBe("string");
+      expect(typeof r.repo).toBe("string");
+      expect(typeof r.path).toBe("string");
     }
   });
 
   it("projects is an array of strings", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { projects: unknown[] };
-    assert.ok(Array.isArray(result.projects), "projects should be an array");
+    expect(Array.isArray(result.projects).toBeTruthy(), "projects should be an array");
     for (const p of result.projects) {
-      assert.equal(typeof p, "string", "each project should be a string");
+      expect(typeof p).toBe("string");
     }
   });
 
   it("issues is an array", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { issues: unknown[] };
-    assert.ok(Array.isArray(result.issues), "issues should be an array");
+    expect(Array.isArray(result.issues).toBeTruthy(), "issues should be an array");
   });
 
   it("discovers the three built-in plugins", () => {
     const { stdout } = run(["scan"]);
     const result = JSON.parse(stdout) as { plugins: Array<{ name: string }> };
     const names = result.plugins.map((p) => p.name);
-    assert.ok(names.includes("lanhu"), "should include lanhu plugin");
-    assert.ok(names.includes("notify"), "should include notify plugin");
-    assert.ok(names.includes("zentao"), "should include zentao plugin");
+    expect(names.includes("lanhu").toBeTruthy(), "should include lanhu plugin");
+    expect(names.includes("notify").toBeTruthy(), "should include notify plugin");
+    expect(names.includes("zentao").toBeTruthy(), "should include zentao plugin");
   });
 
   it("lanhu is inactive when LANHU_COOKIE is empty", () => {
@@ -149,8 +146,8 @@ describe("init-wizard scan", () => {
       plugins: Array<{ name: string; active: boolean }>;
     };
     const lanhu = result.plugins.find((p) => p.name === "lanhu");
-    assert.ok(lanhu, "lanhu should be present");
-    assert.equal(lanhu?.active, false);
+    expect(lanhu).toBeTruthy();
+    expect(lanhu?.active).toBe(false);
   });
 
   it("lanhu is active when LANHU_COOKIE is set", () => {
@@ -159,8 +156,8 @@ describe("init-wizard scan", () => {
       plugins: Array<{ name: string; active: boolean }>;
     };
     const lanhu = result.plugins.find((p) => p.name === "lanhu");
-    assert.ok(lanhu, "lanhu should be present");
-    assert.equal(lanhu?.active, true);
+    expect(lanhu).toBeTruthy();
+    expect(lanhu?.active).toBe(true);
   });
 });
 
@@ -171,9 +168,9 @@ describe("init-wizard scan", () => {
 describe("init-wizard verify", () => {
   it("exits 0 and outputs valid JSON", () => {
     const { stdout, code } = run(["verify"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as unknown;
-    assert.ok(typeof result === "object" && result !== null);
+    expect(typeof result === "object" && result !== null).toBeTruthy();
   });
 
   it("output has checks array and all_pass boolean", () => {
@@ -182,10 +179,9 @@ describe("init-wizard verify", () => {
       checks: unknown[];
       all_pass: boolean;
     };
-    assert.ok(Array.isArray(result.checks), "checks should be an array");
-    assert.equal(
-      typeof result.all_pass,
-      "boolean",
+    expect(Array.isArray(result.checks).toBeTruthy(), "checks should be an array");
+    expect(
+      typeof result.all_pass).toBe("boolean",
       "all_pass should be a boolean",
     );
   });
@@ -196,14 +192,13 @@ describe("init-wizard verify", () => {
       checks: Array<{ name: string; status: string; detail: string }>;
     };
     for (const c of result.checks) {
-      assert.equal(typeof c.name, "string", "check.name should be a string");
-      assert.ok(
-        ["pass", "fail", "skip"].includes(c.status),
+      expect(typeof c.name).toBe("string");
+      expect(
+        ["pass", "fail", "skip"].includes(c.status).toBeTruthy(),
         `check.status "${c.status}" should be pass/fail/skip`,
       );
-      assert.equal(
-        typeof c.detail,
-        "string",
+      expect(
+        typeof c.detail).toBe("string",
         "check.detail should be a string",
       );
     }
@@ -213,20 +208,20 @@ describe("init-wizard verify", () => {
     const { stdout } = run(["verify"]);
     const result = JSON.parse(stdout) as { checks: Array<{ name: string }> };
     const names = result.checks.map((c) => c.name);
-    assert.ok(
-      names.some((n) => n.toLowerCase().includes("node")),
+    expect(
+      names.some((n).toBeTruthy() => n.toLowerCase().includes("node")),
       "should have Node.js check",
     );
-    assert.ok(
-      names.some((n) => n.includes("依赖安装")),
+    expect(
+      names.some((n).toBeTruthy() => n.includes("依赖安装")),
       "should have deps check",
     );
-    assert.ok(
-      names.some((n) => n.includes("工作区")),
+    expect(
+      names.some((n).toBeTruthy() => n.includes("工作区")),
       "should have workspace check",
     );
-    assert.ok(
-      names.some((n) => n.includes(".env")),
+    expect(
+      names.some((n).toBeTruthy() => n.includes(".env")),
       "should have .env check",
     );
   });
@@ -234,7 +229,7 @@ describe("init-wizard verify", () => {
   it("checks array has at least 4 items", () => {
     const { stdout } = run(["verify"]);
     const result = JSON.parse(stdout) as { checks: unknown[] };
-    assert.ok(result.checks.length >= 4, "should have at least 4 checks");
+    expect(result.checks.length >= 4).toBeTruthy();
   });
 });
 
@@ -245,16 +240,16 @@ describe("init-wizard verify", () => {
 describe("init-wizard --help", () => {
   it("exits successfully on --help", () => {
     const { code } = run(["--help"]);
-    assert.equal(code, 0, "--help should exit 0");
+    expect(code).toBe(0);
   });
 
   it("scan --help exits successfully", () => {
     const { code } = run(["scan", "--help"]);
-    assert.equal(code, 0, "scan --help should exit 0");
+    expect(code).toBe(0);
   });
 
   it("verify --help exits successfully", () => {
     const { code } = run(["verify", "--help"]);
-    assert.equal(code, 0, "verify --help should exit 0");
+    expect(code).toBe(0);
   });
 });

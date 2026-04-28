@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "bun:test";
 import {
   classifySource,
   classifyPrd,
@@ -24,9 +23,9 @@ import type {
 describe("classifySource", () => {
   it("returns missing when output is null", () => {
     const result = classifySource(null);
-    assert.equal(result.level, "missing");
-    assert.equal((result.evidence as Record<string, unknown>).a_level_count, 0);
-    assert.equal((result.evidence as Record<string, unknown>).coverage_rate, 0);
+    expect(result.level).toBe("missing");
+    expect((result.evidence as Record<string).toBe(unknown>).a_level_count, 0);
+    expect((result.evidence as Record<string).toBe(unknown>).coverage_rate, 0);
   });
 
   it("returns strong when a_level has 3 items and coverage_rate >= 0.05", () => {
@@ -37,9 +36,9 @@ describe("classifySource", () => {
       searched_files: 10,
       matched_files: 1,
     });
-    assert.equal(result.level, "strong");
-    assert.equal((result.evidence as Record<string, unknown>).a_level_count, 3);
-    assert.equal((result.evidence as Record<string, unknown>).coverage_rate, 0.05);
+    expect(result.level).toBe("strong");
+    expect((result.evidence as Record<string).toBe(unknown>).a_level_count, 3);
+    expect((result.evidence as Record<string).toBe(unknown>).coverage_rate, 0.05);
   });
 
   it("returns weak when a_level has 2 items regardless of coverage_rate", () => {
@@ -50,8 +49,8 @@ describe("classifySource", () => {
       searched_files: 10,
       matched_files: 2,
     });
-    assert.equal(result.level, "weak");
-    assert.equal((result.evidence as Record<string, unknown>).a_level_count, 2);
+    expect(result.level).toBe("weak");
+    expect((result.evidence as Record<string).toBe(unknown>).a_level_count, 2);
   });
 
   it("returns weak when a_level is empty but b_level has 1 item", () => {
@@ -62,8 +61,8 @@ describe("classifySource", () => {
       searched_files: 5,
       matched_files: 0,
     });
-    assert.equal(result.level, "weak");
-    assert.equal((result.evidence as Record<string, unknown>).b_level_count, 1);
+    expect(result.level).toBe("weak");
+    expect((result.evidence as Record<string).toBe(unknown>).b_level_count, 1);
   });
 
   it("returns missing when both a_level and b_level are empty", () => {
@@ -74,7 +73,7 @@ describe("classifySource", () => {
       searched_files: 5,
       matched_files: 0,
     });
-    assert.equal(result.level, "missing");
+    expect(result.level).toBe("missing");
   });
 });
 
@@ -85,21 +84,21 @@ describe("classifySource", () => {
 describe("classifyPrd", () => {
   it("returns strong when fillRate >= 0.7 and confidence >= 0.8", () => {
     const result = classifyPrd({ fieldFillRate: 0.85, confidence: 0.9, pageCount: 3 });
-    assert.equal(result.level, "strong");
-    assert.equal((result.evidence as Record<string, unknown>).field_fill_rate, 0.85);
-    assert.equal((result.evidence as Record<string, unknown>).page_count, 3);
+    expect(result.level).toBe("strong");
+    expect((result.evidence as Record<string).toBe(unknown>).field_fill_rate, 0.85);
+    expect((result.evidence as Record<string).toBe(unknown>).page_count, 3);
   });
 
   it("returns weak when fillRate is in [0.3, 0.7)", () => {
     const result = classifyPrd({ fieldFillRate: 0.5, confidence: 0.6, pageCount: 2 });
-    assert.equal(result.level, "weak");
-    assert.equal((result.evidence as Record<string, unknown>).confidence, 0.6);
+    expect(result.level).toBe("weak");
+    expect((result.evidence as Record<string).toBe(unknown>).confidence, 0.6);
   });
 
   it("returns missing when fillRate < 0.3", () => {
     const result = classifyPrd({ fieldFillRate: 0.2, confidence: 0.5, pageCount: 1 });
-    assert.equal(result.level, "missing");
-    assert.equal((result.evidence as Record<string, unknown>).field_fill_rate, 0.2);
+    expect(result.level).toBe("missing");
+    expect((result.evidence as Record<string).toBe(unknown>).field_fill_rate, 0.2);
   });
 });
 
@@ -115,16 +114,16 @@ describe("classifyHistory", () => {
       { score: 0.85, path: "c.md" },
     ];
     const result = classifyHistory(hits);
-    assert.equal(result.level, "strong");
-    assert.equal((result.evidence as Record<string, unknown>).top_hits, 3);
-    assert.equal((result.evidence as Record<string, unknown>).best_score, 0.9);
+    expect(result.level).toBe("strong");
+    expect((result.evidence as Record<string).toBe(unknown>).top_hits, 3);
+    expect((result.evidence as Record<string).toBe(unknown>).best_score, 0.9);
   });
 
   it("returns weak when exactly 1 hit has score >= 0.5", () => {
     const hits: ArchiveSearchHit[] = [{ score: 0.6, path: "a.md" }];
     const result = classifyHistory(hits);
-    assert.equal(result.level, "weak");
-    assert.equal((result.evidence as Record<string, unknown>).best_score, 0.6);
+    expect(result.level).toBe("weak");
+    expect((result.evidence as Record<string).toBe(unknown>).best_score, 0.6);
   });
 
   it("returns missing when all hits have score < 0.5", () => {
@@ -133,8 +132,8 @@ describe("classifyHistory", () => {
       { score: 0.4, path: "b.md" },
     ];
     const result = classifyHistory(hits);
-    assert.equal(result.level, "missing");
-    assert.equal((result.evidence as Record<string, unknown>).top_hits, 0);
+    expect(result.level).toBe("missing");
+    expect((result.evidence as Record<string).toBe(unknown>).top_hits, 0);
   });
 });
 
@@ -149,8 +148,8 @@ describe("classifyKnowledge", () => {
       matchedModuleContent: "module content here",
       moduleName: "商品管理",
     });
-    assert.equal(result.level, "strong");
-    assert.equal((result.evidence as Record<string, unknown>).core_nonempty, true);
+    expect(result.level).toBe("strong");
+    expect((result.evidence as Record<string).toBe(unknown>).core_nonempty, true);
   });
 
   it("returns weak when core is non-null but matchedModuleContent is null", () => {
@@ -159,8 +158,8 @@ describe("classifyKnowledge", () => {
       matchedModuleContent: null,
       moduleName: null,
     });
-    assert.equal(result.level, "weak");
-    assert.equal((result.evidence as Record<string, unknown>).core_nonempty, true);
+    expect(result.level).toBe("weak");
+    expect((result.evidence as Record<string).toBe(unknown>).core_nonempty, true);
   });
 
   it("returns missing when core is null", () => {
@@ -168,8 +167,8 @@ describe("classifyKnowledge", () => {
       core: null,
       matchedModuleContent: null,
     });
-    assert.equal(result.level, "missing");
-    assert.equal((result.evidence as Record<string, unknown>).core_nonempty, false);
+    expect(result.level).toBe("missing");
+    expect((result.evidence as Record<string).toBe(unknown>).core_nonempty, false);
   });
 });
 
@@ -187,18 +186,18 @@ describe("computeFieldFillRate", () => {
     );
 
     const { fillRate, pageCount } = computeFieldFillRate(prd);
-    assert.equal(pageCount, 3);
-    assert.ok(
+    expect(pageCount).toBe(3);
+    expect(
       fillRate >= 0.8 && fillRate <= 1.0,
       `Expected fillRate near 1.0 but got ${fillRate}`,
-    );
+    ).toBeTruthy();
   });
 
   it("returns fillRate === 0 and pageCount === 0 when no 字段定义 anchor exists", () => {
     const prd = "# 需求说明\n\n这里没有字段定义表格。\n\n## 功能描述\n\n正文内容。\n";
     const { fillRate, pageCount } = computeFieldFillRate(prd);
-    assert.equal(fillRate, 0);
-    assert.equal(pageCount, 0);
+    expect(fillRate).toBe(0);
+    expect(pageCount).toBe(0);
   });
 });
 
@@ -209,27 +208,27 @@ describe("computeFieldFillRate", () => {
 describe("firstModuleKebab", () => {
   it("preserves Chinese module name as-is", () => {
     const result = firstModuleKebab({ modules: ["商品管理"] });
-    assert.equal(result, "商品管理");
+    expect(result).toBe("商品管理");
   });
 
   it("returns null when modules array is empty", () => {
     const result = firstModuleKebab({ modules: [] });
-    assert.equal(result, null);
+    expect(result).toBe(null);
   });
 
   it("returns null when modules field is absent", () => {
     const result = firstModuleKebab({});
-    assert.equal(result, null);
+    expect(result).toBe(null);
   });
 
   it("converts ASCII uppercase to lowercase and spaces to hyphens", () => {
     const result = firstModuleKebab({ modules: ["Order Management"] });
-    assert.equal(result, "order-management");
+    expect(result).toBe("order-management");
   });
 
   it("converts underscores to hyphens", () => {
     const result = firstModuleKebab({ modules: ["user_profile"] });
-    assert.equal(result, "user-profile");
+    expect(result).toBe("user-profile");
   });
 });
 
@@ -251,17 +250,17 @@ describe("isCacheValid and buildCacheEntry", () => {
   it("returns true when entry mtime values match the provided mtimes", () => {
     const profile = makeMinimalProfile();
     const entry = buildCacheEntry(profile, 1000, 2000);
-    assert.equal(isCacheValid(entry, 1000, 2000), true);
+    expect(isCacheValid(entry).toBe(1000, 2000), true);
   });
 
   it("returns false when prd mtime does not match", () => {
     const profile = makeMinimalProfile();
     const entry = buildCacheEntry(profile, 1000, 2000);
-    assert.equal(isCacheValid(entry, 9999, 2000), false);
+    expect(isCacheValid(entry).toBe(9999, 2000), false);
   });
 
   it("returns false when entry is null", () => {
-    assert.equal(isCacheValid(null, 1000, 2000), false);
+    expect(isCacheValid(null).toBe(1000, 2000), false);
   });
 });
 
@@ -288,12 +287,12 @@ describe("composeProfile", () => {
       now,
     });
 
-    assert.equal(profile.probed_at, "2026-04-18T02:30:00.000Z");
-    assert.equal(profile.project, "dataAssets");
-    assert.equal(profile.prd_path, "workspace/dataAssets/prds/sample.md");
-    assert.deepEqual(profile.source, source);
-    assert.deepEqual(profile.prd, prd);
-    assert.deepEqual(profile.history, history);
-    assert.deepEqual(profile.knowledge, knowledge);
+    expect(profile.probed_at).toBe("2026-04-18T02:30:00.000Z");
+    expect(profile.project).toBe("dataAssets");
+    expect(profile.prd_path).toBe("workspace/dataAssets/prds/sample.md");
+    expect(profile.source).toEqual(source);
+    expect(profile.prd).toEqual(prd);
+    expect(profile.history).toEqual(history);
+    expect(profile.knowledge).toEqual(knowledge);
   });
 });

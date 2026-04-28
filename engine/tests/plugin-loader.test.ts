@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 // The real plugins dir is used; we test via env var manipulation for active/inactive checks.
 // For logic isolation tests we use a temp plugins dir via PLUGINS_DIR_OVERRIDE is NOT supported
@@ -65,18 +64,18 @@ after(() => {
 describe("plugin-loader.ts list", () => {
   it("outputs a valid JSON array", () => {
     const { stdout, code } = runPluginLoader(["list"]);
-    assert.equal(code, 0, "list should exit 0");
+    expect(code).toBe(0);
     const plugins = JSON.parse(stdout) as unknown[];
-    assert.ok(Array.isArray(plugins), "output should be an array");
+    expect(Array.isArray(plugins).toBeTruthy(), "output should be an array");
   });
 
   it("discovers the three built-in plugins", () => {
     const { stdout } = runPluginLoader(["list"]);
     const plugins = JSON.parse(stdout) as Array<{ name: string }>;
     const names = plugins.map((p) => p.name);
-    assert.ok(names.includes("lanhu"), "should include lanhu plugin");
-    assert.ok(names.includes("notify"), "should include notify plugin");
-    assert.ok(names.includes("zentao"), "should include zentao plugin");
+    expect(names.includes("lanhu").toBeTruthy(), "should include lanhu plugin");
+    expect(names.includes("notify").toBeTruthy(), "should include notify plugin");
+    expect(names.includes("zentao").toBeTruthy(), "should include zentao plugin");
   });
 
   it("each entry has name, active, and description fields", () => {
@@ -87,9 +86,9 @@ describe("plugin-loader.ts list", () => {
       description: string;
     }>;
     for (const p of plugins) {
-      assert.equal(typeof p.name, "string");
-      assert.equal(typeof p.active, "boolean");
-      assert.equal(typeof p.description, "string");
+      expect(typeof p.name).toBe("string");
+      expect(typeof p.active).toBe("boolean");
+      expect(typeof p.description).toBe("string");
     }
   });
 
@@ -100,8 +99,8 @@ describe("plugin-loader.ts list", () => {
       active: boolean;
     }>;
     const lanhu = plugins.find((p) => p.name === "lanhu");
-    assert.ok(lanhu, "lanhu should be present");
-    assert.equal(lanhu?.active, false);
+    expect(lanhu).toBeTruthy();
+    expect(lanhu?.active).toBe(false);
   });
 
   it("lanhu is active when LANHU_COOKIE is set", () => {
@@ -113,8 +112,8 @@ describe("plugin-loader.ts list", () => {
       active: boolean;
     }>;
     const lanhu = plugins.find((p) => p.name === "lanhu");
-    assert.ok(lanhu, "lanhu should be present");
-    assert.equal(lanhu?.active, true);
+    expect(lanhu).toBeTruthy();
+    expect(lanhu?.active).toBe(true);
   });
 
   it("notify is inactive when no webhook env vars are set", () => {
@@ -124,8 +123,8 @@ describe("plugin-loader.ts list", () => {
       active: boolean;
     }>;
     const notify = plugins.find((p) => p.name === "notify");
-    assert.ok(notify, "notify should be present");
-    assert.equal(notify?.active, false);
+    expect(notify).toBeTruthy();
+    expect(notify?.active).toBe(false);
   });
 
   it("notify is active when DINGTALK_WEBHOOK_URL is set", () => {
@@ -138,8 +137,8 @@ describe("plugin-loader.ts list", () => {
       active: boolean;
     }>;
     const notify = plugins.find((p) => p.name === "notify");
-    assert.ok(notify, "notify should be present");
-    assert.equal(notify?.active, true);
+    expect(notify).toBeTruthy();
+    expect(notify?.active).toBe(true);
   });
 
   it("notify is active when FEISHU_WEBHOOK is set (env_required_any logic)", () => {
@@ -151,7 +150,7 @@ describe("plugin-loader.ts list", () => {
       active: boolean;
     }>;
     const notify = plugins.find((p) => p.name === "notify");
-    assert.equal(notify?.active, true);
+    expect(notify?.active).toBe(true);
   });
 });
 
@@ -165,10 +164,10 @@ describe("plugin-loader.ts check", () => {
       ],
       { LANHU_COOKIE: "session=active" },
     );
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { matched: boolean; plugin?: string };
-    assert.equal(result.matched, true);
-    assert.equal(result.plugin, "lanhu");
+    expect(result.matched).toBe(true);
+    expect(result.plugin).toBe("lanhu");
   });
 
   it("returns matched: false when URL does not match any active plugin", () => {
@@ -177,9 +176,9 @@ describe("plugin-loader.ts check", () => {
       "--input",
       "https://www.example.com/some/other/url",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { matched: boolean };
-    assert.equal(result.matched, false);
+    expect(result.matched).toBe(false);
   });
 
   it("returns matched: false when plugin is inactive even if URL matches pattern", () => {
@@ -189,7 +188,7 @@ describe("plugin-loader.ts check", () => {
       { LANHU_COOKIE: "" },
     );
     const result = JSON.parse(stdout) as { matched: boolean };
-    assert.equal(result.matched, false);
+    expect(result.matched).toBe(false);
   });
 
   it("matched: true output includes plugin name", () => {
@@ -203,7 +202,7 @@ describe("plugin-loader.ts check", () => {
     );
     const result = JSON.parse(stdout) as { matched: boolean; plugin?: string };
     if (result.matched) {
-      assert.ok(typeof result.plugin === "string" && result.plugin.length > 0);
+      expect(typeof result.plugin === "string" && result.plugin.length > 0).toBeTruthy();
     }
   });
 });
@@ -214,11 +213,11 @@ describe("plugin-loader.ts resolve", () => {
     const { stdout, code } = runPluginLoader(["resolve", "--url", url], {
       LANHU_COOKIE: "session=active",
     });
-    assert.equal(code, 0, "should exit 0 when plugin found");
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { plugin: string; command: string };
-    assert.equal(result.plugin, "lanhu");
-    assert.ok(
-      result.command.includes(url),
+    expect(result.plugin).toBe("lanhu");
+    expect(
+      result.command.includes(url).toBeTruthy(),
       "command should contain the resolved URL",
     );
   });
@@ -229,12 +228,12 @@ describe("plugin-loader.ts resolve", () => {
       LANHU_COOKIE: "session=abc",
     });
     const result = JSON.parse(stdout) as { command: string };
-    assert.ok(
-      result.command.includes(url),
+    expect(
+      result.command.includes(url).toBeTruthy(),
       "{{url}} should be replaced with actual URL",
     );
-    assert.ok(
-      !result.command.includes("{{url}}"),
+    expect(
+      !result.command.includes("{{url}}").toBeTruthy(),
       "no {{url}} placeholder should remain",
     );
   });
@@ -245,9 +244,9 @@ describe("plugin-loader.ts resolve", () => {
       "--url",
       "https://www.example.com/no-match",
     ]);
-    assert.equal(code, 1);
+    expect(code).toBe(1);
     const result = JSON.parse(stdout) as { error: string };
-    assert.equal(result.error, "No matching plugin");
+    expect(result.error).toBe("No matching plugin");
   });
 
   it("exits 1 when matching plugin is inactive", () => {
@@ -258,7 +257,7 @@ describe("plugin-loader.ts resolve", () => {
         LANHU_COOKIE: "",
       },
     );
-    assert.equal(code, 1);
+    expect(code).toBe(1);
   });
 });
 
@@ -272,10 +271,10 @@ describe("plugin-loader.ts notify", () => {
       '{"count":42}',
     ]);
     // Should exit 0 (not an error), but skipped
-    assert.equal(code, 0, "should NOT exit with error when notify is inactive");
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { skipped: boolean; reason: string };
-    assert.equal(result.skipped, true);
-    assert.ok(result.reason.includes("notify plugin not active"));
+    expect(result.skipped).toBe(true);
+    expect(result.reason.includes("notify plugin not active").toBeTruthy());
   });
 
   it("returns command when notify plugin is active", () => {
@@ -292,17 +291,17 @@ describe("plugin-loader.ts notify", () => {
           "https://oapi.dingtalk.com/robot/send?access_token=test",
       },
     );
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       plugin?: string;
       command?: string;
       skipped?: boolean;
     };
     if (!result.skipped) {
-      assert.equal(result.plugin, "notify");
-      assert.ok(
+      expect(result.plugin).toBe("notify");
+      expect(
         typeof result.command === "string" && result.command.length > 0,
-      );
+      ).toBeTruthy();
     }
   });
 
@@ -321,16 +320,16 @@ describe("plugin-loader.ts notify", () => {
       skipped?: boolean;
     };
     if (!result.skipped && result.command) {
-      assert.ok(
-        result.command.includes(event),
+      expect(
+        result.command.includes(event).toBeTruthy(),
         "command should include event name",
       );
-      assert.ok(
-        !result.command.includes("{{event}}"),
+      expect(
+        !result.command.includes("{{event}}").toBeTruthy(),
         "{{event}} placeholder should be replaced",
       );
-      assert.ok(
-        !result.command.includes("{{json}}"),
+      expect(
+        !result.command.includes("{{json}}").toBeTruthy(),
         "{{json}} placeholder should be replaced",
       );
     }
@@ -353,7 +352,7 @@ describe("plugin-loader.ts notify", () => {
         SMTP_HOST: "",
       },
     );
-    assert.equal(code, 0);
+    expect(code).toBe(0);
   });
 });
 
@@ -370,7 +369,7 @@ describe("plugin-loader.ts --help", () => {
       );
     } catch (err: unknown) {
       const e = err as { status?: number };
-      assert.ok(e.status === 0 || e.status === undefined);
+      expect(e.status === 0 || e.status === undefined).toBeTruthy();
     }
   });
 });

@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 import JSZip from "jszip";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
@@ -70,7 +69,7 @@ async function readContentJson(
   const buffer = readFileSync(xmindPath);
   const zip = await JSZip.loadAsync(buffer);
   const contentFile = zip.file("content.json");
-  assert.ok(contentFile, "content.json not found in .xmind archive");
+  expect(contentFile).toBeTruthy();
   const str = await contentFile.async("string");
   return JSON.parse(str);
 }
@@ -79,7 +78,7 @@ async function readContentJson(
 function createTestXmind(name: string): string {
   const outputPath = join(TMP_DIR, `${name}.xmind`);
   const { code, stderr } = runGen(["--input", FIXTURE, "--output", outputPath]);
-  assert.equal(code, 0, `xmind-gen failed: ${stderr}`);
+  expect(code).toBe(0, `xmind-gen failed: ${stderr}`);
   return outputPath;
 }
 
@@ -110,7 +109,7 @@ describe("xmind-patch search", () => {
       "--limit",
       "10",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as {
       file: string;
@@ -119,16 +118,16 @@ describe("xmind-patch search", () => {
       priority: string;
     }[];
 
-    assert.ok(Array.isArray(results), "result should be an array");
-    assert.ok(results.length > 0, "should find at least one match");
+    expect(Array.isArray(results).toBeTruthy(), "result should be an array");
+    expect(results.length > 0).toBeTruthy();
 
     const match = results.find((r) => r.title === "验证默认加载列表页");
-    assert.ok(match, "should find '验证默认加载列表页'");
-    assert.equal(match.file, xmindPath);
-    assert.equal(match.priority, "P0");
-    assert.ok(Array.isArray(match.tree_path), "tree_path should be an array");
-    assert.ok(
-      match.tree_path.includes("验证默认加载列表页"),
+    expect(match).toBeTruthy();
+    expect(match.file).toBe(xmindPath);
+    expect(match.priority).toBe("P0");
+    expect(Array.isArray(match.tree_path).toBeTruthy(), "tree_path should be an array");
+    expect(
+      match.tree_path.includes("验证默认加载列表页").toBeTruthy(),
       "tree_path should contain case title",
     );
   });
@@ -141,10 +140,10 @@ describe("xmind-patch search", () => {
       "--dir",
       TMP_DIR,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const results = JSON.parse(stdout) as unknown[];
-    assert.ok(Array.isArray(results));
-    assert.equal(results.length, 0);
+    expect(Array.isArray(results).toBeTruthy());
+    expect(results.length).toBe(0);
   });
 
   it("respects --limit option", () => {
@@ -157,12 +156,12 @@ describe("xmind-patch search", () => {
       "--limit",
       "2",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const results = JSON.parse(stdout) as unknown[];
-    assert.ok(
+    expect(
       results.length <= 2,
       `got ${results.length} results, expected at most 2`,
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -178,7 +177,7 @@ describe("xmind-patch show", () => {
       "--title",
       "验证默认加载列表页",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const caseData = JSON.parse(stdout) as {
       title: string;
@@ -188,15 +187,15 @@ describe("xmind-patch show", () => {
       tree_path: string[];
     };
 
-    assert.equal(caseData.title, "验证默认加载列表页");
-    assert.equal(caseData.priority, "P0");
-    assert.ok(caseData.preconditions, "preconditions should be present");
-    assert.match(caseData.preconditions!, /环境已部署/);
-    assert.ok(Array.isArray(caseData.steps), "steps should be an array");
-    assert.ok(caseData.steps.length > 0, "should have at least one step");
-    assert.equal(caseData.steps[0].step, "进入【数据质量 → 质量问题台账】页面");
-    assert.equal(caseData.steps[0].expected, "页面正常加载");
-    assert.ok(Array.isArray(caseData.tree_path), "tree_path should be present");
+    expect(caseData.title).toBe("验证默认加载列表页");
+    expect(caseData.priority).toBe("P0");
+    expect(caseData.preconditions).toBeTruthy();
+    expect(caseData.preconditions!).toMatch(/环境已部署/);
+    expect(Array.isArray(caseData.steps).toBeTruthy(), "steps should be an array");
+    expect(caseData.steps.length > 0).toBeTruthy();
+    expect(caseData.steps[0].step).toBe("进入【数据质量 → 质量问题台账】页面");
+    expect(caseData.steps[0].expected).toBe("页面正常加载");
+    expect(Array.isArray(caseData.tree_path).toBeTruthy(), "tree_path should be present");
   });
 
   it("exits with code 1 when title is not found", () => {
@@ -208,8 +207,8 @@ describe("xmind-patch show", () => {
       "--title",
       "XXXX_NOT_EXIST",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /No topic found/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/No topic found/);
   });
 });
 
@@ -229,14 +228,14 @@ describe("xmind-patch patch", () => {
       "--case-json",
       patch,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       before: { priority: string };
       after: { priority: string };
     };
-    assert.equal(result.before.priority, "P0");
-    assert.equal(result.after.priority, "P2");
+    expect(result.before.priority).toBe("P0");
+    expect(result.after.priority).toBe("P2");
 
     // Verify actual file was updated
     const sheets = await readContentJson(xmindPath);
@@ -257,11 +256,11 @@ describe("xmind-patch patch", () => {
       return undefined;
     }
     const rootTopic = (sheets[0] as { rootTopic?: SheetNode }).rootTopic;
-    assert.ok(rootTopic);
+    expect(rootTopic).toBeTruthy();
     const caseNode = findByTitle(rootTopic, "验证默认加载列表页");
-    assert.ok(caseNode, "case node should exist after patch");
-    assert.ok(
-      caseNode.markers?.some((m) => m.markerId === "priority-3"),
+    expect(caseNode).toBeTruthy();
+    expect(
+      caseNode.markers?.some((m).toBeTruthy() => m.markerId === "priority-3"),
       "marker should be priority-3 (P2)",
     );
   });
@@ -283,7 +282,7 @@ describe("xmind-patch patch", () => {
       "--case-json",
       patch,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     // Verify file was updated with new steps
     const { code: showCode, stdout: showOut } = runEdit([
@@ -293,13 +292,13 @@ describe("xmind-patch patch", () => {
       "--title",
       "验证翻页功能",
     ]);
-    assert.equal(showCode, 0);
+    expect(showCode).toBe(0);
     const updated = JSON.parse(showOut) as {
       steps: { step: string; expected: string }[];
     };
-    assert.equal(updated.steps.length, 2);
-    assert.equal(updated.steps[0].step, "打开页面");
-    assert.equal(updated.steps[1].expected, "弹出确认框");
+    expect(updated.steps.length).toBe(2);
+    expect(updated.steps[0].step).toBe("打开页面");
+    expect(updated.steps[1].expected).toBe("弹出确认框");
   });
 
   it("keeps non-patched fields intact", () => {
@@ -313,7 +312,7 @@ describe("xmind-patch patch", () => {
       "--title",
       "验证默认加载列表页",
     ]);
-    assert.equal(showCode1, 0);
+    expect(showCode1).toBe(0);
     const before = JSON.parse(showOut1) as {
       preconditions?: string;
       steps: unknown[];
@@ -328,7 +327,7 @@ describe("xmind-patch patch", () => {
       "--case-json",
       patch,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const { code: showCode2, stdout: showOut2 } = runEdit([
       "show",
@@ -337,7 +336,7 @@ describe("xmind-patch patch", () => {
       "--title",
       "验证默认加载列表页",
     ]);
-    assert.equal(showCode2, 0);
+    expect(showCode2).toBe(0);
     const after = JSON.parse(showOut2) as {
       priority: string;
       preconditions?: string;
@@ -345,11 +344,11 @@ describe("xmind-patch patch", () => {
     };
 
     // Priority was patched
-    assert.equal(after.priority, "P1");
+    expect(after.priority).toBe("P1");
     // Preconditions untouched
-    assert.equal(after.preconditions, before.preconditions);
+    expect(after.preconditions).toBe(before.preconditions);
     // Steps untouched
-    assert.equal(after.steps.length, before.steps.length);
+    expect(after.steps.length).toBe(before.steps.length);
   });
 
   it("dry-run previews patch without mutating the file", async () => {
@@ -371,7 +370,7 @@ describe("xmind-patch patch", () => {
       patch,
       "--dry-run",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       dry_run: boolean;
@@ -379,17 +378,17 @@ describe("xmind-patch patch", () => {
       after: { title: string; priority: string };
       file: string;
     };
-    assert.equal(result.dry_run, true);
-    assert.equal(result.before.title, "验证默认加载列表页");
-    assert.equal(result.before.priority, "P0");
-    assert.equal(result.after.title, "验证默认加载列表页（预览）");
-    assert.equal(result.after.priority, "P2");
-    assert.equal(result.file, xmindPath);
+    expect(result.dry_run).toBe(true);
+    expect(result.before.title).toBe("验证默认加载列表页");
+    expect(result.before.priority).toBe("P0");
+    expect(result.after.title).toBe("验证默认加载列表页（预览）");
+    expect(result.after.priority).toBe("P2");
+    expect(result.file).toBe(xmindPath);
 
     const afterFile = readFileSync(xmindPath);
     const afterContent = await readContentJson(xmindPath);
-    assert.deepEqual(afterFile, beforeFile);
-    assert.deepEqual(afterContent, beforeContent);
+    expect(afterFile).toEqual(beforeFile);
+    expect(afterContent).toEqual(beforeContent);
   });
 });
 
@@ -417,16 +416,16 @@ describe("xmind-patch add", () => {
       "--case-json",
       newCase,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       added: { title: string; priority: string };
       parent: string[];
       file: string;
     };
-    assert.equal(result.added.title, "验证新增的测试用例");
-    assert.equal(result.added.priority, "P1");
-    assert.equal(result.file, xmindPath);
+    expect(result.added.title).toBe("验证新增的测试用例");
+    expect(result.added.priority).toBe("P1");
+    expect(result.file).toBe(xmindPath);
 
     // Verify we can find the added case via show
     const { code: showCode, stdout: showOut } = runEdit([
@@ -436,13 +435,13 @@ describe("xmind-patch add", () => {
       "--title",
       "验证新增的测试用例",
     ]);
-    assert.equal(showCode, 0, "should be able to show newly added case");
+    expect(showCode).toBe(0);
     const shown = JSON.parse(showOut) as {
       title: string;
       steps: { step: string; expected: string }[];
     };
-    assert.equal(shown.title, "验证新增的测试用例");
-    assert.equal(shown.steps[0].step, "进入页面");
+    expect(shown.title).toBe("验证新增的测试用例");
+    expect(shown.steps[0].step).toBe("进入页面");
   });
 
   it("exits with code 1 when parent not found", () => {
@@ -462,8 +461,8 @@ describe("xmind-patch add", () => {
       "--case-json",
       newCase,
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /No parent topic found/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/No parent topic found/);
   });
 
   it("counts increase after add", () => {
@@ -478,7 +477,7 @@ describe("xmind-patch add", () => {
       "--limit",
       "100",
     ]);
-    assert.equal(c1, 0);
+    expect(c1).toBe(0);
     const before = (JSON.parse(s1) as unknown[]).filter((r) => {
       const rec = r as { file: string };
       return rec.file === xmindPath;
@@ -507,15 +506,15 @@ describe("xmind-patch add", () => {
       "--limit",
       "100",
     ]);
-    assert.equal(c2, 0);
+    expect(c2).toBe(0);
     const after = (JSON.parse(s2) as unknown[]).filter((r) => {
       const rec = r as { file: string };
       return rec.file === xmindPath;
     }).length;
 
-    assert.ok(
+    expect(
       after > before,
-      `after (${after}) should be greater than before (${before})`,
+      `after (${after}).toBeTruthy() should be greater than before (${before})`,
     );
   });
 
@@ -540,7 +539,7 @@ describe("xmind-patch add", () => {
       newCase,
       "--dry-run",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       dry_run: boolean;
@@ -548,16 +547,16 @@ describe("xmind-patch add", () => {
       parent: string[];
       file: string;
     };
-    assert.equal(result.dry_run, true);
-    assert.equal(result.would_add.title, "验证仅预览新增用例");
-    assert.equal(result.would_add.priority, "P1");
-    assert.equal(result.parent.at(-1), "搜索筛选");
-    assert.equal(result.file, xmindPath);
+    expect(result.dry_run).toBe(true);
+    expect(result.would_add.title).toBe("验证仅预览新增用例");
+    expect(result.would_add.priority).toBe("P1");
+    expect(result.parent.at(-1)).toBe("搜索筛选");
+    expect(result.file).toBe(xmindPath);
 
     const afterFile = readFileSync(xmindPath);
     const afterContent = await readContentJson(xmindPath);
-    assert.deepEqual(afterFile, beforeFile);
-    assert.deepEqual(afterContent, beforeContent);
+    expect(afterFile).toEqual(beforeFile);
+    expect(afterContent).toEqual(beforeContent);
 
     const { code: showCode } = runEdit([
       "show",
@@ -566,7 +565,7 @@ describe("xmind-patch add", () => {
       "--title",
       "验证仅预览新增用例",
     ]);
-    assert.equal(showCode, 1, "dry-run should not persist the new case");
+    expect(showCode).toBe(1);
   });
 });
 
@@ -584,15 +583,15 @@ describe("xmind-patch delete", () => {
       "验证翻页功能",
       "--dry-run",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       dry_run: boolean;
       would_delete: { title: string };
       file: string;
     };
-    assert.equal(result.dry_run, true);
-    assert.equal(result.would_delete.title, "验证翻页功能");
+    expect(result.dry_run).toBe(true);
+    expect(result.would_delete.title).toBe("验证翻页功能");
 
     // File should NOT be modified — case should still exist
     const { code: showCode } = runEdit([
@@ -602,7 +601,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证翻页功能",
     ]);
-    assert.equal(showCode, 0, "case should still exist after dry-run");
+    expect(showCode).toBe(0);
   });
 
   it("actually deletes the case (no --dry-run)", () => {
@@ -616,7 +615,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证翻页功能",
     ]);
-    assert.equal(pre, 0, "case should exist before delete");
+    expect(pre).toBe(0);
 
     // Delete
     const { code, stdout, stderr } = runEdit([
@@ -626,14 +625,14 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证翻页功能",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       deleted: { title: string };
       file: string;
     };
-    assert.equal(result.deleted.title, "验证翻页功能");
-    assert.equal(result.file, xmindPath);
+    expect(result.deleted.title).toBe("验证翻页功能");
+    expect(result.file).toBe(xmindPath);
 
     // Verify case no longer exists
     const { code: post } = runEdit([
@@ -643,7 +642,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证翻页功能",
     ]);
-    assert.equal(post, 1, "case should not exist after delete");
+    expect(post).toBe(1);
   });
 
   it("exits with code 1 when title is not found", () => {
@@ -655,8 +654,8 @@ describe("xmind-patch delete", () => {
       "--title",
       "XXXX_NOT_EXIST",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /No topic found/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/No topic found/);
   });
 
   it("deletes a sub-group case and leaves other cases intact", () => {
@@ -670,7 +669,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证按问题类型筛选",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     // The deleted case should be gone
     const { code: c1 } = runEdit([
@@ -680,7 +679,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证按问题类型筛选",
     ]);
-    assert.equal(c1, 1, "deleted case should be gone");
+    expect(c1).toBe(1);
 
     // Another case in same group should still exist
     const { code: c2 } = runEdit([
@@ -690,7 +689,7 @@ describe("xmind-patch delete", () => {
       "--title",
       "验证默认加载列表页",
     ]);
-    assert.equal(c2, 0, "sibling case should still exist");
+    expect(c2).toBe(0);
   });
 });
 
@@ -700,12 +699,12 @@ describe("xmind-patch --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = runEdit(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /xmind-patch/);
-    assert.match(output, /search/);
-    assert.match(output, /show/);
-    assert.match(output, /patch/);
-    assert.match(output, /add/);
-    assert.match(output, /delete/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/xmind-patch/);
+    expect(output).toMatch(/search/);
+    expect(output).toMatch(/show/);
+    expect(output).toMatch(/patch/);
+    expect(output).toMatch(/add/);
+    expect(output).toMatch(/delete/);
   });
 });

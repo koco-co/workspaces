@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { afterEach, describe, it } from "node:test";
+import { afterEach, describe, it, expect } from "bun:test";
 
 afterEach(() => {
   delete process.env["LOG_LEVEL"];
@@ -9,18 +8,18 @@ describe("logger", () => {
   it("createLogger returns object with 4 methods", async () => {
     const { createLogger } = await import("../../src/lib/logger.ts");
     const log = createLogger("test");
-    assert.equal(typeof log.debug, "function");
-    assert.equal(typeof log.info, "function");
-    assert.equal(typeof log.warn, "function");
-    assert.equal(typeof log.error, "function");
+    expect(typeof log.debug).toBe("function");
+    expect(typeof log.info).toBe("function");
+    expect(typeof log.warn).toBe("function");
+    expect(typeof log.error).toBe("function");
   });
 
   it("setLogLevel / getLogLevel roundtrip", async () => {
     const { setLogLevel, getLogLevel } = await import("../../src/lib/logger.ts");
     setLogLevel("error");
-    assert.equal(getLogLevel(), "error");
+    expect(getLogLevel()).toBe("error");
     setLogLevel("debug");
-    assert.equal(getLogLevel(), "debug");
+    expect(getLogLevel()).toBe("debug");
     setLogLevel("info"); // reset to default
   });
 
@@ -31,7 +30,7 @@ describe("logger", () => {
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "error";
     initLogLevel();
-    assert.equal(getLogLevel(), "error");
+    expect(getLogLevel()).toBe("error");
     setLogLevel("info");
   });
 
@@ -42,7 +41,7 @@ describe("logger", () => {
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "garbage";
     initLogLevel();
-    assert.equal(getLogLevel(), "info");
+    expect(getLogLevel()).toBe("info");
   });
 
   it("initLogLevel with LOG_LEVEL unset is a no-op", async () => {
@@ -52,7 +51,7 @@ describe("logger", () => {
     setLogLevel("warn");
     delete process.env["LOG_LEVEL"];
     initLogLevel();
-    assert.equal(getLogLevel(), "warn");
+    expect(getLogLevel()).toBe("warn");
     setLogLevel("info");
   });
 
@@ -63,7 +62,7 @@ describe("logger", () => {
     setLogLevel("info");
     process.env["LOG_LEVEL"] = "DEBUG";
     initLogLevel();
-    assert.equal(getLogLevel(), "debug");
+    expect(getLogLevel()).toBe("debug");
     setLogLevel("info");
   });
 });

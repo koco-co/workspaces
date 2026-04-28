@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 // 文件位置：engine/tests/ui-autotest/merge-specs.test.ts
 // REPO_ROOT 需要向上 3 层
@@ -104,19 +103,19 @@ after(() => {
 describe("parseBlockMeta", () => {
   it("正确解析 META 注释", () => {
     const meta = parseBlockMeta(BLOCK_P0);
-    assert.ok(meta, "应返回 meta 对象");
-    assert.equal(meta.id, "t1");
-    assert.equal(meta.priority, "P0");
-    assert.ok(meta.title.includes("验证列表页"));
+    expect(meta).toBeTruthy();
+    expect(meta.id).toBe("t1");
+    expect(meta.priority).toBe("P0");
+    expect(meta.title.includes("验证列表页").toBeTruthy());
   });
 
   it("无 META 注释时返回 null", () => {
     const meta = parseBlockMeta(BLOCK_INVALID);
-    assert.equal(meta, null);
+    expect(meta).toBe(null);
   });
 
   it("空内容返回 null", () => {
-    assert.equal(parseBlockMeta(""), null);
+    expect(parseBlockMeta("")).toBe(null);
   });
 });
 
@@ -128,7 +127,7 @@ describe("readCodeBlocks", () => {
     writeFileSync(join(blocksDir, "t2.ts"), BLOCK_P1, "utf-8");
 
     const blocks = readCodeBlocks(blocksDir);
-    assert.equal(blocks.length, 2);
+    expect(blocks.length).toBe(2);
   });
 
   it("跳过无效 META 的代码块", () => {
@@ -138,21 +137,21 @@ describe("readCodeBlocks", () => {
     writeFileSync(join(blocksDir, "invalid.ts"), BLOCK_INVALID, "utf-8");
 
     const blocks = readCodeBlocks(blocksDir);
-    assert.equal(blocks.length, 1, "应只读取有效代码块");
-    assert.equal(blocks[0].meta.id, "t1");
+    expect(blocks.length).toBe(1);
+    expect(blocks[0].meta.id).toBe("t1");
   });
 
   it("目录不存在时返回空数组", () => {
     const blocks = readCodeBlocks("/nonexistent/dir");
-    assert.deepEqual(blocks, []);
+    expect(blocks).toEqual([]);
   });
 });
 
 describe("buildSpecContent", () => {
   it("空 blocks 时生成占位内容", () => {
     const content = buildSpecContent([], "冒烟测试");
-    assert.ok(content.includes("冒烟测试"), "应包含标签");
-    assert.ok(content.includes("export {};"), "空文件应导出空模块");
+    expect(content.includes("冒烟测试").toBeTruthy(), "应包含标签");
+    expect(content.includes("export {};").toBeTruthy(), "空文件应导出空模块");
   });
 
   it("生成内容按顺序聚合导入所有独立 spec", () => {
@@ -165,10 +164,10 @@ describe("buildSpecContent", () => {
     const content = buildSpecContent(blocks, "完整测试");
 
     const importCount = (content.match(/^import /gm) ?? []).length;
-    assert.equal(importCount, 2, "应为每个独立 spec 生成一个聚合 import");
-    assert.match(content, /import "\.\/t2\.spec";\nimport "\.\/t10\.spec";/, "应按自然顺序导入");
-    assert.ok(!content.includes("rule-editor-helpers"), "聚合文件不应内联 helper import");
-    assert.ok(!content.includes("test.describe("), "聚合文件不应内联测试实现");
+    expect(importCount).toBe(2);
+    expect(content).toMatch(/import "\.\/t2\.spec";\nimport "\.\/t10\.spec";/);
+    expect(!content.includes("rule-editor-helpers").toBeTruthy(), "聚合文件不应内联 helper import");
+    expect(!content.includes("test.describe(").toBeTruthy(), "聚合文件不应内联测试实现");
   });
 });
 
@@ -184,13 +183,13 @@ describe("mergeSpecs", () => {
 
     const result = mergeSpecs(blocksDir, outputDir);
 
-    assert.ok(
-      result.smoke_spec.endsWith("smoke.spec.ts"),
+    expect(
+      result.smoke_spec.endsWith("smoke.spec.ts").toBeTruthy(),
       "smoke_spec 路径应以 smoke.spec.ts 结尾",
     );
-    assert.ok(result.full_spec.endsWith("full.spec.ts"), "full_spec 路径应以 full.spec.ts 结尾");
-    assert.equal(result.case_count.smoke, 1, "冒烟测试应只含 P0 用例");
-    assert.equal(result.case_count.full, 3, "全量测试应含全部用例");
+    expect(result.full_spec.endsWith("full.spec.ts").toBeTruthy(), "full_spec 路径应以 full.spec.ts 结尾");
+    expect(result.case_count.smoke).toBe(1);
+    expect(result.case_count.full).toBe(3);
   });
 
   it("smoke.spec.ts 只包含 P0 用例", () => {
@@ -204,8 +203,8 @@ describe("mergeSpecs", () => {
     const result = mergeSpecs(blocksDir, outputDir);
 
     const smokeContent = readFileSync(result.smoke_spec, "utf-8");
-    assert.ok(smokeContent.includes('import "./t1.spec";'), "smoke spec 应包含 P0 聚合 import");
-    assert.ok(!smokeContent.includes('import "./t2.spec";'), "smoke spec 不应包含 P1 聚合 import");
+    expect(smokeContent.includes('import "./t1.spec";').toBeTruthy(), "smoke spec 应包含 P0 聚合 import");
+    expect(!smokeContent.includes('import "./t2.spec";').toBeTruthy(), "smoke spec 不应包含 P1 聚合 import");
   });
 
   it("full.spec.ts 包含所有优先级用例", () => {
@@ -220,9 +219,9 @@ describe("mergeSpecs", () => {
     const result = mergeSpecs(blocksDir, outputDir);
 
     const fullContent = readFileSync(result.full_spec, "utf-8");
-    assert.ok(fullContent.includes('import "./t1.spec";'), "应包含 P0 import");
-    assert.ok(fullContent.includes('import "./t2.spec";'), "应包含 P1 import");
-    assert.ok(fullContent.includes('import "./t3.spec";'), "应包含 P2 import");
+    expect(fullContent.includes('import "./t1.spec";').toBeTruthy(), "应包含 P0 import");
+    expect(fullContent.includes('import "./t2.spec";').toBeTruthy(), "应包含 P1 import");
+    expect(fullContent.includes('import "./t3.spec";').toBeTruthy(), "应包含 P2 import");
   });
 
   it("输出目录不存在时自动创建", () => {
@@ -233,6 +232,6 @@ describe("mergeSpecs", () => {
 
     // 不预先创建 outputDir
     const result = mergeSpecs(blocksDir, outputDir);
-    assert.ok(result.smoke_spec, "应成功生成 smoke_spec 路径");
+    expect(result.smoke_spec).toBeTruthy();
   });
 });

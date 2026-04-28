@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { execFileSync, execSync } from "node:child_process";
 import {
   existsSync,
@@ -9,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it, expect } from "bun:test";
 
 const TMP = join(tmpdir(), `kata-cp-int-${process.pid}`);
 const WORKSPACE_DIR = join(TMP, "workspace");
@@ -62,20 +61,20 @@ describe("create-project create --dry-run", () => {
       "newProj",
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.dry_run, true);
-    assert.equal(data.will_register, true);
-    assert.equal(data.will_call_index, true);
-    assert.ok(Array.isArray(data.will_create.dirs));
-    assert.ok(Array.isArray(data.will_create.files));
-    assert.ok(Array.isArray(data.will_create.gitkeeps));
-    assert.equal(data.will_create.dirs.length, 12);
+    expect(data.dry_run).toBe(true);
+    expect(data.will_register).toBe(true);
+    expect(data.will_call_index).toBe(true);
+    expect(Array.isArray(data.will_create.dirs).toBeTruthy());
+    expect(Array.isArray(data.will_create.files).toBeTruthy());
+    expect(Array.isArray(data.will_create.gitkeeps).toBeTruthy());
+    expect(data.will_create.dirs.length).toBe(12);
     // Disk must remain untouched
-    assert.equal(existsSync(join(WORKSPACE_DIR, "newProj")), false);
+    expect(existsSync(join(WORKSPACE_DIR).toBe("newProj")), false);
     // Config must remain unchanged
     const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
-    assert.deepEqual(cfg, { projects: {} });
+    expect(cfg).toEqual({ projects: {} });
   });
 
   it("dry-run rejects invalid name with exit 1", () => {
@@ -85,8 +84,8 @@ describe("create-project create --dry-run", () => {
       "1bad",
       "--dry-run",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /Invalid project name/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/Invalid project name/);
   });
 
   it("dry-run on complete project returns skipped=true", () => {
@@ -130,15 +129,15 @@ describe("create-project create --dry-run", () => {
       "complete",
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.skipped, true);
+    expect(data.skipped).toBe(true);
   });
 
   it("returns exit 2 when missing --confirmed and diff exists", () => {
     const { stderr, code } = runCp(["create", "--project", "newProj"]);
-    assert.equal(code, 2);
-    assert.match(stderr, /--confirmed/);
+    expect(code).toBe(2);
+    expect(stderr).toMatch(/--confirmed/);
   });
 });
 
@@ -149,22 +148,22 @@ describe("create-project scan", () => {
 
   it("rejects invalid project name", () => {
     const { stderr, code } = runCp(["scan", "--project", "1invalid"]);
-    assert.equal(code, 1);
-    assert.match(stderr, /\[create-project\] Invalid project name/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/\[create-project\] Invalid project name/);
   });
 
   it("reports non-existent project with all missing", () => {
     const { stdout, code } = runCp(["scan", "--project", "ghost"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.project, "ghost");
-    assert.equal(data.valid_name, true);
-    assert.equal(data.exists, false);
-    assert.equal(data.skeleton_complete, false);
-    assert.equal(data.missing_dirs.length, 12);
-    assert.equal(data.missing_gitkeeps.length, 10);
-    assert.equal(data.missing_files.length, 3);
-    assert.equal(data.config_registered, false);
+    expect(data.project).toBe("ghost");
+    expect(data.valid_name).toBe(true);
+    expect(data.exists).toBe(false);
+    expect(data.skeleton_complete).toBe(false);
+    expect(data.missing_dirs.length).toBe(12);
+    expect(data.missing_gitkeeps.length).toBe(10);
+    expect(data.missing_files.length).toBe(3);
+    expect(data.config_registered).toBe(false);
   });
 
   it("reports config_registered=true when project exists in config.json", () => {
@@ -177,9 +176,9 @@ describe("create-project scan", () => {
       ),
     );
     const { stdout, code } = runCp(["scan", "--project", "registered"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.config_registered, true);
+    expect(data.config_registered).toBe(true);
   });
 
   it("reports skeleton_complete=true for fully populated project", () => {
@@ -223,13 +222,13 @@ describe("create-project scan", () => {
     void tplRoot;
 
     const { stdout, code } = runCp(["scan", "--project", "fullProj"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.exists, true);
-    assert.equal(data.skeleton_complete, true);
-    assert.equal(data.missing_dirs.length, 0);
-    assert.equal(data.missing_files.length, 0);
-    assert.equal(data.missing_gitkeeps.length, 0);
+    expect(data.exists).toBe(true);
+    expect(data.skeleton_complete).toBe(true);
+    expect(data.missing_dirs.length).toBe(0);
+    expect(data.missing_files.length).toBe(0);
+    expect(data.missing_gitkeeps.length).toBe(0);
   });
 });
 
@@ -245,12 +244,12 @@ describe("create-project create --confirmed", () => {
       "fresh",
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.project, "fresh");
-    assert.equal(data.registered_config, true);
-    assert.equal(data.index_generated, true);
-    assert.ok(data.index_path.endsWith("knowledge/_index.md"));
+    expect(data.project).toBe("fresh");
+    expect(data.registered_config).toBe(true);
+    expect(data.index_generated).toBe(true);
+    expect(data.index_path.endsWith("knowledge/_index.md").toBeTruthy());
 
     const projDir = join(WORKSPACE_DIR, "fresh");
     for (const d of [
@@ -267,28 +266,28 @@ describe("create-project create --confirmed", () => {
       "knowledge/pitfalls",
       ".repos",
     ]) {
-      assert.ok(existsSync(join(projDir, d)), `dir missing: ${d}`);
+      expect(existsSync(join(projDir, d).toBeTruthy()), `dir missing: ${d}`);
     }
-    assert.ok(existsSync(join(projDir, "prds", ".gitkeep")));
-    assert.ok(existsSync(join(projDir, "knowledge", "modules", ".gitkeep")));
+    expect(existsSync(join(projDir, "prds").toBeTruthy()));
+    expect(existsSync(join(projDir, "knowledge", "modules").toBeTruthy()));
     const rulesReadme = readFileSync(
       join(projDir, "rules", "README.md"),
       "utf8",
     );
-    assert.match(rulesReadme, /# fresh 项目级规则/);
+    expect(rulesReadme).toMatch(/# fresh 项目级规则/);
     const overview = readFileSync(
       join(projDir, "knowledge", "overview.md"),
       "utf8",
     );
-    assert.match(overview, /# fresh 业务概览/);
-    assert.ok(existsSync(join(projDir, "knowledge", "_index.md")));
+    expect(overview).toMatch(/# fresh 业务概览/);
+    expect(existsSync(join(projDir, "knowledge").toBeTruthy()));
     const indexContent = readFileSync(
       join(projDir, "knowledge", "_index.md"),
       "utf8",
     );
-    assert.match(indexContent, /last-indexed/);
+    expect(indexContent).toMatch(/last-indexed/);
     const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
-    assert.deepEqual(cfg.projects.fresh, { repo_profiles: {} });
+    expect(cfg.projects.fresh).toEqual({ repo_profiles: {} });
   });
 
   it("is idempotent: second run returns skipped=true and does not touch disk", () => {
@@ -307,11 +306,11 @@ describe("create-project create --confirmed", () => {
       "again",
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.skipped, true);
+    expect(data.skipped).toBe(true);
     const after = readFileSync(overviewPath, "utf8");
-    assert.equal(after, before, "overview.md must not change on second run");
+    expect(after).toBe(before);
   });
 
   it("preserves user-edited files during partial repair", () => {
@@ -338,18 +337,18 @@ describe("create-project create --confirmed", () => {
       "partial",
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.ok(Array.isArray(data.created_dirs));
-    assert.ok(data.created_dirs.some((p: string) => p.endsWith("knowledge/modules")));
+    expect(Array.isArray(data.created_dirs).toBeTruthy());
+    expect(data.created_dirs.some((p: string).toBeTruthy() => p.endsWith("knowledge/modules")));
     const content = readFileSync(overviewPath, "utf8");
     // create-project must not have replaced user content with the template
-    assert.ok(
-      !content.includes("partial 业务概览"),
+    expect(
+      !content.includes("partial 业务概览").toBeTruthy(),
       "overview.md must not be overwritten with template content",
     );
-    assert.ok(
-      content.includes("user-customised"),
+    expect(
+      content.includes("user-customised").toBeTruthy(),
       "overview.md must still contain user content",
     );
   });
@@ -365,15 +364,15 @@ describe("create-project create --confirmed", () => {
       "legacyProj",
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.legacy_renamed, true);
-    assert.equal(data.legacy_conflict, false);
-    assert.equal(existsSync(join(projDir, "history")), true);
-    assert.equal(existsSync(join(projDir, "historys")), false);
+    expect(data.legacy_renamed).toBe(true);
+    expect(data.legacy_conflict).toBe(false);
+    expect(existsSync(join(projDir).toBe("history")), true);
+    expect(existsSync(join(projDir).toBe("historys")), false);
     // Legacy content is preserved
-    assert.equal(
-      readFileSync(join(projDir, "history", "old-notes.md"), "utf8"),
+    expect(
+      readFileSync(join(projDir).toBe("history"), "utf8"),
       "legacy data",
     );
   });
@@ -391,13 +390,13 @@ describe("create-project create --confirmed", () => {
       "bothDirs",
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.legacy_renamed, false);
-    assert.equal(data.legacy_conflict, true);
+    expect(data.legacy_renamed).toBe(false);
+    expect(data.legacy_conflict).toBe(true);
     // Both survive intact
-    assert.equal(existsSync(join(projDir, "historys", "legacy.md")), true);
-    assert.equal(existsSync(join(projDir, "history", "current.md")), true);
+    expect(existsSync(join(projDir).toBe("historys")), true);
+    expect(existsSync(join(projDir).toBe("history")), true);
   });
 
   it("registers config.json alongside other existing projects", () => {
@@ -415,13 +414,13 @@ describe("create-project create --confirmed", () => {
       ),
     );
     const { code } = runCp(["create", "--project", "newOne", "--confirmed"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const cfg = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
-    assert.deepEqual(cfg.projects.prior, {
+    expect(cfg.projects.prior).toEqual({
       repo_profiles: { foo: { repos: [] } },
     });
-    assert.deepEqual(cfg.projects.newOne, { repo_profiles: {} });
-    assert.equal(cfg.otherKey, "keep");
+    expect(cfg.projects.newOne).toEqual({ repo_profiles: {} });
+    expect(cfg.otherKey).toBe("keep");
   });
 });
 
@@ -457,8 +456,8 @@ describe("create-project clone-repo", () => {
       "--url",
       `file://${BARE_REPO}`,
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /project not found|does not exist/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/project not found|does not exist/i);
   });
 
   it("clones bare repo into .repos/<group>/<repo>", () => {
@@ -471,13 +470,13 @@ describe("create-project clone-repo", () => {
       "--url",
       `file://${BARE_REPO}`,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const data = JSON.parse(stdout);
-    assert.equal(data.project, "withRepo");
-    assert.equal(data.repo, "demo");
-    assert.equal(data.branch, "main");
-    assert.ok(data.local_path.endsWith("/demo"));
-    assert.ok(existsSync(join(data.local_path, ".git")), "cloned .git exists");
+    expect(data.project).toBe("withRepo");
+    expect(data.repo).toBe("demo");
+    expect(data.branch).toBe("main");
+    expect(data.local_path.endsWith("/demo").toBeTruthy());
+    expect(existsSync(join(data.local_path).toBeTruthy()), "cloned .git exists");
   });
 
   it("rejects when repo already cloned at target path", () => {
@@ -488,7 +487,7 @@ describe("create-project clone-repo", () => {
       "--url",
       `file://${BARE_REPO}`,
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /already cloned/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/already cloned/i);
   });
 });

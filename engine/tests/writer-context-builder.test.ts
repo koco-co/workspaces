@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, afterEach, before, describe, it } from "node:test";
+import { after, afterEach, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-writer-context-builder-test-${process.pid}`);
@@ -102,7 +101,7 @@ describe("writer-context-builder build — module match", () => {
       "--writer-id", "商品管理",
     ]);
 
-    assert.equal(code, 0, `expected exit 0, stderr was: ${stdout}`);
+    expect(code).toBe(0, `expected exit 0, stderr was: ${stdout}`);
     const out = JSON.parse(stdout) as {
       writer_id: string;
       module_prd_section: string;
@@ -111,17 +110,17 @@ describe("writer-context-builder build — module match", () => {
       fallback: boolean;
     };
 
-    assert.equal(out.writer_id, "商品管理");
-    assert.ok(
-      out.module_prd_section.includes("## 商品管理"),
+    expect(out.writer_id).toBe("商品管理");
+    expect(
+      out.module_prd_section.includes("## 商品管理").toBeTruthy(),
       "should include the module heading",
     );
-    assert.ok(
-      !out.module_prd_section.includes("## 订单管理"),
+    expect(
+      !out.module_prd_section.includes("## 订单管理").toBeTruthy(),
       "should NOT include other module headings",
     );
-    assert.equal(out.fallback, false);
-    assert.equal(out.test_points.length, 2, "should return 2 test points for 商品管理");
+    expect(out.fallback).toBe(false);
+    expect(out.test_points.length).toBe(2);
   });
 
   it("fuzzy-matches module by partial writer-id", () => {
@@ -137,10 +136,10 @@ describe("writer-context-builder build — module match", () => {
       "--writer-id", "商品",  // partial match
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { module_prd_section: string; fallback: boolean };
-    assert.ok(out.module_prd_section.includes("## 商品管理"), "should fuzzy-match 商品 to 商品管理");
-    assert.equal(out.fallback, false);
+    expect(out.module_prd_section.includes("## 商品管理").toBeTruthy(), "should fuzzy-match 商品 to 商品管理");
+    expect(out.fallback).toBe(false);
   });
 });
 
@@ -158,23 +157,23 @@ describe("writer-context-builder build — no match fallback", () => {
       "--writer-id", "不存在的模块",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       module_prd_section: string;
       test_points: unknown[];
       fallback: boolean;
     };
 
-    assert.equal(out.fallback, true, "should set fallback=true");
-    assert.ok(
-      out.module_prd_section.includes("## 商品管理"),
+    expect(out.fallback).toBe(true);
+    expect(
+      out.module_prd_section.includes("## 商品管理").toBeTruthy(),
       "fallback should include full PRD",
     );
-    assert.ok(
-      out.module_prd_section.includes("## 订单管理"),
+    expect(
+      out.module_prd_section.includes("## 订单管理").toBeTruthy(),
       "fallback should include full PRD",
     );
-    assert.equal(out.test_points.length, 0, "should return empty test_points on fallback");
+    expect(out.test_points.length).toBe(0);
   });
 });
 
@@ -192,15 +191,15 @@ describe("writer-context-builder build — test-points filtering", () => {
       "--writer-id", "订单管理",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       writer_id: string;
       test_points: Array<{ id: string }>;
     };
 
-    assert.equal(out.writer_id, "订单管理");
-    assert.equal(out.test_points.length, 1);
-    assert.equal(out.test_points[0]!.id, "TP-003");
+    expect(out.writer_id).toBe("订单管理");
+    expect(out.test_points.length).toBe(1);
+    expect(out.test_points[0]!.id).toBe("TP-003");
   });
 });
 
@@ -221,13 +220,13 @@ describe("writer-context-builder build — rules optional", () => {
       "--rules", rulesPath,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       rules: Record<string, unknown>;
     };
 
-    assert.equal(out.rules.priority_default, "P1");
-    assert.equal(out.rules.language, "zh-CN");
+    expect(out.rules.priority_default).toBe("P1");
+    expect(out.rules.language).toBe("zh-CN");
   });
 
   it("returns empty rules object when --rules not provided", () => {
@@ -243,9 +242,9 @@ describe("writer-context-builder build — rules optional", () => {
       "--writer-id", "商品管理",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { rules: Record<string, unknown> };
-    assert.deepEqual(out.rules, {});
+    expect(out.rules).toEqual({});
   });
 });
 
@@ -261,8 +260,8 @@ describe("writer-context-builder build — errors", () => {
       "--writer-id", "商品管理",
     ]);
 
-    assert.equal(code, 1);
-    assert.match(stderr, /cannot read|Error/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/cannot read|Error/i);
   });
 
   it("exits with code 1 when test-points file does not exist", () => {
@@ -276,8 +275,8 @@ describe("writer-context-builder build — errors", () => {
       "--writer-id", "商品管理",
     ]);
 
-    assert.equal(code, 1);
-    assert.match(stderr, /cannot read|Error/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/cannot read|Error/i);
   });
 });
 
@@ -356,17 +355,17 @@ describe("writer-context-builder build — strategy_id and knowledge defaults", 
       "--writer-id", "商品管理",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       strategy_id: string;
       knowledge: Record<string, unknown>;
     };
 
-    assert.equal(out.strategy_id, "S1", "default strategy_id should be S1");
-    assert.ok(
+    expect(out.strategy_id).toBe("S1");
+    expect(
       out.knowledge !== null && typeof out.knowledge === "object",
       "knowledge should be an object",
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -392,9 +391,9 @@ describe("writer-context-builder build — knowledge-injection none", () => {
       "--project", FIXTURE_PROJECT,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { knowledge: Record<string, unknown> };
-    assert.deepEqual(out.knowledge, {}, "knowledge should be empty when injection mode is none");
+    expect(out.knowledge).toEqual({});
   });
 });
 
@@ -420,20 +419,20 @@ describe("writer-context-builder build — knowledge-injection read-core with fi
       "--project", FIXTURE_PROJECT,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       knowledge: { core?: { overview: string; terms: string } };
     };
 
-    assert.ok(out.knowledge.core, "knowledge.core should be present");
-    assert.ok(
+    expect(out.knowledge.core).toBeTruthy();
+    expect(
       typeof out.knowledge.core.overview === "string" && out.knowledge.core.overview.length > 0,
       "knowledge.core.overview should be non-empty string",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof out.knowledge.core.terms === "string",
       "knowledge.core.terms should be a string",
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -455,12 +454,12 @@ describe("writer-context-builder build — knowledge fallback when project not f
 
     // knowledge-keeper returns empty content (status 0) for nonexistent project
     // so the script should not crash and should return a valid knowledge object
-    assert.equal(code, 0, "should not crash when project does not exist");
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { knowledge: Record<string, unknown> };
-    assert.ok(
+    expect(
       out.knowledge !== null && typeof out.knowledge === "object",
       "knowledge should be an object even when project does not exist",
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -551,13 +550,13 @@ describe("writer-context-builder build — --prd-slug + --yyyymm (enhanced.md pr
       "--knowledge-injection", "none",
     ]);
 
-    assert.equal(code, 0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
+    expect(code).toBe(0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
     const ctx = JSON.parse(stdout) as {
       module_prd_section: string;
       fallback: boolean;
     };
-    assert.match(ctx.module_prd_section, /用户登录模块详细描述/);
-    assert.equal(ctx.fallback, false);
+    expect(ctx.module_prd_section).toMatch(/用户登录模块详细描述/);
+    expect(ctx.fallback).toBe(false);
   });
 
   it("falls back to legacy --prd <path> when --prd-slug omitted", () => {
@@ -569,9 +568,9 @@ describe("writer-context-builder build — --prd-slug + --yyyymm (enhanced.md pr
       "--knowledge-injection", "none",
     ]);
 
-    assert.equal(code, 0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
+    expect(code).toBe(0, `expected exit 0, stderr=${stderr}\nstdout=${stdout}`);
     const ctx = JSON.parse(stdout) as { module_prd_section: string };
-    assert.match(ctx.module_prd_section, /legacy 模块描述/);
+    expect(ctx.module_prd_section).toMatch(/legacy 模块描述/);
   });
 
   it("errors when neither --prd nor --prd-slug given", () => {
@@ -582,8 +581,8 @@ describe("writer-context-builder build — --prd-slug + --yyyymm (enhanced.md pr
       "--knowledge-injection", "none",
     ]);
 
-    assert.notEqual(code, 0);
-    assert.match(stdout + stderr, /--prd|--prd-slug/);
+    expect(code).not.toBe(0);
+    expect(stdout + stderr).toMatch(/--prd|--prd-slug/);
   });
 });
 
@@ -611,15 +610,15 @@ describe("writer-context-builder build — 8KB truncation", () => {
       "--project", FIXTURE_PROJECT,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as {
       knowledge: { core?: { overview: string; terms: string } };
     };
 
-    assert.ok(out.knowledge.core, "knowledge.core should be present");
-    assert.ok(
+    expect(out.knowledge.core).toBeTruthy();
+    expect(
       out.knowledge.core.overview.length <= 8192,
       `overview should be <= 8192 chars, got ${out.knowledge.core.overview.length}`,
-    );
+    ).toBeTruthy();
   });
 });

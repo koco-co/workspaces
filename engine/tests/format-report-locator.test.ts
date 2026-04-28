@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const FIXTURE_REPORT = join(
@@ -55,7 +54,7 @@ describe("format-report-locator.ts locate — maps issues to line numbers", () =
       "--archive", FIXTURE_ARCHIVE,
       "--output", outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       total_issues: number;
@@ -63,9 +62,9 @@ describe("format-report-locator.ts locate — maps issues to line numbers", () =
       unlocated: number;
       output_path: string;
     };
-    assert.equal(result.total_issues, 8);
-    assert.ok(result.located > 0, "should locate at least some issues");
-    assert.ok(result.output_path.endsWith("enriched-report.json"));
+    expect(result.total_issues).toBe(8);
+    expect(result.located > 0).toBeTruthy();
+    expect(result.output_path.endsWith("enriched-report.json").toBeTruthy());
   });
 
   it("enriched JSON contains line numbers for located issues", () => {
@@ -84,7 +83,7 @@ describe("format-report-locator.ts locate — maps issues to line numbers", () =
     const fc02Issue = enriched.issues.find(
       (i) => i.rule === "FC02" && i.location.line > 0,
     );
-    assert.ok(fc02Issue, "FC02 issue should have a located line number");
+    expect(fc02Issue).toBeTruthy();
   });
 
   it("handles case title matching for title-level issues", () => {
@@ -103,8 +102,8 @@ describe("format-report-locator.ts locate — maps issues to line numbers", () =
     const fc01Issue = enriched.issues.find(
       (i) => i.rule === "FC01" && i.case_title === "验证新增功能",
     );
-    assert.ok(fc01Issue, "FC01 issue for missing prefix should exist");
-    assert.ok(fc01Issue.location.line > 0, "should have a positive line number");
+    expect(fc01Issue).toBeTruthy();
+    expect(fc01Issue.location.line > 0).toBeTruthy();
   });
 });
 
@@ -116,8 +115,8 @@ describe("format-report-locator.ts error handling", () => {
       "--archive", FIXTURE_ARCHIVE,
       "--output", join(TMP_DIR, "out.json"),
     ]);
-    assert.equal(code, 1);
-    assert.ok(stderr.includes("Failed to read"), "should report read error");
+    expect(code).toBe(1);
+    expect(stderr.includes("Failed to read").toBeTruthy(), "should report read error");
   });
 
   it("exits with code 1 when archive file is missing", () => {
@@ -127,8 +126,8 @@ describe("format-report-locator.ts error handling", () => {
       "--archive", "/nonexistent/archive.md",
       "--output", join(TMP_DIR, "out.json"),
     ]);
-    assert.equal(code, 1);
-    assert.ok(stderr.includes("Failed to read"), "should report read error");
+    expect(code).toBe(1);
+    expect(stderr.includes("Failed to read").toBeTruthy(), "should report read error");
   });
 });
 
@@ -139,10 +138,10 @@ describe("format-report-locator.ts print — terminal-readable report", () => {
       "--report", FIXTURE_REPORT,
       "--archive", FIXTURE_ARCHIVE,
     ]);
-    assert.equal(code, 0);
-    assert.match(stdout, /Format Check Report/, "should have report header");
-    assert.match(stdout, /\[FC02\]/, "should reference FC02");
-    assert.match(stdout, /:\d+/, "should have line number references");
-    assert.match(stdout, /Summary/, "should have summary section");
+    expect(code).toBe(0);
+    expect(stdout).toMatch(/Format Check Report/);
+    expect(stdout).toMatch(/\[FC02\]/);
+    expect(stdout).toMatch(/:\d+/);
+    expect(stdout).toMatch(/Summary/);
   });
 });

@@ -1,5 +1,4 @@
-import { describe, it, after } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, after, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -57,8 +56,8 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
       ],
       { encoding: "utf8" },
     );
-    assert.equal(r.status, 0, `stderr=${r.stderr}\nstdout=${r.stdout}`);
-    assert.match(r.stdout + r.stderr, /"ok":\s*true/);
+    expect(r.status).toBe(0, `stderr=${r.stderr}\nstdout=${r.stdout}`);
+    expect(r.stdout + r.stderr).toMatch(/"ok":\s*true/);
   });
 
   it("resolve --ref enhanced#q3 OK", () => {
@@ -80,7 +79,7 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
       ],
       { encoding: "utf8" },
     );
-    assert.equal(r.status, 0, `stderr=${r.stderr}\nstdout=${r.stdout}`);
+    expect(r.status).toBe(0, `stderr=${r.stderr}\nstdout=${r.stdout}`);
   });
 
   it("resolve fails when --prd-slug or --yyyymm omitted (no enhancedDocPath built)", () => {
@@ -98,8 +97,8 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
       ],
       { encoding: "utf8" },
     );
-    assert.equal(r.status, 1);
-    assert.match(r.stdout + r.stderr, /enhancedDocPath/);
+    expect(r.status).toBe(1);
+    expect(r.stdout + r.stderr).toMatch(/enhancedDocPath/);
   });
 
   it("batch supports enhanced scheme with --prd-slug/--yyyymm", () => {
@@ -126,8 +125,8 @@ describe("kata-cli source-ref resolve --prd-slug + --yyyymm (enhanced scheme)", 
       ],
       { encoding: "utf8" },
     );
-    assert.equal(r.status, 2); // 第二个失败
-    assert.match(r.stdout + r.stderr, /"total":\s*2/);
+    expect(r.status).toBe(2); // 第二个失败
+    expect(r.stdout + r.stderr).toMatch(/"total":\s*2/);
   });
 
   after(() => rmSync(tmp, { recursive: true, force: true }));

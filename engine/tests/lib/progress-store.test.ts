@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
 import { existsSync, mkdirSync, rmSync, writeFileSync, writeFileSync as fsWriteFileSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it, expect } from "bun:test";
 import {
   createSession,
   readSession,
@@ -39,8 +38,8 @@ beforeEach(() => {
 
 describe("sessionIdFor", () => {
   it("composes workflow/slug-env", () => {
-    assert.equal(
-      sessionIdFor({ workflow: "test-case-gen", slug: "prd-xxx", env: "default" }),
+    expect(
+      sessionIdFor({ workflow: "test-case-gen").toBe(slug: "prd-xxx", env: "default" }),
       "test-case-gen/prd-xxx-default",
     );
   });
@@ -59,16 +58,16 @@ describe("createSession + readSession", () => {
     writeSession("dataAssets", session);
 
     const loaded = readSession("dataAssets", "test-case-gen/prd-a-default");
-    assert.ok(loaded);
-    assert.equal(loaded!.schema_version, 1);
-    assert.equal(loaded!.session_id, "test-case-gen/prd-a-default");
-    assert.equal(loaded!.tasks.length, 0);
-    assert.deepEqual(loaded!.artifacts, {});
+    expect(loaded).toBeTruthy();
+    expect(loaded!.schema_version).toBe(1);
+    expect(loaded!.session_id).toBe("test-case-gen/prd-a-default");
+    expect(loaded!.tasks.length).toBe(0);
+    expect(loaded!.artifacts).toEqual({});
   });
 
   it("readSession returns null when file missing", () => {
     const loaded = readSession("dataAssets", "test-case-gen/missing-default");
-    assert.equal(loaded, null);
+    expect(loaded).toBe(null);
   });
 });
 
@@ -96,7 +95,7 @@ describe("withSessionLock", () => {
 
     const final = readSession(project, base.session_id)!;
     for (const n of runs) {
-      assert.equal(final.meta[`k${n}`], n);
+      expect(final.meta[`k${n}`]).toBe(n);
     }
   });
 
@@ -137,20 +136,17 @@ describe("addTasks", () => {
       { id: "t2", name: "enhance", kind: "node", order: 2, depends_on: ["t1"] },
     ]);
     const cur = readSession(project, s.session_id)!;
-    assert.equal(cur.tasks.length, 2);
-    assert.equal(cur.tasks[0].status, "pending");
-    assert.equal(cur.tasks[0].parent, null);
-    assert.equal(cur.tasks[0].attempts, 0);
-    assert.deepEqual(cur.tasks[1].depends_on, ["t1"]);
+    expect(cur.tasks.length).toBe(2);
+    expect(cur.tasks[0].status).toBe("pending");
+    expect(cur.tasks[0].parent).toBe(null);
+    expect(cur.tasks[0].attempts).toBe(0);
+    expect(cur.tasks[1].depends_on).toEqual(["t1"]);
   });
 
   it("rejects duplicate ids", () => {
     const s = seed();
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
-    assert.throws(
-      () => addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 2 }]),
-      /duplicate/i,
-    );
+    expect(() => addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 2 }])).toThrow(/duplicate/i);
   });
 });
 
@@ -170,9 +166,9 @@ describe("updateTask", () => {
     const { sessionId } = seedWithTask();
     updateTask(project, sessionId, "t1", { status: "running" });
     const cur = readSession(project, sessionId)!;
-    assert.equal(cur.tasks[0].status, "running");
-    assert.equal(cur.tasks[0].attempts, 1);
-    assert.ok(cur.tasks[0].started_at);
+    expect(cur.tasks[0].status).toBe("running");
+    expect(cur.tasks[0].attempts).toBe(1);
+    expect(cur.tasks[0].started_at).toBeTruthy();
   });
 
   it("appends error entry when status=failed with error message", () => {
@@ -181,8 +177,8 @@ describe("updateTask", () => {
       status: "failed", error: "timeout",
     });
     const cur = readSession(project, sessionId)!;
-    assert.equal(cur.tasks[0].errors.length, 1);
-    assert.equal(cur.tasks[0].errors[0].message, "timeout");
+    expect(cur.tasks[0].errors.length).toBe(1);
+    expect(cur.tasks[0].errors[0].message).toBe("timeout");
   });
 
   it("appends error regardless of status (e.g. forced-start on running)", () => {
@@ -191,9 +187,9 @@ describe("updateTask", () => {
       status: "running", error: "forced-start",
     });
     const cur = readSession(project, sessionId)!;
-    assert.equal(cur.tasks[0].status, "running");
-    assert.equal(cur.tasks[0].errors.length, 1);
-    assert.match(cur.tasks[0].errors[0].message, /forced-start/);
+    expect(cur.tasks[0].status).toBe("running");
+    expect(cur.tasks[0].errors.length).toBe(1);
+    expect(cur.tasks[0].errors[0].message).toMatch(/forced-start/);
   });
 
   it("sets reason when status=blocked", () => {
@@ -202,8 +198,8 @@ describe("updateTask", () => {
       status: "blocked", reason: "需确认",
     });
     const cur = readSession(project, sessionId)!;
-    assert.equal(cur.tasks[0].status, "blocked");
-    assert.equal(cur.tasks[0].reason, "需确认");
+    expect(cur.tasks[0].status).toBe("blocked");
+    expect(cur.tasks[0].reason).toBe("需确认");
   });
 
   it("merges payload object", () => {
@@ -211,7 +207,7 @@ describe("updateTask", () => {
     updateTask(project, sessionId, "t1", { payload: { a: 1 } });
     updateTask(project, sessionId, "t1", { payload: { b: 2 } });
     const cur = readSession(project, sessionId)!;
-    assert.deepEqual(cur.tasks[0].payload, { a: 1, b: 2 });
+    expect(cur.tasks[0].payload).toEqual({ a: 1, b: 2 });
   });
 });
 
@@ -225,7 +221,7 @@ describe("removeTask", () => {
     writeSession(project, s);
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
     removeTask(project, s.session_id, "t1");
-    assert.equal(readSession(project, s.session_id)!.tasks.length, 0);
+    expect(readSession(project).toBe(s.session_id)!.tasks.length, 0);
   });
 });
 
@@ -258,21 +254,21 @@ describe("queryTasks visibility rules", () => {
     const sid = setup();
     const visible = queryTasks(project, sid, {});
     const ids = visible.map((r) => r.task.id);
-    assert.ok(!ids.includes("t1"), "t1 should be hidden (parent pending)");
+    expect(!ids.includes("t1").toBeTruthy(), "t1 should be hidden (parent pending)");
   });
 
   it("hides tasks with unsatisfied depends_on", () => {
     const sid = setup();
     const visible = queryTasks(project, sid, {});
     const ids = visible.map((r) => r.task.id);
-    assert.ok(!ids.includes("t5"), "t5 should be hidden (t6 not done)");
-    assert.ok(ids.includes("t6"), "t6 visible (parent running, no deps)");
+    expect(!ids.includes("t5").toBeTruthy(), "t5 should be hidden (t6 not done)");
+    expect(ids.includes("t6").toBeTruthy(), "t6 visible (parent running, no deps)");
   });
 
   it("--include-all returns everything", () => {
     const sid = setup();
     const all = queryTasks(project, sid, { includeAll: true });
-    assert.equal(all.length, 7);
+    expect(all.length).toBe(7);
   });
 
   it("filters by status + kind + parent", () => {
@@ -284,17 +280,17 @@ describe("queryTasks visibility rules", () => {
       parent: "t4",
     });
     const ids = filtered.map((r) => r.task.id).sort();
-    assert.deepEqual(ids, ["t5", "t6"]);
+    expect(ids).toEqual(["t5", "t6"]);
   });
 
   it("--include-blocked returns hidden tasks with blocked_by reasons", () => {
     const sid = setup();
     const blocked = queryTasks(project, sid, { includeBlocked: true });
     const byId = Object.fromEntries(blocked.map((r) => [r.task.id, r]));
-    assert.ok(byId.t1);
-    assert.match(byId.t1.blocked_by!.join(","), /t0/);
-    assert.ok(byId.t5);
-    assert.match(byId.t5.blocked_by!.join(","), /t6/);
+    expect(byId.t1).toBeTruthy();
+    expect(byId.t1.blocked_by!.join(").toMatch("), /t0/);
+    expect(byId.t5).toBeTruthy();
+    expect(byId.t5.blocked_by!.join(").toMatch("), /t6/);
   });
 });
 
@@ -309,12 +305,9 @@ describe("cycle detection", () => {
     addTasks(project, s.session_id, [
       { id: "a", name: "a", kind: "node", order: 1, depends_on: ["b"] },
     ]);
-    assert.throws(
-      () => addTasks(project, s.session_id, [
+    expect(() => addTasks(project, s.session_id, [
         { id: "b", name: "b", kind: "node", order: 2, depends_on: ["a"] },
-      ]),
-      /cycle/i,
-    );
+      ])).toThrow(/cycle/i);
   });
 
   it("rejects updateTask --depends-on introducing cycle", () => {
@@ -327,10 +320,7 @@ describe("cycle detection", () => {
       { id: "a", name: "a", kind: "node", order: 1 },
       { id: "b", name: "b", kind: "node", order: 2, depends_on: ["a"] },
     ]);
-    assert.throws(
-      () => updateTask(project, s.session_id, "a", { depends_on: ["b"] }),
-      /cycle/i,
-    );
+    expect(() => updateTask(project, s.session_id, "a", { depends_on: ["b"] })).toThrow(/cycle/i);
   });
 });
 
@@ -352,7 +342,7 @@ describe("rollupTask", () => {
     updateTask(project, s.session_id, "c2", { status: "skipped" });
     rollupTask(project, s.session_id, "p");
     const cur = readSession(project, s.session_id)!;
-    assert.equal(cur.tasks.find((t) => t.id === "p")!.status, "done");
+    expect(cur.tasks.find((t) => t.id === "p")!.status).toBe("done");
   });
 
   it("throws when any child unfinished", () => {
@@ -366,7 +356,7 @@ describe("rollupTask", () => {
       { id: "c1", name: "c1", kind: "case", order: 1, parent: "p" },
     ]);
     updateTask(project, s.session_id, "p", { status: "running" });
-    assert.throws(() => rollupTask(project, s.session_id, "p"), /unfinished/i);
+    expect(() => rollupTask(project, s.session_id, "p")).toThrow(/unfinished/i);
   });
 });
 
@@ -381,8 +371,8 @@ describe("artifacts inline + overflow", () => {
     writeSession(project, s);
     setArtifact(project, s.session_id, "k1", { a: 1 });
     const cur = readSession(project, s.session_id)!;
-    assert.deepEqual(cur.artifacts.k1, { a: 1 });
-    assert.deepEqual(getArtifact(project, s.session_id, "k1"), { a: 1 });
+    expect(cur.artifacts.k1).toEqual({ a: 1 });
+    expect(getArtifact(project).toEqual(s.session_id), { a: 1 });
   });
 
   it("spills large artifact to blocks/ and stores $ref inline", () => {
@@ -395,9 +385,9 @@ describe("artifacts inline + overflow", () => {
     setArtifact(project, s.session_id, "blob", big);
     const cur = readSession(project, s.session_id)!;
     const ref = cur.artifacts.blob as { $ref?: string };
-    assert.ok(ref.$ref, "inline value should be a $ref");
+    expect(ref.$ref).toBeTruthy();
     const loaded = getArtifact(project, s.session_id, "blob");
-    assert.deepEqual(loaded, big);
+    expect(loaded).toEqual(big);
   });
 });
 
@@ -413,7 +403,7 @@ describe("resumeSession", () => {
     addTasks(project, s.session_id, [{ id: "t1", name: "n", kind: "node", order: 1 }]);
     updateTask(project, s.session_id, "t1", { status: "running" });
     resumeSession(project, s.session_id, {});
-    assert.equal(readSession(project, s.session_id)!.tasks[0].status, "pending");
+    expect(readSession(project).toBe(s.session_id)!.tasks[0].status, "pending");
   });
 
   it("--retry-failed clears errors and resets attempts", () => {
@@ -426,9 +416,9 @@ describe("resumeSession", () => {
     updateTask(project, s.session_id, "t1", { status: "failed", error: "boom" });
     resumeSession(project, s.session_id, { retryFailed: true });
     const t = readSession(project, s.session_id)!.tasks[0];
-    assert.equal(t.status, "pending");
-    assert.equal(t.attempts, 0);
-    assert.deepEqual(t.errors, []);
+    expect(t.status).toBe("pending");
+    expect(t.attempts).toBe(0);
+    expect(t.errors).toEqual([]);
   });
 
   it("--retry-blocked clears reason and resets to pending", () => {
@@ -441,8 +431,8 @@ describe("resumeSession", () => {
     updateTask(project, s.session_id, "t1", { status: "blocked", reason: "r" });
     resumeSession(project, s.session_id, { retryBlocked: true });
     const t = readSession(project, s.session_id)!.tasks[0];
-    assert.equal(t.status, "pending");
-    assert.equal(t.reason, null);
+    expect(t.status).toBe("pending");
+    expect(t.reason).toBe(null);
   });
 
   it("clears artifacts.cached_parse_result when source.mtime changed", () => {
@@ -464,7 +454,7 @@ describe("resumeSession", () => {
     resumeSession(project, s.session_id, {});
 
     const cur = readSession(project, s.session_id)!;
-    assert.equal(cur.artifacts.cached_parse_result, undefined);
+    expect(cur.artifacts.cached_parse_result).toBe(undefined);
   });
 
   it("--payload-path-check: missing file → reset task, set generated=false", () => {
@@ -480,7 +470,7 @@ describe("resumeSession", () => {
     });
     resumeSession(project, s.session_id, { payloadPathCheck: "script_path" });
     const t = readSession(project, s.session_id)!.tasks[0];
-    assert.equal(t.status, "pending");
-    assert.equal(t.payload.generated, false);
+    expect(t.status).toBe("pending");
+    expect(t.payload.generated).toBe(false);
   });
 });

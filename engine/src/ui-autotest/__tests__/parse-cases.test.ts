@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "bun:test";
 import {
   extractPriority,
   parseStepTable,
@@ -9,19 +8,19 @@ import {
 
 describe("extractPriority", () => {
   it("extracts P0 from title", () => {
-    assert.equal(extractPriority("【P0】验证列表加载"), "P0");
+    expect(extractPriority("【P0】验证列表加载")).toBe("P0");
   });
 
   it("extracts P1 from title", () => {
-    assert.equal(extractPriority("【P1】验证搜索功能"), "P1");
+    expect(extractPriority("【P1】验证搜索功能")).toBe("P1");
   });
 
   it("extracts P2 from title", () => {
-    assert.equal(extractPriority("【P2】验证排序功能"), "P2");
+    expect(extractPriority("【P2】验证排序功能")).toBe("P2");
   });
 
   it("defaults to P2 when no priority prefix", () => {
-    assert.equal(extractPriority("验证无前缀标题"), "P2");
+    expect(extractPriority("验证无前缀标题")).toBe("P2");
   });
 });
 
@@ -33,18 +32,18 @@ describe("parseStepTable", () => {
 | 2 | 点击新增按钮 | 弹窗出现 |`;
 
     const steps = parseStepTable(table);
-    assert.equal(steps.length, 2);
-    assert.equal(steps[0].step, "进入列表页");
-    assert.equal(steps[0].expected, "页面正常加载");
-    assert.equal(steps[1].step, "点击新增按钮");
-    assert.equal(steps[1].expected, "弹窗出现");
+    expect(steps.length).toBe(2);
+    expect(steps[0].step).toBe("进入列表页");
+    expect(steps[0].expected).toBe("页面正常加载");
+    expect(steps[1].step).toBe("点击新增按钮");
+    expect(steps[1].expected).toBe("弹窗出现");
   });
 
   it("handles empty table", () => {
     const table = `| 编号 | 步骤 | 预期 |
 | ---- | ---- | ---- |`;
     const steps = parseStepTable(table);
-    assert.equal(steps.length, 0);
+    expect(steps.length).toBe(0);
   });
 });
 
@@ -61,8 +60,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    assert.ok(result.includes("登录系统"));
-    assert.ok(result.includes("进入列表页"));
+    expect(result.includes("登录系统").toBeTruthy());
+    expect(result.includes("进入列表页").toBeTruthy());
   });
 
   it("extracts preconditions from code block format", () => {
@@ -77,8 +76,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    assert.ok(result.includes("登录系统"));
-    assert.ok(result.includes("数据准备完成"));
+    expect(result.includes("登录系统").toBeTruthy());
+    expect(result.includes("数据准备完成").toBeTruthy());
   });
 
   it("handles preconditions containing letter z without truncation", () => {
@@ -93,8 +92,8 @@ describe("extractPreconditions", () => {
 
 > 用例步骤`;
     const result = extractPreconditions(block);
-    assert.ok(result.includes("zenith"), "should not truncate at letter z");
-    assert.ok(result.includes("zookeeper"), "should include zookeeper");
+    expect(result.includes("zenith").toBeTruthy(), "should not truncate at letter z");
+    expect(result.includes("zookeeper").toBeTruthy(), "should include zookeeper");
   });
 });
 
@@ -134,33 +133,33 @@ case_count: 2
 
   it("parses archive MD into tasks", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    assert.equal(result.suite_name, "测试套件");
-    assert.equal(result.tasks.length, 2);
-    assert.equal(result.stats.total, 2);
-    assert.equal(result.stats.P0, 1);
-    assert.equal(result.stats.P1, 1);
+    expect(result.suite_name).toBe("测试套件");
+    expect(result.tasks.length).toBe(2);
+    expect(result.stats.total).toBe(2);
+    expect(result.stats.P0).toBe(1);
+    expect(result.stats.P1).toBe(1);
   });
 
   it("extracts correct page from H3 heading", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    assert.equal(result.tasks[0].page, "列表页");
+    expect(result.tasks[0].page).toBe("列表页");
   });
 
   it("extracts steps correctly", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    assert.equal(result.tasks[0].steps.length, 1);
-    assert.equal(result.tasks[1].steps.length, 2);
+    expect(result.tasks[0].steps.length).toBe(1);
+    expect(result.tasks[1].steps.length).toBe(2);
   });
 
   it("assigns sequential IDs", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    assert.equal(result.tasks[0].id, "t1");
-    assert.equal(result.tasks[1].id, "t2");
+    expect(result.tasks[0].id).toBe("t1");
+    expect(result.tasks[1].id).toBe("t2");
   });
 
   it("extracts preconditions for cases that have them", () => {
     const result = parseArchiveMd(sampleMd, "test.md");
-    assert.ok(result.tasks[0].preconditions.includes("admin"));
-    assert.equal(result.tasks[1].preconditions, "");
+    expect(result.tasks[0].preconditions.includes("admin").toBeTruthy());
+    expect(result.tasks[1].preconditions).toBe("");
   });
 });

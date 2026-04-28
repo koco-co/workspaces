@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -9,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 import {
   extractStepLabel,
@@ -149,31 +148,28 @@ after(() => {
 
 describe("extractStepLabel", () => {
   it("strips emoji prefix from step name", () => {
-    assert.equal(
-      extractStepLabel("✅ 步骤-1 进入页面 预期-1 正常打开"),
-      "步骤-1 进入页面 预期-1 正常打开",
+    expect(
+      extractStepLabel("✅ 步骤-1 进入页面 预期-1 正常打开")).toBe("步骤-1 进入页面 预期-1 正常打开",
     );
   });
 
   it("strips cross-mark emoji prefix", () => {
-    assert.equal(
-      extractStepLabel("❌ 步骤-2 查看菜单 预期-2 名称已修改"),
-      "步骤-2 查看菜单 预期-2 名称已修改",
+    expect(
+      extractStepLabel("❌ 步骤-2 查看菜单 预期-2 名称已修改")).toBe("步骤-2 查看菜单 预期-2 名称已修改",
     );
   });
 
   it("handles names without emoji prefix", () => {
-    assert.equal(extractStepLabel("step-1 screenshot"), "step-1 screenshot");
+    expect(extractStepLabel("step-1 screenshot")).toBe("step-1 screenshot");
   });
 
   it("handles empty string", () => {
-    assert.equal(extractStepLabel(""), "");
+    expect(extractStepLabel("")).toBe("");
   });
 
   it("preserves Chinese brackets", () => {
-    assert.equal(
-      extractStepLabel("【P0】验证功能"),
-      "【P0】验证功能",
+    expect(
+      extractStepLabel("【P0】验证功能")).toBe("【P0】验证功能",
     );
   });
 });
@@ -191,14 +187,14 @@ describe("findCases", () => {
       },
     ];
     const cases = findCases(rows);
-    assert.equal(cases.length, 2);
-    assert.equal(cases[0].title, "case-1");
-    assert.equal(cases[1].title, "case-2");
+    expect(cases.length).toBe(2);
+    expect(cases[0].title).toBe("case-1");
+    expect(cases[1].title).toBe("case-2");
   });
 
   it("returns empty array for no cases", () => {
     const cases = findCases([{ title: "suite", type: "suite" }]);
-    assert.equal(cases.length, 0);
+    expect(cases.length).toBe(0);
   });
 });
 
@@ -211,22 +207,22 @@ describe("buildPrintableHtml", () => {
     const html = buildPrintableHtml(data, reportDir);
 
     // Should contain summary stats
-    assert.match(html, /总用例/);
-    assert.match(html, /通过率/);
+    expect(html).toMatch(/总用例/);
+    expect(html).toMatch(/通过率/);
 
     // Should contain test case title
-    assert.match(html, /should work correctly/);
+    expect(html).toMatch(/should work correctly/);
 
     // Should NOT contain error details or file paths
-    assert.ok(!html.includes("Error: test failed"), "Should not include error text");
-    assert.ok(!html.includes("test-file.spec.ts"), "Should not include file paths");
-    assert.ok(!html.includes("error-context"), "Should not include error markdown name");
+    expect(!html.includes("Error: test failed").toBeTruthy(), "Should not include error text");
+    expect(!html.includes("test-file.spec.ts").toBeTruthy(), "Should not include file paths");
+    expect(!html.includes("error-context").toBeTruthy(), "Should not include error markdown name");
 
     // Should contain base64 image
-    assert.match(html, /data:image\/png;base64,/);
+    expect(html).toMatch(/data:image\/png;base64,/);
 
     // Should contain pass rate
-    assert.match(html, /50%/);
+    expect(html).toMatch(/50%/);
   });
 
   it("shows correct status labels in Chinese", () => {
@@ -236,8 +232,8 @@ describe("buildPrintableHtml", () => {
 
     const html = buildPrintableHtml(data, reportDir);
 
-    assert.match(html, /未通过/);
-    assert.match(html, /通过<\/div>/);
+    expect(html).toMatch(/未通过/);
+    expect(html).toMatch(/通过<\/div>/);
   });
 });
 
@@ -247,17 +243,17 @@ describe("report-to-pdf --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /report-to-pdf/i);
-    assert.match(output, /source.?path/i);
+    expect(code).toBe(0);
+    expect(output).toMatch(/report-to-pdf/i);
+    expect(output).toMatch(/source.?path/i);
   });
 });
 
 describe("report-to-pdf with missing file", () => {
   it("fails with error message for non-existent file", () => {
     const { stderr, code } = run(["/nonexistent/report.html"]);
-    assert.notEqual(code, 0);
-    assert.match(stderr, /not found/i);
+    expect(code).not.toBe(0);
+    expect(stderr).toMatch(/not found/i);
   });
 });
 
@@ -265,16 +261,16 @@ describe("report-to-pdf with minimal report", () => {
   it("generates PDF from JSON report data", () => {
     const jsonPath = createMinimalReportJson(join(TMP_DIR, "pdf-gen"));
     const { stdout, code } = run([jsonPath]);
-    assert.equal(code, 0, `Expected exit code 0, got ${code}`);
-    assert.match(stdout, /PDF saved/);
+    expect(code).toBe(0, `Expected exit code 0, got ${code}`);
+    expect(stdout).toMatch(/PDF saved/);
 
     const expectedPdf = jsonPath.replace(/\.json$/, ".pdf");
-    assert.ok(existsSync(expectedPdf), "PDF file should exist");
+    expect(existsSync(expectedPdf).toBeTruthy(), "PDF file should exist");
 
     const pdfContent = readFileSync(expectedPdf);
-    assert.ok(pdfContent.length > 0, "PDF should not be empty");
-    assert.ok(
-      pdfContent.subarray(0, 5).toString() === "%PDF-",
+    expect(pdfContent.length > 0).toBeTruthy();
+    expect(
+      pdfContent.subarray(0, 5).toBeTruthy().toString() === "%PDF-",
       "File should start with PDF header",
     );
   });
@@ -285,9 +281,9 @@ describe("report-to-pdf with minimal report", () => {
     );
     const customOutput = join(TMP_DIR, "custom-output", "my-report.pdf");
     const { stdout, code } = run([jsonPath, "-o", customOutput]);
-    assert.equal(code, 0);
-    assert.match(stdout, /PDF saved/);
-    assert.ok(existsSync(customOutput), "Custom PDF path should exist");
+    expect(code).toBe(0);
+    expect(stdout).toMatch(/PDF saved/);
+    expect(existsSync(customOutput).toBeTruthy(), "Custom PDF path should exist");
   });
 
   it("resolves JSON from HTML path", () => {
@@ -298,7 +294,7 @@ describe("report-to-pdf with minimal report", () => {
     writeFileSync(htmlPath, "<html></html>");
 
     const { stdout, code } = run([htmlPath]);
-    assert.equal(code, 0);
-    assert.match(stdout, /PDF saved/);
+    expect(code).toBe(0);
+    expect(stdout).toMatch(/PDF saved/);
   });
 });

@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, expect } from "bun:test";
 
 describe("createCli", () => {
   it("registers a single command with required option", async () => {
@@ -22,8 +21,8 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "my-tool", "run", "--name", "alice"]);
-    assert.equal(captured.length, 1);
-    assert.equal((captured[0] as { name: string }).name, "alice");
+    expect(captured.length).toBe(1);
+    expect((captured[0] as { name: string }).name).toBe("alice");
   });
 
   it("registers multiple commands and dispatches correctly", async () => {
@@ -52,10 +51,10 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "multi", "beta"]);
-    assert.equal(lastCmd, "beta");
+    expect(lastCmd).toBe("beta");
 
     await program.parseAsync(["node", "multi", "alpha"]);
-    assert.equal(lastCmd, "alpha");
+    expect(lastCmd).toBe("alpha");
   });
 
   it("supports async action via parseAsync", async () => {
@@ -78,7 +77,7 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "async-tool", "slow"]);
-    assert.deepEqual(order, ["done"]);
+    expect(order).toEqual(["done"]);
   });
 
   it("routes thrown errors through onError handler", async () => {
@@ -103,8 +102,8 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "err-tool", "fail"]);
-    assert.equal(captured.length, 1);
-    assert.equal(captured[0].message, "boom");
+    expect(captured.length).toBe(1);
+    expect(captured[0].message).toBe("boom");
   });
 
   it("passes CliContext with logger and cwd to action", async () => {
@@ -128,9 +127,9 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "ctx-tool", "inspect"]);
-    assert.equal(receivedCwd, process.cwd());
-    assert.ok(receivedLog);
-    assert.equal(typeof (receivedLog as { info: unknown }).info, "function");
+    expect(receivedCwd).toBe(process.cwd());
+    expect(receivedLog).toBeTruthy();
+    expect(typeof (receivedLog as { info: unknown }).info).toBe("function");
   });
 
   it("supports optional (non-required) flags with defaults", async () => {
@@ -155,11 +154,11 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "opt-tool", "go"]);
-    assert.equal((captured[0] as { mode: string }).mode, "normal");
+    expect((captured[0] as { mode: string }).mode).toBe("normal");
 
     captured.length = 0;
     await program.parseAsync(["node", "opt-tool", "go", "--mode", "quick"]);
-    assert.equal((captured[0] as { mode: string }).mode, "quick");
+    expect((captured[0] as { mode: string }).mode).toBe("quick");
   });
 
   it("respects initEnv=false and does not read .env files", async () => {
@@ -179,7 +178,7 @@ describe("createCli", () => {
     });
     await program.parseAsync(["node", "no-env", "noop"]);
     // Nothing to assert — the point is it doesn't throw and doesn't load side-effectful .env
-    assert.equal(process.env["__CLI_RUNNER_TEST_SENTINEL__"], undefined);
+    expect(process.env["__CLI_RUNNER_TEST_SENTINEL__"]).toBe(undefined);
   });
 
   it("supports rootAction with positional arguments", async () => {
@@ -199,9 +198,9 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "root-tool", "input.html", "-o", "out.pdf"]);
-    assert.equal(captured.length, 1);
-    assert.equal((captured[0] as { source: string }).source, "input.html");
-    assert.equal((captured[0] as { output: string }).output, "out.pdf");
+    expect(captured.length).toBe(1);
+    expect((captured[0] as { source: string }).source).toBe("input.html");
+    expect((captured[0] as { output: string }).output).toBe("out.pdf");
   });
 
   it("supports rootAction without positional arguments (flag-only root CLI)", async () => {
@@ -220,7 +219,7 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "flag-only", "--url", "http://x"]);
-    assert.equal((captured[0] as { url: string }).url, "http://x");
+    expect((captured[0] as { url: string }).url).toBe("http://x");
   });
 
   it("supports subcommand with positional argument", async () => {
@@ -253,8 +252,8 @@ describe("createCli", () => {
       "--project",
       "dataAssets",
     ]);
-    assert.equal((captured[0] as { query: string }).query, "hello");
-    assert.equal((captured[0] as { project: string }).project, "dataAssets");
+    expect((captured[0] as { query: string }).query).toBe("hello");
+    expect((captured[0] as { project: string }).project).toBe("dataAssets");
   });
 
   it("supports hybrid (rootAction + commands) — subcommands take precedence", async () => {
@@ -282,11 +281,11 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "hybrid", "named"]);
-    assert.deepEqual(log, ["named"]);
+    expect(log).toEqual(["named"]);
 
     log.length = 0;
     await program.parseAsync(["node", "hybrid", "--url", "http://x"]);
-    assert.deepEqual(log, ["root"]);
+    expect(log).toEqual(["root"]);
   });
 
   it("accepts valid choice values and applies default", async () => {
@@ -319,11 +318,11 @@ describe("createCli", () => {
     });
 
     await program.parseAsync(["node", "choice-tool", "go", "--level", "high"]);
-    assert.equal((captured.at(-1) as { level: string }).level, "high");
+    expect((captured.at(-1) as { level: string }).level).toBe("high");
 
     captured.length = 0;
     await program.parseAsync(["node", "choice-tool", "go"]);
-    assert.equal((captured[0] as { level: string }).level, "medium");
+    expect((captured[0] as { level: string }).level).toBe("medium");
   });
 
   it("renders choices list in the generated help output", async () => {
@@ -350,7 +349,7 @@ describe("createCli", () => {
     });
 
     const helpText = program.commands[0].helpInformation();
-    assert.match(helpText, /choices:\s*"a",\s*"b",\s*"c"/);
+    expect(helpText).toMatch(/choices:\s*"a",\s*"b",\s*"c"/);
   });
 
   it("applies LOG_LEVEL env var to logger", async () => {

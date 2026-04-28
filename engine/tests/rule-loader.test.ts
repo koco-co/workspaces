@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, describe, it } from "node:test";
+import { after, describe, it, expect } from "bun:test";
 
 const TMP_DIR = join(tmpdir(), `kata-rule-loader-test-${process.pid}`);
 const GLOBAL_RULES_DIR = join(TMP_DIR, "global-rules");
@@ -71,12 +70,12 @@ describe("rule-loader.ts load — project overrides global", () => {
     );
 
     const { stdout, code } = runLoader(["load", "--project", "myProject"]);
-    assert.equal(code, 0, `expected exit 0, got stderr: ${stdout}`);
+    expect(code).toBe(0, `expected exit 0, got stderr: ${stdout}`);
 
     const result = JSON.parse(stdout) as Record<string, Record<string, string>>;
-    assert.ok("case-writing" in result, "should have case-writing key");
-    assert.equal(result["case-writing"]["rule_a"], "project_value", "project should override global");
-    assert.equal(result["case-writing"]["rule_b"], "global_only", "global-only key should remain");
+    expect("case-writing" in result).toBeTruthy();
+    expect(result["case-writing"]["rule_a"]).toBe("project_value");
+    expect(result["case-writing"]["rule_b"]).toBe("global_only");
   });
 });
 
@@ -89,12 +88,12 @@ describe("rule-loader.ts load — falls back to global when no project rules", (
     // no project rules for this project
 
     const { stdout, code } = runLoader(["load", "--project", "emptyProject"]);
-    assert.equal(code, 0, `expected exit 0`);
+    expect(code).toBe(0, `expected exit 0`);
 
     const result = JSON.parse(stdout) as Record<string, Record<string, string>>;
-    assert.ok("xmind-structure" in result, "should have xmind-structure key");
-    assert.equal(result["xmind-structure"]["iteration_id"], "42");
-    assert.equal(result["xmind-structure"]["root_title_template"], "test-template");
+    expect("xmind-structure" in result).toBeTruthy();
+    expect(result["xmind-structure"]["iteration_id"]).toBe("42");
+    expect(result["xmind-structure"]["root_title_template"]).toBe("test-template");
   });
 });
 
@@ -103,10 +102,10 @@ describe("rule-loader.ts load — empty when no rule files exist", () => {
     const { stdout, code } = runLoader(["load", "--project", "ghostProject"], {
       QA_RULES_DIR: join(TMP_DIR, "nonexistent-global"),
     });
-    assert.equal(code, 0, `expected exit 0`);
+    expect(code).toBe(0, `expected exit 0`);
 
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.deepEqual(result, {}, "should return empty object when no rules found");
+    expect(result).toEqual({});
   });
 });
 
@@ -125,24 +124,24 @@ describe("rule-loader.ts load — parse rules", () => {
     );
 
     const { stdout, code } = runLoader(["load", "--project", "parseProject"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as Record<string, Record<string, string>>;
-    assert.ok("test-rules" in result, "should have test-rules key");
-    assert.equal(result["test-rules"]["valid_key"], "valid_value");
-    assert.equal(result["test-rules"]["another_key"], "another_value");
-    assert.ok(!("#" in result["test-rules"]), "# lines should be skipped");
-    assert.ok(!(">" in result["test-rules"]), "> lines should be skipped");
+    expect("test-rules" in result).toBeTruthy();
+    expect(result["test-rules"]["valid_key"]).toBe("valid_value");
+    expect(result["test-rules"]["another_key"]).toBe("another_value");
+    expect(!("#" in result["test-rules"]).toBeTruthy(), "# lines should be skipped");
+    expect(!(">" in result["test-rules"]).toBeTruthy(), "> lines should be skipped");
   });
 
   it("uses filename without .md as the output key", () => {
     writeGlobalRule("my-rule-file.md", "some_key: some_value\n");
 
     const { stdout, code } = runLoader(["load", "--project", "keyProject"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("my-rule-file" in result, "key should be filename without .md");
+    expect("my-rule-file" in result).toBeTruthy();
   });
 });
 
@@ -152,10 +151,10 @@ describe("rule-loader.ts load — multiple rule files merged", () => {
     writeGlobalRule("beta.md", "key2: val2\n");
 
     const { stdout, code } = runLoader(["load", "--project", "multiProject"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("alpha" in result, "should have alpha");
-    assert.ok("beta" in result, "should have beta");
+    expect("alpha" in result).toBeTruthy();
+    expect("beta" in result).toBeTruthy();
   });
 });

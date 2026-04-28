@@ -1,7 +1,6 @@
-import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 import { loadXmindRules, buildRootName } from "../../src/lib/rules.ts";
 
 const ROOT = resolve(import.meta.dirname, "../../..");
@@ -23,15 +22,15 @@ after(() => {
 describe("loadXmindRules without project", () => {
   it("returns defaults with non-empty template", () => {
     const rules = loadXmindRules();
-    assert.ok(rules.root_title_template.length > 0);
-    assert.ok(rules.iteration_id.length > 0);
+    expect(rules.root_title_template.length > 0).toBeTruthy();
+    expect(rules.iteration_id.length > 0).toBeTruthy();
   });
 });
 
 describe("loadXmindRules with project", () => {
   it("returns global defaults when no project rules exist", () => {
     const rules = loadXmindRules("nonexistent-project-xyz");
-    assert.ok(rules.root_title_template.length > 0);
+    expect(rules.root_title_template.length > 0).toBeTruthy();
   });
 
   it("project rules override global when present", () => {
@@ -41,8 +40,8 @@ describe("loadXmindRules with project", () => {
       "utf-8",
     );
     const rules = loadXmindRules(PROJECT);
-    assert.equal(rules.root_title_template, "信永v{{prd_version}}(#{{iteration_id}})");
-    assert.equal(rules.iteration_id, "99");
+    expect(rules.root_title_template).toBe("信永v{{prd_version}}(#{{iteration_id}})");
+    expect(rules.iteration_id).toBe("99");
   });
 
   it("project rules partially override (only what's specified)", () => {
@@ -53,8 +52,8 @@ describe("loadXmindRules with project", () => {
     );
     const rules = loadXmindRules(PROJECT);
     // iteration_id overridden, root_title_template from global
-    assert.equal(rules.iteration_id, "55");
-    assert.ok(rules.root_title_template.length > 0);
+    expect(rules.iteration_id).toBe("55");
+    expect(rules.root_title_template.length > 0).toBeTruthy();
   });
 });
 
@@ -66,17 +65,17 @@ describe("buildRootName with project", () => {
       "utf-8",
     );
     const name = buildRootName("v1.0.0", undefined, PROJECT);
-    assert.equal(name, "XY-v1.0.0");
+    expect(name).toBe("XY-v1.0.0");
   });
 
   it("works without project (uses global)", () => {
     const name = buildRootName("v6.4.9");
-    assert.ok(name.length > 0);
-    assert.ok(name.includes("6.4.9"));
+    expect(name.length > 0).toBeTruthy();
+    expect(name.includes("6.4.9").toBeTruthy());
   });
 
   it("returns empty string for undefined version", () => {
     const name = buildRootName(undefined);
-    assert.equal(name, "");
+    expect(name).toBe("");
   });
 });

@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 import { parseFrontMatter } from "../src/lib/frontmatter.js";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
@@ -55,25 +54,25 @@ describe("archive-gen.ts convert — generates valid Markdown with front-matter"
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       output_path: string;
       case_count: number;
       module_count: number;
     };
-    assert.ok(
-      result.output_path.endsWith("test-convert.md"),
+    expect(
+      result.output_path.endsWith("test-convert.md").toBeTruthy(),
       "output_path should end with .md",
     );
-    assert.ok(
+    expect(
       typeof result.case_count === "number",
       "case_count should be a number",
-    );
-    assert.ok(
+    ).toBeTruthy();
+    expect(
       typeof result.module_count === "number",
       "module_count should be a number",
-    );
+    ).toBeTruthy();
   });
 });
 
@@ -87,14 +86,13 @@ describe("archive-gen.ts convert — correct suite_name in front-matter", () => 
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
 
-    assert.equal(
-      frontMatter.suite_name,
-      "质量问题台账",
+    expect(
+      frontMatter.suite_name).toBe("质量问题台账",
       "suite_name should match meta.requirement_name",
     );
   });
@@ -110,17 +108,16 @@ describe("archive-gen.ts convert — correct case_count", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as { case_count: number };
     // 3 sub_group cases (搜索筛选) + 1 page-level (列表页) + 1 page-level (新增页) = 5
-    assert.equal(result.case_count, 5, "case_count should be 5");
+    expect(result.case_count).toBe(5);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
-    assert.equal(
-      frontMatter.case_count,
-      5,
+    expect(
+      frontMatter.case_count).toBe(5,
       "front-matter case_count should be 5",
     );
   });
@@ -136,32 +133,29 @@ describe("archive-gen.ts convert — H2/H3/H4/H5 body structure", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { body } = parseFrontMatter(content);
 
     // H2 — module
-    assert.match(body, /^## 质量问题台账/m, "H2 module heading missing");
+    expect(body).toMatch(/^## 质量问题台账/m);
     // H3 — page
-    assert.match(body, /^### 列表页/m, "H3 page heading '列表页' missing");
-    assert.match(body, /^### 新增页/m, "H3 page heading '新增页' missing");
+    expect(body).toMatch(/^### 列表页/m);
+    expect(body).toMatch(/^### 新增页/m);
     // H4 — sub_group
-    assert.match(body, /^#### 搜索筛选/m, "H4 sub_group heading missing");
+    expect(body).toMatch(/^#### 搜索筛选/m);
     // H5 — test case with priority prefix
-    assert.match(
-      body,
-      /^##### 【P0】验证默认加载列表页/m,
+    expect(
+      body).toMatch(/^##### 【P0】验证默认加载列表页/m,
       "H5 case with P0 prefix missing",
     );
-    assert.match(
-      body,
-      /^##### 【P1】验证按问题类型筛选/m,
+    expect(
+      body).toMatch(/^##### 【P1】验证按问题类型筛选/m,
       "H5 case with P1 prefix missing",
     );
-    assert.match(
-      body,
-      /^##### 【P0】验证填写完整表单后成功提交/m,
+    expect(
+      body).toMatch(/^##### 【P0】验证填写完整表单后成功提交/m,
       "H5 case with P0 prefix missing",
     );
   });
@@ -203,17 +197,15 @@ describe("archive-gen.ts convert — strips duplicate priority prefix", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
-    assert.doesNotMatch(
-      content,
-      /【P\d】【P\d】/,
+    expect(
+      content).not.toMatch(/【P\d】【P\d】/,
       "Archive must not contain duplicated priority prefix",
     );
-    assert.match(
-      content,
-      /^##### 【P0】验证默认加载列表页/m,
+    expect(
+      content).toMatch(/^##### 【P0】验证默认加载列表页/m,
       "Single P0 prefix expected after stripping",
     );
   });
@@ -229,23 +221,23 @@ describe("archive-gen.ts convert — step table format", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { body } = parseFrontMatter(content);
 
     // Table header must appear (multiple times, once per case)
     const tableHeaders = body.match(/\| 编号 \| 步骤 \| 预期 \|/g) ?? [];
-    assert.ok(
+    expect(
       tableHeaders.length > 0,
       "No step tables with correct header found",
-    );
+    ).toBeTruthy();
 
     // Body has numbered rows starting with | 1 |
-    assert.match(body, /\| 1 \|/, "Table row starting with | 1 | not found");
+    expect(body).toMatch(/\| 1 \|/);
 
     // Separator row
-    assert.match(body, /\| ---- \|/, "Table separator row not found");
+    expect(body).toMatch(/\| ---- \|/);
   });
 
   it("precondition blocks appear before step tables", () => {
@@ -257,16 +249,15 @@ describe("archive-gen.ts convert — step table format", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { body } = parseFrontMatter(content);
 
     // Precondition block should contain the text from the fixture
-    assert.match(body, /> 前置条件/, "> 前置条件 label missing");
-    assert.match(
-      body,
-      /环境已部署/,
+    expect(body).toMatch(/> 前置条件/);
+    expect(
+      body).toMatch(/环境已部署/,
       "Precondition content '环境已部署' missing",
     );
   });
@@ -311,7 +302,7 @@ origin: "xmind"
       "--dir",
       archiveDir,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as Array<{
       path: string;
@@ -319,21 +310,20 @@ origin: "xmind"
       tags: string[];
       case_count: number;
     }>;
-    assert.ok(Array.isArray(results), "search output should be an array");
-    assert.ok(results.length > 0, "should find at least one result");
-    assert.equal(
-      results[0].suite_name,
-      "质量问题台账",
+    expect(Array.isArray(results).toBeTruthy(), "search output should be an array");
+    expect(results.length > 0).toBeTruthy();
+    expect(
+      results[0].suite_name).toBe("质量问题台账",
       "suite_name should match",
     );
-    assert.ok(
-      results[0].path.includes("test-archive.md"),
+    expect(
+      results[0].path.includes("test-archive.md").toBeTruthy(),
       "path should reference the file",
     );
-    assert.ok(
+    expect(
       typeof results[0].case_count === "number",
       "case_count should be a number",
-    );
+    ).toBeTruthy();
   });
 
   it("finds archive by tags keyword", () => {
@@ -370,11 +360,11 @@ origin: "xmind"
       "--dir",
       archiveDir,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as Array<{ suite_name: string }>;
-    assert.ok(results.length > 0, "should find result matching tag");
-    assert.equal(results[0].suite_name, "数据血缘功能");
+    expect(results.length > 0).toBeTruthy();
+    expect(results[0].suite_name).toBe("数据血缘功能");
   });
 });
 
@@ -410,13 +400,12 @@ origin: "xmind"
       "--dir",
       archiveDir,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as unknown[];
-    assert.ok(Array.isArray(results), "result should be an array");
-    assert.equal(
-      results.length,
-      0,
+    expect(Array.isArray(results).toBeTruthy(), "result should be an array");
+    expect(
+      results.length).toBe(0,
       "result should be empty for unknown keyword",
     );
   });
@@ -432,12 +421,11 @@ origin: "xmind"
       "--dir",
       emptyDir,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as unknown[];
-    assert.equal(
-      results.length,
-      0,
+    expect(
+      results.length).toBe(0,
       "empty directory should return empty results",
     );
   });
@@ -484,16 +472,16 @@ origin: "xmind"
         "--project",
         "testProject",
       ]);
-      assert.equal(code, 0, `stderr: ${stderr}`);
+      expect(code).toBe(0, `stderr: ${stderr}`);
 
       const results = JSON.parse(stdout) as Array<{
         path: string;
         suite_name: string;
       }>;
-      assert.ok(results.length > 0, "should find project-scoped archive");
-      assert.equal(results[0].suite_name, "项目级归档");
-      assert.ok(
-        results[0].path.includes("testProject/archive"),
+      expect(results.length > 0).toBeTruthy();
+      expect(results[0].suite_name).toBe("项目级归档");
+      expect(
+        results[0].path.includes("testProject/archive").toBeTruthy(),
         "path should contain project-scoped archive dir",
       );
     } finally {
@@ -538,11 +526,11 @@ origin: "xmind"
       "--dir",
       archiveDir,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as Array<{ suite_name: string }>;
-    assert.ok(results.length > 0, "--dir should override --project");
-    assert.equal(results[0].suite_name, "Dir覆盖测试");
+    expect(results.length > 0).toBeTruthy();
+    expect(results[0].suite_name).toBe("Dir覆盖测试");
   });
 });
 
@@ -558,13 +546,12 @@ describe("archive-gen.ts convert — --project injects project field into front-
       "--project",
       "dataAssets",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
-    assert.equal(
-      frontMatter.project,
-      "dataAssets",
+    expect(
+      frontMatter.project).toBe("dataAssets",
       "front-matter should contain project field",
     );
   });
@@ -578,13 +565,12 @@ describe("archive-gen.ts convert — --project injects project field into front-
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
-    assert.equal(
-      frontMatter.project,
-      undefined,
+    expect(
+      frontMatter.project).toBe(undefined,
       "front-matter should not contain project field when not provided",
     );
   });
@@ -594,10 +580,10 @@ describe("archive-gen.ts --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /archive-gen/);
-    assert.match(output, /convert/);
-    assert.match(output, /search/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/archive-gen/);
+    expect(output).toMatch(/convert/);
+    expect(output).toMatch(/search/);
   });
 });
 
@@ -613,23 +599,23 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
     const tags = frontMatter.tags as string[];
 
-    assert.ok(Array.isArray(tags), "tags should be an array");
-    assert.ok(tags.includes("data-assets"), "tags should include module_key");
-    assert.ok(tags.includes("v6.4.10"), "tags should include version");
-    assert.ok(
-      tags.includes("质量问题台账"),
+    expect(Array.isArray(tags).toBeTruthy(), "tags should be an array");
+    expect(tags.includes("data-assets").toBeTruthy(), "tags should include module_key");
+    expect(tags.includes("v6.4.10").toBeTruthy(), "tags should include version");
+    expect(
+      tags.includes("质量问题台账").toBeTruthy(),
       "tags should include module name",
     );
-    assert.ok(tags.includes("列表页"), "tags should include page name");
-    assert.ok(tags.includes("新增页"), "tags should include page name");
-    assert.ok(tags.includes("搜索筛选"), "tags should include sub_group name");
-    assert.ok(tags.includes("#10287"), "tags should include prd_id with # prefix");
+    expect(tags.includes("列表页").toBeTruthy(), "tags should include page name");
+    expect(tags.includes("新增页").toBeTruthy(), "tags should include page name");
+    expect(tags.includes("搜索筛选").toBeTruthy(), "tags should include sub_group name");
+    expect(tags.includes("#10287").toBeTruthy(), "tags should include prd_id with # prefix");
   });
 
   it("extracts bracket content from requirement_name into tags", () => {
@@ -652,18 +638,18 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
     const tags = frontMatter.tags as string[];
 
-    assert.ok(
-      tags.includes("数据质量"),
+    expect(
+      tags.includes("数据质量").toBeTruthy(),
       "tags should include bracket-extracted content '数据质量'",
     );
-    assert.ok(
-      tags.includes("问题台账优化"),
+    expect(
+      tags.includes("问题台账优化").toBeTruthy(),
       "tags should include text after brackets",
     );
   });
@@ -705,14 +691,14 @@ describe("archive-gen.ts convert — tag inference from meta fields", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
     const { frontMatter } = parseFrontMatter(content);
     const tags = frontMatter.tags as string[];
 
-    assert.ok(
-      !tags.includes("未分类"),
+    expect(
+      !tags.includes("未分类").toBeTruthy(),
       "tags should not include '未分类'",
     );
   });
@@ -761,10 +747,10 @@ describe("archive-gen.ts convert — case counting edge cases", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as { case_count: number };
-    assert.equal(result.case_count, 2, "should count 2 page-level cases");
+    expect(result.case_count).toBe(2);
   });
 
   it("counts both sub_group and page-level test_cases", () => {
@@ -777,12 +763,11 @@ describe("archive-gen.ts convert — case counting edge cases", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as { case_count: number };
-    assert.equal(
-      result.case_count,
-      5,
+    expect(
+      result.case_count).toBe(5,
       "should count 3 sub_group + 1 page-level (列表页) + 1 page-level (新增页) = 5",
     );
   });
@@ -831,15 +816,15 @@ describe("archive-gen.ts convert — pipe and newline escaping in step tables", 
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const content = readFileSync(output, "utf8");
-    assert.ok(
-      content.includes("A\\|B\\|C"),
+    expect(
+      content.includes("A\\|B\\|C").toBeTruthy(),
       "pipe chars in step should be escaped",
     );
-    assert.ok(
-      content.includes("X\\|Y"),
+    expect(
+      content.includes("X\\|Y").toBeTruthy(),
       "pipe chars in expected should be escaped",
     );
   });

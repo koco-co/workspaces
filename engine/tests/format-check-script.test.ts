@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-format-check-test-${process.pid}`);
@@ -78,7 +77,7 @@ describe("format-check-script.ts check — FC01 标题缺少优先级前缀", ()
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0, `stdout: ${stdout}`);
+    expect(code).toBe(0, `stdout: ${stdout}`);
 
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string }[];
@@ -86,9 +85,9 @@ describe("format-check-script.ts check — FC01 标题缺少优先级前缀", ()
       stats: { total_cases: number; definite_count: number };
     };
     const fc01 = result.definite_issues.filter((i) => i.rule === "FC01");
-    assert.ok(fc01.length >= 1, "should have at least one FC01 definite issue");
-    assert.equal(result.stats.total_cases, 1);
-    assert.ok(result.stats.definite_count >= 1);
+    expect(fc01.length >= 1).toBeTruthy();
+    expect(result.stats.total_cases).toBe(1);
+    expect(result.stats.definite_count >= 1).toBeTruthy();
   });
 
   it("accepts valid 【P0】 title without FC01 issue", () => {
@@ -97,10 +96,10 @@ describe("format-check-script.ts check — FC01 标题缺少优先级前缀", ()
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc01 = result.definite_issues.filter((i) => i.rule === "FC01");
-    assert.equal(fc01.length, 0, "valid title should not trigger FC01");
+    expect(fc01.length).toBe(0);
   });
 
   it("detects wrong priority 【P3】 as FC01 issue", () => {
@@ -109,10 +108,10 @@ describe("format-check-script.ts check — FC01 标题缺少优先级前缀", ()
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc01 = result.definite_issues.filter((i) => i.rule === "FC01");
-    assert.ok(fc01.length >= 1, "P3 priority should trigger FC01");
+    expect(fc01.length >= 1).toBeTruthy();
   });
 });
 
@@ -125,10 +124,10 @@ describe("format-check-script.ts check — FC02 首步缺少等待条件", () =>
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc02 = result.definite_issues.filter((i) => i.rule === "FC02");
-    assert.ok(fc02.length >= 1, "should detect FC02: first step missing wait condition");
+    expect(fc02.length >= 1).toBeTruthy();
   });
 
   it("accepts valid first step with wait condition", () => {
@@ -137,10 +136,10 @@ describe("format-check-script.ts check — FC02 首步缺少等待条件", () =>
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc02 = result.definite_issues.filter((i) => i.rule === "FC02");
-    assert.equal(fc02.length, 0, "valid first step should not trigger FC02");
+    expect(fc02.length).toBe(0);
   });
 });
 
@@ -154,10 +153,10 @@ describe("format-check-script.ts check — FC03 步骤用文字序号而非表�
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc03 = result.definite_issues.filter((i) => i.rule === "FC03");
-    assert.ok(fc03.length >= 1, "should detect FC03: inline step numbering");
+    expect(fc03.length >= 1).toBeTruthy();
   });
 });
 
@@ -170,15 +169,15 @@ describe("format-check-script.ts check — FC04 模糊词归入 suspect", () => 
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string }[];
       suspect_items: { rule: string }[];
     };
     const fc04Definite = result.definite_issues.filter((i) => i.rule === "FC04");
     const fc04Suspect = result.suspect_items.filter((i) => i.rule === "FC04");
-    assert.equal(fc04Definite.length, 0, "FC04 must NOT be in definite_issues");
-    assert.ok(fc04Suspect.length >= 1, "FC04 should appear in suspect_items");
+    expect(fc04Definite.length).toBe(0);
+    expect(fc04Suspect.length >= 1).toBeTruthy();
   });
 
   it("puts 尝试 fuzzy word into suspect_items", () => {
@@ -187,15 +186,15 @@ describe("format-check-script.ts check — FC04 模糊词归入 suspect", () => 
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string }[];
       suspect_items: { rule: string }[];
     };
     const fc04Definite = result.definite_issues.filter((i) => i.rule === "FC04");
     const fc04Suspect = result.suspect_items.filter((i) => i.rule === "FC04");
-    assert.equal(fc04Definite.length, 0, "FC04 must NOT be in definite_issues");
-    assert.ok(fc04Suspect.length >= 1, "尝试 should appear in suspect_items");
+    expect(fc04Definite.length).toBe(0);
+    expect(fc04Suspect.length >= 1).toBeTruthy();
   });
 });
 
@@ -208,10 +207,10 @@ describe("format-check-script.ts check — FC05 占位符检测", () => {
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc05 = result.definite_issues.filter((i) => i.rule === "FC05");
-    assert.ok(fc05.length >= 1, "should detect FC05: placeholder test1");
+    expect(fc05.length >= 1).toBeTruthy();
   });
 
   it("detects placeholder 'xxx' as definite FC05 issue", () => {
@@ -220,10 +219,10 @@ describe("format-check-script.ts check — FC05 占位符检测", () => {
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc05 = result.definite_issues.filter((i) => i.rule === "FC05");
-    assert.ok(fc05.length >= 1, "should detect FC05: placeholder xxx");
+    expect(fc05.length >= 1).toBeTruthy();
   });
 });
 
@@ -236,15 +235,15 @@ describe("format-check-script.ts check — FC06 预期结果禁止词归入 susp
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string }[];
       suspect_items: { rule: string }[];
     };
     const fc06Definite = result.definite_issues.filter((i) => i.rule === "FC06");
     const fc06Suspect = result.suspect_items.filter((i) => i.rule === "FC06");
-    assert.equal(fc06Definite.length, 0, "FC06 must NOT be in definite_issues");
-    assert.ok(fc06Suspect.length >= 1, "操作成功 should appear in suspect_items");
+    expect(fc06Definite.length).toBe(0);
+    expect(fc06Suspect.length >= 1).toBeTruthy();
   });
 
   it("puts '显示正确' into suspect_items", () => {
@@ -253,15 +252,15 @@ describe("format-check-script.ts check — FC06 预期结果禁止词归入 susp
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string }[];
       suspect_items: { rule: string }[];
     };
     const fc06Definite = result.definite_issues.filter((i) => i.rule === "FC06");
     const fc06Suspect = result.suspect_items.filter((i) => i.rule === "FC06");
-    assert.equal(fc06Definite.length, 0, "FC06 must NOT be in definite_issues");
-    assert.ok(fc06Suspect.length >= 1, "显示正确 should appear in suspect_items");
+    expect(fc06Definite.length).toBe(0);
+    expect(fc06Suspect.length >= 1).toBeTruthy();
   });
 });
 
@@ -274,10 +273,10 @@ describe("format-check-script.ts check — FC08 多字段堆在一行", () => {
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc08 = result.definite_issues.filter((i) => i.rule === "FC08");
-    assert.ok(fc08.length >= 1, "should detect FC08: multi-field in one step");
+    expect(fc08.length >= 1).toBeTruthy();
   });
 });
 
@@ -290,10 +289,10 @@ describe("format-check-script.ts check — FC10 异步操作后缺少等待条�
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc10 = result.definite_issues.filter((i) => i.rule === "FC10");
-    assert.ok(fc10.length >= 1, "should detect FC10: async action without wait");
+    expect(fc10.length >= 1).toBeTruthy();
   });
 
   it("accepts async action with wait condition (no FC10)", () => {
@@ -302,10 +301,10 @@ describe("format-check-script.ts check — FC10 异步操作后缺少等待条�
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as { definite_issues: { rule: string }[] };
     const fc10 = result.definite_issues.filter((i) => i.rule === "FC10");
-    assert.equal(fc10.length, 0, "async action with wait should not trigger FC10");
+    expect(fc10.length).toBe(0);
   });
 });
 
@@ -319,16 +318,16 @@ describe("format-check-script.ts check — 合法 archive 返回空 issues", () 
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as {
       definite_issues: unknown[];
       suspect_items: unknown[];
       stats: { total_cases: number; definite_count: number; suspect_count: number };
     };
-    assert.equal(result.definite_issues.length, 0, "no definite issues expected");
-    assert.equal(result.stats.total_cases, 2);
-    assert.equal(result.stats.definite_count, 0);
-    assert.equal(result.stats.suspect_count, 0);
+    expect(result.definite_issues.length).toBe(0);
+    expect(result.stats.total_cases).toBe(2);
+    expect(result.stats.definite_count).toBe(0);
+    expect(result.stats.suspect_count).toBe(0);
   });
 });
 
@@ -346,7 +345,7 @@ describe("format-check-script.ts check — 混合场景", () => {
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const result = JSON.parse(stdout) as {
       definite_issues: { rule: string; case_idx: number; case_title: string; description: string }[];
@@ -354,25 +353,25 @@ describe("format-check-script.ts check — 混合场景", () => {
       stats: { total_cases: number; definite_count: number; suspect_count: number };
     };
 
-    assert.equal(result.stats.total_cases, 3);
+    expect(result.stats.total_cases).toBe(3);
 
     // FC01 for case 2
     const fc01Issues = result.definite_issues.filter((i) => i.rule === "FC01");
-    assert.ok(fc01Issues.length >= 1, "should detect FC01 in case 2");
+    expect(fc01Issues.length >= 1).toBeTruthy();
 
     // FC05 for case 3
     const fc05Issues = result.definite_issues.filter((i) => i.rule === "FC05");
-    assert.ok(fc05Issues.length >= 1, "should detect FC05 in case 3");
+    expect(fc05Issues.length >= 1).toBeTruthy();
 
     // FC04 must be in suspect, not definite
     const fc04Definite = result.definite_issues.filter((i) => i.rule === "FC04");
     const fc04Suspect = result.suspect_items.filter((i) => i.rule === "FC04");
-    assert.equal(fc04Definite.length, 0, "FC04 must NOT be definite");
-    assert.ok(fc04Suspect.length >= 1, "FC04 should be suspect");
+    expect(fc04Definite.length).toBe(0);
+    expect(fc04Suspect.length >= 1).toBeTruthy();
 
     // Stats consistency
-    assert.equal(result.stats.definite_count, result.definite_issues.length);
-    assert.equal(result.stats.suspect_count, result.suspect_items.length);
+    expect(result.stats.definite_count).toBe(result.definite_issues.length);
+    expect(result.stats.suspect_count).toBe(result.suspect_items.length);
   });
 });
 
@@ -381,8 +380,8 @@ describe("format-check-script.ts check — 混合场景", () => {
 describe("format-check-script.ts check — CLI 错误处理", () => {
   it("exits with non-zero when --input file does not exist", () => {
     const { code, stderr } = run(["check", "--input", "/nonexistent/path/archive.md"]);
-    assert.ok(code !== 0, "should exit with non-zero for missing file");
-    assert.ok(stderr.length > 0 || code !== 0, "should indicate error");
+    expect(code !== 0).toBeTruthy();
+    expect(stderr.length > 0 || code !== 0).toBeTruthy();
   });
 
   it("outputs JSON with correct structure keys", () => {
@@ -391,15 +390,15 @@ describe("format-check-script.ts check — CLI 错误处理", () => {
     ]);
     const path = writeTempArchive(md);
     const { code, stdout } = run(["check", "--input", path]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("definite_issues" in result, "should have definite_issues key");
-    assert.ok("suspect_items" in result, "should have suspect_items key");
-    assert.ok("stats" in result, "should have stats key");
+    expect("definite_issues" in result).toBeTruthy();
+    expect("suspect_items" in result).toBeTruthy();
+    expect("stats" in result).toBeTruthy();
 
     const stats = result.stats as Record<string, unknown>;
-    assert.ok("total_cases" in stats);
-    assert.ok("definite_count" in stats);
-    assert.ok("suspect_count" in stats);
+    expect("total_cases" in stats).toBeTruthy();
+    expect("definite_count" in stats).toBeTruthy();
+    expect("suspect_count" in stats).toBeTruthy();
   });
 });

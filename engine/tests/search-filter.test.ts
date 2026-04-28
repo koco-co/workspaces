@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-search-filter-test-${process.pid}`);
@@ -94,12 +93,12 @@ describe("search-filter.ts filter — sorts by case_count desc and truncates to 
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "2"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 2, "should return top 2");
-    assert.equal(results[0].suite_name, "订单管理", "highest case_count first");
-    assert.equal(results[1].suite_name, "用户管理", "second highest next");
+    expect(results.length).toBe(2);
+    expect(results[0].suite_name).toBe("订单管理");
+    expect(results[1].suite_name).toBe("用户管理");
   });
 
   it("defaults to top 5 when --top is not specified", () => {
@@ -112,11 +111,11 @@ describe("search-filter.ts filter — sorts by case_count desc and truncates to 
     const input = JSON.stringify(items);
 
     const { code, stdout, stderr } = run(["filter"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 5, "default top is 5");
-    assert.equal(results[0].case_count, 8, "highest count first");
+    expect(results.length).toBe(5);
+    expect(results[0].case_count).toBe(8);
   });
 
   it("returns all items when count is less than top-N", () => {
@@ -130,10 +129,10 @@ describe("search-filter.ts filter — sorts by case_count desc and truncates to 
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "10"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 1, "should return all 1 item");
+    expect(results.length).toBe(1);
   });
 });
 
@@ -163,27 +162,25 @@ describe("search-filter.ts filter — deduplicates by suite_name keeping max cas
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "5"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
     const bloodLineageResults = results.filter(
       (r) => r.suite_name === "数据血缘",
     );
-    assert.equal(
-      bloodLineageResults.length,
-      1,
+    expect(
+      bloodLineageResults.length).toBe(1,
       "should deduplicate to one entry",
     );
-    assert.equal(
-      bloodLineageResults[0].case_count,
-      15,
+    expect(
+      bloodLineageResults[0].case_count).toBe(15,
       "should keep larger case_count",
     );
-    assert.ok(
-      bloodLineageResults[0].path.includes("v2.md"),
+    expect(
+      bloodLineageResults[0].path.includes("v2.md").toBeTruthy(),
       "should keep path of larger entry",
     );
-    assert.equal(results.length, 2, "total unique suite_names should be 2");
+    expect(results.length).toBe(2);
   });
 
   it("handles multiple duplicates and keeps max each time", () => {
@@ -215,13 +212,13 @@ describe("search-filter.ts filter — deduplicates by suite_name keeping max cas
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "5"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
     const suiteA = results.find((r) => r.suite_name === "套件A");
-    assert.ok(suiteA, "套件A should exist");
-    assert.equal(suiteA.case_count, 10, "should keep max case_count for 套件A");
-    assert.equal(results.length, 2, "should have 2 unique suite_names");
+    expect(suiteA).toBeTruthy();
+    expect(suiteA.case_count).toBe(10);
+    expect(results.length).toBe(2);
   });
 });
 
@@ -268,11 +265,11 @@ suite_name: "档案套件A"
       "--top",
       "3",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 1, "should have one result from file");
-    assert.equal(results[0].suite_name, "档案套件A");
+    expect(results.length).toBe(1);
+    expect(results[0].suite_name).toBe("档案套件A");
   });
 
   it("reads from stdin when no --input provided", () => {
@@ -300,11 +297,11 @@ suite_name: "Stdin套件"
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "5"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 1, "should read from stdin");
-    assert.equal(results[0].suite_name, "Stdin套件");
+    expect(results.length).toBe(1);
+    expect(results[0].suite_name).toBe("Stdin套件");
   });
 });
 
@@ -313,11 +310,11 @@ suite_name: "Stdin套件"
 describe("search-filter.ts filter — handles empty input gracefully", () => {
   it("returns [] when stdin is empty", () => {
     const { code, stdout, stderr } = run(["filter"], "");
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as unknown[];
-    assert.ok(Array.isArray(results), "should return array");
-    assert.equal(results.length, 0, "should return empty array for empty stdin");
+    expect(Array.isArray(results).toBeTruthy(), "should return array");
+    expect(results.length).toBe(0);
   });
 
   it("returns [] when --input file does not exist", () => {
@@ -326,23 +323,22 @@ describe("search-filter.ts filter — handles empty input gracefully", () => {
       "--input",
       "/nonexistent/path/results.json",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as unknown[];
-    assert.ok(Array.isArray(results), "should return array");
-    assert.equal(
-      results.length,
-      0,
+    expect(Array.isArray(results).toBeTruthy(), "should return array");
+    expect(
+      results.length).toBe(0,
       "should return empty array for missing file",
     );
   });
 
   it("returns [] when input is an empty JSON array", () => {
     const { code, stdout, stderr } = run(["filter"], "[]");
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as unknown[];
-    assert.equal(results.length, 0, "should return empty array");
+    expect(results.length).toBe(0);
   });
 });
 
@@ -379,24 +375,24 @@ suite_name: "预览测试"
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "5"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 1);
-    assert.ok(
+    expect(results.length).toBe(1);
+    expect(
       typeof results[0].preview === "string",
       "preview should be a string",
-    );
+    ).toBeTruthy();
 
     const previewLines = results[0].preview
       .split("\n")
       .filter((l) => l.trim().length > 0);
-    assert.ok(
+    expect(
       previewLines.length <= 3,
       "preview should contain at most 3 non-empty lines",
-    );
-    assert.ok(
-      results[0].preview.includes("预览测试"),
+    ).toBeTruthy();
+    expect(
+      results[0].preview.includes("预览测试").toBeTruthy(),
       "preview should contain content from the file",
     );
   });
@@ -412,11 +408,11 @@ suite_name: "预览测试"
     ]);
 
     const { code, stdout, stderr } = run(["filter", "--top", "5"], input);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const results = JSON.parse(stdout) as FilteredResult[];
-    assert.equal(results.length, 1);
-    assert.equal(results[0].preview, "", "preview should be empty string for missing file");
+    expect(results.length).toBe(1);
+    expect(results[0].preview).toBe("");
   });
 });
 
@@ -426,15 +422,15 @@ describe("search-filter.ts --help", () => {
   it("outputs usage information for top-level --help", () => {
     const { stdout, stderr, code } = run(["--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /search-filter/);
-    assert.match(output, /filter/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/search-filter/);
+    expect(output).toMatch(/filter/);
   });
 
   it("outputs --top option in filter subcommand help", () => {
     const { stdout, stderr, code } = run(["filter", "--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /--top/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/--top/);
   });
 });

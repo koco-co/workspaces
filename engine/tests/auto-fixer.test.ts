@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-auto-fixer-test-${process.pid}`);
@@ -114,17 +113,17 @@ describe("auto-fixer fix — FC01 标题缺少优先级前缀", () => {
       outputPath,
     ]);
 
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const title =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].title as string;
-    assert.ok(title.startsWith("【P0】"), `Expected title to start with 【P0】, got: ${title}`);
+    expect(title.startsWith("【P0】").toBeTruthy(), `Expected title to start with 【P0】, got: ${title}`);
 
     const report = JSON.parse(stdout) as { fixed: number; skipped_manual: number; total: number };
-    assert.equal(report.fixed, 1);
-    assert.equal(report.skipped_manual, 0);
-    assert.equal(report.total, 1);
+    expect(report.fixed).toBe(1);
+    expect(report.skipped_manual).toBe(0);
+    expect(report.total).toBe(1);
   });
 
   it("不重复添加已有前缀", () => {
@@ -159,13 +158,13 @@ describe("auto-fixer fix — FC01 标题缺少优先级前缀", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const title =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].title as string;
     // Should not double-prefix
-    assert.ok(!title.startsWith("【P1】【P1】"), `Title has double prefix: ${title}`);
+    expect(!title.startsWith("【P1】【P1】").toBeTruthy(), `Title has double prefix: ${title}`);
   });
 });
 
@@ -208,12 +207,12 @@ describe("auto-fixer fix — FC03 步骤内容含编号前缀", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const steps = output.modules[0].pages[0].sub_groups[0].test_cases[0].steps as Array<{ step: string; expected: string }>;
-    assert.equal(steps[0].step, "进入页面");
-    assert.equal(steps[1].step, "输入关键字");
+    expect(steps[0].step).toBe("进入页面");
+    expect(steps[1].step).toBe("输入关键字");
   });
 
   it("移除步骤前缀 'Step 1: '", () => {
@@ -252,12 +251,12 @@ describe("auto-fixer fix — FC03 步骤内容含编号前缀", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const steps = output.modules[0].pages[0].sub_groups[0].test_cases[0].steps as Array<{ step: string }>;
-    assert.equal(steps[0].step, "Open page");
-    assert.equal(steps[1].step, "Enter keyword");
+    expect(steps[0].step).toBe("Open page");
+    expect(steps[1].step).toBe("Enter keyword");
   });
 });
 
@@ -302,16 +301,16 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    assert.ok(!expected.includes("或等价"), `Expected result still has 或等价: ${expected}`);
-    assert.equal(expected, "显示成功提示");
+    expect(!expected.includes("或等价").toBeTruthy(), `Expected result still has 或等价: ${expected}`);
+    expect(expected).toBe("显示成功提示");
 
     const report = JSON.parse(stdout) as { fixed: number };
-    assert.equal(report.fixed, 1);
+    expect(report.fixed).toBe(1);
   });
 
   it("删除 '或类似...$' 后缀", () => {
@@ -352,13 +351,13 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    assert.ok(!expected.includes("或类似"), `Expected result still has 或类似: ${expected}`);
-    assert.equal(expected, "弹出确认对话框");
+    expect(!expected.includes("或类似").toBeTruthy(), `Expected result still has 或类似: ${expected}`);
+    expect(expected).toBe("弹出确认对话框");
   });
 
   it("删除 '或等效...$' 后缀", () => {
@@ -399,13 +398,13 @@ describe("auto-fixer fix — F13 预期结果含模糊兜底", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    assert.ok(!expected.includes("或等效"), `Expected result still has 或等效: ${expected}`);
-    assert.equal(expected, "数据保存成功");
+    expect(!expected.includes("或等效").toBeTruthy(), `Expected result still has 或等效: ${expected}`);
+    expect(expected).toBe("数据保存成功");
   });
 });
 
@@ -450,18 +449,18 @@ describe("auto-fixer fix — F12 预期结果多项未编号", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    assert.ok(expected.includes("1)"), `Expected numbered format, got: ${expected}`);
-    assert.ok(expected.includes("2)"), `Expected numbered format, got: ${expected}`);
-    assert.ok(expected.includes("3)"), `Expected numbered format, got: ${expected}`);
-    assert.ok(expected.includes("4)"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("1).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("2).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("3).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("4).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
 
     const report = JSON.parse(stdout) as { fixed: number };
-    assert.equal(report.fixed, 1);
+    expect(report.fixed).toBe(1);
   });
 
   it("3+ 逗号分隔子项拆分为编号格式", () => {
@@ -502,13 +501,13 @@ describe("auto-fixer fix — F12 预期结果多项未编号", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
-    assert.ok(expected.includes("1)"), `Expected numbered format, got: ${expected}`);
-    assert.ok(expected.includes("4)"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("1).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
+    expect(expected.includes("4).toBeTruthy()"), `Expected numbered format, got: ${expected}`);
   });
 
   it("2 项分隔时不拆分", () => {
@@ -549,13 +548,13 @@ describe("auto-fixer fix — F12 预期结果多项未编号", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const expected =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].steps[0].expected as string;
     // Should remain unchanged (2 items < 3 threshold)
-    assert.ok(!expected.includes("1)"), `Should not reformat 2-item list, got: ${expected}`);
+    expect(!expected.includes("1).toBeTruthy()"), `Should not reformat 2-item list, got: ${expected}`);
   });
 });
 
@@ -595,18 +594,18 @@ describe("auto-fixer fix — manual=true 的问题跳过不修改", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
     const title =
       output.modules[0].pages[0].sub_groups[0].test_cases[0].title as string;
     // Title should remain unchanged
-    assert.equal(title, "验证默认加载列表页");
+    expect(title).toBe("验证默认加载列表页");
 
     const report = JSON.parse(stdout) as { fixed: number; skipped_manual: number; total: number };
-    assert.equal(report.fixed, 0);
-    assert.equal(report.skipped_manual, 1);
-    assert.equal(report.total, 1);
+    expect(report.fixed).toBe(0);
+    expect(report.skipped_manual).toBe(1);
+    expect(report.total).toBe(1);
   });
 });
 
@@ -637,15 +636,15 @@ describe("auto-fixer fix — 无问题时输入输出一致", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const output = JSON.parse(readFileSync(outputPath, "utf8"));
-    assert.deepEqual(output, writerJson);
+    expect(output).toEqual(writerJson);
 
     const report = JSON.parse(stdout) as { fixed: number; skipped_manual: number; total: number };
-    assert.equal(report.fixed, 0);
-    assert.equal(report.skipped_manual, 0);
-    assert.equal(report.total, 0);
+    expect(report.fixed).toBe(0);
+    expect(report.skipped_manual).toBe(0);
+    expect(report.total).toBe(0);
   });
 });
 
@@ -690,11 +689,11 @@ describe("auto-fixer fix — 混合 issues 正确统计", () => {
       "--output",
       outputPath,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const report = JSON.parse(stdout) as { fixed: number; skipped_manual: number; total: number };
-    assert.equal(report.fixed, 1);
-    assert.equal(report.skipped_manual, 1);
-    assert.equal(report.total, 2);
+    expect(report.fixed).toBe(1);
+    expect(report.skipped_manual).toBe(1);
+    expect(report.total).toBe(2);
   });
 });

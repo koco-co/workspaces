@@ -1,5 +1,4 @@
-import { describe, it, after } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, after, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,51 +6,50 @@ import { parseSourceRef, resolveSourceRef } from "../../src/lib/source-ref.ts";
 
 describe("parseSourceRef", () => {
   it("parses prd scheme with section number", () => {
-    assert.deepEqual(parseSourceRef("prd#section-2.1.3"), {
+    expect(parseSourceRef("prd#section-2.1.3")).toEqual({
       scheme: "prd",
       anchor: "section-2.1.3",
     });
   });
 
   it("parses knowledge scheme with dotted anchor", () => {
-    assert.deepEqual(parseSourceRef("knowledge#term.审批.中文解释"), {
+    expect(parseSourceRef("knowledge#term.审批.中文解释")).toEqual({
       scheme: "knowledge",
       anchor: "term.审批.中文解释",
     });
   });
 
   it("parses repo scheme with line range", () => {
-    assert.deepEqual(
-      parseSourceRef("repo#studio/src/approval/list.tsx:L45-L60"),
-      { scheme: "repo", anchor: "studio/src/approval/list.tsx:L45-L60" },
+    expect(
+      parseSourceRef("repo#studio/src/approval/list.tsx:L45-L60")).toEqual({ scheme: "repo", anchor: "studio/src/approval/list.tsx:L45-L60" },
     );
   });
 
   it("returns null for unknown scheme", () => {
-    assert.equal(parseSourceRef("foo#bar"), null);
+    expect(parseSourceRef("foo#bar")).toBe(null);
   });
 
   it("returns null for missing separator", () => {
-    assert.equal(parseSourceRef("prdq3"), null);
+    expect(parseSourceRef("prdq3")).toBe(null);
   });
 
   it("returns null for empty anchor", () => {
-    assert.equal(parseSourceRef("prd#"), null);
+    expect(parseSourceRef("prd#")).toBe(null);
   });
 
   it("rejects deprecated plan scheme", () => {
-    assert.equal(parseSourceRef("plan#q3-数据源"), null);
+    expect(parseSourceRef("plan#q3-数据源")).toBe(null);
   });
 
   it("parses enhanced scheme with section anchor", () => {
-    assert.deepEqual(parseSourceRef("enhanced#s-2-1-a1b2"), {
+    expect(parseSourceRef("enhanced#s-2-1-a1b2")).toEqual({
       scheme: "enhanced",
       anchor: "s-2-1-a1b2",
     });
   });
 
   it("parses enhanced scheme with q-anchor", () => {
-    assert.deepEqual(parseSourceRef("enhanced#q7"), {
+    expect(parseSourceRef("enhanced#q7")).toEqual({
       scheme: "enhanced",
       anchor: "q7",
     });
@@ -75,17 +73,17 @@ describe("resolveSourceRef — prd / knowledge / repo schemes", () => {
 
   it("prd heading slug matches section-2.1.3", () => {
     const r = resolveSourceRef("prd#2.1.3", { prdPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("prd heading by chinese slug", () => {
     const r = resolveSourceRef("prd#审批状态字段定义", { prdPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("prd miss → fail", () => {
     const r = resolveSourceRef("prd#不存在的小节", { prdPath });
-    assert.equal(r.ok, false);
+    expect(r.ok).toBe(false);
   });
 
   it("knowledge overview 入口存在", () => {
@@ -93,7 +91,7 @@ describe("resolveSourceRef — prd / knowledge / repo schemes", () => {
       workspaceDir: wsDir,
       projectName: projName,
     });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("knowledge term 目录存在", () => {
@@ -101,7 +99,7 @@ describe("resolveSourceRef — prd / knowledge / repo schemes", () => {
       workspaceDir: wsDir,
       projectName: projName,
     });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("knowledge unknown type → fail", () => {
@@ -109,22 +107,22 @@ describe("resolveSourceRef — prd / knowledge / repo schemes", () => {
       workspaceDir: wsDir,
       projectName: projName,
     });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /type 非法/);
+    expect(r.ok).toBe(false);
+    expect(r.reason ?? "").toMatch(/type 非法/);
   });
 
   it("repo 文件存在（via ctx.repos）", () => {
     const r = resolveSourceRef("repo#studio/src/approval/list.tsx:L3", {
       repos: { studio: repoDir },
     });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("repo 文件不存在 → fail", () => {
     const r = resolveSourceRef("repo#studio/src/nope.tsx", {
       repos: { studio: repoDir },
     });
-    assert.equal(r.ok, false);
+    expect(r.ok).toBe(false);
   });
 
   after(() => rmSync(tmp, { recursive: true, force: true }));
@@ -159,48 +157,48 @@ describe("resolveSourceRef — enhanced scheme", () => {
 
   it("resolves enhanced#s-1 (top-level)", () => {
     const r = resolveSourceRef("enhanced#s-1", { enhancedDocPath: docPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("resolves enhanced#s-2-1-a1b2 (sub-section)", () => {
     const r = resolveSourceRef("enhanced#s-2-1-a1b2", { enhancedDocPath: docPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("resolves enhanced#q7 (pending question)", () => {
     const r = resolveSourceRef("enhanced#q7", { enhancedDocPath: docPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("resolves enhanced#source-facts (appendix)", () => {
     const r = resolveSourceRef("enhanced#source-facts", { enhancedDocPath: docPath });
-    assert.equal(r.ok, true);
+    expect(r.ok).toBe(true);
   });
 
   it("fails when anchor missing in enhanced.md", () => {
     const r = resolveSourceRef("enhanced#s-9", { enhancedDocPath: docPath });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /未找到锚点/);
+    expect(r.ok).toBe(false);
+    expect(r.reason ?? "").toMatch(/未找到锚点/);
   });
 
   it("fails when anchor format invalid", () => {
     const r = resolveSourceRef("enhanced#bad-anchor!", { enhancedDocPath: docPath });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /锚点格式非法/);
+    expect(r.ok).toBe(false);
+    expect(r.reason ?? "").toMatch(/锚点格式非法/);
   });
 
   it("fails when ctx.enhancedDocPath missing", () => {
     const r = resolveSourceRef("enhanced#s-1", {});
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /enhancedDocPath/);
+    expect(r.ok).toBe(false);
+    expect(r.reason ?? "").toMatch(/enhancedDocPath/);
   });
 
   it("fails when enhanced.md file not exist", () => {
     const r = resolveSourceRef("enhanced#s-1", {
       enhancedDocPath: join(tmp, "no-such.md"),
     });
-    assert.equal(r.ok, false);
-    assert.match(r.reason ?? "", /不存在/);
+    expect(r.ok).toBe(false);
+    expect(r.reason ?? "").toMatch(/不存在/);
   });
 
   after(() => rmSync(tmp, { recursive: true, force: true }));

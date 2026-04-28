@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it, expect } from "bun:test";
 import {
   migrateKataState,
   migrateSession,
@@ -66,25 +65,25 @@ describe("migrateKataState", () => {
     });
 
     const s = readSession("dataAssets", sessionId)!;
-    assert.equal(s.workflow, "test-case-gen");
-    assert.equal(s.tasks.length, 7);
+    expect(s.workflow).toBe("test-case-gen");
+    expect(s.tasks.length).toBe(7);
 
     const byId = Object.fromEntries(s.tasks.map((t) => [t.id, t])) as Record<string, {
       status: string; depends_on: readonly string[]; payload: Record<string, unknown>;
     }>;
-    assert.equal(byId.transform.status, "done");
-    assert.equal(byId.enhance.status, "done");
-    assert.equal(byId.analyze.status, "done");
-    assert.equal(byId.write.status, "running");
-    assert.equal(byId.review.status, "pending");
-    assert.deepEqual(byId.enhance.depends_on, ["transform"]);
-    assert.deepEqual(byId.analyze.depends_on, ["enhance"]);
-    assert.equal(byId.transform.payload.confidence, 0.9);
+    expect(byId.transform.status).toBe("done");
+    expect(byId.enhance.status).toBe("done");
+    expect(byId.analyze.status).toBe("done");
+    expect(byId.write.status).toBe("running");
+    expect(byId.review.status).toBe("pending");
+    expect(byId.enhance.depends_on).toEqual(["transform"]);
+    expect(byId.analyze.depends_on).toEqual(["enhance"]);
+    expect(byId.transform.payload.confidence).toBe(0.9);
 
-    assert.deepEqual(s.artifacts.writers, { w1: "data" });
-    assert.deepEqual(s.artifacts.strategy_resolution, { strategy: "cautious" });
-    assert.equal(s.source.path, "workspace/dataAssets/prds/202604/prd-xxx.md");
-    assert.equal(s.meta.mode, "normal");
+    expect(s.artifacts.writers).toEqual({ w1: "data" });
+    expect(s.artifacts.strategy_resolution).toEqual({ strategy: "cautious" });
+    expect(s.source.path).toBe("workspace/dataAssets/prds/202604/prd-xxx.md");
+    expect(s.meta.mode).toBe("normal");
   });
 
   it("dry-run does not create any file", async () => {
@@ -96,7 +95,7 @@ describe("migrateKataState", () => {
     await migrateKataState({
       legacyPath, project: "dataAssets", env: "default", dryRun: true,
     });
-    assert.equal(existsSync(join(TMP, ".kata")), false);
+    expect(existsSync(join(TMP).toBe(".kata")), false);
   });
 
   it("refuses to overwrite existing session", async () => {
@@ -162,21 +161,21 @@ describe("migrateUiAutotest", () => {
       legacyPath, project: "dataAssets", env: "ci63", dryRun: false,
     });
     const s = readSession("dataAssets", sessionId)!;
-    assert.equal(s.workflow, "ui-autotest");
-    assert.equal(s.session_id, "ui-autotest/my-suite-ci63");
-    assert.equal(s.tasks.length, 3);
+    expect(s.workflow).toBe("ui-autotest");
+    expect(s.session_id).toBe("ui-autotest/my-suite-ci63");
+    expect(s.tasks.length).toBe(3);
     const suite = s.tasks.find((t) => t.kind === "phase")!;
-    assert.equal(suite.status, "running");
+    expect(suite.status).toBe("running");
     const cases = s.tasks.filter((t) => t.kind === "case");
     const t1 = cases.find((c) => c.id === "t1")!;
     const t2 = cases.find((c) => c.id === "t2")!;
-    assert.equal(t1.status, "done");
-    assert.equal(t1.payload.script_path, "tests/login.spec.ts");
-    assert.equal(t2.status, "failed");
-    assert.equal(t2.errors.length, 1);
-    assert.equal(t2.errors[0].message, "timeout");
-    assert.equal(s.meta.url, "http://localhost");
-    assert.equal(s.meta.suite_name, "my-suite");
+    expect(t1.status).toBe("done");
+    expect(t1.payload.script_path).toBe("tests/login.spec.ts");
+    expect(t2.status).toBe("failed");
+    expect(t2.errors.length).toBe(1);
+    expect(t2.errors[0].message).toBe("timeout");
+    expect(s.meta.url).toBe("http://localhost");
+    expect(s.meta.suite_name).toBe("my-suite");
   });
 });
 
@@ -231,16 +230,16 @@ describe("migrateSession", () => {
     writeEnhancedMd("dataAssets", "202604", "demo-feature");
 
     const report = migrateSession("dataAssets", sessionId);
-    assert.equal(report.action, "auto-done");
+    expect(report.action).toBe("auto-done");
 
     const s = readSession("dataAssets", sessionId)!;
     const transform = s.tasks.find((t) => t.id === "transform")!;
     const enhance = s.tasks.find((t) => t.id === "enhance")!;
     const analyze = s.tasks.find((t) => t.id === "analyze")!;
-    assert.equal(transform.status, "done");
-    assert.equal(enhance.status, "done");
+    expect(transform.status).toBe("done");
+    expect(enhance.status).toBe("done");
     // unrelated tasks stay untouched
-    assert.equal(analyze.status, "pending");
+    expect(analyze.status).toBe("pending");
   });
 
   it("revert-to-discuss when enhanced.md missing", () => {
@@ -252,16 +251,16 @@ describe("migrateSession", () => {
     });
 
     const report = migrateSession("dataAssets", sessionId);
-    assert.equal(report.action, "revert-to-discuss");
+    expect(report.action).toBe("revert-to-discuss");
 
     const s = readSession("dataAssets", sessionId)!;
-    assert.equal(s.tasks.find((t) => t.id === "transform"), undefined);
-    assert.equal(s.tasks.find((t) => t.id === "enhance"), undefined);
+    expect(s.tasks.find((t) => t.id === "transform")).toBe(undefined);
+    expect(s.tasks.find((t) => t.id === "enhance")).toBe(undefined);
     const discuss = s.tasks.find((t) => t.id === "discuss")!;
-    assert.equal(discuss.status, "pending");
+    expect(discuss.status).toBe("pending");
     // unrelated tasks remain
     const analyze = s.tasks.find((t) => t.id === "analyze")!;
-    assert.equal(analyze.status, "pending");
+    expect(analyze.status).toBe("pending");
   });
 
   it("noop when session has no transform/enhance task", () => {
@@ -273,11 +272,11 @@ describe("migrateSession", () => {
     });
 
     const report = migrateSession("dataAssets", sessionId);
-    assert.equal(report.action, "noop");
+    expect(report.action).toBe("noop");
 
     const s = readSession("dataAssets", sessionId)!;
     // session shape is unchanged
-    assert.equal(s.tasks.length, 3);
+    expect(s.tasks.length).toBe(3);
   });
 
   it("dryRun reports the action without mutating the session", () => {
@@ -289,12 +288,12 @@ describe("migrateSession", () => {
     });
 
     const report = migrateSession("dataAssets", sessionId, { dryRun: true });
-    assert.equal(report.action, "revert-to-discuss");
+    expect(report.action).toBe("revert-to-discuss");
 
     const s = readSession("dataAssets", sessionId)!;
     // tasks unchanged because dryRun
-    assert.equal(s.tasks.find((t) => t.id === "transform")?.status, "pending");
-    assert.equal(s.tasks.find((t) => t.id === "enhance")?.status, "pending");
-    assert.equal(s.tasks.find((t) => t.id === "discuss")?.status, "pending");
+    expect(s.tasks.find((t) => t.id === "transform")?.status).toBe("pending");
+    expect(s.tasks.find((t) => t.id === "enhance")?.status).toBe("pending");
+    expect(s.tasks.find((t) => t.id === "discuss")?.status).toBe("pending");
   });
 });

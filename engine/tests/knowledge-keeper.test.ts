@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const TMP = join(tmpdir(), `kata-kk-test-${process.pid}`);
 const WORKSPACE_DIR = join(TMP, "workspace");
@@ -89,15 +88,15 @@ after(() => {
 describe("knowledge-keeper CLI skeleton", () => {
   it("prints help when no args", () => {
     const { stdout, code } = runKk(["--help"]);
-    assert.equal(code, 0);
-    assert.ok(stdout.includes("knowledge-keeper"));
-    assert.ok(stdout.includes("read-core"));
+    expect(code).toBe(0);
+    expect(stdout.includes("knowledge-keeper").toBeTruthy());
+    expect(stdout.includes("read-core").toBeTruthy());
   });
 
   it("errors when --project missing", () => {
     const { code, stderr } = runKk(["read-core"]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("--project") || stderr.includes("required"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("--project").toBeTruthy() || stderr.includes("required"));
   });
 });
 
@@ -106,16 +105,16 @@ describe("read-core", () => {
 
   it("returns shape: project / overview / terms / index", () => {
     const { stdout, code } = runKk(["read-core", "--project", PROJECT]);
-    assert.equal(code, 0, `stderr? stdout=${stdout}`);
+    expect(code).toBe(0, `stderr? stdout=${stdout}`);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.project, PROJECT);
-    assert.ok(obj.overview);
-    assert.equal(typeof obj.overview.title, "string");
-    assert.ok(obj.overview.content.includes("产品定位"));
-    assert.ok(Array.isArray(obj.terms));
-    assert.ok(obj.index);
-    assert.ok(Array.isArray(obj.index.modules));
-    assert.ok(Array.isArray(obj.index.pitfalls));
+    expect(obj.project).toBe(PROJECT);
+    expect(obj.overview).toBeTruthy();
+    expect(typeof obj.overview.title).toBe("string");
+    expect(obj.overview.content.includes("产品定位").toBeTruthy());
+    expect(Array.isArray(obj.terms).toBeTruthy());
+    expect(obj.index).toBeTruthy();
+    expect(Array.isArray(obj.index.modules).toBeTruthy());
+    expect(Array.isArray(obj.index.pitfalls).toBeTruthy());
   });
 
   it("parses terms table with rows", () => {
@@ -138,10 +137,10 @@ updated: 2026-04-17
     );
     const { stdout } = runKk(["read-core", "--project", PROJECT]);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.terms.length, 2);
-    assert.equal(obj.terms[0].term, "QI");
-    assert.equal(obj.terms[0].zh, "质量项");
-    assert.equal(obj.terms[1].alias, "data-source");
+    expect(obj.terms.length).toBe(2);
+    expect(obj.terms[0].term).toBe("QI");
+    expect(obj.terms[0].zh).toBe("质量项");
+    expect(obj.terms[1].alias).toBe("data-source");
   });
 });
 
@@ -166,18 +165,18 @@ updated: 2026-04-17
 `,
     );
     const { stdout, code } = runKk(["read-module", "--project", PROJECT, "--module", "data-source"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.module, "data-source");
-    assert.equal(obj.frontmatter.title, "数据源接入");
-    assert.deepEqual(obj.frontmatter.tags, ["ds", "auth"]);
-    assert.ok(obj.content.includes("模块正文"));
+    expect(obj.module).toBe("data-source");
+    expect(obj.frontmatter.title).toBe("数据源接入");
+    expect(obj.frontmatter.tags).toEqual(["ds", "auth"]);
+    expect(obj.content.includes("模块正文").toBeTruthy());
   });
 
   it("exits 1 when module not found", () => {
     const { code, stderr } = runKk(["read-module", "--project", PROJECT, "--module", "nope"]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("Module not found"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("Module not found").toBeTruthy());
   });
 });
 
@@ -212,26 +211,26 @@ body`,
 
   it("matches filename substring", () => {
     const { stdout, code } = runKk(["read-pitfall", "--project", PROJECT, "--query", "dom"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.matches.length, 1);
-    assert.equal(obj.matches[0].name, "ui-dom-drift");
-    assert.ok(obj.matches[0].match_by.includes("filename"));
+    expect(obj.matches.length).toBe(1);
+    expect(obj.matches[0].name).toBe("ui-dom-drift");
+    expect(obj.matches[0].match_by.includes("filename").toBeTruthy());
   });
 
   it("matches tag substring", () => {
     const { stdout } = runKk(["read-pitfall", "--project", PROJECT, "--query", "auth"]);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.matches.length, 1);
-    assert.equal(obj.matches[0].name, "auth-expire");
-    assert.ok(obj.matches[0].match_by.includes("tags"));
+    expect(obj.matches.length).toBe(1);
+    expect(obj.matches[0].name).toBe("auth-expire");
+    expect(obj.matches[0].match_by.includes("tags").toBeTruthy());
   });
 
   it("returns empty matches with exit 0", () => {
     const { stdout, code } = runKk(["read-pitfall", "--project", PROJECT, "--query", "xyzzy"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.deepEqual(obj.matches, []);
+    expect(obj.matches).toEqual([]);
   });
 });
 
@@ -254,16 +253,16 @@ body`,
 
   it("writes a _index.md with correct structure", () => {
     const { stdout, code } = runKk(["index", "--project", PROJECT]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.project, PROJECT);
-    assert.equal(obj.modules_count, 1);
-    assert.equal(obj.pitfalls_count, 0);
+    expect(obj.project).toBe(PROJECT);
+    expect(obj.modules_count).toBe(1);
+    expect(obj.pitfalls_count).toBe(0);
 
     const idxContent = readFileSync(join(PROJECT_KNOWLEDGE, "_index.md"), "utf8");
-    assert.ok(idxContent.includes("## Core"));
-    assert.ok(idxContent.includes("[ds.md](modules/ds.md)"));
-    assert.ok(idxContent.includes("<!-- last-indexed: "));
+    expect(idxContent.includes("## Core").toBeTruthy());
+    expect(idxContent.includes("[ds.md](modules/ds.md).toBeTruthy()"));
+    expect(idxContent.includes("<!-- last-indexed: ").toBeTruthy());
   });
 
   it("fixes missing frontmatter and reports in fixed_frontmatter", () => {
@@ -273,10 +272,10 @@ body`,
     );
     const { stdout } = runKk(["index", "--project", PROJECT]);
     const obj = JSON.parse(stdout);
-    assert.ok(obj.fixed_frontmatter.includes("modules/legacy.md"));
+    expect(obj.fixed_frontmatter.includes("modules/legacy.md").toBeTruthy());
     const fixed = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "legacy.md"), "utf8");
-    assert.ok(fixed.startsWith("---\n"));
-    assert.ok(fixed.includes("type: module"));
+    expect(fixed.startsWith("---\n").toBeTruthy());
+    expect(fixed.includes("type: module").toBeTruthy());
   });
 });
 
@@ -291,11 +290,11 @@ describe("write --type term", () => {
       "--confidence", "high",
       "--dry-run",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.dry_run, true);
+    expect(obj.dry_run).toBe(true);
     const terms = readFileSync(join(PROJECT_KNOWLEDGE, "terms.md"), "utf8");
-    assert.ok(!terms.includes("XYZ"), "terms.md should not contain XYZ after dry-run");
+    expect(!terms.includes("XYZ").toBeTruthy(), "terms.md should not contain XYZ after dry-run");
   });
 
   it("high confidence real write persists term row", () => {
@@ -305,11 +304,11 @@ describe("write --type term", () => {
       "--content", JSON.stringify({ term: "XYZ", zh: "术语 X", desc: "说明", alias: "x" }),
       "--confidence", "high",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.ok(obj.file.endsWith("terms.md"));
+    expect(obj.file.endsWith("terms.md").toBeTruthy());
     const terms = readFileSync(join(PROJECT_KNOWLEDGE, "terms.md"), "utf8");
-    assert.ok(terms.includes("| XYZ | 术语 X | 说明 | x |"));
+    expect(terms.includes("| XYZ | 术语 X | 说明 | x |").toBeTruthy());
   });
 
   it("medium without --confirmed fails", () => {
@@ -319,8 +318,8 @@ describe("write --type term", () => {
       "--content", JSON.stringify({ term: "M", zh: "m", desc: "", alias: "" }),
       "--confidence", "medium",
     ]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("--confirmed"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("--confirmed").toBeTruthy());
   });
 
   it("low always fails", () => {
@@ -331,8 +330,8 @@ describe("write --type term", () => {
       "--confidence", "low",
       "--confirmed",
     ]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("Low"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("Low").toBeTruthy());
   });
 });
 
@@ -347,10 +346,10 @@ describe("write --type overview", () => {
       "--confidence", "high",
       "--force",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
-    assert.ok(ov.includes("企业级数据资产平台"));
-    assert.ok(!ov.includes("占位。\n"));
+    expect(ov.includes("企业级数据资产平台").toBeTruthy());
+    expect(!ov.includes("占位。\n").toBeTruthy());
   });
 
   it("appends to a section body", () => {
@@ -360,9 +359,9 @@ describe("write --type overview", () => {
       "--content", JSON.stringify({ section: "主流程", body: "\n新增一条流程说明", mode: "append" }),
       "--confidence", "high",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const ov = readFileSync(join(PROJECT_KNOWLEDGE, "overview.md"), "utf8");
-    assert.ok(ov.includes("新增一条流程说明"));
+    expect(ov.includes("新增一条流程说明").toBeTruthy());
   });
 });
 
@@ -376,13 +375,13 @@ describe("write --type module", () => {
       "--content", JSON.stringify({ name: "data-source", title: "数据源", tags: ["ds"], body: "正文", source: "" }),
       "--confidence", "high",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const obj = JSON.parse(stdout);
-    assert.ok(obj.file.endsWith("modules/data-source.md"));
+    expect(obj.file.endsWith("modules/data-source.md").toBeTruthy());
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "data-source.md"), "utf8");
-    assert.ok(content.startsWith("---\n"));
-    assert.ok(content.includes("title: 数据源"));
-    assert.ok(content.includes("正文"));
+    expect(content.startsWith("---\n").toBeTruthy());
+    expect(content.includes("title: 数据源").toBeTruthy());
+    expect(content.includes("正文").toBeTruthy());
   });
 
   it("refuses to overwrite existing file without --overwrite", () => {
@@ -392,8 +391,8 @@ describe("write --type module", () => {
       "--content", JSON.stringify({ name: "data-source", title: "覆盖尝试", tags: [], body: "new", source: "" }),
       "--confidence", "high",
     ]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("File exists"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("File exists").toBeTruthy());
   });
 
   it("allows overwrite with --overwrite", () => {
@@ -404,9 +403,9 @@ describe("write --type module", () => {
       "--confidence", "high",
       "--overwrite",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "data-source.md"), "utf8");
-    assert.ok(content.includes("title: 已覆盖"));
+    expect(content.includes("title: 已覆盖").toBeTruthy());
   });
 });
 
@@ -420,9 +419,9 @@ describe("write --type pitfall", () => {
       "--content", JSON.stringify({ name: "dom-drift", title: "DOM 漂移", tags: ["ui"], body: "详情", source: "" }),
       "--confidence", "high",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "pitfalls", "dom-drift.md"), "utf8");
-    assert.ok(content.includes("type: pitfall"));
+    expect(content.includes("type: pitfall").toBeTruthy());
   });
 });
 
@@ -456,14 +455,14 @@ updated: 2026-04-15
       "--confirmed",
       "--force",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
-    assert.ok(content.includes("title: 新标题"));
-    assert.ok(content.includes("tags: [a, b]"));
+    expect(content.includes("title: 新标题").toBeTruthy());
+    expect(content.includes("tags: [a, b]").toBeTruthy());
     // unchanged fields stay
-    assert.ok(content.includes("source: old"));
+    expect(content.includes("source: old").toBeTruthy());
     // body unchanged
-    assert.ok(content.includes("原 body"));
+    expect(content.includes("原 body").toBeTruthy());
   });
 
   it("patches body for module type replaces new_body fully", () => {
@@ -476,10 +475,10 @@ updated: 2026-04-15
       }),
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
-    assert.ok(content.includes("更新后的正文"));
-    assert.ok(!content.includes("原 body"));
+    expect(content.includes("更新后的正文").toBeTruthy());
+    expect(!content.includes("原 body").toBeTruthy());
   });
 
   it("module body_patch with section appends when section missing (preserves body)", () => {
@@ -510,14 +509,14 @@ updated: 2026-04-15
       }),
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
     // 原内容必须保留
-    assert.ok(content.includes("## 已有章节"));
-    assert.ok(content.includes("已有内容"));
+    expect(content.includes("## 已有章节").toBeTruthy());
+    expect(content.includes("已有内容").toBeTruthy());
     // 新 section 被追加
-    assert.ok(content.includes("## 新章节"));
-    assert.ok(content.includes("新增的正文段落"));
+    expect(content.includes("## 新章节").toBeTruthy());
+    expect(content.includes("新增的正文段落").toBeTruthy());
   });
 
   it("module body_patch with existing section replaces only that section", () => {
@@ -552,13 +551,13 @@ B 旧内容
       }),
       "--confirmed",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
-    assert.ok(content.includes("A 新内容"));
-    assert.ok(!content.includes("A 旧内容"));
+    expect(content.includes("A 新内容").toBeTruthy());
+    expect(!content.includes("A 旧内容").toBeTruthy());
     // 其他 section 不变
-    assert.ok(content.includes("## 章节B"));
-    assert.ok(content.includes("B 旧内容"));
+    expect(content.includes("## 章节B").toBeTruthy());
+    expect(content.includes("B 旧内容").toBeTruthy());
   });
 
   it("dry-run does not persist", () => {
@@ -569,9 +568,9 @@ B 旧内容
       "--confirmed", "--dry-run",
     ]);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.dry_run, true);
+    expect(obj.dry_run).toBe(true);
     const content = readFileSync(join(PROJECT_KNOWLEDGE, "modules", "m1.md"), "utf8");
-    assert.ok(!content.includes("title: XXX"));
+    expect(!content.includes("title: XXX").toBeTruthy());
   });
 
   it("exits 1 on missing file", () => {
@@ -581,8 +580,8 @@ B 旧内容
       "--content", JSON.stringify({ frontmatter_patch: {}, mode: "patch" }),
       "--confirmed",
     ]);
-    assert.notEqual(code, 0);
-    assert.ok(stderr.includes("not found") || stderr.includes("does not exist"));
+    expect(code).not.toBe(0);
+    expect(stderr.includes("not found").toBeTruthy() || stderr.includes("does not exist"));
   });
 });
 
@@ -602,8 +601,8 @@ describe("write/update auto-triggers index", () => {
     ]);
 
     const idx = readFileSync(idxPath, "utf8");
-    assert.ok(idx.includes("auto-idx.md"));
-    assert.ok(idx.includes("<!-- last-indexed: "));
+    expect(idx.includes("auto-idx.md").toBeTruthy());
+    expect(idx.includes("<!-- last-indexed: ").toBeTruthy());
   });
 
   it("after update module, _index.md last-indexed timestamp advances", () => {
@@ -624,7 +623,7 @@ describe("write/update auto-triggers index", () => {
 
     const after = readFileSync(idxPath, "utf8");
     const afterTs = after.match(/last-indexed: (\S+)/)?.[1];
-    assert.notEqual(beforeTs, afterTs, "last-indexed should change");
+    expect(beforeTs).not.toBe(afterTs);
   });
 });
 
@@ -649,12 +648,12 @@ body`,
 
   it("reports errors and exits 1 for violations", () => {
     const { stdout, code } = runKk(["lint", "--project", PROJECT]);
-    assert.equal(code, 1, `expected exit 1, got ${code}. stdout=${stdout}`);
+    expect(code).toBe(1, `expected exit 1, got ${code}. stdout=${stdout}`);
     const obj = JSON.parse(stdout);
-    assert.ok(obj.errors.length >= 2, `expected >= 2 errors. got: ${JSON.stringify(obj.errors)}`);
+    expect(obj.errors.length >= 2, `expected >= 2 errors. got: ${JSON.stringify(obj.errors).toBeTruthy()}`);
     const rules = obj.errors.map((e: { rule: string }) => e.rule);
-    assert.ok(rules.includes("non-kebab-case-name"));
-    assert.ok(rules.includes("type-dir-mismatch"));
+    expect(rules.includes("non-kebab-case-name").toBeTruthy());
+    expect(rules.includes("type-dir-mismatch").toBeTruthy());
   });
 
   it("returns exit 2 when only warnings", () => {
@@ -676,10 +675,10 @@ body`,
     rmSync(join(PROJECT_KNOWLEDGE, "_index.md"), { force: true });
 
     const { stdout, code } = runKk(["lint", "--project", PROJECT]);
-    assert.equal(code, 2, `expected exit 2 (warnings). got ${code}. stdout=${stdout}`);
+    expect(code).toBe(2, `expected exit 2 (warnings). got ${code}. stdout=${stdout}`);
     const obj = JSON.parse(stdout);
-    assert.equal(obj.errors.length, 0);
-    assert.ok(obj.warnings.length >= 1);
+    expect(obj.errors.length).toBe(0);
+    expect(obj.warnings.length >= 1).toBeTruthy();
   });
 
   it("exit 0 when clean", () => {
@@ -687,7 +686,7 @@ body`,
     rmSync(join(PROJECT_KNOWLEDGE, "modules", "notag.md"), { force: true });
     runKk(["index", "--project", PROJECT]);
     const { stdout, code } = runKk(["lint", "--project", PROJECT]);
-    assert.equal(code, 0, `expected exit 0. stdout=${stdout}`);
+    expect(code).toBe(0, `expected exit 0. stdout=${stdout}`);
   });
 
   it("--strict upgrades warnings to errors", () => {
@@ -706,6 +705,6 @@ body`,
     );
     rmSync(join(PROJECT_KNOWLEDGE, "_index.md"), { force: true });
     const { code } = runKk(["lint", "--project", PROJECT, "--strict"]);
-    assert.equal(code, 1);
+    expect(code).toBe(1);
   });
 });

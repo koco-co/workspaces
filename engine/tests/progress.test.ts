@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it, expect } from "bun:test";
 
 const TMP = join(tmpdir(), `progress-cli-test-${process.pid}`);
 const CWD = resolve(import.meta.dirname, "../..");
@@ -38,14 +37,14 @@ describe("session-create + session-read", () => {
       "--env", "default",
       "--meta", JSON.stringify({ mode: "normal" }),
     ]);
-    assert.equal(create.code, 0);
+    expect(create.code).toBe(0);
     const created = JSON.parse(create.stdout);
-    assert.equal(created.session_id, "test-case-gen/x-default");
+    expect(created.session_id).toBe("test-case-gen/x-default");
 
     const read = run(["session-read", "--session", created.session_id, "--project", "dataAssets"]);
-    assert.equal(read.code, 0);
+    expect(read.code).toBe(0);
     const loaded = JSON.parse(read.stdout);
-    assert.equal(loaded.schema_version, 1);
+    expect(loaded.schema_version).toBe(1);
   });
 });
 
@@ -67,9 +66,9 @@ describe("session-summary", () => {
     const out = JSON.parse(
       run(["session-summary", "--project", "dataAssets", "--session", sid]).stdout,
     );
-    assert.equal(out.total, 2);
-    assert.equal(out.done, 1);
-    assert.equal(out.pending, 1);
+    expect(out.total).toBe(2);
+    expect(out.done).toBe(1);
+    expect(out.pending).toBe(1);
   });
 });
 
@@ -88,7 +87,7 @@ describe("session-resume", () => {
     const loaded = JSON.parse(
       run(["session-read", "--project", "dataAssets", "--session", sid]).stdout,
     );
-    assert.equal(loaded.tasks[0].status, "pending");
+    expect(loaded.tasks[0].status).toBe("pending");
   });
 });
 
@@ -101,12 +100,12 @@ describe("session-list + session-delete", () => {
     const list = JSON.parse(
       run(["session-list", "--project", "dataAssets"]).stdout,
     );
-    assert.equal(list.length, 2);
+    expect(list.length).toBe(2);
     run(["session-delete", "--project", "dataAssets", "--session", "w/a-default"]);
     const after = JSON.parse(
       run(["session-list", "--project", "dataAssets"]).stdout,
     );
-    assert.equal(after.length, 1);
+    expect(after.length).toBe(1);
   });
 });
 
@@ -127,7 +126,7 @@ describe("task-add + task-query + task-update", () => {
   it("task-add adds tasks", () => {
     const sid = seed();
     const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
-    assert.equal(s.tasks.length, 2);
+    expect(s.tasks.length).toBe(2);
   });
 
   it("task-update --status running auto-increments attempts", () => {
@@ -135,27 +134,27 @@ describe("task-add + task-query + task-update", () => {
     run(["task-update", "--project", "dataAssets", "--session", sid,
       "--task", "t1", "--status", "running"]);
     const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
-    assert.equal(s.tasks[0].status, "running");
-    assert.equal(s.tasks[0].attempts, 1);
+    expect(s.tasks[0].status).toBe("running");
+    expect(s.tasks[0].attempts).toBe(1);
   });
 
   it("task-update --status running fails with exit 4 when deps unsatisfied", () => {
     const sid = seed();
     const res = run(["task-update", "--project", "dataAssets", "--session", sid,
       "--task", "t2", "--status", "running"]);
-    assert.equal(res.code, 4);
-    assert.match(res.stderr, /dep/);
+    expect(res.code).toBe(4);
+    expect(res.stderr).toMatch(/dep/);
   });
 
   it("task-update --force bypasses dep check and records forced-start", () => {
     const sid = seed();
     const res = run(["task-update", "--project", "dataAssets", "--session", sid,
       "--task", "t2", "--status", "running", "--force"]);
-    assert.equal(res.code, 0);
+    expect(res.code).toBe(0);
     const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
     const t2 = s.tasks.find((t: { id: string }) => t.id === "t2");
-    assert.equal(t2.attempts, 1);
-    assert.ok(t2.errors.some((e: { message: string }) => /forced-start/.test(e.message)));
+    expect(t2.attempts).toBe(1);
+    expect(t2.errors.some((e: { message: string }).toBeTruthy() => /forced-start/.test(e.message)));
   });
 
   it("task-query default hides tasks with unsatisfied deps", () => {
@@ -164,7 +163,7 @@ describe("task-add + task-query + task-update", () => {
       "task-query", "--project", "dataAssets", "--session", sid, "--format", "json",
     ]).stdout);
     const ids = out.map((r: { task: { id: string } }) => r.task.id);
-    assert.deepEqual(ids, ["t1"]);
+    expect(ids).toEqual(["t1"]);
   });
 
   it("task-query --include-blocked shows blocked_by reasons", () => {
@@ -173,9 +172,9 @@ describe("task-add + task-query + task-update", () => {
       "task-query", "--project", "dataAssets", "--session", sid,
       "--include-blocked", "--format", "json",
     ]).stdout);
-    assert.equal(out.length, 1);
-    assert.equal(out[0].task.id, "t2");
-    assert.match(out[0].blocked_by.join(","), /t1/);
+    expect(out.length).toBe(1);
+    expect(out[0].task.id).toBe("t2");
+    expect(out[0].blocked_by.join(").toMatch("), /t1/);
   });
 });
 
@@ -202,14 +201,14 @@ describe("task-block / task-unblock / task-rollup", () => {
       "--task", "c1", "--reason", "需人工"]);
     const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
     const c1 = s.tasks.find((t: { id: string }) => t.id === "c1");
-    assert.equal(c1.status, "blocked");
-    assert.equal(c1.reason, "需人工");
+    expect(c1.status).toBe("blocked");
+    expect(c1.reason).toBe("需人工");
   });
 
   it("task-rollup fails with exit 5 when children unfinished", () => {
     const sid = seedRollup();
     const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
-    assert.equal(res.code, 5);
+    expect(res.code).toBe(5);
   });
 
   it("task-rollup succeeds when all children done", () => {
@@ -217,9 +216,9 @@ describe("task-block / task-unblock / task-rollup", () => {
     run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c1", "--status", "done"]);
     run(["task-update", "--project", "dataAssets", "--session", sid, "--task", "c2", "--status", "done"]);
     const res = run(["task-rollup", "--project", "dataAssets", "--session", sid, "--task", "p"]);
-    assert.equal(res.code, 0);
+    expect(res.code).toBe(0);
     const s = JSON.parse(run(["session-read", "--project", "dataAssets", "--session", sid]).stdout);
-    assert.equal(s.tasks.find((t: { id: string }) => t.id === "p").status, "done");
+    expect(s.tasks.find((t: { id: string }) => t.id === "p").status).toBe("done");
   });
 });
 
@@ -234,7 +233,7 @@ describe("artifact-set + artifact-get", () => {
     const got = JSON.parse(run([
       "artifact-get", "--project", "dataAssets", "--session", sid, "--key", "k1",
     ]).stdout);
-    assert.deepEqual(got, { x: 1 });
+    expect(got).toEqual({ x: 1 });
   });
 
   it("spills and reads back large value", () => {
@@ -248,7 +247,7 @@ describe("artifact-set + artifact-get", () => {
     const got = JSON.parse(run([
       "artifact-get", "--project", "dataAssets", "--session", sid, "--key", "blob",
     ]).stdout);
-    assert.equal(got.data.length, 100_000);
+    expect(got.data.length).toBe(100_000);
   });
 });
 
@@ -271,15 +270,15 @@ describe("progress migrate --from legacy", () => {
 
     const dry = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets",
       "--dry-run"], { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
-    assert.equal(dry.plan.length, 2);
+    expect(dry.plan.length).toBe(2);
 
     const real = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets"],
       { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
-    assert.equal(real.migrated, 2);
+    expect(real.migrated).toBe(2);
 
     const again = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets"],
       { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
-    assert.equal(again.migrated, 0);
+    expect(again.migrated).toBe(0);
   });
 
   it("distinguishes ui-autotest files by their legacy env", () => {
@@ -299,9 +298,9 @@ describe("progress migrate --from legacy", () => {
 
     const result = JSON.parse(run(["migrate", "--from", "legacy", "--project", "dataAssets"],
       { WORKSPACE_DIR: join(TMP, "workspace") }).stdout);
-    assert.equal(result.migrated, 2);
+    expect(result.migrated).toBe(2);
     const sessionIds = result.results.map((r: { sessionId: string }) => r.sessionId).sort();
-    assert.deepEqual(sessionIds, ["ui-autotest/shared-suite-alpha", "ui-autotest/shared-suite-beta"]);
+    expect(sessionIds).toEqual(["ui-autotest/shared-suite-alpha", "ui-autotest/shared-suite-beta"]);
   });
 });
 
@@ -333,17 +332,17 @@ describe("migrate-session", () => {
       run(["migrate-session", "--project", "dataAssets", "--session-id", sid],
         { WORKSPACE_DIR: join(TMP, "workspace") }).stdout,
     );
-    assert.equal(result.migrated.length, 1);
-    assert.equal(result.migrated[0].action, "auto-done");
-    assert.equal(result.dry_run, false);
+    expect(result.migrated.length).toBe(1);
+    expect(result.migrated[0].action).toBe("auto-done");
+    expect(result.dry_run).toBe(false);
 
     const session = JSON.parse(run([
       "session-read", "--project", "dataAssets", "--session", sid,
     ]).stdout);
     const transform = session.tasks.find((t: { id: string }) => t.id === "transform");
     const enhance = session.tasks.find((t: { id: string }) => t.id === "enhance");
-    assert.equal(transform.status, "done");
-    assert.equal(enhance.status, "done");
+    expect(transform.status).toBe("done");
+    expect(enhance.status).toBe("done");
   });
 
   it("revert-to-discuss when enhanced.md missing", () => {
@@ -352,15 +351,15 @@ describe("migrate-session", () => {
       run(["migrate-session", "--project", "dataAssets", "--session-id", sid],
         { WORKSPACE_DIR: join(TMP, "workspace") }).stdout,
     );
-    assert.equal(result.migrated[0].action, "revert-to-discuss");
+    expect(result.migrated[0].action).toBe("revert-to-discuss");
 
     const session = JSON.parse(run([
       "session-read", "--project", "dataAssets", "--session", sid,
     ]).stdout);
     const transform = session.tasks.find((t: { id: string }) => t.id === "transform");
     const discuss = session.tasks.find((t: { id: string }) => t.id === "discuss");
-    assert.equal(transform, undefined);
-    assert.equal(discuss.status, "pending");
+    expect(transform).toBe(undefined);
+    expect(discuss.status).toBe("pending");
   });
 
   it("dry-run reports without mutating", () => {
@@ -369,14 +368,14 @@ describe("migrate-session", () => {
       run(["migrate-session", "--project", "dataAssets", "--session-id", sid, "--dry-run"],
         { WORKSPACE_DIR: join(TMP, "workspace") }).stdout,
     );
-    assert.equal(result.dry_run, true);
-    assert.equal(result.migrated[0].action, "auto-done");
+    expect(result.dry_run).toBe(true);
+    expect(result.migrated[0].action).toBe("auto-done");
 
     const session = JSON.parse(run([
       "session-read", "--project", "dataAssets", "--session", sid,
     ]).stdout);
     const transform = session.tasks.find((t: { id: string }) => t.id === "transform");
-    assert.equal(transform.status, "pending");
+    expect(transform.status).toBe("pending");
   });
 
   it("migrates all sessions when --session-id omitted", () => {
@@ -386,8 +385,8 @@ describe("migrate-session", () => {
       run(["migrate-session", "--project", "dataAssets"],
         { WORKSPACE_DIR: join(TMP, "workspace") }).stdout,
     );
-    assert.equal(result.migrated.length, 2);
+    expect(result.migrated.length).toBe(2);
     const actions = result.migrated.map((r: { action: string }) => r.action).sort();
-    assert.deepEqual(actions, ["auto-done", "revert-to-discuss"]);
+    expect(actions).toEqual(["auto-done", "revert-to-discuss"]);
   });
 });

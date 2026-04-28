@@ -1,8 +1,7 @@
-import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 import {
   configJsonPath,
@@ -18,80 +17,80 @@ import {
 describe("validateProjectName", () => {
   it("accepts camelCase name dataAssets", () => {
     const r = validateProjectName("dataAssets");
-    assert.equal(r.valid, true);
-    assert.equal(r.error, undefined);
+    expect(r.valid).toBe(true);
+    expect(r.error).toBe(undefined);
   });
 
   it("accepts kebab-case name data-assets", () => {
-    assert.equal(validateProjectName("data-assets").valid, true);
+    expect(validateProjectName("data-assets").valid).toBe(true);
   });
 
   it("accepts all-lowercase pinyin xyzh", () => {
-    assert.equal(validateProjectName("xyzh").valid, true);
+    expect(validateProjectName("xyzh").valid).toBe(true);
   });
 
   it("rejects empty name", () => {
     const r = validateProjectName("");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /length/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/length/);
   });
 
   it("rejects single character (too short)", () => {
     const r = validateProjectName("a");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /length/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/length/);
   });
 
   it("rejects name over 32 chars", () => {
     const r = validateProjectName("a".repeat(33));
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /length/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/length/);
   });
 
   it("rejects name starting with digit", () => {
     const r = validateProjectName("1project");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /character set/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/character set/);
   });
 
   it("rejects name starting with dash", () => {
     const r = validateProjectName("-project");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /character set/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/character set/);
   });
 
   it("rejects underscore", () => {
     const r = validateProjectName("my_project");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /character set/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/character set/);
   });
 
   it("rejects space", () => {
     const r = validateProjectName("my project");
-    assert.equal(r.valid, false);
+    expect(r.valid).toBe(false);
   });
 
   it("rejects dot", () => {
     const r = validateProjectName("my.project");
-    assert.equal(r.valid, false);
+    expect(r.valid).toBe(false);
   });
 
   it("rejects slash", () => {
     const r = validateProjectName("my/project");
-    assert.equal(r.valid, false);
+    expect(r.valid).toBe(false);
   });
 
   it("rejects reserved name 'knowledge'", () => {
     const r = validateProjectName("knowledge");
-    assert.equal(r.valid, false);
-    assert.match(r.error!, /reserved/);
+    expect(r.valid).toBe(false);
+    expect(r.error!).toMatch(/reserved/);
   });
 
   it("rejects every reserved name in RESERVED_NAMES", () => {
     for (const reserved of RESERVED_NAMES) {
       if (!/^[A-Za-z]/.test(reserved)) continue; // 保留名 '.repos'/'.temp' 本就被字符集规则拒
       const r = validateProjectName(reserved);
-      assert.equal(r.valid, false, `expected "${reserved}" to be rejected`);
+      expect(r.valid).toBe(false, `expected "${reserved}" to be rejected`);
     }
   });
 });
@@ -101,7 +100,7 @@ describe("configJsonPath", () => {
     const original = process.env.CONFIG_JSON_PATH;
     process.env.CONFIG_JSON_PATH = "/tmp/custom-config.json";
     try {
-      assert.equal(configJsonPath(), "/tmp/custom-config.json");
+      expect(configJsonPath()).toBe("/tmp/custom-config.json");
     } finally {
       if (original === undefined) delete process.env.CONFIG_JSON_PATH;
       else process.env.CONFIG_JSON_PATH = original;
@@ -113,7 +112,7 @@ describe("configJsonPath", () => {
     process.env.CONFIG_JSON_PATH = "";
     try {
       const p = configJsonPath();
-      assert.ok(p.endsWith("/config.json"), `expected default, got ${p}`);
+      expect(p.endsWith("/config.json").toBeTruthy(), `expected default, got ${p}`);
     } finally {
       if (original === undefined) delete process.env.CONFIG_JSON_PATH;
       else process.env.CONFIG_JSON_PATH = original;
@@ -125,8 +124,8 @@ describe("configJsonPath", () => {
     delete process.env.CONFIG_JSON_PATH;
     try {
       const p = configJsonPath();
-      assert.ok(p.endsWith("/config.json"));
-      assert.ok(p.startsWith("/"), "absolute path");
+      expect(p.endsWith("/config.json").toBeTruthy());
+      expect(p.startsWith("/").toBeTruthy(), "absolute path");
     } finally {
       if (original !== undefined) process.env.CONFIG_JSON_PATH = original;
     }
@@ -135,28 +134,28 @@ describe("configJsonPath", () => {
 
 describe("SKELETON_SPEC shape", () => {
   it("has 12 directories", () => {
-    assert.equal(SKELETON_SPEC.dirs.length, 12);
+    expect(SKELETON_SPEC.dirs.length).toBe(12);
   });
 
   it("has 10 gitkeep directories", () => {
-    assert.equal(SKELETON_SPEC.gitkeep_dirs.length, 10);
+    expect(SKELETON_SPEC.gitkeep_dirs.length).toBe(10);
   });
 
   it("has 3 template files", () => {
-    assert.equal(Object.keys(SKELETON_SPEC.template_files).length, 3);
+    expect(Object.keys(SKELETON_SPEC.template_files).length).toBe(3);
   });
 
   it("gitkeep_dirs is a subset of dirs", () => {
     for (const d of SKELETON_SPEC.gitkeep_dirs) {
-      assert.ok(
-        SKELETON_SPEC.dirs.includes(d as (typeof SKELETON_SPEC.dirs)[number]),
+      expect(
+        SKELETON_SPEC.dirs.includes(d as (typeof SKELETON_SPEC.dirs).toBeTruthy()[number]),
         `${d} not in dirs`,
       );
     }
   });
 
   it("template_files dst paths are not in gitkeep_dirs' directories of same file", () => {
-    assert.ok(!SKELETON_SPEC.gitkeep_dirs.includes("rules"));
+    expect(!SKELETON_SPEC.gitkeep_dirs.includes("rules").toBeTruthy());
   });
 });
 
@@ -164,16 +163,16 @@ describe("resolveSkeletonPaths", () => {
   it("returns absolute paths derived from projectDir", () => {
     const projDir = "/tmp/x/workspace/demoProj";
     const r = resolveSkeletonPaths(projDir);
-    assert.ok(r.dirs.every((d) => d.startsWith(projDir + "/")));
-    assert.ok(r.gitkeeps.every((g) => g.endsWith(".gitkeep")));
-    assert.ok(r.templates.every((t) => t.dst_abs.startsWith(projDir + "/")));
+    expect(r.dirs.every((d).toBeTruthy() => d.startsWith(projDir + "/")));
+    expect(r.gitkeeps.every((g).toBeTruthy() => g.endsWith(".gitkeep")));
+    expect(r.templates.every((t).toBeTruthy() => t.dst_abs.startsWith(projDir + "/")));
   });
 
   it("produces 12 dirs, 10 gitkeeps, 3 templates", () => {
     const r = resolveSkeletonPaths("/tmp/foo");
-    assert.equal(r.dirs.length, 12);
-    assert.equal(r.gitkeeps.length, 10);
-    assert.equal(r.templates.length, 3);
+    expect(r.dirs.length).toBe(12);
+    expect(r.gitkeeps.length).toBe(10);
+    expect(r.templates.length).toBe(3);
   });
 });
 
@@ -207,29 +206,29 @@ describe("diffProjectSkeleton", () => {
 
   it("empty project: exists=false, all missing", () => {
     const diff = diffProjectSkeleton(EMPTY_PROJ, TPL);
-    assert.equal(diff.exists, false);
-    assert.equal(diff.missing_dirs.length, 12);
-    assert.equal(diff.missing_gitkeeps.length, 10);
-    assert.equal(diff.missing_files.length, 3);
-    assert.equal(diff.skeleton_complete, false);
+    expect(diff.exists).toBe(false);
+    expect(diff.missing_dirs.length).toBe(12);
+    expect(diff.missing_gitkeeps.length).toBe(10);
+    expect(diff.missing_files.length).toBe(3);
+    expect(diff.skeleton_complete).toBe(false);
   });
 
   it("full project: exists=true, nothing missing, skeleton_complete", () => {
     const diff = diffProjectSkeleton(FULL_PROJ, TPL);
-    assert.equal(diff.exists, true);
-    assert.equal(diff.missing_dirs.length, 0);
-    assert.equal(diff.missing_gitkeeps.length, 0);
-    assert.equal(diff.missing_files.length, 0);
-    assert.equal(diff.skeleton_complete, true);
+    expect(diff.exists).toBe(true);
+    expect(diff.missing_dirs.length).toBe(0);
+    expect(diff.missing_gitkeeps.length).toBe(0);
+    expect(diff.missing_files.length).toBe(0);
+    expect(diff.skeleton_complete).toBe(true);
   });
 
   it("partial project: only missing what's absent", () => {
     rmSync(join(FULL_PROJ, "knowledge", "modules"), { recursive: true });
     const diff = diffProjectSkeleton(FULL_PROJ, TPL);
-    assert.equal(diff.exists, true);
-    assert.deepEqual(diff.missing_dirs, ["knowledge/modules"]);
-    assert.deepEqual(diff.missing_gitkeeps, ["knowledge/modules/.gitkeep"]);
-    assert.equal(diff.skeleton_complete, false);
+    expect(diff.exists).toBe(true);
+    expect(diff.missing_dirs).toEqual(["knowledge/modules"]);
+    expect(diff.missing_gitkeeps).toEqual(["knowledge/modules/.gitkeep"]);
+    expect(diff.skeleton_complete).toBe(false);
     mkdirSync(join(FULL_PROJ, "knowledge", "modules"), { recursive: true });
     writeFileSync(join(FULL_PROJ, "knowledge", "modules", ".gitkeep"), "");
   });
@@ -238,8 +237,8 @@ describe("diffProjectSkeleton", () => {
 describe("mergeProjectConfig", () => {
   it("adds project to empty config", () => {
     const { merged, added } = mergeProjectConfig({}, "newProj");
-    assert.equal(added, true);
-    assert.deepEqual(merged, {
+    expect(added).toBe(true);
+    expect(merged).toEqual({
       projects: { newProj: { repo_profiles: {} } },
     });
   });
@@ -251,15 +250,13 @@ describe("mergeProjectConfig", () => {
       },
     };
     const { merged, added } = mergeProjectConfig(existing, "newProj");
-    assert.equal(added, true);
-    assert.deepEqual(
-      (merged as any).projects.dataAssets.repo_profiles,
-      { 岚图: { repos: [] } },
+    expect(added).toBe(true);
+    expect(
+      (merged as any).projects.dataAssets.repo_profiles).toEqual({ 岚图: { repos: [] } },
       "existing project untouched",
     );
-    assert.deepEqual(
-      (merged as any).projects.newProj,
-      { repo_profiles: {} },
+    expect(
+      (merged as any).projects.newProj).toEqual({ repo_profiles: {} },
       "new project registered",
     );
   });
@@ -271,10 +268,9 @@ describe("mergeProjectConfig", () => {
       },
     };
     const { merged, added } = mergeProjectConfig(existing, "existProj");
-    assert.equal(added, false);
-    assert.deepEqual(
-      (merged as any).projects.existProj.repo_profiles,
-      { foo: { repos: [{ path: "a" }] } },
+    expect(added).toBe(false);
+    expect(
+      (merged as any).projects.existProj.repo_profiles).toEqual({ foo: { repos: [{ path: "a" }] } },
       "existing repo_profiles preserved",
     );
   });
@@ -282,15 +278,15 @@ describe("mergeProjectConfig", () => {
   it("preserves top-level keys outside projects", () => {
     const existing = { otherField: "keepme", projects: {} };
     const { merged } = mergeProjectConfig(existing, "x");
-    assert.equal((merged as any).otherField, "keepme");
+    expect((merged as any).otherField).toBe("keepme");
   });
 
   it("handles missing projects key", () => {
     const existing = { someOtherField: 1 };
     const { merged, added } = mergeProjectConfig(existing, "y");
-    assert.equal(added, true);
-    assert.ok("projects" in merged);
-    assert.deepEqual((merged as any).projects, {
+    expect(added).toBe(true);
+    expect("projects" in merged).toBeTruthy();
+    expect((merged as any).projects).toEqual({
       y: { repo_profiles: {} },
     });
   });
@@ -299,32 +295,32 @@ describe("mergeProjectConfig", () => {
     const existing = { projects: { a: { repo_profiles: {} } } };
     const snapshot = JSON.stringify(existing);
     mergeProjectConfig(existing, "b");
-    assert.equal(JSON.stringify(existing), snapshot, "input unchanged");
+    expect(JSON.stringify(existing)).toBe(snapshot);
   });
 });
 
 describe("renderTemplate", () => {
   it("replaces single {{project}} placeholder", () => {
-    assert.equal(renderTemplate("Hello {{project}}", { project: "myProj" }), "Hello myProj");
+    expect(renderTemplate("Hello {{project}}").toBe({ project: "myProj" }), "Hello myProj");
   });
 
   it("replaces multiple occurrences", () => {
     const raw = "# {{project}}\n\nSee rules for {{project}}.";
     const out = renderTemplate(raw, { project: "dataAssets" });
-    assert.equal(out, "# dataAssets\n\nSee rules for dataAssets.");
+    expect(out).toBe("# dataAssets\n\nSee rules for dataAssets.");
   });
 
   it("returns original string when no placeholder", () => {
     const raw = "Plain content without placeholder";
-    assert.equal(renderTemplate(raw, { project: "p" }), raw);
+    expect(renderTemplate(raw).toBe({ project: "p" }), raw);
   });
 
   it("handles empty string", () => {
-    assert.equal(renderTemplate("", { project: "x" }), "");
+    expect(renderTemplate("").toBe({ project: "x" }), "");
   });
 
   it("does not replace {{ project }} with spaces (strict token)", () => {
     const raw = "{{ project }}";
-    assert.equal(renderTemplate(raw, { project: "x" }), "{{ project }}");
+    expect(renderTemplate(raw).toBe({ project: "x" }), "{{ project }}");
   });
 });

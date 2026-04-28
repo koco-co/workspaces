@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { afterEach, describe, it } from "node:test";
+import { afterEach, describe, it, expect } from "bun:test";
 
 const ENV_KEYS_TO_CLEAN = [
   "ACTIVE_ENV",
@@ -19,9 +18,9 @@ describe("validateActiveEnv", () => {
     delete process.env["ACTIVE_ENV"];
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv();
-    assert.equal(result.valid, false);
-    assert.deepEqual(result.missing, ["ACTIVE_ENV"]);
-    assert.equal(result.activeEnv, null);
+    expect(result.valid).toBe(false);
+    expect(result.missing).toEqual(["ACTIVE_ENV"]);
+    expect(result.activeEnv).toBe(null);
   });
 
   it("returns valid=true when ACTIVE_ENV + required key are set", async () => {
@@ -29,9 +28,9 @@ describe("validateActiveEnv", () => {
     process.env["CI63_BASE_URL"] = "http://172.16.122.52";
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv();
-    assert.equal(result.valid, true);
-    assert.deepEqual(result.missing, []);
-    assert.equal(result.activeEnv, "ci63");
+    expect(result.valid).toBe(true);
+    expect(result.missing).toEqual([]);
+    expect(result.activeEnv).toBe("ci63");
   });
 
   it("reports uppercase suffix keys as missing", async () => {
@@ -39,9 +38,9 @@ describe("validateActiveEnv", () => {
     // missing LTQCDEV_BASE_URL, LTQCDEV_COOKIE
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv(["BASE_URL", "COOKIE"]);
-    assert.equal(result.valid, false);
-    assert.deepEqual(result.missing, ["LTQCDEV_BASE_URL", "LTQCDEV_COOKIE"]);
-    assert.equal(result.activeEnv, "ltqcdev");
+    expect(result.valid).toBe(false);
+    expect(result.missing).toEqual(["LTQCDEV_BASE_URL", "LTQCDEV_COOKIE"]);
+    expect(result.activeEnv).toBe("ltqcdev");
   });
 
   it("supports custom required suffixes", async () => {
@@ -51,15 +50,15 @@ describe("validateActiveEnv", () => {
     // missing COOKIE
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv(["BASE_URL", "USERNAME", "COOKIE"]);
-    assert.equal(result.valid, false);
-    assert.deepEqual(result.missing, ["LTQCDEV_COOKIE"]);
+    expect(result.valid).toBe(false);
+    expect(result.missing).toEqual(["LTQCDEV_COOKIE"]);
   });
 
   it("treats whitespace-only ACTIVE_ENV as unset", async () => {
     process.env["ACTIVE_ENV"] = "   ";
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv();
-    assert.equal(result.activeEnv, null);
+    expect(result.activeEnv).toBe(null);
   });
 
   it("trims ACTIVE_ENV before uppercasing", async () => {
@@ -67,8 +66,8 @@ describe("validateActiveEnv", () => {
     process.env["CI63_BASE_URL"] = "http://172.16.122.52";
     const { validateActiveEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateActiveEnv();
-    assert.equal(result.activeEnv, "ci63");
-    assert.equal(result.valid, true);
+    expect(result.activeEnv).toBe("ci63");
+    expect(result.valid).toBe(true);
   });
 });
 
@@ -76,8 +75,8 @@ describe("validateEnv (existing)", () => {
   it("passes when no required keys are configured (default schema)", async () => {
     const { validateEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateEnv();
-    assert.equal(result.valid, true);
-    assert.deepEqual(result.missing, []);
+    expect(result.valid).toBe(true);
+    expect(result.missing).toEqual([]);
   });
 
   it("reports explicit required keys as missing", async () => {
@@ -85,7 +84,7 @@ describe("validateEnv (existing)", () => {
     delete process.env[unlikelyKey];
     const { validateEnv } = await import("../../src/lib/env-schema.ts");
     const result = validateEnv([unlikelyKey]);
-    assert.equal(result.valid, false);
-    assert.deepEqual(result.missing, [unlikelyKey]);
+    expect(result.valid).toBe(false);
+    expect(result.missing).toEqual([unlikelyKey]);
   });
 });

@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -10,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const FIXTURE_CSV = join(import.meta.dirname, "fixtures/sample-history.csv");
@@ -68,12 +67,12 @@ describe("history-convert --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["convert", "--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /history-convert|Convert/i);
-    assert.match(output, /--path/);
-    assert.match(output, /--detect/);
-    assert.match(output, /--force/);
-    assert.match(output, /--module/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/history-convert|Convert/i);
+    expect(output).toMatch(/--path/);
+    expect(output).toMatch(/--detect/);
+    expect(output).toMatch(/--force/);
+    expect(output).toMatch(/--module/);
   });
 });
 
@@ -88,18 +87,18 @@ describe("history-convert --detect", () => {
     );
 
     const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT, "--detect"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const entries = JSON.parse(stdout) as {
       path: string;
       type: string;
       outputDir: string;
     }[];
-    assert.ok(Array.isArray(entries));
-    assert.ok(entries.length > 0);
-    assert.equal(entries[0].type, "csv");
-    assert.ok(
-      entries[0].outputDir.includes("archive"),
+    expect(Array.isArray(entries).toBeTruthy());
+    expect(entries.length > 0).toBeTruthy();
+    expect(entries[0].type).toBe("csv");
+    expect(
+      entries[0].outputDir.includes("archive").toBeTruthy(),
       "outputDir should point to archive directory",
     );
   });
@@ -108,7 +107,7 @@ describe("history-convert --detect", () => {
 describe("history-convert CSV conversion", () => {
   it("converts a CSV file to Archive Markdown", () => {
     const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
@@ -122,45 +121,44 @@ describe("history-convert CSV conversion", () => {
       }[];
     };
 
-    assert.ok(out.converted >= 1, "should convert at least 1 file");
-    assert.equal(out.failed, 0, "should have no failures");
+    expect(out.converted >= 1).toBeTruthy();
+    expect(out.failed).toBe(0);
 
     const result = out.files.find((f) => f.input === FIXTURE_CSV);
-    assert.ok(result, "should include the fixture CSV in results");
-    assert.equal(result.status, "converted");
-    assert.ok(result.output.endsWith(".md"), "output should be a .md file");
-    assert.ok(existsSync(result.output), "output file should exist");
+    expect(result).toBeTruthy();
+    expect(result.status).toBe("converted");
+    expect(result.output.endsWith(".md").toBeTruthy(), "output should be a .md file");
+    expect(existsSync(result.output).toBeTruthy(), "output file should exist");
   });
 
   it("generated Markdown contains module sections and case titles", () => {
     // Run conversion and check content
     const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       files: { input: string; output: string; status: string }[];
     };
     const result = out.files.find((f) => f.input === FIXTURE_CSV);
-    assert.ok(result && result.status === "converted");
+    expect(result && result.status === "converted").toBeTruthy();
 
     const content = readFileSync(result.output, "utf8");
 
     // Should have front-matter
-    assert.match(content, /^---/, "should start with front-matter");
-    assert.match(
-      content,
-      /suite_name/,
+    expect(content).toMatch(/^---/);
+    expect(
+      content).toMatch(/suite_name/,
       "should have suite_name in front-matter",
     );
-    assert.match(content, /origin.*csv/, "should have origin: csv");
+    expect(content).toMatch(/origin.*csv/);
 
     // Should have module sections
-    assert.match(content, /## 商品管理/, "should have 商品管理 module section");
-    assert.match(content, /## 订单管理/, "should have 订单管理 module section");
+    expect(content).toMatch(/## 商品管理/);
+    expect(content).toMatch(/## 订单管理/);
 
     // Should have case titles with priority prefix
-    assert.match(content, /验证商品列表默认加载/, "should contain case title");
-    assert.match(content, /【P0】/, "should have P0 priority prefix");
+    expect(content).toMatch(/验证商品列表默认加载/);
+    expect(content).toMatch(/【P0】/);
   });
 
   it("skips existing output without --force", () => {
@@ -169,10 +167,10 @@ describe("history-convert CSV conversion", () => {
 
     // Second run without --force
     const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as { skipped: number };
-    assert.ok(out.skipped >= 1, "should skip existing output");
+    expect(out.skipped >= 1).toBeTruthy();
   });
 
   it("converts with --force overwriting existing output", () => {
@@ -180,9 +178,9 @@ describe("history-convert CSV conversion", () => {
     run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
     // Second conversion with --force
     const { code, stdout } = run(["--path", FIXTURE_CSV, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as { converted: number };
-    assert.ok(out.converted >= 1, "should convert again with --force");
+    expect(out.converted >= 1).toBeTruthy();
   });
 });
 
@@ -204,15 +202,15 @@ describe("history-convert directory scan", () => {
     writeFileSync(join(dir, "notes.txt"), "ignore me");
 
     const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
       files: { input: string }[];
     };
-    assert.equal(out.converted, 2, "should convert both CSV files");
-    assert.ok(
-      out.files.every((f) => f.input.endsWith(".csv")),
+    expect(out.converted).toBe(2);
+    expect(
+      out.files.every((f).toBeTruthy() => f.input.endsWith(".csv")),
       "should only process .csv files",
     );
   });
@@ -241,12 +239,12 @@ describe("history-convert --module filter", () => {
       "商品",
       "--detect",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const entries = JSON.parse(stdout) as { path: string }[];
-    assert.equal(entries.length, 1, "should only find files matching 商品");
-    assert.ok(
-      entries[0].path.includes("商品管理"),
+    expect(entries.length).toBe(1);
+    expect(
+      entries[0].path.includes("商品管理").toBeTruthy(),
       "matched file should be 商品管理.csv",
     );
   });
@@ -260,8 +258,8 @@ describe("history-convert error handling", () => {
       "--project",
       TEST_PROJECT,
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /path not found|Error/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/path not found|Error/i);
   });
 
   it("output JSON has required top-level fields", () => {
@@ -269,12 +267,12 @@ describe("history-convert error handling", () => {
     mkdirSync(dir, { recursive: true });
 
     const { code, stdout } = run(["--path", dir, "--project", TEST_PROJECT]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const out = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("converted" in out);
-    assert.ok("skipped" in out);
-    assert.ok("failed" in out);
-    assert.ok("files" in out);
+    expect("converted" in out).toBeTruthy();
+    expect("skipped" in out).toBeTruthy();
+    expect("failed" in out).toBeTruthy();
+    expect("files" in out).toBeTruthy();
   });
 });
 
@@ -384,29 +382,29 @@ describe("history-convert --no-split XMind", () => {
       "--no-split",
       "--force",
     ]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
       files: { output: string; caseCount?: number; status: string }[];
     };
-    assert.equal(out.converted, 1, "should produce exactly 1 file");
-    assert.equal(out.files.length, 1, "should have exactly 1 result entry");
-    assert.equal(out.files[0].caseCount, 2, "should count 2 total cases");
+    expect(out.converted).toBe(1);
+    expect(out.files.length).toBe(1);
+    expect(out.files[0].caseCount).toBe(2);
 
     const content = readFileSync(out.files[0].output, "utf8");
     // Frontmatter should have merged suite_name
-    assert.match(content, /suite_name/, "should have suite_name");
-    assert.match(content, /case_count: 2/, "should have case_count: 2");
+    expect(content).toMatch(/suite_name/);
+    expect(content).toMatch(/case_count: 2/);
     // L1 titles should be H2
-    assert.match(content, /## 需求A（#1001）/, "should contain L1-A as H2");
-    assert.match(content, /## 需求B（#1002）/, "should contain L1-B as H2");
+    expect(content).toMatch(/## 需求A（#1001）/);
+    expect(content).toMatch(/## 需求B（#1002）/);
     // L2 modules should be H3
-    assert.match(content, /### 模块A1/, "should contain module A1 as H3");
-    assert.match(content, /### 模块B1/, "should contain module B1 as H3");
+    expect(content).toMatch(/### 模块A1/);
+    expect(content).toMatch(/### 模块B1/);
     // Both cases should be present
-    assert.match(content, /验证A功能/, "should contain case A");
-    assert.match(content, /验证B功能/, "should contain case B");
+    expect(content).toMatch(/验证A功能/);
+    expect(content).toMatch(/验证B功能/);
   });
 
   it("without --no-split produces separate files per L1", async () => {
@@ -414,49 +412,44 @@ describe("history-convert --no-split XMind", () => {
     await createTestXmind(xmindFile);
 
     const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
       files: { output: string; status: string }[];
     };
-    assert.equal(
-      out.converted,
-      2,
+    expect(
+      out.converted).toBe(2,
       "default should produce 2 files (one per L1)",
     );
 
     const outputs = out.files.map((entry) => entry.output).sort();
-    assert.ok(
-      outputs[0].endsWith("/需求A.md"),
+    expect(
+      outputs[0].endsWith("/需求A.md").toBeTruthy(),
       `first output should strip full-width case_id suffix, got: ${outputs[0]}`,
     );
-    assert.ok(
-      outputs[1].endsWith("/需求B.md"),
+    expect(
+      outputs[1].endsWith("/需求B.md").toBeTruthy(),
       `second output should strip full-width case_id suffix, got: ${outputs[1]}`,
     );
 
     const firstContent = readFileSync(outputs[0], "utf8");
     const secondContent = readFileSync(outputs[1], "utf8");
 
-    assert.match(
-      firstContent,
-      /suite_name: "需求A（#1001）"/,
+    expect(
+      firstContent).toMatch(/suite_name: "需求A（#1001）"/,
       "suite_name should preserve the full L1 title",
     );
-    assert.match(
-      firstContent,
-      /case_id: 1001/,
+    expect(
+      firstContent).toMatch(/case_id: 1001/,
       "case_id should be extracted from full-width suffix",
     );
-    assert.match(
-      secondContent,
-      /suite_name: "需求B（#1002）"/,
+    expect(
+      secondContent).toMatch(/suite_name: "需求B（#1002）"/,
       "suite_name should preserve the full L1 title",
     );
-    assert.match(
-      secondContent,
-      /case_id: 1002/,
+    expect(
+      secondContent).toMatch(/case_id: 1002/,
       "case_id should be extracted from full-width suffix",
     );
   });
@@ -551,30 +544,29 @@ describe("history-convert --no-split XMind", () => {
     );
 
     const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
       files: { output: string; caseCount?: number; status: string }[];
     };
-    assert.equal(
-      out.converted,
-      1,
+    expect(
+      out.converted).toBe(1,
       "duplicate requirement titles should merge into one output file",
     );
-    assert.equal(out.files[0].caseCount, 2, "merged file should include both cases");
-    assert.ok(
-      out.files[0].output.endsWith("/重复需求.md"),
+    expect(out.files[0].caseCount).toBe(2);
+    expect(
+      out.files[0].output.endsWith("/重复需求.md").toBeTruthy(),
       `merged output should use the requirement title as file name, got: ${out.files[0].output}`,
     );
 
     const contentText = readFileSync(out.files[0].output, "utf8");
-    assert.match(contentText, /suite_name: "重复需求（#2001）"/);
-    assert.match(contentText, /case_count: 2/);
-    assert.match(contentText, /## 模块A/);
-    assert.match(contentText, /## 模块B/);
-    assert.match(contentText, /验证A功能/);
-    assert.match(contentText, /验证B功能/);
+    expect(contentText).toMatch(/suite_name: "重复需求（#2001）"/);
+    expect(contentText).toMatch(/case_count: 2/);
+    expect(contentText).toMatch(/## 模块A/);
+    expect(contentText).toMatch(/## 模块B/);
+    expect(contentText).toMatch(/验证A功能/);
+    expect(contentText).toMatch(/验证B功能/);
   });
 
   it("extracts case_id when the ticket token is followed by extra title markers", async () => {
@@ -633,20 +625,20 @@ describe("history-convert --no-split XMind", () => {
     );
 
     const { code, stdout } = run(["--path", xmindFile, "--project", TEST_PROJECT, "--force"]);
-    assert.equal(code, 0);
+    expect(code).toBe(0);
 
     const out = JSON.parse(stdout) as {
       converted: number;
       files: { output: string; status: string }[];
     };
-    assert.equal(out.converted, 1);
-    assert.ok(
-      out.files[0].output.endsWith("/需求A【需求变更】.md"),
+    expect(out.converted).toBe(1);
+    expect(
+      out.files[0].output.endsWith("/需求A【需求变更】.md").toBeTruthy(),
       `output should strip the embedded ticket token, got: ${out.files[0].output}`,
     );
 
     const contentText = readFileSync(out.files[0].output, "utf8");
-    assert.match(contentText, /suite_name: "需求A（#3001）【需求变更】"/);
-    assert.match(contentText, /case_id: 3001/);
+    expect(contentText).toMatch(/suite_name: "需求A（#3001）【需求变更】"/);
+    expect(contentText).toMatch(/case_id: 3001/);
   });
 });

@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const TMP_DIR = join(tmpdir(), `kata-config-test-${process.pid}`);
 const PLUGINS_DIR = join(TMP_DIR, "plugins");
@@ -60,20 +59,17 @@ after(() => {
 describe("config.ts — output structure", () => {
   it("outputs valid JSON to stdout", () => {
     const { stdout, code } = runConfig();
-    assert.equal(code, 0, "should exit 0");
-    assert.doesNotThrow(
-      () => JSON.parse(stdout),
-      "stdout should be valid JSON",
-    );
+    expect(code).toBe(0);
+    expect(() => JSON.parse(stdout)).not.toThrow();
   });
 
   it("output contains required top-level keys", () => {
     const { stdout } = runConfig();
     const cfg = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("workspace_dir" in cfg, "should have workspace_dir");
-    assert.ok("source_repos" in cfg, "should have source_repos");
-    assert.ok("plugins" in cfg, "should have plugins");
-    assert.ok("projects" in cfg, "should have projects");
+    expect("workspace_dir" in cfg).toBeTruthy();
+    expect("source_repos" in cfg).toBeTruthy();
+    expect("plugins" in cfg).toBeTruthy();
+    expect("projects" in cfg).toBeTruthy();
   });
 
   it("workspace_dir defaults to 'workspace' when env var is not set", () => {
@@ -89,13 +85,13 @@ describe("config.ts — output structure", () => {
         env: spawnEnv,
       });
       const cfg = JSON.parse(stdout) as { workspace_dir: string };
-      assert.equal(cfg.workspace_dir, "workspace");
+      expect(cfg.workspace_dir).toBe("workspace");
     } catch (err: unknown) {
       // If it fails for unrelated reasons, still check output
       const e = err as { stdout?: string };
       if (e.stdout) {
         const cfg = JSON.parse(e.stdout) as { workspace_dir: string };
-        assert.equal(cfg.workspace_dir, "workspace");
+        expect(cfg.workspace_dir).toBe("workspace");
       }
     }
   });
@@ -103,14 +99,14 @@ describe("config.ts — output structure", () => {
   it("workspace_dir reflects WORKSPACE_DIR env var", () => {
     const { stdout } = runConfig({ WORKSPACE_DIR: "my-custom-workspace" });
     const cfg = JSON.parse(stdout) as { workspace_dir: string };
-    assert.equal(cfg.workspace_dir, "my-custom-workspace");
+    expect(cfg.workspace_dir).toBe("my-custom-workspace");
   });
 
   it("source_repos is empty array when SOURCE_REPOS is not set", () => {
     const { stdout } = runConfig({ SOURCE_REPOS: "" });
     const cfg = JSON.parse(stdout) as { source_repos: string[] };
-    assert.ok(Array.isArray(cfg.source_repos));
-    assert.equal(cfg.source_repos.length, 0);
+    expect(Array.isArray(cfg.source_repos).toBeTruthy());
+    expect(cfg.source_repos.length).toBe(0);
   });
 
   it("source_repos parses comma-separated SOURCE_REPOS", () => {
@@ -118,9 +114,9 @@ describe("config.ts — output structure", () => {
       SOURCE_REPOS: "http://git.example.com/a.git,http://git.example.com/b.git",
     });
     const cfg = JSON.parse(stdout) as { source_repos: string[] };
-    assert.equal(cfg.source_repos.length, 2);
-    assert.equal(cfg.source_repos[0], "http://git.example.com/a.git");
-    assert.equal(cfg.source_repos[1], "http://git.example.com/b.git");
+    expect(cfg.source_repos.length).toBe(2);
+    expect(cfg.source_repos[0]).toBe("http://git.example.com/a.git");
+    expect(cfg.source_repos[1]).toBe("http://git.example.com/b.git");
   });
 
   it("source_repos trims whitespace around comma separators", () => {
@@ -128,8 +124,8 @@ describe("config.ts — output structure", () => {
       SOURCE_REPOS: "http://a.git , http://b.git",
     });
     const cfg = JSON.parse(stdout) as { source_repos: string[] };
-    assert.equal(cfg.source_repos[0], "http://a.git");
-    assert.equal(cfg.source_repos[1], "http://b.git");
+    expect(cfg.source_repos[0]).toBe("http://a.git");
+    expect(cfg.source_repos[1]).toBe("http://b.git");
   });
 });
 
@@ -137,8 +133,8 @@ describe("config.ts — plugins field", () => {
   it("plugins is an object", () => {
     const { stdout } = runConfig();
     const cfg = JSON.parse(stdout) as { plugins: unknown };
-    assert.equal(typeof cfg.plugins, "object");
-    assert.ok(!Array.isArray(cfg.plugins));
+    expect(typeof cfg.plugins).toBe("object");
+    expect(!Array.isArray(cfg.plugins).toBeTruthy());
   });
 
   it("plugin without env_required is always active", () => {
@@ -150,7 +146,7 @@ describe("config.ts — plugins field", () => {
     const entries = Object.values(cfg.plugins);
     // Just verify structure is correct (active field is boolean)
     for (const entry of entries) {
-      assert.equal(typeof entry.active, "boolean");
+      expect(typeof entry.active).toBe("boolean");
     }
   });
 
@@ -163,14 +159,12 @@ describe("config.ts — plugins field", () => {
       >;
     };
     for (const entry of Object.values(cfg.plugins)) {
-      assert.equal(
-        typeof entry.description,
-        "string",
+      expect(
+        typeof entry.description).toBe("string",
         "description should be a string",
       );
-      assert.equal(
-        typeof entry.commands,
-        "object",
+      expect(
+        typeof entry.commands).toBe("object",
         "commands should be an object",
       );
     }
@@ -193,7 +187,7 @@ describe("config.ts — plugin active detection logic", () => {
     // via the actual plugins in this case — the test-all-required won't appear
     // because the script uses pluginsDir() from lib/paths.ts.
     // We test via the integrated real run with env keys instead.
-    assert.ok(typeof cfg.plugins === "object");
+    expect(typeof cfg.plugins === "object").toBeTruthy();
   });
 
   it("plugin with env_required_any at least one satisfied → active: true", () => {
@@ -202,7 +196,7 @@ describe("config.ts — plugin active detection logic", () => {
       plugins: Record<string, { active: boolean }>;
     };
     // Verify structure is valid
-    assert.ok(typeof cfg.plugins === "object");
+    expect(typeof cfg.plugins === "object").toBeTruthy();
   });
 
   it("--help flag exits successfully", () => {
@@ -215,7 +209,7 @@ describe("config.ts — plugin active detection logic", () => {
     } catch (err: unknown) {
       const e = err as { status?: number };
       // Some commander versions exit 0, some exit non-zero — just check it ran
-      assert.ok(e.status === 0 || e.status === undefined);
+      expect(e.status === 0 || e.status === undefined).toBeTruthy();
     }
   });
 });
@@ -224,13 +218,13 @@ describe("config.ts — project-keyed structure", () => {
   it("output contains projects top-level key", () => {
     const { stdout } = runConfig();
     const cfg = JSON.parse(stdout) as Record<string, unknown>;
-    assert.ok("projects" in cfg, "should have projects key");
+    expect("projects" in cfg).toBeTruthy();
   });
 
   it("projects contains dataAssets key from config.json", () => {
     const { stdout } = runConfig();
     const cfg = JSON.parse(stdout) as { projects: Record<string, unknown> };
-    assert.ok("dataAssets" in cfg.projects, "should have dataAssets project");
+    expect("dataAssets" in cfg.projects).toBeTruthy();
   });
 
   it("each project has repo_profiles", () => {
@@ -239,7 +233,7 @@ describe("config.ts — project-keyed structure", () => {
       projects: Record<string, { repo_profiles: Record<string, unknown> }>;
     };
     for (const [name, proj] of Object.entries(cfg.projects)) {
-      assert.ok("repo_profiles" in proj, `project ${name} should have repo_profiles`);
+      expect("repo_profiles" in proj, `project ${name} should have repo_profiles`).toBeTruthy();
     }
   });
 });

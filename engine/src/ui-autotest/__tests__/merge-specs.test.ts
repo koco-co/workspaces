@@ -1,5 +1,4 @@
-import { describe, it, before, after } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, before, after, expect } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -18,20 +17,20 @@ describe("parseBlockMeta", () => {
   it("parses valid META line", () => {
     const content = '// META: {"id":"t1","priority":"P0","title":"验证xxx"}\nsome code';
     const meta = parseBlockMeta(content);
-    assert.ok(meta);
-    assert.equal(meta.id, "t1");
-    assert.equal(meta.priority, "P0");
-    assert.equal(meta.title, "验证xxx");
+    expect(meta).toBeTruthy();
+    expect(meta.id).toBe("t1");
+    expect(meta.priority).toBe("P0");
+    expect(meta.title).toBe("验证xxx");
   });
 
   it("returns null for missing META", () => {
     const result = parseBlockMeta("// no meta here\ncode");
-    assert.equal(result, null);
+    expect(result).toBe(null);
   });
 
   it("returns null for malformed JSON in META", () => {
     const result = parseBlockMeta("// META: {bad json}\ncode");
-    assert.equal(result, null);
+    expect(result).toBe(null);
   });
 });
 
@@ -64,14 +63,14 @@ describe("readCodeBlocks", () => {
 
   it("reads files with valid META and skips those without", () => {
     const blocks = readCodeBlocks(tmpIn);
-    assert.equal(blocks.length, 2);
-    assert.equal(blocks[0].meta.id, "t1");
-    assert.equal(blocks[1].meta.id, "t2");
+    expect(blocks.length).toBe(2);
+    expect(blocks[0].meta.id).toBe("t1");
+    expect(blocks[1].meta.id).toBe("t2");
   });
 
   it("returns empty array for non-existent directory", () => {
     const blocks = readCodeBlocks("/non/existent/path");
-    assert.deepEqual(blocks, []);
+    expect(blocks).toEqual([]);
   });
 });
 
@@ -87,13 +86,13 @@ describe("buildSpecContent", () => {
 
   it("generates import lines for each block", () => {
     const content = buildSpecContent(blocks, "全量测试");
-    assert.ok(content.includes('import "./t1";'));
-    assert.ok(content.includes('import "./t2";'));
+    expect(content.includes('import "./t1";').toBeTruthy());
+    expect(content.includes('import "./t2";').toBeTruthy());
   });
 
   it("returns empty export for zero blocks", () => {
     const content = buildSpecContent([], "冒烟测试");
-    assert.ok(content.includes("export {};"));
+    expect(content.includes("export {};").toBeTruthy());
   });
 });
 
@@ -128,13 +127,13 @@ describe("mergeSpecs (basic)", () => {
 
   it("returns correct case counts", () => {
     const result = mergeSpecs(tmpIn, tmpOut);
-    assert.equal(result.case_count.smoke, 1);
-    assert.equal(result.case_count.full, 2);
+    expect(result.case_count.smoke).toBe(1);
+    expect(result.case_count.full).toBe(2);
   });
 
   it("smoke_spec path ends with smoke.spec.ts", () => {
     const result = mergeSpecs(tmpIn, tmpOut);
-    assert.ok(result.smoke_spec.endsWith("smoke.spec.ts"));
+    expect(result.smoke_spec.endsWith("smoke.spec.ts").toBeTruthy());
   });
 });
 
@@ -181,18 +180,15 @@ describe("mergeSpecs compileCheck", () => {
   });
 
   it("throws when compileCheck=true and block has type error", () => {
-    assert.throws(
-      () => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true }),
-      (err: unknown) => {
-        assert.ok(err instanceof Error);
-        assert.match(err.message, /tsc|type/i);
+    expect(() => mergeSpecs(tmpInBad, tmpOutBad, { compileCheck: true })).toThrow((err: unknown) => {
+        expect(err instanceof Error).toBeTruthy();
+        expect(err.message).toMatch(/tsc|type/i);
         return true;
-      },
-    );
+      });
   });
 
   it("does not throw when compileCheck=true and block is valid TypeScript", () => {
-    assert.doesNotThrow(() => mergeSpecs(tmpInGood, tmpOutGood, { compileCheck: true }));
+    expect(() => mergeSpecs(tmpInGood, tmpOutGood, { compileCheck: true })).not.toThrow();
   });
 
   it("does not throw when compileCheck=false even with type errors", () => {
@@ -205,7 +201,7 @@ describe("mergeSpecs compileCheck", () => {
       "utf-8",
     );
     try {
-      assert.doesNotThrow(() => mergeSpecs(tmpIn2, tmpOut2, { compileCheck: false }));
+      expect(() => mergeSpecs(tmpIn2, tmpOut2, { compileCheck: false })).not.toThrow();
     } finally {
       rmSync(tmpIn2, { recursive: true, force: true });
       rmSync(tmpOut2, { recursive: true, force: true });
@@ -222,7 +218,7 @@ describe("mergeSpecs compileCheck", () => {
     );
     const tmpOut = `${tmpIn}-out`;
     try {
-      assert.doesNotThrow(() => mergeSpecs(tmpIn, tmpOut, { compileCheck: true }));
+      expect(() => mergeSpecs(tmpIn, tmpOut, { compileCheck: true })).not.toThrow();
     } finally {
       rmSync(tmpIn, { recursive: true, force: true });
       rmSync(tmpOut, { recursive: true, force: true });

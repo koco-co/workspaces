@@ -1,9 +1,8 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const TMP_DIR = join(tmpdir(), `kata-plan-test-${process.pid}`);
@@ -70,17 +69,17 @@ describe("plan.ts create", () => {
       "--plan-id", "tcg-my-feature-create",
     ]);
 
-    assert.equal(code, 0, `should exit 0, got stderr: ${stdout}`);
+    expect(code).toBe(0, `should exit 0, got stderr: ${stdout}`);
     const result = JSON.parse(stdout);
-    assert.equal(result.version, 1);
-    assert.equal(result.workflow, "test-case-gen");
-    assert.equal(result.project, "dataAssets");
-    assert.equal(result.plan_id, "tcg-my-feature-create");
-    assert.equal(result.steps.length, 8);
-    assert.equal(result.steps[0].name, "init");
-    assert.equal(result.steps[0].status, "pending");
-    assert.ok(result.created_at);
-    assert.ok(result._md_path);
+    expect(result.version).toBe(1);
+    expect(result.workflow).toBe("test-case-gen");
+    expect(result.project).toBe("dataAssets");
+    expect(result.plan_id).toBe("tcg-my-feature-create");
+    expect(result.steps.length).toBe(8);
+    expect(result.steps[0].name).toBe("init");
+    expect(result.steps[0].status).toBe("pending");
+    expect(result.created_at).toBeTruthy();
+    expect(result._md_path).toBeTruthy();
   });
 
   it("creates plan JSON and MD for ui-autotest workflow", () => {
@@ -92,11 +91,11 @@ describe("plan.ts create", () => {
       "--plan-id", "uat-test-create",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout);
-    assert.equal(result.workflow, "ui-autotest");
-    assert.equal(result.steps.length, 6);
-    assert.equal(result.steps[0].name, "解析输入与范围确认");
+    expect(result.workflow).toBe("ui-autotest");
+    expect(result.steps.length).toBe(6);
+    expect(result.steps[0].name).toBe("解析输入与范围确认");
   });
 
   it("JSON and MD files exist on disk after create", () => {
@@ -108,8 +107,8 @@ describe("plan.ts create", () => {
       "--plan-id", planId,
     ]);
 
-    assert.ok(existsSync(planJsonPath("dataAssets", planId)), "JSON file should exist");
-    assert.ok(existsSync(planMdPath("dataAssets", planId)), "MD file should exist");
+    expect(existsSync(planJsonPath("dataAssets", planId).toBeTruthy()), "JSON file should exist");
+    expect(existsSync(planMdPath("dataAssets", planId).toBeTruthy()), "MD file should exist");
   });
 
   it("auto-generates plan-id when not provided", () => {
@@ -120,10 +119,10 @@ describe("plan.ts create", () => {
       "--inputs", '{"prd":"workspace/dataAssets/prds/202604/auto-id-test.md"}',
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout);
-    assert.ok(result.plan_id.startsWith("tcg-"), `plan_id should start with tcg-, got: ${result.plan_id}`);
-    assert.ok(result.plan_id.includes("auto-id-test"), `plan_id should contain input hint, got: ${result.plan_id}`);
+    expect(result.plan_id.startsWith("tcg-").toBeTruthy(), `plan_id should start with tcg-, got: ${result.plan_id}`);
+    expect(result.plan_id.includes("auto-id-test").toBeTruthy(), `plan_id should contain input hint, got: ${result.plan_id}`);
   });
 
   it("exits 1 for unknown workflow", () => {
@@ -133,8 +132,8 @@ describe("plan.ts create", () => {
       "--workflow", "unknown-workflow",
     ]);
 
-    assert.equal(code, 1);
-    assert.match(stderr, /unknown workflow/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/unknown workflow/);
   });
 
   it("exits 1 for invalid inputs JSON", () => {
@@ -145,8 +144,8 @@ describe("plan.ts create", () => {
       "--inputs", "{bad json",
     ]);
 
-    assert.equal(code, 1);
-    assert.match(stderr, /invalid --inputs JSON/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/invalid --inputs JSON/);
   });
 
   it("stores state-file when provided", () => {
@@ -160,7 +159,7 @@ describe("plan.ts create", () => {
     ]);
 
     const result = JSON.parse(stdout);
-    assert.equal(result.state_file, "/some/state/path.json");
+    expect(result.state_file).toBe("/some/state/path.json");
   });
 
   it("all steps have pending status and correct depends_on", () => {
@@ -173,11 +172,11 @@ describe("plan.ts create", () => {
 
     const result = JSON.parse(stdout);
     for (const step of result.steps) {
-      assert.equal(step.status, "pending");
+      expect(step.status).toBe("pending");
     }
-    assert.deepEqual(result.steps[0].depends_on, []);
-    assert.deepEqual(result.steps[1].depends_on, ["step-1"]);
-    assert.deepEqual(result.steps[7].depends_on, ["step-7"]);
+    expect(result.steps[0].depends_on).toEqual([]);
+    expect(result.steps[1].depends_on).toEqual(["step-1"]);
+    expect(result.steps[7].depends_on).toEqual(["step-7"]);
   });
 });
 
@@ -202,12 +201,12 @@ describe("plan.ts update", () => {
       "--status", "in_progress",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout);
     const step1 = result.steps.find((s: { id: string }) => s.id === "step-1");
-    assert.equal(step1.status, "in_progress");
-    assert.ok(step1.started_at, "should have started_at");
-    assert.equal(step1.completed_at, undefined);
+    expect(step1.status).toBe("in_progress");
+    expect(step1.started_at).toBeTruthy();
+    expect(step1.completed_at).toBe(undefined);
   });
 
   it("updates step status to completed with completed_at", () => {
@@ -237,9 +236,9 @@ describe("plan.ts update", () => {
 
     const result = JSON.parse(stdout);
     const step1 = result.steps.find((s: { id: string }) => s.id === "step-1");
-    assert.equal(step1.status, "completed");
-    assert.ok(step1.started_at);
-    assert.ok(step1.completed_at);
+    expect(step1.status).toBe("completed");
+    expect(step1.started_at).toBeTruthy();
+    expect(step1.completed_at).toBeTruthy();
   });
 
   it("merges metadata into step", () => {
@@ -262,8 +261,8 @@ describe("plan.ts update", () => {
 
     const result = JSON.parse(stdout);
     const step1 = result.steps.find((s: { id: string }) => s.id === "step-1");
-    assert.equal(step1.metadata.confidence, 0.95);
-    assert.equal(step1.metadata.modules, 3);
+    expect(step1.metadata.confidence).toBe(0.95);
+    expect(step1.metadata.modules).toBe(3);
   });
 
   it("does not overwrite started_at on repeated in_progress", () => {
@@ -293,7 +292,7 @@ describe("plan.ts update", () => {
     ]);
     const secondStartedAt = JSON.parse(second).steps.find((s: { id: string }) => s.id === "step-1").started_at;
 
-    assert.equal(firstStartedAt, secondStartedAt, "started_at should not change on repeated in_progress");
+    expect(firstStartedAt).toBe(secondStartedAt);
   });
 
   it("exits 1 for nonexistent plan", () => {
@@ -304,8 +303,8 @@ describe("plan.ts update", () => {
       "--step", "step-1",
       "--status", "completed",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /not found/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/not found/);
   });
 
   it("exits 1 for nonexistent step", () => {
@@ -324,8 +323,8 @@ describe("plan.ts update", () => {
       "--step", "step-99",
       "--status", "completed",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /step.*not found/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/step.*not found/);
   });
 
   it("exits 1 for invalid status", () => {
@@ -344,8 +343,8 @@ describe("plan.ts update", () => {
       "--step", "step-1",
       "--status", "invalid-status",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /invalid status/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/invalid status/);
   });
 
   it("also updates the MD file", () => {
@@ -366,8 +365,8 @@ describe("plan.ts update", () => {
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
-    assert.ok(md.includes("\u2705"), "MD should contain completed emoji");
-    assert.ok(md.includes("完成"), "MD should contain completion label");
+    expect(md.includes("\u2705").toBeTruthy(), "MD should contain completed emoji");
+    expect(md.includes("完成").toBeTruthy(), "MD should contain completion label");
   });
 });
 
@@ -393,16 +392,16 @@ describe("plan.ts summary", () => {
       "--plan-id", planId,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const summary = JSON.parse(stdout);
-    assert.equal(summary.total, 8);
-    assert.equal(summary.completed, 2);
-    assert.equal(summary.in_progress, 1);
-    assert.equal(summary.pending, 5);
-    assert.equal(summary.skipped, 0);
-    assert.equal(summary.progress_pct, 25);
-    assert.equal(summary.current_step.id, "step-3");
-    assert.equal(summary.current_step.name, "discuss");
+    expect(summary.total).toBe(8);
+    expect(summary.completed).toBe(2);
+    expect(summary.in_progress).toBe(1);
+    expect(summary.pending).toBe(5);
+    expect(summary.skipped).toBe(0);
+    expect(summary.progress_pct).toBe(25);
+    expect(summary.current_step.id).toBe("step-3");
+    expect(summary.current_step.name).toBe("discuss");
   });
 
   it("exits 1 for nonexistent plan", () => {
@@ -411,7 +410,7 @@ describe("plan.ts summary", () => {
       "--project", "dataAssets",
       "--plan-id", "nonexistent-summary",
     ]);
-    assert.equal(code, 1);
+    expect(code).toBe(1);
   });
 
   it("returns 0% when all steps are pending", () => {
@@ -430,8 +429,8 @@ describe("plan.ts summary", () => {
     ]);
 
     const summary = JSON.parse(stdout);
-    assert.equal(summary.progress_pct, 0);
-    assert.equal(summary.current_step.id, "step-1");
+    expect(summary.progress_pct).toBe(0);
+    expect(summary.current_step.id).toBe("step-1");
   });
 });
 
@@ -455,14 +454,14 @@ describe("plan.ts render", () => {
       "--plan-id", planId,
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const result = JSON.parse(stdout);
-    assert.equal(result.rendered, true);
-    assert.ok(result.path.endsWith(".md"));
+    expect(result.rendered).toBe(true);
+    expect(result.path.endsWith(".md").toBeTruthy());
 
     const md = readFileSync(result.path, "utf8");
-    assert.ok(md.includes("test-case-gen"));
-    assert.ok(md.includes("\u2705"));
+    expect(md.includes("test-case-gen").toBeTruthy());
+    expect(md.includes("\u2705").toBeTruthy());
   });
 
   it("exits 1 for nonexistent plan", () => {
@@ -471,7 +470,7 @@ describe("plan.ts render", () => {
       "--project", "dataAssets",
       "--plan-id", "nonexistent-render",
     ]);
-    assert.equal(code, 1);
+    expect(code).toBe(1);
   });
 });
 
@@ -497,11 +496,11 @@ describe("plan.ts list", () => {
       "--project", "dataAssets",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const plans = JSON.parse(stdout) as Array<{ plan_id: string }>;
     const ids = plans.map((p) => p.plan_id);
-    assert.ok(ids.includes("tcg-list-a"));
-    assert.ok(ids.includes("uat-list-b"));
+    expect(ids.includes("tcg-list-a").toBeTruthy());
+    expect(ids.includes("uat-list-b").toBeTruthy());
   });
 
   it("filters by workflow type", () => {
@@ -526,9 +525,9 @@ describe("plan.ts list", () => {
 
     const plans = JSON.parse(stdout) as Array<{ plan_id: string; workflow: string }>;
     for (const p of plans) {
-      assert.equal(p.workflow, "ui-autotest");
+      expect(p.workflow).toBe("ui-autotest");
     }
-    assert.ok(plans.some((p) => p.plan_id === "uat-filter-only"));
+    expect(plans.some((p).toBeTruthy() => p.plan_id === "uat-filter-only"));
   });
 
   it("returns empty array for nonexistent project", () => {
@@ -537,9 +536,9 @@ describe("plan.ts list", () => {
       "--project", "nonexistent-project",
     ]);
 
-    assert.equal(code, 0);
+    expect(code).toBe(0);
     const plans = JSON.parse(stdout);
-    assert.deepEqual(plans, []);
+    expect(plans).toEqual([]);
   });
 
   it("includes progress_pct in list output", () => {
@@ -555,8 +554,8 @@ describe("plan.ts list", () => {
     const { stdout } = runPlan(["list", "--project", "dataAssets"]);
     const plans = JSON.parse(stdout) as Array<{ plan_id: string; progress_pct: number }>;
     const target = plans.find((p) => p.plan_id === planId);
-    assert.ok(target);
-    assert.equal(target.progress_pct, 13); // 1/8 = 12.5 → round to 13
+    expect(target).toBeTruthy();
+    expect(target.progress_pct).toBe(13); // 1/8 = 12.5 → round to 13
   });
 });
 
@@ -574,12 +573,12 @@ describe("plan.ts MD rendering", () => {
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
-    assert.ok(md.includes("test-case-gen"));
-    assert.ok(md.includes("dataAssets"));
-    assert.ok(md.includes("| # | 步骤 | 状态 | 耗时 |"));
-    assert.ok(md.includes("init"));
-    assert.ok(md.includes("prd"));
-    assert.ok(md.includes("\u23F3")); // pending emoji
+    expect(md.includes("test-case-gen").toBeTruthy());
+    expect(md.includes("dataAssets").toBeTruthy());
+    expect(md.includes("| # | 步骤 | 状态 | 耗时 |").toBeTruthy());
+    expect(md.includes("init").toBeTruthy());
+    expect(md.includes("prd").toBeTruthy());
+    expect(md.includes("\u23F3").toBeTruthy()); // pending emoji
   });
 
   it("skipped status renders correctly", () => {
@@ -600,6 +599,6 @@ describe("plan.ts MD rendering", () => {
     ]);
 
     const md = readFileSync(planMdPath("dataAssets", planId), "utf8");
-    assert.ok(md.includes("跳过"));
+    expect(md.includes("跳过").toBeTruthy());
   });
 });

@@ -1,4 +1,3 @@
-import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -10,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { after, before, describe, it } from "node:test";
+import { after, before, describe, it, expect } from "bun:test";
 import JSZip from "jszip";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
@@ -42,7 +41,7 @@ async function readContentJson(xmindPath: string): Promise<unknown> {
   const buffer = readFileSync(xmindPath);
   const zip = await JSZip.loadAsync(buffer);
   const contentFile = zip.file("content.json");
-  assert.ok(contentFile, "content.json not found in .xmind archive");
+  expect(contentFile).toBeTruthy();
   const str = await contentFile.async("string");
   return JSON.parse(str);
 }
@@ -63,11 +62,11 @@ describe("xmind-gen.ts --help", () => {
   it("outputs usage information", () => {
     const { stdout, stderr, code } = run(["generate", "--help"]);
     const output = stdout + stderr;
-    assert.equal(code, 0);
-    assert.match(output, /xmind-gen|Convert/);
-    assert.match(output, /--input/);
-    assert.match(output, /--output/);
-    assert.match(output, /--mode/);
+    expect(code).toBe(0);
+    expect(output).toMatch(/xmind-gen|Convert/);
+    expect(output).toMatch(/--input/);
+    expect(output).toMatch(/--output/);
+    expect(output).toMatch(/--mode/);
   });
 });
 
@@ -75,9 +74,9 @@ describe("xmind-gen.ts create mode", () => {
   it("creates .xmind file from valid JSON fixture", () => {
     const output = join(TMP_DIR, "test-create.xmind");
     const { code, stderr } = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
-    assert.ok(existsSync(output), ".xmind file was not created");
-    assert.ok(statSync(output).size > 0, ".xmind file is empty");
+    expect(code).toBe(0, `stderr: ${stderr}`);
+    expect(existsSync(output).toBeTruthy(), ".xmind file was not created");
+    expect(statSync(output).toBeTruthy().size > 0, ".xmind file is empty");
   });
 
   it("outputs valid JSON result to stdout", () => {
@@ -88,7 +87,7 @@ describe("xmind-gen.ts create mode", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as {
       output_path: string;
@@ -98,24 +97,24 @@ describe("xmind-gen.ts create mode", () => {
       case_count: number;
     };
 
-    assert.equal(result.root_title, "数据资产v6.4.10迭代用例(#23)");
-    assert.equal(result.l1_title, "质量问题台账");
-    assert.equal(result.mode, "create");
-    assert.ok(result.output_path.endsWith("test-stdout.xmind"));
+    expect(result.root_title).toBe("数据资产v6.4.10迭代用例(#23)");
+    expect(result.l1_title).toBe("质量问题台账");
+    expect(result.mode).toBe("create");
+    expect(result.output_path.endsWith("test-stdout.xmind").toBeTruthy());
     // 3 sub_group cases + 1 page-level case (列表页) + 1 page-level case (新增页) = 5
-    assert.equal(result.case_count, 5);
+    expect(result.case_count).toBe(5);
   });
 
   it("exits with code 1 if output file already exists", () => {
     const output = join(TMP_DIR, "test-existing.xmind");
     // Create first time (should succeed)
     const first = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(first.code, 0);
+    expect(first.code).toBe(0);
 
     // Create again (should fail)
     const second = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(second.code, 1);
-    assert.match(second.stderr, /already exists/);
+    expect(second.code).toBe(1);
+    expect(second.stderr).toMatch(/already exists/);
   });
 
   it("uses frontmatter root_name before CLI project name for md input", async () => {
@@ -157,16 +156,16 @@ prd_version: "v6.4.10"
       "--project",
       "CLI项目名",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
-    assert.ok(
-      stdout.includes("自定义 Root 节点") || existsSync(output),
+    expect(code).toBe(0, `stderr: ${stderr}`);
+    expect(
+      stdout.includes("自定义 Root 节点").toBeTruthy() || existsSync(output),
       "xmind-gen should finish and create the output file",
     );
 
     const sheets = (await readContentJson(output)) as {
       rootTopic?: { title?: string };
     }[];
-    assert.equal(sheets[0]?.rootTopic?.title, "自定义 Root 节点");
+    expect(sheets[0]?.rootTopic?.title).toBe("自定义 Root 节点");
   });
 });
 
@@ -184,8 +183,8 @@ describe("xmind-gen.ts validation", () => {
 
     const output = join(TMP_DIR, "bad-output-1.xmind");
     const { code, stderr } = run(["--input", badFixture, "--output", output]);
-    assert.equal(code, 1);
-    assert.match(stderr, /project_name/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/project_name/);
   });
 
   it("exits with code 1 when modules is empty", () => {
@@ -199,8 +198,8 @@ describe("xmind-gen.ts validation", () => {
 
     const output = join(TMP_DIR, "bad-output-2.xmind");
     const { code, stderr } = run(["--input", badFixture, "--output", output]);
-    assert.equal(code, 1);
-    assert.match(stderr, /modules/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/modules/);
   });
 
   it("exits with code 1 for invalid --mode value", () => {
@@ -213,8 +212,8 @@ describe("xmind-gen.ts validation", () => {
       "--mode",
       "invalid",
     ]);
-    assert.equal(code, 1);
-    assert.match(stderr, /mode/i);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/mode/i);
   });
 });
 
@@ -222,15 +221,15 @@ describe("xmind-gen.ts content.json validation", () => {
   it("created .xmind contains valid content.json", async () => {
     const output = join(TMP_DIR, "test-content.xmind");
     const { code, stderr } = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const sheets = await readContentJson(output);
-    assert.ok(
-      Array.isArray(sheets),
+    expect(
+      Array.isArray(sheets).toBeTruthy(),
       "content.json should be an array of sheets",
     );
-    assert.ok(
-      (sheets as unknown[]).length > 0,
+    expect(
+      (sheets as unknown[]).toBeTruthy().length > 0,
       "content.json should have at least one sheet",
     );
   });
@@ -238,7 +237,7 @@ describe("xmind-gen.ts content.json validation", () => {
   it("content.json has correct hierarchy: root → L1 → L2 → L3 → cases", async () => {
     const output = join(TMP_DIR, "test-hierarchy.xmind");
     const { code, stderr } = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     type SheetNode = {
       title?: string;
@@ -250,72 +249,69 @@ describe("xmind-gen.ts content.json validation", () => {
 
     const sheets = (await readContentJson(output)) as Sheet[];
     const rootTopic = sheets[0]?.rootTopic;
-    assert.ok(rootTopic, "rootTopic missing");
+    expect(rootTopic).toBeTruthy();
 
     // Root title
-    assert.equal(
-      rootTopic.title,
-      "数据资产v6.4.10迭代用例(#23)",
+    expect(
+      rootTopic.title).toBe("数据资产v6.4.10迭代用例(#23)",
       "root title mismatch",
     );
 
     // L1: requirement_name with version prefix
     const l1Nodes = rootTopic.children?.attached ?? [];
-    assert.ok(l1Nodes.length > 0, "L1 nodes missing");
+    expect(l1Nodes.length > 0).toBeTruthy();
     const l1 = l1Nodes[0];
-    assert.equal(l1.title, "质量问题台账", "L1 title mismatch");
+    expect(l1.title).toBe("质量问题台账");
 
     // L2: module name
     const l2Nodes = l1.children?.attached ?? [];
-    assert.ok(l2Nodes.length > 0, "L2 (module) nodes missing");
+    expect(l2Nodes.length > 0).toBeTruthy();
     const l2 = l2Nodes[0];
-    assert.equal(l2.title, "质量问题台账", "L2 module title mismatch");
+    expect(l2.title).toBe("质量问题台账");
 
     // L3: page name
     const l3Nodes = l2.children?.attached ?? [];
-    assert.ok(l3Nodes.length > 0, "L3 (page) nodes missing");
+    expect(l3Nodes.length > 0).toBeTruthy();
     const l3 = l3Nodes[0];
-    assert.equal(l3.title, "列表页", "L3 page title mismatch");
+    expect(l3.title).toBe("列表页");
 
     // L4: sub_group
     const l4Nodes = l3.children?.attached ?? [];
-    assert.ok(l4Nodes.length > 0, "L4 nodes missing");
+    expect(l4Nodes.length > 0).toBeTruthy();
     // First child should be the sub_group
     const l4SubGroup = l4Nodes[0];
-    assert.equal(l4SubGroup.title, "搜索筛选", "L4 sub_group title mismatch");
+    expect(l4SubGroup.title).toBe("搜索筛选");
 
     // Case under sub_group
     const caseNodes = l4SubGroup.children?.attached ?? [];
-    assert.ok(caseNodes.length > 0, "case nodes missing");
+    expect(caseNodes.length > 0).toBeTruthy();
     const firstCase = caseNodes[0];
-    assert.equal(firstCase.title, "验证默认加载列表页", "case title mismatch");
+    expect(firstCase.title).toBe("验证默认加载列表页");
 
     // Priority marker present
-    assert.ok(
+    expect(
       firstCase.markers && firstCase.markers.length > 0,
       "priority marker missing on P0 case",
-    );
+    ).toBeTruthy();
 
     // Precondition note present
-    assert.ok(
+    expect(
       firstCase.notes?.plain?.content,
       "precondition note missing on P0 case",
-    );
-    assert.match(firstCase.notes!.plain.content, /环境已部署/);
+    ).toBeTruthy();
+    expect(firstCase.notes!.plain.content).toMatch(/环境已部署/);
 
     // Step → expected hierarchy
     const stepNodes = firstCase.children?.attached ?? [];
-    assert.ok(stepNodes.length > 0, "step nodes missing");
-    assert.equal(
-      stepNodes[0].title,
-      "进入【数据质量 → 质量问题台账】页面",
+    expect(stepNodes.length > 0).toBeTruthy();
+    expect(
+      stepNodes[0].title).toBe("进入【数据质量 → 质量问题台账】页面",
       "step title mismatch",
     );
     const expectedNodes = stepNodes[0].children?.attached ?? [];
-    assert.ok(expectedNodes.length > 0, "expected result node missing");
-    assert.equal(
-      expectedNodes[0].title,
-      "页面正常加载",
+    expect(expectedNodes.length > 0).toBeTruthy();
+    expect(
+      expectedNodes[0].title).toBe("页面正常加载",
       "expected result mismatch",
     );
   });
@@ -327,7 +323,7 @@ describe("xmind-gen.ts append mode", () => {
 
     // Create first
     const first = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(first.code, 0);
+    expect(first.code).toBe(0);
 
     // Build a second input with different requirement
     const data = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<
@@ -350,23 +346,23 @@ describe("xmind-gen.ts append mode", () => {
       "--mode",
       "append",
     ]);
-    assert.equal(second.code, 0, `stderr: ${second.stderr}`);
+    expect(second.code).toBe(0, `stderr: ${second.stderr}`);
 
     type SheetNode = { title?: string; children?: { attached?: SheetNode[] } };
     type Sheet = { rootTopic?: SheetNode };
 
     const sheets = (await readContentJson(output)) as Sheet[];
     const attached = sheets[0]?.rootTopic?.children?.attached ?? [];
-    assert.ok(attached.length >= 2, "Should have 2 L1 nodes after append");
+    expect(attached.length >= 2).toBeTruthy();
 
     const titles = attached.map((n) => n.title);
-    assert.ok(titles.includes("质量问题台账"), "Original L1 should be present");
-    assert.ok(titles.includes("数据质量规则"), "Appended L1 should be present");
+    expect(titles.includes("质量问题台账").toBeTruthy(), "Original L1 should be present");
+    expect(titles.includes("数据质量规则").toBeTruthy(), "Appended L1 should be present");
   });
 
   it("creates new file if output does not exist in append mode", () => {
     const output = join(TMP_DIR, "test-append-new.xmind");
-    assert.ok(!existsSync(output));
+    expect(!existsSync(output).toBeTruthy());
 
     const { code, stderr } = run([
       "--input",
@@ -376,8 +372,8 @@ describe("xmind-gen.ts append mode", () => {
       "--mode",
       "append",
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
-    assert.ok(existsSync(output), "file should have been created");
+    expect(code).toBe(0, `stderr: ${stderr}`);
+    expect(existsSync(output).toBeTruthy(), "file should have been created");
   });
 });
 
@@ -390,7 +386,7 @@ describe("xmind-gen.ts <br> tag sanitization", () => {
   it("converts <br> tags to newlines in step, expected, and preconditions", async () => {
     const output = join(TMP_DIR, "test-br-sanitize.xmind");
     const { code, stderr } = run(["--input", BR_FIXTURE, "--output", output]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     type SheetNode = {
       title?: string;
@@ -401,56 +397,56 @@ describe("xmind-gen.ts <br> tag sanitization", () => {
 
     const sheets = (await readContentJson(output)) as Sheet[];
     const root = sheets[0]?.rootTopic;
-    assert.ok(root);
+    expect(root).toBeTruthy();
 
     // Navigate to the case node: root → L1 → L2 → L3 → L4(sub_group) → case
     const l1 = root.children?.attached?.[0];
-    assert.ok(l1);
+    expect(l1).toBeTruthy();
     const l2 = l1.children?.attached?.[0];
-    assert.ok(l2);
+    expect(l2).toBeTruthy();
     const l3 = l2.children?.attached?.[0];
-    assert.ok(l3);
+    expect(l3).toBeTruthy();
     const l4SubGroup = l3.children?.attached?.[0];
-    assert.ok(l4SubGroup, "sub_group node missing");
+    expect(l4SubGroup).toBeTruthy();
     const caseNode = l4SubGroup.children?.attached?.[0];
-    assert.ok(caseNode, "case node missing");
+    expect(caseNode).toBeTruthy();
 
     // Preconditions should have <br> converted to \n
-    assert.ok(caseNode.notes?.plain?.content, "precondition note missing");
-    assert.ok(
-      !caseNode.notes!.plain.content.includes("<br"),
+    expect(caseNode.notes?.plain?.content).toBeTruthy();
+    expect(
+      !caseNode.notes!.plain.content.includes("<br").toBeTruthy(),
       "preconditions still contains <br> tag",
     );
-    assert.ok(
-      caseNode.notes!.plain.content.includes("\n"),
+    expect(
+      caseNode.notes!.plain.content.includes("\n").toBeTruthy(),
       "preconditions should contain newline",
     );
 
     // Step nodes
     const stepNodes = caseNode.children?.attached ?? [];
-    assert.ok(stepNodes.length >= 2, "should have at least 2 steps");
+    expect(stepNodes.length >= 2).toBeTruthy();
 
     // Second step has <br> in both step and expected
     const step2 = stepNodes[1];
-    assert.ok(step2.title, "step 2 title missing");
-    assert.ok(
-      !step2.title!.includes("<br"),
+    expect(step2.title).toBeTruthy();
+    expect(
+      !step2.title!.includes("<br").toBeTruthy(),
       `step title still contains <br> tag: ${step2.title}`,
     );
-    assert.ok(
-      step2.title!.includes("\n"),
+    expect(
+      step2.title!.includes("\n").toBeTruthy(),
       "step title should contain newline after <br> conversion",
     );
 
     // Expected of step 2
     const expected2 = step2.children?.attached?.[0];
-    assert.ok(expected2?.title, "expected 2 title missing");
-    assert.ok(
-      !expected2!.title!.includes("<br"),
+    expect(expected2?.title).toBeTruthy();
+    expect(
+      !expected2!.title!.includes("<br").toBeTruthy(),
       `expected title still contains <br> tag: ${expected2!.title}`,
     );
-    assert.ok(
-      expected2!.title!.includes("\n"),
+    expect(
+      expected2!.title!.includes("\n").toBeTruthy(),
       "expected title should contain newline after <br> conversion",
     );
   });
@@ -476,12 +472,11 @@ describe("xmind-gen.ts L1 title strips trailing (#id)", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as { l1_title: string };
-    assert.equal(
-      result.l1_title,
-      "质量问题台账",
+    expect(
+      result.l1_title).toBe("质量问题台账",
       "l1_title should strip trailing (#23)",
     );
   });
@@ -494,12 +489,11 @@ describe("xmind-gen.ts L1 title strips trailing (#id)", () => {
       "--output",
       output,
     ]);
-    assert.equal(code, 0, `stderr: ${stderr}`);
+    expect(code).toBe(0, `stderr: ${stderr}`);
 
     const result = JSON.parse(stdout) as { l1_title: string };
-    assert.equal(
-      result.l1_title,
-      "质量问题台账",
+    expect(
+      result.l1_title).toBe("质量问题台账",
       "l1_title should remain unchanged",
     );
   });
@@ -518,8 +512,8 @@ describe("xmind-gen.ts validation — missing requirement_name", () => {
 
     const output = join(TMP_DIR, "bad-output-req.xmind");
     const { code, stderr } = run(["--input", badFixture, "--output", output]);
-    assert.equal(code, 1);
-    assert.match(stderr, /requirement_name/);
+    expect(code).toBe(1);
+    expect(stderr).toMatch(/requirement_name/);
   });
 });
 
@@ -529,7 +523,7 @@ describe("xmind-gen.ts replace mode", () => {
 
     // Create original
     const first = run(["--input", FIXTURE, "--output", output]);
-    assert.equal(first.code, 0);
+    expect(first.code).toBe(0);
 
     // Build a replacement with same requirement_name but different version
     const data = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<
@@ -551,7 +545,7 @@ describe("xmind-gen.ts replace mode", () => {
       "--mode",
       "replace",
     ]);
-    assert.equal(second.code, 0, `stderr: ${second.stderr}`);
+    expect(second.code).toBe(0, `stderr: ${second.stderr}`);
 
     type SheetNode = { title?: string; children?: { attached?: SheetNode[] } };
     type Sheet = { rootTopic?: SheetNode };
@@ -561,13 +555,12 @@ describe("xmind-gen.ts replace mode", () => {
 
     // The original L1 should be gone, replaced by the new one
     const titles = attached.map((n) => n.title);
-    assert.ok(
-      titles.includes("质量问题台账"),
+    expect(
+      titles.includes("质量问题台账").toBeTruthy(),
       "L1 should be present (replaced with new version)",
     );
-    assert.equal(
-      attached.length,
-      1,
+    expect(
+      attached.length).toBe(1,
       "Should still have exactly 1 L1 node after replace",
     );
   });
