@@ -14,7 +14,7 @@ fi
 # Update submodule
 echo "[lanhu] Updating submodule..."
 cd "$PROJECT_ROOT"
-git submodule update --init --remote tools/lanhu/lanhu-mcp
+git submodule update --init --remote plugins/lanhu/mcp-bridge/lanhu-mcp
 
 # Install Python dependencies
 echo "[lanhu] Installing Python dependencies..."

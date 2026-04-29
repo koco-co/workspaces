@@ -3,7 +3,7 @@
 Bridge script: imports LanhuExtractor from lanhu-mcp submodule,
 fetches PRD page content, and outputs structured JSON to stdout.
 
-Usage (from tools/lanhu/lanhu-mcp directory):
+Usage (from plugins/lanhu/mcp-bridge/lanhu-mcp directory):
     uv run python ../bridge.py --url <lanhu_url> [--page-id <id>]
 
 Environment:

@@ -2,7 +2,7 @@
 /**
  * plugins/lanhu/fetch.ts — 蓝湖 PRD 内容 + 截图抓取器 (bridge adapter)
  *
- * Calls tools/lanhu/bridge.py via subprocess to fetch PRD content,
+ * Calls plugins/lanhu/mcp-bridge/bridge.py via subprocess to fetch PRD content,
  * then downloads images and produces per-requirement PRD files.
  *
  * Usage:
@@ -366,9 +366,9 @@ function parseTxtSections(txtFiles: string[]): ParsedTxtSections {
 // ─── Bridge Helpers ──────────────────────────────────────────────────────────
 
 function ensureLanhuMcpReady(projectRoot: string): void {
-  const venvPath = join(projectRoot, "tools/lanhu/lanhu-mcp/.venv");
+  const venvPath = join(projectRoot, "plugins/lanhu/mcp-bridge/lanhu-mcp/.venv");
   if (!existsSync(venvPath)) {
-    const setupScript = join(projectRoot, "tools/lanhu/setup.sh");
+    const setupScript = join(projectRoot, "plugins/lanhu/mcp-bridge/setup.sh");
     execSync(`bash "${setupScript}"`, {
       stdio: "pipe",
       cwd: projectRoot,
@@ -387,8 +387,8 @@ function callBridgeListPages(
   rawUrl: string,
   cookie: string,
 ): BridgeListOutput {
-  const bridgeScript = resolve(projectRoot, "tools/lanhu/bridge.py");
-  const mcpDir = resolve(projectRoot, "tools/lanhu/lanhu-mcp");
+  const bridgeScript = resolve(projectRoot, "plugins/lanhu/mcp-bridge/bridge.py");
+  const mcpDir = resolve(projectRoot, "plugins/lanhu/mcp-bridge/lanhu-mcp");
   const cmd = [
     `"uv"`,
     `"run"`,
@@ -417,8 +417,8 @@ function tryCallBridge(
   cookie: string,
   pageNames?: string,
 ): BridgeOutput | BridgeCallError {
-  const bridgeScript = resolve(projectRoot, "tools/lanhu/bridge.py");
-  const mcpDir = resolve(projectRoot, "tools/lanhu/lanhu-mcp");
+  const bridgeScript = resolve(projectRoot, "plugins/lanhu/mcp-bridge/bridge.py");
+  const mcpDir = resolve(projectRoot, "plugins/lanhu/mcp-bridge/lanhu-mcp");
 
   const args = [`uv`, `run`, `python`, bridgeScript, `--url`, rawUrl];
   if (pageId) {
@@ -476,8 +476,8 @@ function tryCallBridge(
 // ─── Cookie Refresh ─────────────────────────────────────────────────────────
 
 function refreshCookie(projectRoot: string, targetUrl: string): string | null {
-  const refreshScript = resolve(projectRoot, "tools/lanhu/refresh-cookie.py");
-  const mcpDir = resolve(projectRoot, "tools/lanhu/lanhu-mcp");
+  const refreshScript = resolve(projectRoot, "plugins/lanhu/mcp-bridge/refresh-cookie.py");
+  const mcpDir = resolve(projectRoot, "plugins/lanhu/mcp-bridge/lanhu-mcp");
   const envPath = resolve(projectRoot, ".env");
 
   const args = [
@@ -663,7 +663,7 @@ async function run(
 
     // Try to find Axure resource images for this page
     const docId = parsed.params.docId ?? "";
-    const mcpDir = resolve(projectRoot, "tools/lanhu/lanhu-mcp");
+    const mcpDir = resolve(projectRoot, "plugins/lanhu/mcp-bridge/lanhu-mcp");
     const axureImagesBase = join(
       mcpDir,
       "data",
