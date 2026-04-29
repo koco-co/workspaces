@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/SessionStart/env-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/SessionStart/workspace-check.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/SessionStart/knowledge-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
