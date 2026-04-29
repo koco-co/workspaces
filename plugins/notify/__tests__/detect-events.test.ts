@@ -16,7 +16,7 @@ const DETECT_TS = resolve(__dirname, "../detect-events.ts");
 
 describe("matchEvents", () => {
   it("detects case-generated from xmind files", () => {
-    const files = ["workspace/dataAssets/xmind/202604/data-quality.xmind"];
+    const files = ["workspace/dataAssets/features/202604-data-quality/cases.xmind"];
     const events = matchEvents(added(files));
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "case-generated");
@@ -26,8 +26,8 @@ describe("matchEvents", () => {
 
   it("detects multiple xmind files as single event with count", () => {
     const files = [
-      "workspace/dataAssets/xmind/202604/a.xmind",
-      "workspace/dataAssets/xmind/202604/b.xmind",
+      "workspace/dataAssets/features/202604-a/cases.xmind",
+      "workspace/dataAssets/features/202604-b/cases.xmind",
     ];
     const events = matchEvents(added(files));
     assert.equal(events.length, 1);
@@ -58,7 +58,7 @@ describe("matchEvents", () => {
   });
 
   it("detects archive-converted from archive md files", () => {
-    const files = ["workspace/dataAssets/archive/202604/data-quality.md"];
+    const files = ["workspace/dataAssets/features/202604-data-quality/archive.md"];
     const events = matchEvents(added(files));
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "archive-converted");
@@ -66,23 +66,27 @@ describe("matchEvents", () => {
   });
 
   it("does NOT fire archive-converted for modified-only archive md (only newly added)", () => {
-    const files = ["workspace/dataAssets/archive/202604/data-quality.md"];
+    const files = ["workspace/dataAssets/features/202604-data-quality/archive.md"];
     const events = matchEvents(modified(files));
-    assert.equal(events.length, 0, "modifying an existing archive md should not trigger notification");
+    assert.equal(
+      events.length,
+      0,
+      "modifying an existing archive md should not trigger notification",
+    );
   });
 
   it("fires archive-converted only for the added subset when mixed", () => {
     const events = matchEvents([
-      { path: "workspace/dataAssets/archive/202604/new.md", added: true },
-      { path: "workspace/dataAssets/archive/202604/old.md", added: false },
+      { path: "workspace/dataAssets/features/202604-new/archive.md", added: true },
+      { path: "workspace/dataAssets/features/202604-old/archive.md", added: false },
     ]);
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "archive-converted");
     assert.equal(events[0].data.fileCount, 1, "should only count the newly added file");
   });
 
-  it("ignores archive tmp/ files", () => {
-    const files = ["workspace/dataAssets/archive/202604/tmp/data-quality.md"];
+  it("ignores non-archive md files (e.g. enhanced.md)", () => {
+    const files = ["workspace/dataAssets/features/202604-data-quality/enhanced.md"];
     const events = matchEvents(added(files));
     const archiveEvents = events.filter((e) => e.event === "archive-converted");
     assert.equal(archiveEvents.length, 0);
@@ -90,8 +94,8 @@ describe("matchEvents", () => {
 
   it("merges xmind + archive into single case-generated event", () => {
     const files = [
-      "workspace/dataAssets/xmind/202604/feature.xmind",
-      "workspace/dataAssets/archive/202604/feature.md",
+      "workspace/dataAssets/features/202604-feature/cases.xmind",
+      "workspace/dataAssets/features/202604-feature/archive.md",
     ];
     const events = matchEvents(added(files));
     assert.equal(events.length, 1);
@@ -101,9 +105,9 @@ describe("matchEvents", () => {
 
   it("detects multiple event types from mixed files (xmind+archive merged)", () => {
     const files = [
-      "workspace/dataAssets/xmind/202604/feature.xmind",
+      "workspace/dataAssets/features/202604-feature/cases.xmind",
       "workspace/dataAssets/reports/bugs/20260407/crash.html",
-      "workspace/dataAssets/archive/202604/feature.md",
+      "workspace/dataAssets/features/202604-feature/archive.md",
       "README.md", // should be ignored
     ];
     const events = matchEvents(added(files));
@@ -115,20 +119,14 @@ describe("matchEvents", () => {
   });
 
   it("keeps archive-converted when no xmind files present", () => {
-    const files = [
-      "workspace/dataAssets/archive/202604/standalone.md",
-    ];
+    const files = ["workspace/dataAssets/features/202604-standalone/archive.md"];
     const events = matchEvents(added(files));
     assert.equal(events.length, 1);
     assert.equal(events[0].event, "archive-converted");
   });
 
   it("returns empty array when no patterns match", () => {
-    const files = [
-      "README.md",
-      "src/index.ts",
-      ".claude/settings.json",
-    ];
+    const files = ["README.md", "src/index.ts", ".claude/settings.json"];
     const events = matchEvents(added(files));
     assert.equal(events.length, 0);
   });
@@ -139,11 +137,7 @@ describe("matchEvents", () => {
   });
 
   it("ignores non-workspace files", () => {
-    const files = [
-      "plugins/notify/send.ts",
-      ".env",
-      "package.json",
-    ];
+    const files = ["plugins/notify/send.ts", ".env", "package.json"];
     const events = matchEvents(added(files));
     assert.equal(events.length, 0);
   });

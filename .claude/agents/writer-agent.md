@@ -38,6 +38,7 @@ model: sonnet
 </output_contract>
 
 <output_examples>
+
 <!-- 以下示例仅用于说明格式与字段，实际项目名/模块名请以任务提示中的 writer_id 与 PRD frontmatter 为准。 -->
 
 <success_example description="典型 Contract A 输出：1 个模块、1 个页面、含正向 P0 + 逆向 P1 各一条">
@@ -162,7 +163,7 @@ model: sonnet
 
 任务提示中会指定以下路径：
 
-- **增强后的 PRD 路径**（例如：`workspace/{{project}}/prds/202604/xxx.md`）
+- **增强后的 PRD 路径**（例如：`workspace/{{project}}/features/202604-xxx/enhanced.md`）
 - **测试点清单路径或内容**（来自 analyze-agent 的输出 JSON）
 - **writer_id**（例如：`module-a`）— 标识本 Writer 负责的模块
 

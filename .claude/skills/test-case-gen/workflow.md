@@ -55,9 +55,9 @@ Collect 4 signals from the source system:
 1. **Source scan** (subagent): Dispatch `source-scanner-agent` to scan `.repos/` for feature-related code — page objects, API endpoints, data models. Outputs Appendix A.
 2. **Image semantics** (main agent inline): Read `images/` directory with Read tool, extract UI semantics from screenshots/designs in the PRD. Write §3 to enhanced.md via `discuss set-section --anchor s-3`.
 3. **Page key points** (main agent inline): Extract business logic from page elements, combine source scan + image results.
-4. **Historical cases**: Scan `archive/` and `history/` for related existing test cases.
+4. **Historical cases**: Scan `features/*/archive.md` and `history/` for related existing test cases.
 
-Output: `enhanced.md` — appended with source signals (Appendix A + §3). 
+Output: `enhanced.md` — appended with source signals (Appendix A + §3).
 
 ---
 
@@ -144,8 +144,8 @@ Executor: direct (main agent)
 Generate final artifacts:
 
 1. Run `kata-cli xmind-gen` from Archive MD
-2. Archive MD → `workspace/{{project}}/archive/{{YYYYMM}}/`
-3. XMind → `workspace/{{project}}/xmind/{{YYYYMM}}/`
+2. Archive MD → `workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md`
+3. XMind → `workspace/{{project}}/features/{{ym}}-{{slug}}/cases.xmind`
 4. Session file cleanup (mark complete)
 5. Summary report with case counts
 
@@ -156,6 +156,7 @@ Generate final artifacts:
 ### Task visualization
 
 Create 8 tasks on workflow start with blockedBy dependencies (see main.md for full table). Each step:
+
 - Entering → `TaskUpdate status: in_progress`
 - Complete → `TaskUpdate status: completed`, append key metrics to subject
 - Failed → remain `in_progress`
@@ -163,16 +164,19 @@ Create 8 tasks on workflow start with blockedBy dependencies (see main.md for fu
 ### Writer blocking relay
 
 When Writer returns `<blocked_envelope>`:
+
 1. Parse `items[]` from envelope
 2. If `status = "invalid_input"` → stop module, request fix
 3. If `status = "needs_confirmation"` → route back to discuss `add-pending`
 
 ### Sub-agent management
+
 - Sub-agents run independently; results merged into main workflow
 - Each sub-agent gets the session file for resume support
 - Agent timeouts → allow resume from session snapshot
 
 ### Output contract
+
 - Archive MD: full case text with L1-L5 assertions
 - XMind: auto-generated from Archive MD
 - All artifacts in `workspace/{{project}}/` under date-named directories
@@ -180,17 +184,20 @@ When Writer returns `<blocked_envelope>`:
 ---
 
 ## <a id="gate-r1"></a>Gate R1: Probe review
+
 - [ ] Source scan results complete and relevant
 - [ ] Image semantics extracted correctly
 - [ ] Page key points cover main features
 - [ ] Historical cases matched
 
 ## <a id="gate-r2"></a>Gate R2: Discuss review
+
 - [ ] All requirements clarified with user
 - [ ] Scope definition unambiguous
 - [ ] enhanced.md contains all sections
 
 ## <a id="gate-r3"></a>Gate R3: Analyze review
+
 - [ ] Test points cover CRUD closure
 - [ ] Boundary conditions identified
 - [ ] Assertion levels (L1-L5) correctly assigned

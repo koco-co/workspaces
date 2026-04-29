@@ -44,7 +44,7 @@ interface PatternRule {
 
 const PATTERN_RULES: readonly PatternRule[] = [
   {
-    pattern: /^workspace\/[^/]+\/xmind\/\d{6}\/.*\.xmind$/,
+    pattern: /^workspace\/[^/]+\/features\/[^/]+\/cases\.xmind$/,
     event: "case-generated",
     extract: (files) => ({
       count: files.length,
@@ -75,7 +75,7 @@ const PATTERN_RULES: readonly PatternRule[] = [
     }),
   },
   {
-    pattern: /^workspace\/[^/]+\/archive\/\d{6}\/(?!tmp\/).*\.md$/,
+    pattern: /^workspace\/[^/]+\/features\/[^/]+\/archive\.md$/,
     event: "archive-converted",
     addedOnly: true,
     extract: (files) => ({

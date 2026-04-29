@@ -30,8 +30,8 @@ argument-hint: "[edit | reverse-sync | other2md] [文件路径或关键词]"
 
 根据第一个参数 / 自然语言关键词 / 输入文件类型切模式：
 
-| 模式           | 触发词 / 输入                                    | 工作流文件                 |
-| -------------- | ------------------------------------------------ | -------------------------- |
+| 模式           | 触发词 / 输入                                    | 工作流文件                          |
+| -------------- | ------------------------------------------------ | ----------------------------------- |
 | `edit`         | 修改用例、编辑用例、新增用例、删除用例           | `workflow.md#workflow-edit`         |
 | `reverse-sync` | 同步 xmind、反向同步、XMind 文件 + Archive MD    | `workflow.md#workflow-reverse-sync` |
 | `other2md`     | 标准化归档、归档用例、`.xmind` / `.csv` 文件路径 | `workflow.md#workflow-other2md`     |
@@ -47,6 +47,6 @@ argument-hint: "[edit | reverse-sync | other2md] [文件路径或关键词]"
 
 ## 共享约束
 
-- 产出写入 `workspace/{project}/archive/{YYYYMM}/` 或 `workspace/{project}/xmind/{YYYYMM}/`
+- 产出写入 `workspace/{project}/features/{ym}-{slug}/archive.md` 或 `workspace/{project}/features/{ym}-{slug}/cases.xmind`
 - 不改 Archive MD / XMind 的 A/B 产物契约
 - 遵守 `rules/case-writing.md` 与 `rules/xmind-structure.md`

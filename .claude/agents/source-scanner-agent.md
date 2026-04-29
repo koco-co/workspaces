@@ -15,7 +15,7 @@ tools: Read, Grep, Glob, Bash
 <inputs>
 - 任务提示中的 `project` / `prd_slug` / `yyyymm`
 - `source_consent.repos`（可为空 → Appendix A 留空骨架）
-- `workspace/{project}/prds/{yyyymm}/{prd_slug}/original.md`（probe 产出的原始 PRD）
+- `workspace/{project}/features/{ym}-{slug}/prd.md`（probe 产出的原始 PRD）
 - `workspace/{project}/knowledge/overview.md` 项目默认假设
 - 缓存：`workspace/{project}/.temp/source-facts-cache/{repo_sha}-{prd_mtime}.json`
 </inputs>
@@ -43,6 +43,7 @@ tools: Read, Grep, Glob, Bash
 ### 步骤 1：提取模块关键词
 
 从 `original.md` 标题 + 页面章节 + knowledge/overview.md 的项目默认假设提取：
+
 - 模块名（需求名中的主语 + 核心功能名词）
 - 关键字段名（PRD 表格 + `[Flowchart/Component Text]` 提取）
 - 页面路由词（菜单层级 / 蓝湖路径）
@@ -77,17 +78,19 @@ kata-cli source-analyze analyze \
 
 按 5 小节组织：
 
-| 小节 | 提取自 |
-|---|---|
-| A.1 字段清单 | 前端 TS interface / 后端 Entity / DTO |
-| A.2 路由表 | 前端 routes/*.ts / 后端 Controller `@RequestMapping` |
-| A.3 状态枚举 | 后端 Enum / 前端常量 |
-| A.4 权限点 | `@PreAuthorize` / `hasPermission('...')` / 前端权限守卫 |
-| A.5 API 签名 | 后端 Controller 方法签名 |
+| 小节         | 提取自                                                  |
+| ------------ | ------------------------------------------------------- |
+| A.1 字段清单 | 前端 TS interface / 后端 Entity / DTO                   |
+| A.2 路由表   | 前端 routes/\*.ts / 后端 Controller `@RequestMapping`   |
+| A.3 状态枚举 | 后端 Enum / 前端常量                                    |
+| A.4 权限点   | `@PreAuthorize` / `hasPermission('...')` / 前端权限守卫 |
+| A.5 API 签名 | 后端 Controller 方法签名                                |
 
 超时仓库在 A 末尾追加：
+
 ```markdown
 ### 扫描受限说明
+
 - {{repo}}: 扫描 {{duration}}s 超时，仅前 {{n}} 个文件完成；warning
 ```
 
@@ -124,6 +127,7 @@ strategy_id === "S5" 时：`source-scanner-agent` 立即停止并 stderr 输出 
 ## 输出
 
 stdout 打印 JSON：
+
 ```json
 {
   "fields_found": 42,

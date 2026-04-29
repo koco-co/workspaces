@@ -45,7 +45,7 @@ dist/
 apps/desktop/src-tauri/target/
 
 # ── 自动生成的计划文档 ──────────────────────────────────
-docs/superpowers/
+docs/superpowers/plans/
 docs/plans/
 
 # ── IDE / 编辑器 ──────────────────────────────────────────

@@ -251,11 +251,11 @@ kata-cli history-convert --path {{input_file}} --project {{project}} --detect
 
 **⏳ Task**：将 `S4` 标记为 `in_progress`。
 
-> **路径规则**：标准化产物（含 `-standardized` 后缀的 MD 和 XMind）属于中间产物，必须输出到 archive 下的 `tmp/` 子目录，不得直接放在 archive 或 xmind 根目录下。
+> **路径规则**：标准化产物（含 `-standardized` 后缀的 MD 和 XMind）属于中间产物，必须输出到 `.temp/standardized/` 子目录，不得直接放在 features 根目录下。
 >
-> - Archive MD → `workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-standardized.md`
-> - XMind → `workspace/{{project}}/archive/{{YYYYMM}}/tmp/{{name}}-standardized.xmind`
-> - 中间 JSON 也保留在同一 `tmp/` 目录
+> - Archive MD → `workspace/{{project}}/.temp/standardized/{{name}}-standardized.md`
+> - XMind → `workspace/{{project}}/.temp/standardized/{{name}}-standardized.xmind`
+> - 中间 JSON 也保留在同一 `.temp/standardized/` 目录
 > - 禁止输出到 `workspace/cases/` 目录（该目录不存在且不应被创建）
 
 ```bash
@@ -295,7 +295,7 @@ kata-cli plugin-loader notify --event archive-converted --data '{"fileCount":1,"
 #### 触发条件
 
 用户输入包含触发词：同步 xmind、同步 XMind 文件、反向同步。
-或指定了具体 XMind 文件路径（如 `同步 workspace/{{project}}/xmind/202604/数据质量.xmind`）。
+或指定了具体 XMind 文件路径（如 `同步 workspace/{{project}}/features/202604-shujuzhiliang/cases.xmind`）。
 
 #### RS1: 确认 XMind 文件
 
@@ -305,7 +305,7 @@ kata-cli plugin-loader notify --event archive-converted --data '{"fileCount":1,"
 - 选项 1：从最近生成的 XMind 中选择
 - 选项 2：手动输入文件路径
 
-若选择"从最近生成的 XMind 中选择"，列出 `workspace/{{project}}/xmind/` 下最近修改的文件供选择。
+若选择"从最近生成的 XMind 中选择"，列出 `workspace/{{project}}/features/` 下最近修改的 `cases.xmind` 文件供选择。
 
 #### RS2: 解析 XMind 文件
 
@@ -324,7 +324,7 @@ kata-cli history-convert --path {{xmind_file}} --project {{project}} --detect
 
 按以下优先级查找对应的 Archive MD 文件：
 
-1. XMind 文件名匹配：`workspace/{{project}}/archive/{{YYYYMM}}/{{same_name}}.md`
+1. XMind 文件名匹配：`workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md`（同一 feature 目录下的 archive.md）
 2. 同月份目录下搜索 frontmatter 中 `suite_name` 匹配的文件
 3. 未找到 → 使用 AskUserQuestion 询问用户指定目标路径或创建新文件
 

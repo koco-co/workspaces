@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * discuss.ts — PRD 需求讨论 enhanced.md 管理 CLI (v2)
+ * discuss.ts — PRD 需求讨论 enhanced.md 管理 CLI (v3)
  *
  * Usage:
  *   kata-cli discuss <action> --project <name> --yyyymm <ym> --prd-slug <slug> [...]
@@ -30,7 +30,7 @@ import {
 
 export const program = createCli({
   name: "discuss",
-  description: "PRD 需求讨论 enhanced.md 管理 CLI (v2)",
+  description: "PRD 需求讨论 enhanced.md 管理 CLI (v3)",
   commands: [
     {
       name: "init",

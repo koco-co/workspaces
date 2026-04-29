@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://img.shields.io/badge/Kata-2.0-7C3AED?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTkgMTYuMTdMNC44MyAxMmwtMS40MiAxLjQxTDkgMTkgMjEgN2wtMS40MS0xLjQxeiIvPjwvc3ZnPg==&logoColor=white">
-  <img alt="Kata 2.0" src="https://img.shields.io/badge/Kata-2.0-7C3AED?style=for-the-badge&logoColor=white">
+  <img alt="Kata 3.0" src="https://img.shields.io/badge/Kata-2.0-7C3AED?style=for-the-badge&logoColor=white">
 </picture>
 
 # 🚀 Kata
@@ -25,7 +25,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Skills-7C3AED?style=flat-square&logo=anthropic&logoColor=white)](https://claude.com/claude-code)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg?style=flat-square)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.0--alpha.1-blue.svg?style=flat-square)](./engine/package.json)
 
 <br />
 

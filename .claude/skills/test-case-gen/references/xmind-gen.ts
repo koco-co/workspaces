@@ -22,13 +22,7 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { Command } from "commander";
 import JSZip from "jszip";
 import type { MarkerId, TopicBuilder } from "xmind-generator";
-import {
-  Marker,
-  RootTopic,
-  Topic,
-  Workbook,
-  writeLocalFile,
-} from "xmind-generator";
+import { Marker, RootTopic, Topic, Workbook, writeLocalFile } from "xmind-generator";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -317,14 +311,9 @@ function buildTopicTree(modules: Module[]): {
 
 // ─── Mode: create ─────────────────────────────────────────────────────────────
 
-async function createXmind(
-  data: IntermediateJson,
-  outputPath: string,
-): Promise<void> {
+async function createXmind(data: IntermediateJson, outputPath: string): Promise<void> {
   if (existsSync(outputPath)) {
-    throw new Error(
-      `Output file already exists (use --mode append or replace): ${outputPath}`,
-    );
+    throw new Error(`Output file already exists (use --mode append or replace): ${outputPath}`);
   }
 
   const rootTitle = buildRootTitle(data.meta);
@@ -357,9 +346,7 @@ interface XMindSheet {
   [key: string]: unknown;
 }
 
-async function readXmindSheets(
-  filePath: string,
-): Promise<[XMindSheet[], JSZip]> {
+async function readXmindSheets(filePath: string): Promise<[XMindSheet[], JSZip]> {
   const buffer = readFileSync(filePath);
   const zip = await JSZip.loadAsync(buffer);
   const contentFile = zip.file("content.json");
@@ -437,9 +424,7 @@ function buildRawL1Node(data: IntermediateJson): XMindTopicNode {
           const children = buildRawPageChildren(page);
           l1Children.push({
             title: page.name,
-            ...(children.length > 0
-              ? { children: { attached: children } }
-              : {}),
+            ...(children.length > 0 ? { children: { attached: children } } : {}),
           });
         }
       }
@@ -453,9 +438,7 @@ function buildRawL1Node(data: IntermediateJson): XMindTopicNode {
           const children = buildRawPageChildren(page);
           pageNodes.push({
             title: page.name,
-            ...(children.length > 0
-              ? { children: { attached: children } }
-              : {}),
+            ...(children.length > 0 ? { children: { attached: children } } : {}),
           });
         }
       }
@@ -474,10 +457,7 @@ function buildRawL1Node(data: IntermediateJson): XMindTopicNode {
   };
 }
 
-async function appendXmind(
-  data: IntermediateJson,
-  outputPath: string,
-): Promise<void> {
+async function appendXmind(data: IntermediateJson, outputPath: string): Promise<void> {
   if (!existsSync(outputPath)) {
     await createXmind(data, outputPath);
     return;
@@ -486,12 +466,9 @@ async function appendXmind(
   const [sheets, zip] = await readXmindSheets(outputPath);
   const rootTitle = buildRootTitle(data.meta);
 
-  const sheet =
-    sheets.find((s) => s.rootTopic?.title === rootTitle) ?? sheets[0];
+  const sheet = sheets.find((s) => s.rootTopic?.title === rootTitle) ?? sheets[0];
   if (!sheet?.rootTopic) {
-    throw new Error(
-      `Cannot find sheet with root title "${rootTitle}" in ${outputPath}`,
-    );
+    throw new Error(`Cannot find sheet with root title "${rootTitle}" in ${outputPath}`);
   }
 
   if (!sheet.rootTopic.children) {
@@ -507,10 +484,7 @@ async function appendXmind(
   await writeXmindSheets(zip, outputPath);
 }
 
-async function replaceXmind(
-  data: IntermediateJson,
-  outputPath: string,
-): Promise<void> {
+async function replaceXmind(data: IntermediateJson, outputPath: string): Promise<void> {
   if (!existsSync(outputPath)) {
     await createXmind(data, outputPath);
     return;
@@ -520,12 +494,9 @@ async function replaceXmind(
   const rootTitle = buildRootTitle(data.meta);
   const l1Title = buildL1Title(data.meta);
 
-  const sheet =
-    sheets.find((s) => s.rootTopic?.title === rootTitle) ?? sheets[0];
+  const sheet = sheets.find((s) => s.rootTopic?.title === rootTitle) ?? sheets[0];
   if (!sheet?.rootTopic) {
-    throw new Error(
-      `Cannot find sheet with root title "${rootTitle}" in ${outputPath}`,
-    );
+    throw new Error(`Cannot find sheet with root title "${rootTitle}" in ${outputPath}`);
   }
 
   if (!sheet.rootTopic.children?.attached) {
@@ -534,9 +505,7 @@ async function replaceXmind(
     const attached = sheet.rootTopic.children.attached;
     const reqName = data.meta.requirement_name;
     const idx = attached.findIndex(
-      (n) =>
-        n.title === l1Title ||
-        (typeof n.title === "string" && n.title.endsWith(reqName)),
+      (n) => n.title === l1Title || (typeof n.title === "string" && n.title.endsWith(reqName)),
     );
     if (idx >= 0) {
       attached[idx] = buildRawL1Node(data);
@@ -595,8 +564,7 @@ function parseArchiveBody(body: string): Module[] {
     if (!currentCase) return;
     currentCase.steps = stepsRows;
     if (preconditionLines.length > 0) {
-      currentCase.preconditions =
-        "前置条件\n" + preconditionLines.join("\n").trim();
+      currentCase.preconditions = "前置条件\n" + preconditionLines.join("\n").trim();
     }
 
     if (currentSubGroup) {
@@ -723,16 +691,11 @@ function parseArchiveBody(body: string): Module[] {
   return modules;
 }
 
-function archiveToJson(
-  mdPath: string,
-  projectName: string,
-  version?: string,
-): IntermediateJson {
+function archiveToJson(mdPath: string, projectName: string, version?: string): IntermediateJson {
   const raw = readFileSync(mdPath, "utf-8");
   const { fm, body } = parseFrontMatter(raw);
 
-  const suiteName =
-    typeof fm.suite_name === "string" ? fm.suite_name : basename(mdPath, ".md");
+  const suiteName = typeof fm.suite_name === "string" ? fm.suite_name : basename(mdPath, ".md");
   const prdId =
     typeof fm.prd_id === "number"
       ? fm.prd_id
@@ -742,12 +705,10 @@ function archiveToJson(
 
   // Resolve version: CLI --version > frontmatter prd_version
   const resolvedVersion =
-    version ??
-    (typeof fm.prd_version === "string" ? fm.prd_version : undefined);
+    version ?? (typeof fm.prd_version === "string" ? fm.prd_version : undefined);
 
   // Resolve project name: frontmatter root_name > CLI --project
-  const resolvedProject =
-    typeof fm.root_name === "string" ? fm.root_name : projectName;
+  const resolvedProject = typeof fm.root_name === "string" ? fm.root_name : projectName;
 
   const modules = parseArchiveBody(body);
 
@@ -774,23 +735,12 @@ async function main(): Promise<void> {
 
   program
     .name("xmind-gen")
-    .description(
-      "Convert intermediate JSON or Archive Markdown to .xmind files",
-    )
-    .requiredOption(
-      "--input <path>",
-      "Path to input JSON, MD file, or directory of MD files",
-    )
-    .option(
-      "--output <path>",
-      "Path to output .xmind file (auto-derived for MD input)",
-    )
+    .description("Convert intermediate JSON or Archive Markdown to .xmind files")
+    .requiredOption("--input <path>", "Path to input JSON, MD file, or directory of MD files")
+    .option("--output <path>", "Path to output .xmind file (auto-derived for MD input)")
     .option("--mode <mode>", "Write mode: create | append | replace", "create")
     .option("--project <name>", "Project name for XMind root node", "数栈测试")
-    .option(
-      "--version <ver>",
-      "PRD version (e.g. 6.4.9) for root title template",
-    )
+    .option("--version <ver>", "PRD version (e.g. 6.4.9) for root title template")
     .option("--json-only", "Only output intermediate JSON (MD input only)")
     .parse(process.argv);
 
@@ -835,14 +785,7 @@ async function main(): Promise<void> {
 
   // MD input
   if (ext === ".md") {
-    await processMdFile(
-      inputPath,
-      opts.project,
-      opts.version,
-      opts.jsonOnly,
-      mode,
-      opts.output,
-    );
+    await processMdFile(inputPath, opts.project, opts.version, opts.jsonOnly, mode, opts.output);
     return;
   }
 
@@ -904,7 +847,7 @@ async function processMdFile(
   outputOverride?: string,
 ): Promise<void> {
   const fname = basename(mdPath, ".md");
-  const outDir = dirname(mdPath).replace(/archive/, "xmind");
+  const outDir = dirname(mdPath);
   const tmpDir = join(outDir, "tmp");
 
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
@@ -920,9 +863,7 @@ async function processMdFile(
     return;
   }
 
-  const xmindPath = outputOverride
-    ? resolve(outputOverride)
-    : join(outDir, `${fname}.xmind`);
+  const xmindPath = outputOverride ? resolve(outputOverride) : join(outDir, `${fname}.xmind`);
 
   if (existsSync(xmindPath)) unlinkSync(xmindPath);
 

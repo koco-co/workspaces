@@ -89,7 +89,7 @@ bun run plugins/notify/send.ts --dry-run --event ui-test-completed --data '{...}
 需求: {{需求名称}}
 用例数: 42
 耗时: 3m 22s
-文件: workspace/xmind/{{YYYYMM}}/{{需求名称}}.xmind
+文件: workspace/features/{{ym}}-{{slug}}/cases.xmind
 ```
 
 ## 注意事项

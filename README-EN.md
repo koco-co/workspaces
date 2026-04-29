@@ -1,6 +1,6 @@
 <div align="center">
 
-# Kata - 2.0
+# Kata - 3.0
 
 ### AI-Powered QA Workflow Engine
 
@@ -468,13 +468,12 @@ kata/
 │   └── notify/                   # IM notification plugin
 ├── workspace/                    # Multi-project runtime workspace
 │   ├── dataAssets/
-│   │   ├── prds/                 # PRD / Story documents
-│   │   ├── xmind/                # Generated XMind files
-│   │   ├── archive/              # Archive Markdown test cases
+│   │   ├── features/{ym}-{slug}/ # Aggregated feature dir (PRD/archive/xmind/tests)
 │   │   ├── issues/               # Hotfix test cases
 │   │   ├── history/              # Legacy CSV / XMind inputs
 │   │   ├── reports/              # Bug / conflict / Allure reports
-│   │   ├── tests/                # Generated Playwright specs
+│   │   ├── knowledge/           # Project-level business knowledge base
+│   │   ├── shared/              # Shared project utilities
 │   │   ├── rules/               # Project-level rule overrides
 │   │   ├── knowledge/           # Project-level business knowledge base
 │   │   ├── .repos/               # Cloned source repos (read-only)

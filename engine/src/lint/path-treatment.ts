@@ -61,15 +61,6 @@ const EXCLUDED_PATH_FRAGMENTS = [
   // templates using old layout
   "/templates/",
   "docs/superpowers/specs/",
-  "docs/superpowers/plans/2026-04-26-",
-  "docs/superpowers/plans/2026-04-27-",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-2",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-3",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-4",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-0",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-1",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-5",
-  "docs/superpowers/plans/2026-04-28-architecture-redesign-phase-7.6",
   "docs/superpowers/handoffs/",
 ];
 

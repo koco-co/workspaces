@@ -55,19 +55,19 @@
 
 ## 输入格式规范
 
-| 类型     | 示例                                                  | 说明                                                |
-| -------- | ----------------------------------------------------- | --------------------------------------------------- |
-| 需求名称 | `商品管理需求`                                        | 需要在 `workspace/{{project}}/prds/` 中存在对应文件 |
-| 蓝湖 URL | `https://lanhuapp.com/web/#/item/...`                 | 自动提取设计文档信息                                |
-| 禅道 Bug | `{{ZENTAO_BASE_URL}}/zentao/bug-view-{{bug_id}}.html` | 自动爬取 Bug 信息生成用例                           |
-| 用例标题 | `验证导出仅导出当前筛选结果`                          | 精确匹配或模糊匹配均可                              |
-| 文件路径 | `workspace/{{project}}/prds/YYYYMM/{{需求标题}}.md`   | 相对或绝对路径皆可                                  |
+| 类型     | 示例                                                    | 说明                                                    |
+| -------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| 需求名称 | `商品管理需求`                                          | 需要在 `workspace/{{project}}/features/` 中存在对应文件 |
+| 蓝湖 URL | `https://lanhuapp.com/web/#/item/...`                   | 自动提取设计文档信息                                    |
+| 禅道 Bug | `{{ZENTAO_BASE_URL}}/zentao/bug-view-{{bug_id}}.html`   | 自动爬取 Bug 信息生成用例                               |
+| 用例标题 | `验证导出仅导出当前筛选结果`                            | 精确匹配或模糊匹配均可                                  |
+| 文件路径 | `workspace/{{project}}/features/{{ym}}-{{slug}}/prd.md` | 相对或绝对路径皆可                                      |
 
 ## 常见问题
 
 **Q: 如何指定需求文档生成用例？**
 
-- 准备 PRD 文档（Markdown 格式）存放在 `workspace/{{project}}/prds/YYYYMM/` 目录
+- 准备 PRD 文档（Markdown 格式）存放在 `workspace/{{project}}/features/{{ym}}-{{slug}}/prd.md`
 - 运行 `为 你的需求文档路径 生成测试用例`
 
 **Q: 生成过程中断了，怎样继续？**
@@ -83,19 +83,19 @@
 **Q: 怎样修改已生成的用例？**
 
 - 优先使用 `/case-format`，无需读 PRD 即可修改
-- 或者直接编辑 `workspace/{{project}}/archive/YYYYMM/` 中的 Markdown 文件
+- 或者直接编辑 `workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md` 文件
 
 ## 文件位置速查
 
-| 产物类型     | 路径                                    | 说明                     |
-| ------------ | --------------------------------------- | ------------------------ |
-| PRD 原始文件 | `workspace/{{project}}/prds/YYYYMM/`    | 输入：需求文档           |
-| XMind 输出   | `workspace/{{project}}/xmind/YYYYMM/`   | 输出：思维导图           |
-| Archive MD   | `workspace/{{project}}/archive/YYYYMM/` | 输出：归档 Markdown      |
-| 历史原始资料 | `workspace/{{project}}/history/`        | 来自 CSV/JSON 的导入数据 |
-| 线上问题用例 | `workspace/{{project}}/issues/`         | 禅道 Bug 转化的用例      |
-| 分析报告     | `workspace/{{project}}/reports/`        | 报错分析 HTML 报告       |
-| 图片库       | `workspace/{{project}}/images/`         | 需求文档中引用的截图     |
+| 产物类型     | 路径                                                         | 说明                     |
+| ------------ | ------------------------------------------------------------ | ------------------------ |
+| PRD 原始文件 | `workspace/{{project}}/features/{{ym}}-{{slug}}/prd.md`      | 输入：需求文档           |
+| XMind 输出   | `workspace/{{project}}/features/{{ym}}-{{slug}}/cases.xmind` | 输出：思维导图           |
+| Archive MD   | `workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md`  | 输出：归档 Markdown      |
+| 历史原始资料 | `workspace/{{project}}/history/`                             | 来自 CSV/JSON 的导入数据 |
+| 线上问题用例 | `workspace/{{project}}/issues/`                              | 禅道 Bug 转化的用例      |
+| 分析报告     | `workspace/{{project}}/reports/`                             | 报错分析 HTML 报告       |
+| 图片库       | `workspace/{{project}}/images/`                              | 需求文档中引用的截图     |
 
 ## 获取帮助
 

@@ -338,8 +338,8 @@ const program = new Command();
 
 program
   .name("init-wizard")
-  .description("kata v2.0 环境检查工具")
-  .version("2.0.0");
+  .description("kata v3 环境检查工具")
+  .version("3.0.0");
 
 program
   .command("scan")
