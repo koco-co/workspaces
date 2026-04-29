@@ -400,7 +400,28 @@ The merge script:
 
 - Reads all `cases/` files with valid META headers
 - Generates `smoke.spec.ts` (P0 only) and `full.spec.ts` (all priorities)
-- Validates TypeScript compilation (optional `--compile-check`)
+- Validates TypeScript compilation via `tsc --noEmit`（默认开启）
+
+### 步骤 4a: 编译检查门（Compile Gate）
+
+merge-specs 自带 `--compile-check`（默认开启）。**必须检查其退出码**，编译不通过就不进 Step 5。
+
+```bash
+if [ $? -ne 0 ]; then
+  echo "❌ 编译失败，存在脚本错误（import 路径/类型/语法），不进入回归执行"
+  echo "请修复后重试，或跳过回归直接出报告"
+  # 选项 1：修复后重试
+  # 选项 2：跳过 Step 5，进入 Step 6 基于当前结果出报告
+fi
+```
+
+如果 merge-specs 失败（tsc gate 未通过），**不要执行 Step 5**，直接问用户：
+
+```
+编译检查未通过，脚本存在错误（如 import 路径、类型定义、语法问题）。
+选项：1. 修复脚本后重新 merge
+      2. 跳过回归，直接出报告（列出哪些 case 编译未通过）
+```
 
 **完成 Step 4**：
 
