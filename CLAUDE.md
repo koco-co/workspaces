@@ -12,6 +12,7 @@
 | `/daily-task`    | bug / conflict / hotfix 三模式                                                  |
 | `dtstack-cli`    | 平台前置条件 CLI（SQL/项目/资产同步），用法见 `tools/dtstack-sdk/docs/usage.md` |
 | `/ui-autotest`   | UI 自动化测试                                                                   |
+| `/static-scan`   | 提测分支静态扫描（diff → 可复现 bug 报告）                                      |
 
 ## 工作区布局
 
