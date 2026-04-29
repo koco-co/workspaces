@@ -13,9 +13,9 @@ describe("parseBlockMeta", () => {
     const content = '// META: {"id":"t1","priority":"P0","title":"验证xxx"}\nsome code';
     const meta = parseBlockMeta(content);
     expect(meta).toBeTruthy();
-    expect(meta.id).toBe("t1");
-    expect(meta.priority).toBe("P0");
-    expect(meta.title).toBe("验证xxx");
+    expect(meta!.id).toBe("t1");
+    expect(meta!.priority).toBe("P0");
+    expect(meta!.title).toBe("验证xxx");
   });
 
   it("returns null for missing META", () => {

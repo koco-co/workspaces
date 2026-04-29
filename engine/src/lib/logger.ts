@@ -5,6 +5,9 @@
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
+/** Return type of createLogger */
+export type Logger = ReturnType<typeof createLogger>;
+
 const LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 0,
   info: 1,

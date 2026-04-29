@@ -35,7 +35,10 @@ export function parseFrontMatter(content: string): ParsedMarkdown {
         const ci = pair.indexOf(":");
         if (ci === -1) continue;
         const k = pair.slice(0, ci).trim();
-        const v = pair.slice(ci + 1).trim().replace(/^["']|["']$/g, "");
+        const v = pair
+          .slice(ci + 1)
+          .trim()
+          .replace(/^["']|["']$/g, "");
         obj[k] = v;
       }
       (currentArray as unknown[]).push(obj);
@@ -94,7 +97,7 @@ export function serializeFrontMatter(fm: FrontMatter): string {
       } else {
         lines.push(`${key}:`);
         for (const item of value as RepoFrontMatter[]) {
-          const obj = item as Record<string, string | undefined>;
+          const obj = item as unknown as Record<string, string | undefined>;
           const parts = Object.entries(obj)
             .filter(([, v]) => v !== undefined)
             .map(([k, v]) => `${k}: "${v}"`)

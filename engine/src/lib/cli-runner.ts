@@ -44,8 +44,8 @@ export interface CliRootActionSpec<T = Record<string, unknown>> {
 export interface CliConfig {
   name: string;
   description: string;
-  commands?: CliCommandSpec[];
-  rootAction?: CliRootActionSpec;
+  commands?: CliCommandSpec<any>[];
+  rootAction?: CliRootActionSpec<any>;
   onError?: (err: unknown, ctx: CliContext) => void;
 }
 
@@ -53,9 +53,7 @@ function attachOption(cmd: Command, opt: CliOption): void {
   // choices requires commander's Option class to be used, so when choices are
   // present we always go through addOption() instead of option()/requiredOption().
   if (opt.choices && opt.choices.length > 0) {
-    const option = new Option(opt.flag, opt.description).choices([
-      ...opt.choices,
-    ]);
+    const option = new Option(opt.flag, opt.description).choices([...opt.choices]);
     if (opt.required) option.makeOptionMandatory(true);
     if (opt.defaultValue !== undefined) option.default(opt.defaultValue);
     cmd.addOption(option);
@@ -108,8 +106,7 @@ function buildActionHandler(
 ): (...args: unknown[]) => Promise<void> {
   return async (...actionArgs: unknown[]) => {
     // commander passes: (positional1, positional2, ..., opts, command)
-    const positionals =
-      argumentsSpec.length > 0 ? actionArgs.slice(0, argumentsSpec.length) : [];
+    const positionals = argumentsSpec.length > 0 ? actionArgs.slice(0, argumentsSpec.length) : [];
     const optsIdx = argumentsSpec.length;
     const rawOpts = (actionArgs[optsIdx] ?? {}) as Record<string, unknown>;
 
@@ -168,9 +165,7 @@ export function createCli(config: CliConfig): Command {
     for (const opt of cmdSpec.options ?? []) {
       attachOption(cmd, opt);
     }
-    cmd.action(
-      buildActionHandler(cmdSpec.arguments ?? [], cmdSpec.action, ctx, onError),
-    );
+    cmd.action(buildActionHandler(cmdSpec.arguments ?? [], cmdSpec.action, ctx, onError));
   }
 
   return program;

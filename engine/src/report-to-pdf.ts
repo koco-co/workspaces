@@ -80,7 +80,7 @@ export function findCases(rows: readonly TestRow[]): readonly TestCase[] {
   const cases: TestCase[] = [];
   for (const row of rows) {
     if (row.type === "case") {
-      cases.push(row);
+      cases.push(row as unknown as TestCase);
     }
     if (row.subs) {
       cases.push(...findCases(row.subs));
@@ -171,10 +171,7 @@ function summaryCardLabel(key: string): string {
 
 // ─── HTML Builder ────────────────────────────────────────────────────
 
-export function buildPrintableHtml(
-  data: ReportData,
-  reportDir: string,
-): string {
+export function buildPrintableHtml(data: ReportData, reportDir: string): string {
   const cases = findCases(data.rows);
   const { summary } = data;
   const dateStr = data.dateH ?? new Date(data.date).toLocaleString();
@@ -198,17 +195,14 @@ export function buildPrintableHtml(
   const total = summary.tests?.value ?? 0;
   const passed = summary.passed?.value ?? 0;
   const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
-  const rateColor =
-    passRate >= 80 ? "#2e7d32" : passRate >= 50 ? "#e65100" : "#c62828";
+  const rateColor = passRate >= 80 ? "#2e7d32" : passRate >= 50 ? "#e65100" : "#c62828";
 
   // --- Test case cards ---
   const caseSections = cases.map((tc, idx) => {
     const badge = statusBadgeColor(tc.status);
 
     // Only image attachments — no error markdowns
-    const screenshots = (tc.attachments ?? []).filter((a) =>
-      a.contentType.startsWith("image/"),
-    );
+    const screenshots = (tc.attachments ?? []).filter((a) => a.contentType.startsWith("image/"));
 
     const screenshotHtml = screenshots
       .map((ss) => {
@@ -357,9 +351,7 @@ function resolvePdfPath(sourcePath: string, outputPath?: string): string {
   return join(dir, `${name}.pdf`);
 }
 
-export async function convertReportToPdf(
-  options: ConvertOptions,
-): Promise<ConvertResult> {
+export async function convertReportToPdf(options: ConvertOptions): Promise<ConvertResult> {
   const jsonPath = resolveJsonPath(options.sourcePath);
 
   if (!existsSync(jsonPath)) {
@@ -418,9 +410,7 @@ export const program = createCli({
         required: true,
       },
     ],
-    options: [
-      { flag: "-o, --output <path>", description: "Custom output PDF path" },
-    ],
+    options: [{ flag: "-o, --output <path>", description: "Custom output PDF path" }],
     action: async (rawOpts: Record<string, unknown>) => {
       const opts = rawOpts as { sourcePath: string; output?: string };
       const result = await convertReportToPdf({

@@ -40,3 +40,14 @@ export interface IntermediateJson {
   meta: Meta;
   modules: Module[];
 }
+
+export interface WorkflowStep {
+  id: string;
+  name?: string;
+}
+
+export interface WorkflowState {
+  project: string;
+  workflow: string;
+  prdSlug: string;
+}

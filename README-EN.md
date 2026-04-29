@@ -15,7 +15,7 @@ From requirements to test cases, from bug analysis to UI automation — all-in-o
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Skills-7C3AED?logo=anthropic&logoColor=white)](https://claude.com/claude-code)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-3.0.0--alpha.1-blue.svg)](./engine/package.json)
 
 <br />
 

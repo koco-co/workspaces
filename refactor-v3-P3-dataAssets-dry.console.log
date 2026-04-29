@@ -1,3 +1,0 @@
-[migrate-workspace] mode=dry project=dataAssets-shadow
-[migrate-workspace] features=140 ops=579 warnings=0
-[migrate-workspace] log written to refactor-v3-P3-dataAssets-dry.log.json
