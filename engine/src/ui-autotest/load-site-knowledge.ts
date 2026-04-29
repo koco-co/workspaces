@@ -59,7 +59,7 @@ export function loadSiteKnowledge(
 
 // ── CLI ──────────────────────────────────────────────────────
 
-async function runCli(): Promise<void> {
+function runCli(): void {
   const program = new Command();
   program
     .name("load-site-knowledge")
@@ -97,7 +97,9 @@ if (
   argv1.endsWith("load-site-knowledge.ts") ||
   argv1.endsWith("load-site-knowledge.js")
 ) {
-  runCli().catch((err) => {
+  try {
+    runCli();
+  } catch (err) {
     process.stderr.write(
       `[load-site-knowledge] 错误：${err instanceof Error ? err.message : String(err)}\n`,
     );
