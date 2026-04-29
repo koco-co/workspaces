@@ -225,11 +225,21 @@ Executor: subagent (agent: regression-runner-agent, model: haiku)
 TaskUpdate taskId="T5" status=in_progress
 ```
 
-Regression-runner-agent 执行合并后的 spec 文件并修复失败：
+Regression-runner-agent 执行合并后的 spec 文件。
+
+先跑冒烟：
 
 ```bash
-bun test --cwd workspace/{{project}}/features/{{feature}}/tests/runners
+bun test --cwd workspace/{{project}}/features/{{feature}}/tests/runners smoke.spec.ts
 ```
+
+冒烟全通过后，再跑全量：
+
+```bash
+bun test --cwd workspace/{{project}}/features/{{feature}}/tests/runners full.spec.ts
+```
+
+冒烟有失败 → 报告冒烟失败原因，不跑全量。
 
 **完成 Step 5**：
 
