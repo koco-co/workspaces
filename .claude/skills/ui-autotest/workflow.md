@@ -326,50 +326,6 @@ echo '{{suggestions_json}}' | bun run engine/src/ui-autotest/merge-site-knowledg
 
 生成后执行 [R1 review](#gate-r1)。
 
-### 步骤 3e: 通过率检查（Gate）
-
-**在进入 Step 4 之前，先判断是否值得跑全量回归。**
-
-```bash
-# 统计通过率
-TOTAL=$(bun -e "const s=require('fs').readFileSync('$STATE_FILE','utf-8');const j=JSON.parse(s);console.log(j.stats.completed+'/'+j.stats.total)")
-RATIO=$(bun -e "const s=require('fs').readFileSync('$STATE_FILE','utf-8');const j=JSON.parse(s);console.log((j.stats.completed/j.stats.total*100).toFixed(0))")
-echo "Case 验证通过率: ${RATIO}% (${TOTAL})"
-```
-
-- `通过率 >= 80%` → 自动进入 Step 4（正常全量回归）
-- `通过率 < 80%` → 询问用户：
-
-  ```
-  Case 验证通过率仅 45%（9/20），全量回归会重新执行所有案例，包括已失败的 11 个。
-  选项：1. 只合并已通过的 case 执行（跳过已知失败）
-        2. 仍然全量执行
-        3. 跳过回归，直接出报告
-  ```
-
-**选项 1 的实现**（只执行已验证通过的 case）：
-
-```bash
-# 将失败的 case 移出 cases/ 目录，step 4 merge 时就不会包含它们
-mkdir -p _failing
-for f in $(bun -e "const s=require('fs').readFileSync('$STATE_FILE','utf-8');const j=JSON.parse(s);j.tasks.filter(t=>t.status!=='completed').forEach(t=>console.log(t.script_path||'tests/cases/'+t.id+'-*.ts'))"); do
-  [ -f "$f" ] && mv "$f" _failing/
-done
-# 正常 merge（只含已通过的 case）
-bun run engine/src/ui-autotest/merge-specs.ts \
-  --input workspace/{{project}}/features/{{feature}}/tests/cases \
-  --output workspace/{{project}}/features/{{feature}}/tests/runners
-# 恢复失败的 case（merge 完成后移回）
-mv _failing/* tests/cases/ 2>/dev/null; rmdir _failing 2>/dev/null || true
-```
-
-已知失败的 case 不执行，报告中注明：
-
-```
-✅ 通过: 9
-⏭️ 已知失败（未执行）: 11
-```
-
 **完成 Step 3**：
 
 ```bash
@@ -400,28 +356,21 @@ The merge script:
 
 - Reads all `cases/` files with valid META headers
 - Generates `smoke.spec.ts` (P0 only) and `full.spec.ts` (all priorities)
-- Validates TypeScript compilation via `tsc --noEmit`（默认开启）
+- Validates TypeScript compilation (default on)
 
-### 步骤 4a: 编译检查门（Compile Gate）
+### Readiness Gate
 
-merge-specs 自带 `--compile-check`（默认开启）。**必须检查其退出码**，编译不通过就不进 Step 5。
+**进入 Step 5 前，检查是否所有 task 均已完结。** 未完结的派 agent 处理，不跳过。
 
 ```bash
-if [ $? -ne 0 ]; then
-  echo "❌ 编译失败，存在脚本错误（import 路径/类型/语法），不进入回归执行"
-  echo "请修复后重试，或跳过回归直接出报告"
-  # 选项 1：修复后重试
-  # 选项 2：跳过 Step 5，进入 Step 6 基于当前结果出报告
-fi
+STATS=$(bun run engine/src/ui-autotest/task-state-cli.ts stats {{tests_dir}})
+PENDING=$(echo "$STATS" | bun -e "const s=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(s.pending)")
+IN_PROGRESS=$(echo "$STATS" | bun -e "const s=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(s.in_progress)")
+FAILED=$(echo "$STATS" | bun -e "const s=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(s.failed)")
 ```
 
-如果 merge-specs 失败（tsc gate 未通过），**不要执行 Step 5**，直接问用户：
-
-```
-编译检查未通过，脚本存在错误（如 import 路径、类型定义、语法问题）。
-选项：1. 修复脚本后重新 merge
-      2. 跳过回归，直接出报告（列出哪些 case 编译未通过）
-```
+- `pending=0, in_progress=0, failed=0` → 全部完结，进入 Step 5
+- 否则 → 列出未完结的 task，派 script-case-agent 重新处理
 
 **完成 Step 4**：
 
