@@ -13,7 +13,7 @@
  * 输出到 stdout 的知识摘要，无知识时输出空字符串。
  */
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Command } from "commander";
 
@@ -51,6 +51,7 @@ export function loadSiteKnowledge(
   }
 
   if (!found) return null;
+  if (parts.length === 0) return null;
 
   parts.unshift(`# ${domain} 站点知识\n`);
   return parts.join("\n\n");
@@ -58,7 +59,7 @@ export function loadSiteKnowledge(
 
 // ── CLI ──────────────────────────────────────────────────────
 
-async function runCli(): Promise<void> {
+function runCli(): void {
   const program = new Command();
   program
     .name("load-site-knowledge")
@@ -86,13 +87,16 @@ async function runCli(): Promise<void> {
 
 const argv1 = process.argv[1] ?? "";
 if (
+  argv1.endsWith("load-site-knowledge") ||
   argv1.endsWith("load-site-knowledge.ts") ||
   argv1.endsWith("load-site-knowledge.js")
 ) {
-  runCli().catch((err) => {
+  try {
+    runCli();
+  } catch (err) {
     process.stderr.write(
       `[load-site-knowledge] 错误：${err instanceof Error ? err.message : String(err)}\n`,
     );
     process.exit(1);
-  });
+  }
 }
