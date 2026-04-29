@@ -20,6 +20,8 @@ import {
   updateTask,
   detectResume,
   calcStats,
+  recordFlakyRun,
+  getFlakyTasks,
 } from "./task-state.ts";
 import type { TaskItem } from "./task-state.ts";
 
@@ -100,6 +102,30 @@ function program(): Command {
         return;
       }
       process.stdout.write(JSON.stringify(result, null, 2) + "\n");
+    });
+
+  cli
+    .command("record-flaky <tests_dir> <task_id> <status>")
+    .description("记录一次 flaky 运行结果（status: pass|fail）")
+    .option("--duration <ms>", "执行耗时（毫秒）")
+    .option("--error <text>", "错误信息")
+    .action((testsDir: string, taskId: string, status: string, opts: { duration?: string; error?: string }) => {
+      if (status !== "pass" && status !== "fail") {
+        process.stderr.write("[task-state] status 必须为 pass 或 fail\n");
+        process.exit(1);
+      }
+      recordFlakyRun(testsDir, taskId, status, opts.duration ? parseInt(opts.duration, 10) : undefined, opts.error);
+      process.stdout.write(JSON.stringify({ status: "ok" }) + "\n");
+    });
+
+  cli
+    .command("flaky <tests_dir>")
+    .description("列出 flaky 任务（pass_rate < 0.7 且运行 >= 5 次）")
+    .option("--threshold <n>", "pass_rate 阈值", "0.7")
+    .option("--min-runs <n>", "最少运行次数", "5")
+    .action((testsDir: string, opts: { threshold?: string; minRuns?: string }) => {
+      const flaky = getFlakyTasks(testsDir, opts.threshold ? parseFloat(opts.threshold) : undefined, opts.minRuns ? parseInt(opts.minRuns, 10) : undefined);
+      process.stdout.write(JSON.stringify(flaky, null, 2) + "\n");
     });
 
   return cli;

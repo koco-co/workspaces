@@ -4,7 +4,6 @@
 
 - [Step 0: Pre-flight](#step-0)
 - [Step 1: Parse and initialize](#step-1)
-- [Step 1.5: Resume](#step-1-5)
 - [Step 2: Login](#step-2)
 - [Step 3: Case processing](#step-3)
 - [Step 4: Merge](#step-4)
@@ -168,22 +167,6 @@ Parse the user's Archive MD input and confirm the test scope.
 ```bash
 TaskUpdate taskId="T1" status=completed
 ```
-
----
-
-## <a id="step-1-5"></a>Step 1.5: Resume
-
-Executor: direct (main agent)
-
-Continue an interrupted session from saved `.task-state.json`.
-
-1. 读取 `.task-state.json`
-2. 将有 `stale_locks` 的任务（上次中断时 `in_progress` 的）重置为 `pending`
-3. 展示当前状态：
-   - 已完成任务列表（不会重新执行）
-   - 失败任务列表（询问是否重试）
-   - 待处理任务列表（继续执行）
-4. 跳过已完成的步骤，从未完成的最早步骤继续
 
 ---
 
@@ -435,10 +418,30 @@ Summarize execution results and notify the user.
 
 **处理流程**：
 
-1. Generate execution summary (pass rate, failures list)
-2. If pass rate >= 80%: success notification
-3. If pass rate < 80%: dispatch `bug-reporter-agent` (model: haiku) per failed case, passing test case info + error + screenshot path. Agent returns bug report JSON.
-4. Apply [R2 review](#gate-r2)
+1. 记录 flaky 数据：对每个执行的 case，调用 `task-state-cli record-flaky` 记录本次执行结果
+
+   ```bash
+   bun run engine/src/ui-autotest/task-state-cli.ts record-flaky \
+     {{tests_dir}} {{task_id}} pass|fail \
+     --duration {{ms}} --error "{{error_if_fail}}"
+   ```
+
+2. 检查 flaky 任务：`getFlakyTasks` 自动识别 pass_rate < 70% 且运行 >= 5 次的用例
+
+   ```bash
+   bun run engine/src/ui-autotest/task-state-cli.ts flaky {{tests_dir}}
+   # 输出: [{"taskId":"t01","passRate":0.3,"totalRuns":10,"consecutiveFailures":4}]
+   ```
+
+3. 对 flaky 任务，在最终报告中标记为 `⚠ FLKY`，不触发 Bug 报告
+
+4. Generate execution summary (pass rate, failures list)
+
+5. If pass rate >= 80%: success notification
+
+6. If pass rate < 80%: dispatch `bug-reporter-agent` (model: haiku) per failed case, passing test case info + error + screenshot path. Agent returns bug report JSON.
+
+7. Apply [R2 review](#gate-r2)
 
 **完成 Step 6**：
 

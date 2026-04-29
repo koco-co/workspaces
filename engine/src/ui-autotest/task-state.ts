@@ -37,6 +37,20 @@ export interface FixResult {
   summary: string;
 }
 
+export interface FlakyEntry {
+  run_at: string;
+  status: "pass" | "fail";
+  duration_ms?: number;
+  error?: string;
+}
+
+export interface TaskFlakyStats {
+  entries: FlakyEntry[];
+  pass_rate: number;
+  total_runs: number;
+  consecutive_failures: number;
+}
+
 export interface SuggestedSiteKnowledge {
   /** Type of knowledge (site-selectors, site-traps, site-api, site-overview) */
   type: "site-selectors" | "site-traps" | "site-api" | "site-overview";
@@ -92,6 +106,7 @@ export interface TaskState {
   workflow_status: WorkflowStatus;
   stats: TaskStateStats;
   tasks: TaskItem[];
+  flaky: Record<string, TaskFlakyStats>;
   meta: TaskStateMeta;
 }
 
@@ -186,6 +201,7 @@ export function createTaskState(params: {
     workflow_status: "initialized",
     stats,
     tasks: taskItems,
+    flaky: {},
     meta: {
       current_step: "init",
       completed_steps: [],
@@ -290,6 +306,87 @@ export function updateTasks(
 // ────────────────────────────────────────────────────────────
 // 续传检测
 // ────────────────────────────────────────────────────────────
+
+/**
+ * 记录一次测试执行结果到 flaky 统计。
+ *
+ * @param testsDir tests 目录
+ * @param taskId   任务 ID
+ * @param status   本次执行结果（pass/fail）
+ * @param durationMs 执行耗时（毫秒，可选）
+ * @param error    错误信息（仅失败时，可选）
+ */
+export function recordFlakyRun(
+  testsDir: string,
+  taskId: string,
+  status: "pass" | "fail",
+  durationMs?: number,
+  error?: string,
+): void {
+  const state = readTaskState(testsDir);
+  if (!state) return;
+
+  const entry: FlakyEntry = {
+    run_at: new Date().toISOString(),
+    status,
+    ...(durationMs !== undefined && { duration_ms: durationMs }),
+    ...(error && { error }),
+  };
+
+  const prev = state.flaky[taskId] ?? {
+    entries: [],
+    pass_rate: 1,
+    total_runs: 0,
+    consecutive_failures: 0,
+  };
+
+  prev.entries.push(entry);
+  prev.total_runs += 1;
+  prev.consecutive_failures = status === "fail" ? prev.consecutive_failures + 1 : 0;
+
+  const passCount = prev.entries.filter((e) => e.status === "pass").length;
+  prev.pass_rate = passCount / prev.total_runs;
+  // 只保留最近 20 条记录防止无限增长
+  if (prev.entries.length > 20) {
+    prev.entries = prev.entries.slice(-20);
+  }
+
+  state.flaky[taskId] = prev;
+  writeTaskState(testsDir, state);
+}
+
+/**
+ * 返回 pass_rate 低于阈值且运行次数 >= minRuns 的 flaky 任务列表。
+ * 默认 threshold=0.7, minRuns=5（连续 5 次低于 70% 才算 flaky）。
+ */
+export function getFlakyTasks(
+  testsDir: string,
+  threshold: number = 0.7,
+  minRuns: number = 5,
+): Array<{ taskId: string; passRate: number; totalRuns: number; consecutiveFailures: number }> {
+  const state = readTaskState(testsDir);
+  if (!state) return [];
+
+  const result: Array<{
+    taskId: string;
+    passRate: number;
+    totalRuns: number;
+    consecutiveFailures: number;
+  }> = [];
+
+  for (const [taskId, stats] of Object.entries(state.flaky)) {
+    if (stats.total_runs >= minRuns && stats.pass_rate < threshold) {
+      result.push({
+        taskId,
+        passRate: stats.pass_rate,
+        totalRuns: stats.total_runs,
+        consecutiveFailures: stats.consecutive_failures,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.passRate - b.passRate);
+}
 
 /**
  * 检测 .task-state.json 是否存在且可续传。
