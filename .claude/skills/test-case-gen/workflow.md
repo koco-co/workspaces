@@ -129,7 +129,7 @@ Executor: subagent (`format-check-agent`, haiku)
 
 Format compliance check (iterative):
 
-1. Run `kata-cli format-check` against generated Archive MD
+1. Run `kata-cli format-check-script` against generated Archive MD
 2. Report deviations per round
 3. Auto-fix on round 1; if deviations remain, cycle round 2
 4. After max rounds, report remaining deviations as warnings
