@@ -59,6 +59,7 @@ docs/plans/
 
 # ── Claude Code 本地配置 ──────────────────────────────────
 .claude/settings.json
+CLAUDE.local.md
 
 # ── Python ─────────────────────────────────────────────
 __pycache__/
