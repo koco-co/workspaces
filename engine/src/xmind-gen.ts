@@ -19,10 +19,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import JSZip from "jszip";
-import { repoRoot, validateFilePath } from "./lib/paths.ts";
-import { loadXmindRules } from "./lib/rules.ts";
+import { repoRoot, validateFilePath } from "../lib/paths.ts";
+import { loadXmindRules } from "../lib/rules.ts";
 import type {
   IntermediateJson,
   Meta,
@@ -31,7 +31,7 @@ import type {
   SubGroup,
   TestCase,
   TestStep,
-} from "./lib/types.ts";
+} from "../lib/types.ts";
 import type { MarkerId, TopicBuilder } from "xmind-generator";
 import { Marker, RootTopic, Topic, Workbook, writeLocalFile } from "xmind-generator";
 

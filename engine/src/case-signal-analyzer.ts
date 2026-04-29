@@ -13,8 +13,8 @@ import {
 } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { basename, dirname, join, resolve } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
-import { probeCachePath, repoRoot } from "./lib/paths.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { probeCachePath, repoRoot } from "../lib/paths.ts";
 import {
   buildCacheEntry,
   classifyHistory,
@@ -30,8 +30,8 @@ import {
   type ProbeCacheEntry,
   type SignalProfile,
   type SourceAnalyzeOutput,
-} from "./lib/signal-probe.ts";
-import { parseFrontMatter } from "./lib/frontmatter.ts";
+} from "../lib/signal-probe.ts";
+import { parseFrontMatter } from "../lib/frontmatter.ts";
 
 // ---------------------------------------------------------------------------
 // Sub-command invoker

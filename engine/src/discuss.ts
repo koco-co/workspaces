@@ -9,7 +9,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { createCli } from "./lib/cli-runner.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import {
   initDoc,
   readDoc,
@@ -22,7 +22,7 @@ import {
   listPending,
   compactDoc,
   validateDoc,
-} from "./lib/enhanced-doc-store.ts";
+} from "../lib/enhanced-doc-store.ts";
 
 // ============================================================================
 // CLI wiring

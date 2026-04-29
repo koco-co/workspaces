@@ -22,9 +22,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
-import { outputJson, errorExit } from "./lib/cli.ts";
-import { tempDir } from "./lib/paths.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { outputJson, errorExit } from "../lib/cli.ts";
+import { tempDir } from "../lib/paths.ts";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { transformNodeTestToBunTest } from "../codemod/node-test-to-bun-test.ts";
 import { stripMatcherMessage } from "../codemod/strip-matcher-message.ts";
 import { fixTruthyCorruption, fixStandaloneTruthy } from "../codemod/fix-truthy-corruption.ts";
-import { repoRoot } from "../lib/paths.ts";
+import { repoRoot } from "../../lib/paths.ts";
 
 function findTestFiles(root: string, out: string[], indicator: RegExp): void {
   try {

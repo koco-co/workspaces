@@ -9,13 +9,13 @@
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename, extname } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import {
   buildMarkdown,
   parseFrontMatter,
   todayString,
-} from "./lib/frontmatter.ts";
-import { repoRoot, validateFilePath } from "./lib/paths.ts";
+} from "../lib/frontmatter.ts";
+import { repoRoot, validateFilePath } from "../lib/paths.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

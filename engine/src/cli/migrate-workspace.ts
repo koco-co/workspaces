@@ -10,7 +10,7 @@
 import { Command } from "commander";
 import { join } from "node:path";
 import { discoverFeatures, planMigration, applyMigration } from "../migration/v3-workspace.ts";
-import { repoRoot, projectDir } from "../lib/paths.ts";
+import { repoRoot, projectDir } from "../../lib/paths.ts";
 
 export const program = new Command("migrate-workspace")
   .description("迁移工作区到 v3 布局（默认 dry-run）")

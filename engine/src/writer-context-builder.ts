@@ -19,8 +19,8 @@
 import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { isAbsolute, join, resolve } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
-import { repoRoot } from "./lib/paths.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { repoRoot } from "../lib/paths.ts";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

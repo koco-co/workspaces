@@ -4,7 +4,7 @@
  * Replaces kata-state.ts and ui-autotest-progress.ts.
  */
 import { basename } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import {
   createSession,
   readSession,
@@ -21,17 +21,17 @@ import {
   withSessionLock,
   setArtifact,
   getArtifact,
-} from "./lib/progress-store.ts";
-import type { TaskInput, TaskUpdatePatch } from "./lib/progress-store.ts";
-import { ExitCode } from "./lib/progress-types.ts";
-import type { TaskStatus } from "./lib/progress-types.ts";
+} from "../lib/progress-store.ts";
+import type { TaskInput, TaskUpdatePatch } from "../lib/progress-store.ts";
+import { ExitCode } from "../lib/progress-types.ts";
+import type { TaskStatus } from "../lib/progress-types.ts";
 import {
   migrateKataState,
   migrateUiAutotest,
   discoverLegacyFiles,
   migrateSession,
-} from "./lib/progress-migrator.ts";
-import type { MigrateSessionReport } from "./lib/progress-migrator.ts";
+} from "../lib/progress-migrator.ts";
+import type { MigrateSessionReport } from "../lib/progress-migrator.ts";
 
 function slugFromPath(p: string): string {
   return basename(p, ".md").replace(/\.[^.]+$/, "");

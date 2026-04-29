@@ -17,7 +17,7 @@ export {
   workspaceDir,
   projectDir,
   listProjects,
-} from "./lib/paths.ts";
+} from "../lib/paths.ts";
 
 // ── Project metadata ───────────────────────────────
 

@@ -3,7 +3,7 @@ import { lintWeakAssertion } from "../lint/weak-assertion.ts";
 import { lintHardcodePath } from "../lint/hardcode-path.ts";
 import { lintDebugFileNaming } from "../lint/debug-file-naming.ts";
 import { lintOwnerSkillDup } from "../lint/owner-skill-dup.ts";
-import { repoRoot } from "../lib/paths.ts";
+import { repoRoot } from "../../lib/paths.ts";
 import { join } from "node:path";
 
 export function registerCasesLint(program: Command): void {

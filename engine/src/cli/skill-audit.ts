@@ -3,7 +3,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { lintSkillShape } from "../lint/skill-shape.ts";
 import { lintAgentFrontmatter } from "../lint/skill-frontmatter.ts";
-import { repoRoot, skillsDir } from "../lib/paths.ts";
+import { repoRoot, skillsDir } from "../../lib/paths.ts";
 
 export function registerSkillAudit(program: Command): void {
   program

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { existsSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { planReorg, applyReorg } from "../migration/reorg-tests.ts";
-import { projectDir } from "../lib/paths.ts";
+import { projectDir } from "../../lib/paths.ts";
 
 export function registerReorgTests(program: Command): void {
   program

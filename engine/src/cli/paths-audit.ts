@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { lintPaths } from "../lint/path-treatment.ts";
-import { repoRoot } from "../lib/paths.ts";
+import { repoRoot } from "../../lib/paths.ts";
 
 function isKnownSafe(file: string): boolean {
   return (

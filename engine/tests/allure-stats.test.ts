@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, it, expect } from "bun:test";
 import {
   collectAllureStats,
   snapshotResultFiles,
-} from "../src/lib/allure-stats.ts";
+} from "../lib/allure-stats.ts";
 
 const TMP = join(tmpdir(), `kata-allure-stats-${process.pid}`);
 

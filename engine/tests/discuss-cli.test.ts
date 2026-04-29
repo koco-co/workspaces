@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { $ } from "bun";
 import { join } from "node:path";
 import { existsSync, rmSync } from "node:fs";
-import { repoRoot } from "../src/lib/paths.ts";
+import { repoRoot } from "../lib/paths.ts";
 
 const P = "test-d1-cli";
 const YM = "202604";

@@ -16,15 +16,15 @@ import {
 } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import JSZip from "jszip";
-import { createCli } from "./lib/cli-runner.ts";
-import { buildMarkdown, todayString } from "./lib/frontmatter.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { buildMarkdown, todayString } from "../lib/frontmatter.ts";
 import {
   currentYYYYMM,
   featureDir,
   featureFile,
   repoRoot,
   validateFilePath,
-} from "./lib/paths.ts";
+} from "../lib/paths.ts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

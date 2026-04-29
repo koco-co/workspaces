@@ -14,7 +14,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import {
   autoFixFrontmatter,
   confidenceGate,
@@ -33,8 +33,8 @@ import {
   type IndexData,
   type IndexEntry,
   type TermRow,
-} from "./lib/knowledge.ts";
-import { knowledgeDir, knowledgePath } from "./lib/paths.ts";
+} from "../lib/knowledge.ts";
+import { knowledgeDir, knowledgePath } from "../lib/paths.ts";
 import {
   appendAudit,
   buildAuditRecord,
@@ -45,7 +45,7 @@ import {
   readSnapshot,
   saveSnapshot,
   type Conflict,
-} from "./lib/knowledge-guard.ts";
+} from "../lib/knowledge-guard.ts";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

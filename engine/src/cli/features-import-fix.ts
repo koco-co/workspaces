@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { rewriteSharedImports } from "../migration/import-fix.ts";
-import { projectDir } from "../lib/paths.ts";
+import { projectDir } from "../../lib/paths.ts";
 
 export function registerImportFix(program: Command): void {
   program

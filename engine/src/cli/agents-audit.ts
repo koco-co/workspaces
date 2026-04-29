@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { lintAgentShape } from "../lint/agent-shape.ts";
 import { lintAgentNaming } from "../lint/agent-naming.ts";
-import { repoRoot } from "../lib/paths.ts";
+import { repoRoot } from "../../lib/paths.ts";
 import { join } from "node:path";
 
 export function registerAgentsAudit(program: Command): void {

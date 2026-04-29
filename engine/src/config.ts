@@ -9,10 +9,10 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
-import { getEnv } from "./lib/env.ts";
-import { pluginsDir, repoRoot } from "./lib/paths.ts";
-import { loadAllPlugins } from "./lib/plugin-utils.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { getEnv } from "../lib/env.ts";
+import { pluginsDir, repoRoot } from "../lib/paths.ts";
+import { loadAllPlugins } from "../lib/plugin-utils.ts";
 
 interface PluginEntry {
   active: boolean;

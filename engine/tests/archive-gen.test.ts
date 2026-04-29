@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, it, expect } from "bun:test";
-import { parseFrontMatter } from "../src/lib/frontmatter.js";
+import { parseFrontMatter } from "../lib/frontmatter.js";
 
 const REPO_ROOT = resolve(import.meta.dirname, "../..");
 const FIXTURE = join(import.meta.dirname, "fixtures/sample-cases.json");

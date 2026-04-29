@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { readdirSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { lintFeatureTests } from "../lint/tests-layout.ts";
-import { projectDir } from "../lib/paths.ts";
+import { projectDir } from "../../lib/paths.ts";
 
 export function registerLintTests(program: Command): void {
   program

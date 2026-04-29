@@ -18,8 +18,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { repoRoot, validateFilePath } from "./lib/paths.ts";
-import { buildRootName } from "./lib/rules.ts";
+import { repoRoot, validateFilePath } from "../lib/paths.ts";
+import { buildRootName } from "../lib/rules.ts";
 import type {
   IntermediateJson,
   Meta,
@@ -28,8 +28,8 @@ import type {
   SubGroup,
   TestCase,
   TestStep,
-} from "./lib/types.ts";
-import { createCli } from "./lib/cli-runner.ts";
+} from "../lib/types.ts";
+import { createCli } from "../lib/cli-runner.ts";
 import Handlebars from "handlebars";
 import {
   buildMarkdown,
@@ -37,7 +37,7 @@ import {
   parseFrontMatter,
   serializeFrontMatter,
   todayString,
-} from "./lib/frontmatter.js";
+} from "../lib/frontmatter.js";
 
 interface ConvertResult {
   output_path: string;

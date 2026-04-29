@@ -7,9 +7,9 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { createCli } from "./lib/cli-runner.ts";
-import { getEnv } from "./lib/env.ts";
-import { repoRoot, projectRulesDir } from "./lib/paths.ts";
+import { createCli } from "../lib/cli-runner.ts";
+import { getEnv } from "../lib/env.ts";
+import { repoRoot, projectRulesDir } from "../lib/paths.ts";
 
 type RuleMap = Record<string, Record<string, string>>;
 
