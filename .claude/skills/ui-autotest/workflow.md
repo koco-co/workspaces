@@ -91,15 +91,14 @@ Executor: direct (main agent)
 project: dataAssets
 feature: 202604-xxx
 URL:     http://...
-archive: 36 条用例，无历史状态，全新执行
+archive: 36 条用例
 确认开始？(y/N)
 ```
 
 - 用户说"只跑 P0" → 设 smokeOnly=true
 - 其余情况默认 full
 
-3. 有 `.task-state.json` → 走 Step 0b 续传逻辑，跳过此处
-4. 无历史状态 → 重建状态：
+3. 初始化 tests 目录 + 解析 archive 生成 `.task-state.json`：
 
 ```bash
 kata-cli features:init-tests --project {{project}} --feature {{feature}}
@@ -108,7 +107,7 @@ bun run engine/src/ui-autotest/parse-cases.ts \
   --project {{project}}
 ```
 
-5. 已有脚本 → 保留不动（parse-cases 不覆盖已有文件）
+> 续传检测已在 Step 0b 完成，进入 Step 1 时必定是全新解析。已有脚本保留不动（parse-cases 不覆盖已有文件）。
 
 **完成 Step 1**：
 
