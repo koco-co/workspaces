@@ -7,7 +7,7 @@ import { join } from "node:path";
 export function registerAgentsAudit(program: Command): void {
   program
     .command("agents:audit")
-    .description("Audit .claude/agents/ shape (A1 line count) + naming (N1 subagent-* ban) per spec §10.2/§10.4")
+    .description("审查 .claude/agents/ 结构与命名规范")
     .option("--exit-code", "exit non-zero on any violation", false)
     .option("--severity <level>", "filter exit-code by severity (all|fail-only)", "all")
     .action((opts: { exitCode: boolean; severity: string }) => {

@@ -132,7 +132,7 @@ async function runFilter(opts: { input?: string; top: number }): Promise<void> {
 
 export const program = createCli({
   name: "search-filter",
-  description: "Deduplicate, sort, and truncate archive search results",
+  description: "去重、排序并截断归档搜索结果",
   commands: [
     {
       name: "filter",

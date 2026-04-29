@@ -102,7 +102,7 @@ function runShow(): void {
 export const program = createCli({
   name: "config",
   description:
-    "Output merged workspace config JSON (reads .env + scans plugins/)",
+    "输出合并后的工作区配置 JSON（读取 .env + 扫描 plugins/）",
   rootAction: {
     action: () => runShow(),
   },

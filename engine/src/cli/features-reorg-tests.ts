@@ -7,7 +7,7 @@ import { projectDir } from "../lib/paths.ts";
 export function registerReorgTests(program: Command): void {
   program
     .command("features:reorg-tests")
-    .description("Reshape features/{ym-slug}/tests/ into runners/cases/helpers/... per §4.5")
+    .description("重整 features/ 测试目录结构")
     .requiredOption("--project <name>", "project name")
     .requiredOption("--feature <ym-slug>", "feature directory name; supports '*' for all")
     .option("--mode <mode>", "dry|real", "dry")

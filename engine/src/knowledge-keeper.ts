@@ -983,7 +983,7 @@ const CONFIDENCE_LEVELS = ["high", "medium", "low"] as const;
 export const program = createCli({
   name: "knowledge-keeper",
   description:
-    "Knowledge base CRUD + lint/index for workspace/{project}/knowledge/",
+    "知识库 CRUD + 健康检查与索引",
   commands: [
     {
       name: "read-core",

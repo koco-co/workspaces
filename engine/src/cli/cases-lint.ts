@@ -9,7 +9,7 @@ import { join } from "node:path";
 export function registerCasesLint(program: Command): void {
   program
     .command("cases:lint")
-    .description("Aggregate case-level lints (E1-WEAK / E1-PATH / E1-DEBUG / E1-OWNER) per spec §10.7")
+    .description("聚合用例级 lint 检查结果")
     .option("--exit-code", "exit non-zero on any violation", false)
     .option("--severity <level>", "filter exit-code by severity (all|fail-only)", "all")
     .option("--scope <p>", "scan path", join(repoRoot(), "workspace"))

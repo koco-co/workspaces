@@ -1528,7 +1528,7 @@ async function runConvert(opts: {
 
 export const program = createCli({
   name: "history-convert",
-  description: "Convert historical CSV/XMind files to Archive Markdown",
+  description: "将历史 CSV/XMind 文件转换为 Archive Markdown",
   rootAction: {
     options: [
       {

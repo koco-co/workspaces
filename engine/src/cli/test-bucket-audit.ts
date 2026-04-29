@@ -115,7 +115,7 @@ import { Command } from "commander";
 export function registerTestBucketAudit(kata: Command): void {
   kata
     .command("test:bucket-audit")
-    .description("Run engine tests, classify failures into E1-E5 manifest")
+    .description("运行引擎测试并分类失败原因")
     .action(() => {
       const report = runTestAudit();
       process.stdout.write(JSON.stringify(report, null, 2) + "\n");

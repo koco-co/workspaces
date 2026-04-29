@@ -11,6 +11,8 @@ See [quickstart.md](references/quickstart.md) for the quick-start guide.
 
 ## <a id="workflow-menu"></a>Workflow: Menu & Routing
 
+Executor: direct (main agent)
+
 ### Routing logic
 
 <routing>
@@ -52,7 +54,7 @@ See [quickstart.md](references/quickstart.md) for the quick-start guide.
 | ---- | ---------------- | ----------------------------------------------- | ---- |
 | 1    | 生成测试用例     | `/using-kata 1` 或 `为 <需求名称> 生成测试用例` | 可用 |
 | 2    | UI 自动化测试    | `/using-kata 2` 或 `UI自动化测试`               | 可用 |
-| 3    | 用例格式中枢     | `/using-kata 3` 或 `修改用例 "验证xxx"`          | 可用 |
+| 3    | 用例格式中枢     | `/using-kata 3` 或 `修改用例 "验证xxx"`         | 可用 |
 | 4    | 生成 Hotfix 用例 | `/using-kata 4` 或 粘贴禅道 Bug 链接            | 可用 |
 | 5    | 分析 Bug 报告    | `/using-kata 5` 或 `帮我分析这个报错`           | 可用 |
 | 6    | 分析合并冲突     | `/using-kata 6` 或 `分析冲突`                   | 可用 |
@@ -75,6 +77,8 @@ See [quickstart.md](references/quickstart.md) for detailed examples.
 ---
 
 ## <a id="workflow-create-project"></a>Workflow: Create Project
+
+Executor: direct (main agent)
 
 [Full content from create-project workflow.](workflow.md#workflow-create-project#note)
 

@@ -431,7 +431,7 @@ async function runSearch(opts: {
 export const program = createCli({
   name: "archive-gen",
   description:
-    "Convert intermediate JSON to Archive Markdown, or search existing archives",
+    "将中间 JSON 转换为 Archive Markdown，或搜索已有归档",
   commands: [
     {
       name: "convert",

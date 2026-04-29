@@ -1,8 +1,7 @@
 /**
  * progress.ts — unified task progress engine CLI.
  *
- * Replaces kata-state.ts and ui-autotest-progress.ts. See spec:
- *   docs/architecture/progress-engine.md (TBD: written in P9)
+ * Replaces kata-state.ts and ui-autotest-progress.ts.
  */
 import { basename } from "node:path";
 import { createCli } from "./lib/cli-runner.ts";
@@ -461,7 +460,7 @@ function runMigrateSession(opts: {
 
 export const program = createCli({
   name: "progress",
-  description: "Unified task progress engine for kata workflows",
+  description: "kata 工作流统一进度引擎",
   commands: [
     {
       name: "session-create",

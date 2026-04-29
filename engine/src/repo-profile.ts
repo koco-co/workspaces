@@ -126,7 +126,7 @@ function runList(): void {
 
 export const program = createCli({
   name: "repo-profile",
-  description: "Manage repo profiles for source code mapping",
+  description: "管理源码仓库配置文件",
   commands: [
     {
       name: "match",

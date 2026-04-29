@@ -19,7 +19,7 @@ function isKnownSafe(file: string): boolean {
 export function registerPathsAudit(program: Command): void {
   program
     .command("paths:audit")
-    .description("Audit stale-path references (P-S1..P-S4 per spec §10.3)")
+    .description("审查过时路径引用")
     .option("--exit-code", "exit non-zero on any violation", false)
     .option("--by-rule", "summarize per-rule counts", false)
     .action((opts: { exitCode: boolean; byRule: boolean }) => {

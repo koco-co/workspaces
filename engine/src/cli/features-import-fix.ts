@@ -7,7 +7,7 @@ import { projectDir } from "../lib/paths.ts";
 export function registerImportFix(program: Command): void {
   program
     .command("features:import-fix")
-    .description("Rewrite ../../fixtures/ → ../../../shared/fixtures/ in migrated test files (P3-B leftover)")
+    .description("重写迁移测试文件中的 fixtures 相对路径")
     .requiredOption("--project <name>", "project name (e.g. dataAssets)")
     .option("--dry", "report what would change without writing", false)
     .action(async (opts: { project: string; dry: boolean }) => {

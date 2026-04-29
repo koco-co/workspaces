@@ -45,7 +45,7 @@ function buildCtx(opts: Record<string, unknown>): ResolveContext {
 export const program = createCli({
   name: "source-ref",
   description:
-    "Parse and resolve source_ref anchors (prd / knowledge / repo / enhanced).",
+    "解析并定位 source_ref 锚点（prd / knowledge / repo / enhanced）",
   commands: [
     {
       name: "resolve",

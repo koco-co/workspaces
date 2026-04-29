@@ -29,6 +29,7 @@ import { program as formatCheckScript } from "../format-check-script.ts";
 import { program as formatReportLocator } from "../format-report-locator.ts";
 import { program as historyConvert } from "../history-convert.ts";
 import { program as imageCompress } from "../image-compress.ts";
+import { program as initWizard } from "../init-wizard.ts";
 import { program as knowledgeKeeper } from "../knowledge-keeper.ts";
 import { program as plan } from "../plan.ts";
 import { program as pluginLoader } from "../plugin-loader.ts";
@@ -50,7 +51,7 @@ import { program as xmindPatch } from "../xmind-patch.ts";
 
 const kata = new Command()
   .name("kata-cli")
-  .description("kata unified CLI — dispatches to scripts under engine/src/")
+  .description("kata 统一 CLI — 调度 engine/src/ 下的脚本")
   .showHelpAfterError();
 
 kata.addCommand(archiveGen);
@@ -64,6 +65,7 @@ kata.addCommand(formatCheckScript);
 kata.addCommand(formatReportLocator);
 kata.addCommand(historyConvert);
 kata.addCommand(imageCompress);
+kata.addCommand(initWizard);
 kata.addCommand(knowledgeKeeper);
 kata.addCommand(plan);
 kata.addCommand(pluginLoader);
@@ -83,7 +85,7 @@ kata.addCommand(writerContextBuilder);
 kata.addCommand(xmindGen);
 kata.addCommand(xmindPatch);
 
-// ── Features commands (§4.5 tooling) ──────────────────────────
+// ── Features commands ─────────────────────────────────────────
 import { registerImportFix } from "./features-import-fix.ts";
 import { registerLintTests } from "./features-lint-tests.ts";
 import { registerReorgTests } from "./features-reorg-tests.ts";
@@ -91,27 +93,27 @@ registerImportFix(kata);
 registerLintTests(kata);
 registerReorgTests(kata);
 
-// ── Skill audit (P4 §5.4 + §5.5) ────────────────────────────
+// ── Skill audit ──────────────────────────────────────────────
 import { registerSkillAudit } from "./skill-audit.ts";
 registerSkillAudit(kata);
 
-// ── Path audit (P5 §10.3) ───────────────────────────────────
+// ── Path audit ───────────────────────────────────────────────
 import { registerPathsAudit } from "./paths-audit.ts";
 registerPathsAudit(kata);
 
-// ── Agent audit (P6 §10.2/§10.4) ───────────────────────────
+// ── Agent audit ──────────────────────────────────────────────
 import { registerAgentsAudit } from "./agents-audit.ts";
 registerAgentsAudit(kata);
 
-// ── Case lint (P7 §10.7) ───────────────────────────────────
+// ── Case lint ────────────────────────────────────────────────
 import { registerCasesLint } from "./cases-lint.ts";
 registerCasesLint(kata);
 
-// ── Test bucket audit (P8.1) ──────────────────────────────
+// ── Test bucket audit ────────────────────────────────────────
 import { registerTestBucketAudit } from "./test-bucket-audit.ts";
 registerTestBucketAudit(kata);
 
-// ── Codemod (P7.5) ─────────────────────────────────────────
+// ── Codemod ──────────────────────────────────────────────────
 import { registerCodemodApply } from "./codemod-apply.ts";
 registerCodemodApply(kata);
 

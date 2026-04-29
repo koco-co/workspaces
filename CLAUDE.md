@@ -43,7 +43,7 @@
 
 | 层                | 路径                                    | 作用域      | 语义                         |
 | ----------------- | --------------------------------------- | ----------- | ---------------------------- |
-| memory（偏好）    | `~/.claude/projects/.../memory/`        | 用户级      | AI 协作偏好 + 项目状态       |
+| memory（偏好）    | `~/.claude/projects/.../memory/`        | 用户级      | 协作偏好 + 项目状态          |
 | rules（规则）     | `rules/` + `workspace/{project}/rules/` | 项目 + 全局 | 编写/格式硬约束              |
 | knowledge（知识） | `workspace/{project}/knowledge/`        | 项目级      | 业务事实（流程、术语、踩坑） |
 

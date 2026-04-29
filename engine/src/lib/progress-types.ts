@@ -1,7 +1,5 @@
 /**
  * progress-types.ts — Shared types for the unified progress engine.
- *
- * See spec: docs/architecture/progress-engine.md (TBD: written in P9)
  */
 
 export const SCHEMA_VERSION = 1 as const;

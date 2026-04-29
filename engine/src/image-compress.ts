@@ -133,7 +133,7 @@ function runCompress(opts: {
 
 export const program = createCli({
   name: "image-compress",
-  description: "Compress images larger than max size using macOS sips",
+  description: "使用 macOS sips 压缩超大图片",
   rootAction: {
     options: [
       {

@@ -367,4 +367,15 @@ program
     }
   });
 
-program.parse(process.argv);
+export { program };
+
+// Only parse when executed directly (not when imported by cli/index.ts)
+const isDirectRun =
+  process.argv[1] &&
+  (process.argv[1].endsWith("/init-wizard.ts") ||
+    process.argv[1].endsWith("\\init-wizard.ts"));
+
+if (isDirectRun) {
+  initEnv();
+  program.parse(process.argv);
+}

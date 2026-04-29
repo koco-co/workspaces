@@ -788,7 +788,7 @@ async function runGenerate(opts: {
 
 export const program = createCli({
   name: "xmind-gen",
-  description: "Convert intermediate JSON or Archive Markdown to .xmind files",
+  description: "将中间 JSON 或 Archive Markdown 转换为 .xmind 文件",
   rootAction: {
     options: [
       {

@@ -97,7 +97,7 @@ function runLoad(opts: { project: string }): void {
 
 export const program = createCli({
   name: "rule-loader",
-  description: "Load and merge multi-level rules, output JSON",
+  description: "加载并合并多级规则，输出 JSON",
   commands: [
     {
       name: "load",

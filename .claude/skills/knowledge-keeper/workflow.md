@@ -9,6 +9,8 @@ This skill supports 2 operations:
 
 ## <a id="workflow-read"></a>Workflow: Read
 
+Executor: direct (main agent)
+
 > 共享的前置加载、知识层级、CLI 命令总览在 SKILL.md 中定义，本文件不重复。
 
 ---
@@ -58,6 +60,8 @@ kata-cli knowledge-keeper read-core --project {{project}}
 ---
 
 ## <a id="workflow-write"></a>Workflow: Write
+
+Executor: direct (main agent)
 
 > 共享的前置加载、知识层级、CLI 命令总览在 SKILL.md 中定义，本文件不重复。
 
@@ -184,12 +188,12 @@ CLI 默认拒绝覆盖。选择：
 
 2. **AskUserQuestion 仲裁**（四选一）：
 
-   | 选项 | 动作 |
-   | --- | --- |
-   | 保留旧版 | 跳过本次写入 |
-   | 用新版覆盖 | 加 `--force` 重新 write |
-   | 合并 | 走 update 精细改（patch 模式） |
-   | 先回滚上一个版本 | 调 rollback，再决定 |
+   | 选项             | 动作                           |
+   | ---------------- | ------------------------------ |
+   | 保留旧版         | 跳过本次写入                   |
+   | 用新版覆盖       | 加 `--force` 重新 write        |
+   | 合并             | 走 update 精细改（patch 模式） |
+   | 先回滚上一个版本 | 调 rollback，再决定            |
 
 3. **写入前强制记录证据**：若用户选"用新版覆盖"，在 audit 条目中 `forced=true` 会自动记录，便于事后追溯。
 
@@ -231,11 +235,13 @@ kata-cli knowledge-keeper rollback --project {{project}} \
 ```
 
 **何时使用：**
+
 - 发现最近沉淀的知识是错的（事后察觉、同事反馈、业务变更）
 - 冲突仲裁时用户选"先回滚上一个版本"
 - rollback 本身也会生成新的快照（当前版本自动存档），可再次回滚
 
 **审计字段解读：**
+
 - `forced: true` — 曾用 `--force` 绕过冲突，重点核查对象
 - `confidence: low/medium` — 置信度低的条目，更可能需要回滚
 

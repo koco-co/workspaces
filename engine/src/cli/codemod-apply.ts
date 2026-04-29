@@ -28,7 +28,7 @@ export function registerCodemodApply(program: Command): void {
   program
     .command("codemod:node-test")
     .description(
-      "Transform engine test files (P7.5 node:test→bun:test, P7.6 strip-msg, P8.1 fix-truthy)",
+      "转换引擎测试文件（node:test→bun:test 等）",
     )
     .option("--apply", "write changes (default: dry-run)", false)
     .option("--scope <p>", "scan path", join(repoRoot(), "engine"))

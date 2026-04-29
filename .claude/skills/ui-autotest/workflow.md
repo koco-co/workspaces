@@ -26,6 +26,8 @@
 
 ## <a id="step-1"></a>Step 1: Parse and scope
 
+Executor: direct (main agent)
+
 Parse the user's Archive MD input and confirm the test scope.
 
 Protocols reference: See [Standard protocol](#protocols) for confirmation policy, command aliases, Task schema.
@@ -43,6 +45,8 @@ Script reference: `bun run engine/src/ui-autotest/parse-cases.ts --file {{md_pat
 
 ## <a id="step-1-5"></a>Step 1.5: Resume
 
+Executor: direct (main agent)
+
 Continue an interrupted session from saved state.
 
 1. Read `.kata/{{project}}/workflow-state/ui-autotest-{{session-file}}.json`
@@ -52,6 +56,8 @@ Continue an interrupted session from saved state.
 ---
 
 ## <a id="step-2"></a>Step 2: Login
+
+Executor: direct (main agent)
 
 Perform browser session login for the target environment.
 
@@ -65,6 +71,8 @@ The script creates an authenticated session state file for subsequent test runs.
 
 ## <a id="step-3a"></a>Step 3a: Script writer — script generation
 
+Executor: subagent (agent: script-writer-agent, model: sonnet)
+
 Dispatch `script-writer-agent` to generate Playwright scripts from Archive MD cases.
 
 1. Read Archive MD feature file
@@ -76,52 +84,33 @@ Dispatch `script-writer-agent` to generate Playwright scripts from Archive MD ca
 
 ## <a id="step-3b"></a>Step 3b: Script fixer — self-test fix
 
+Executor: subagent (agent: script-fixer-agent, model: sonnet)
+
 Dispatch `script-fixer-agent` to run generated scripts and fix failures.
 
 1. Run `bunx playwright test {file}` per spec
-2. Analyze failure (selector / timeout / assertion)
+2. Analyze failure — fixture 自动附带 `DOM-{N}` attachment（目标元素 HTML 或交互元素清单），fixer 应优先使用，仅在不足时调用 playwright-cli snapshot
 3. Apply minimal fix via snapshot + inspect
 4. Re-verify until FIXED or STILL_FAILING
 
 ## <a id="step-3c"></a>Step 3c: Convergence — pattern summarization
+
+Executor: subagent (agent: convergence-agent, model: haiku)
 
 Dispatch `convergence-agent` to summarize common failure patterns.
 
 1. Read all fixer summaries
 2. Group by error type
 3. Identify 3+ case common patterns
-4. Output helpers diff suggestion JSON
+4. Output helpers diff suggestion JSON — shared Ant Design 交互改进目标为 `lib/playwright/`
 
 Review gate: After generation, run [R1 review](#gate-r1).
 
 ---
 
-## <a id="step-3b"></a>Step 3b: Test fix
-
-Fix test compilation and basic execution issues.
-
-1. Run `bun test --cwd tests/{{feature}}` to detect compilation errors
-2. Fix:
-   - Import path issues
-   - Missing fixture/helper references
-   - Type errors in test code
-3. Iterate until tests compile clean
-
----
-
-## <a id="step-3c"></a>Step 3c: Convergence
-
-Converge generated scripts into a coherent test suite.
-
-1. Run lint and fix recurring patterns
-2. Normalize naming conventions across all generated files
-3. Apply common patterns from [references/playwright-patterns.md](references/playwright-patterns.md)
-
-When all 3 sub-steps pass clean → mark Step 3 complete.
-
----
-
 ## <a id="step-4"></a>Step 4: Merge
+
+Executor: direct (main agent)
 
 Merge generated case scripts into consolidated spec files (smoke + full).
 
@@ -141,6 +130,8 @@ The merge script:
 
 ## <a id="step-5"></a>Step 5: Execute
 
+Executor: direct (main agent)
+
 Run the generated test suite.
 
 ```bash
@@ -153,11 +144,13 @@ Report results: pass/fail/error counts per spec file.
 
 ## <a id="step-6"></a>Step 6: Result & notify
 
+Executor: direct (main agent) + subagent (agent: bug-reporter-agent, model: haiku) per failed case
+
 Summarize execution results and notify the user.
 
 1. Generate execution summary (pass rate, failures list)
 2. If pass rate ≥ 80%: success notification
-3. If pass rate < 80%: flag severe failures for Bug report generation
+3. If pass rate < 80%: dispatch `bug-reporter-agent` (model: haiku) per failed case, passing test case info + error + screenshot path. Agent returns bug report JSON.
 4. Apply [R2 review](#gate-r2)
 
 ---

@@ -249,7 +249,7 @@ async function runPrint(opts: {
 
 export const program = createCli({
   name: "format-report-locator",
-  description: "Map format-checker issues to Archive MD line numbers",
+  description: "将格式检查问题映射到 Archive MD 行号",
   commands: [
     {
       name: "locate",

@@ -10,6 +10,8 @@ This skill exposes 3 workflows, dispatched by the user's intent:
 
 ## <a id="workflow-edit"></a>Workflow: Edit
 
+Executor: direct (main agent)
+
 > 由 case-format SKILL.md 路由后加载。
 
 ### 写入确认策略
@@ -188,6 +190,8 @@ kata-cli xmind-patch delete \
 
 ## <a id="workflow-other2md"></a>Workflow: Other → Markdown
 
+Executor: direct (orchestration) + subagent (S2: agent: standardize-agent, model: sonnet; S3: agent: reviewer-agent, model: opus)
+
 > 由 SKILL.md 路由后加载。触发：输入文件扩展名为 `.xmind` 或 `.csv`，或含「标准化归档 / 归档用例 / 转化用例」触发词。
 > 此流程不走 7 节点工作流，独立 4 步完成。
 
@@ -283,6 +287,8 @@ kata-cli plugin-loader notify --event archive-converted --data '{"fileCount":1,"
 ---
 
 ## <a id="workflow-reverse-sync"></a>Workflow: Reverse Sync
+
+Executor: direct (main agent)
 
 > 由 SKILL.md 路由后加载。触发：用户在 XMind 软件中手动修改了用例，需要同步回 Archive MD。
 > 触发词：同步 xmind / 同步 XMind 文件 / 反向同步。

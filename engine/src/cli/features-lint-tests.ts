@@ -7,7 +7,7 @@ import { projectDir } from "../lib/paths.ts";
 export function registerLintTests(program: Command): void {
   program
     .command("features:lint-tests")
-    .description("Lint features/{ym-slug}/tests/ layout against §4.5 L1-L8 rules")
+    .description("检查 features/ 测试目录布局规范")
     .requiredOption("--project <name>", "project name")
     .option("--feature <ym-slug>", "lint a single feature; omit to lint all")
     .option("--exit-code", "exit non-zero on any violation", false)

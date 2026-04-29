@@ -113,7 +113,7 @@ function runNormalize(opts: { file: string; dryRun?: boolean }): void {
 
 export const program = createCli({
   name: "prd-frontmatter",
-  description: "Normalize PRD front-matter fields",
+  description: "规范化 PRD front-matter 字段",
   commands: [
     {
       name: "normalize",

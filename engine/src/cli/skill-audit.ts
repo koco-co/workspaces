@@ -8,7 +8,7 @@ import { repoRoot, skillsDir } from "../lib/paths.ts";
 export function registerSkillAudit(program: Command): void {
   program
     .command("skill:audit")
-    .description("Audit .claude/skills/ 4-file contract + .claude/agents/ frontmatter (§5.4 + §5.5)")
+    .description("审查 .claude/skills/ 四文件契约与 agents frontmatter")
     .option("--exit-code", "exit non-zero on any violation", false)
     .action((opts: { exitCode: boolean }) => {
       const root = repoRoot();

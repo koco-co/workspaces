@@ -13,7 +13,7 @@ import { discoverFeatures, planMigration, applyMigration } from "../migration/v3
 import { repoRoot, projectDir } from "../lib/paths.ts";
 
 export const program = new Command("migrate-workspace")
-  .description("Migrate workspace to v3 layout (dry-run by default)")
+  .description("迁移工作区到 v3 布局（默认 dry-run）")
   .requiredOption("--project <name>", "Project name (directory under workspace/)")
   .option("--mode <mode>", "Execution mode: dry or real", "dry")
   .option("--log <path>", "Path for the migration log JSON")

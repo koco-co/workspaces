@@ -433,7 +433,7 @@ async function probeAction(opts: {
 export const program = createCli({
   name: "case-signal-analyzer",
   description:
-    "4-dimensional signal probe (source / PRD / history / knowledge)",
+    "四维信号探针（源码 / PRD / 历史 / 知识库）",
   commands: [
     {
       name: "probe",
