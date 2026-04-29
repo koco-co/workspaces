@@ -5,7 +5,6 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
         <mxCell id="entry_container" value="Entry &amp; Routing / 入口与路由" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="40" y="30" width="1520" height="170" as="geometry" />
         </mxCell>
@@ -18,14 +17,13 @@
         <mxCell id="outputs_container" value="Project Outputs / 项目产物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8FAFC;strokeColor=#CBD5E1;strokeWidth=1.5;fontColor=#0F172A;fontStyle=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="1060" y="650" width="500" height="280" as="geometry" />
         </mxCell>
-
-        <mxCell id="user_input" value="User requests&#xa;PRD / 报错 / XMind / Bug URL / 冲突片段" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.5;fontColor=#14532D;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="user_input" value="User requests&#10;PRD / 报错 / XMind / Bug URL / 冲突片段" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.5;fontColor=#14532D;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="100" y="88" width="260" height="56" as="geometry" />
         </mxCell>
-        <mxCell id="router" value="kata Router&#xa;keyword / menu / command routing" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;strokeWidth=1.5;fontColor=#92400E;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="router" value="kata Router&#10;keyword / menu / command routing" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FEF3C7;strokeColor=#F59E0B;strokeWidth=1.5;fontColor=#92400E;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="480" y="68" width="240" height="96" as="geometry" />
         </mxCell>
-        <mxCell id="first_run" value="First run? / 无项目?&#xa;setup → create-project" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.5;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="first_run" value="First run? / 无项目?&#10;setup → create-project" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.5;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="790" y="74" width="220" height="84" as="geometry" />
         </mxCell>
         <mxCell id="chip_kk" value="knowledge-keeper / 知识库读写" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C4B5FD;fontColor=#5B21B6;strokeWidth=1.2;arcSize=18;" vertex="1" parent="1">
@@ -40,76 +38,69 @@
         <mxCell id="chip_playwright" value="playwright-cli (library)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C4B5FD;fontColor=#5B21B6;strokeWidth=1.2;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="1310" y="126" width="240" height="36" as="geometry" />
         </mxCell>
-
-        <mxCell id="setup" value="setup&#xa;environment wizard / 环境检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.6;shadow=1;fontColor=#14532D;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="setup" value="setup&#10;environment wizard / 环境检查" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.6;shadow=1;fontColor=#14532D;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="85" y="280" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="create_project" value="create-project&#xa;skeleton &amp; repos / 骨架与仓库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.6;shadow=1;fontColor=#14532D;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="create_project" value="create-project&#10;skeleton &amp; repos / 骨架与仓库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#22C55E;strokeWidth=1.6;shadow=1;fontColor=#14532D;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="370" y="280" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="tcg" value="test-case-gen&#xa;10-node pipeline / 用例流水线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.6;shadow=1;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="tcg" value="test-case-gen&#10;10-node pipeline / 用例流水线" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#3B82F6;strokeWidth=1.6;shadow=1;fontColor=#1D4ED8;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="655" y="280" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="xe" value="xmind-editor&#xa;preview-first edits / 写前预览" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="xe" value="xmind-editor&#10;preview-first edits / 写前预览" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="940" y="280" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="ua" value="ui-autotest&#xa;self-healing regression / 自修复回归" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;strokeWidth=1.6;shadow=1;fontColor=#155E75;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="ua" value="ui-autotest&#10;self-healing regression / 自修复回归" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;strokeWidth=1.6;shadow=1;fontColor=#155E75;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="1225" y="280" width="250" height="100" as="geometry" />
         </mxCell>
-
-        <mxCell id="hotfix" value="hotfix-case-gen&#xa;禅道 Bug → Archive MD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="hotfix" value="hotfix-case-gen&#10;禅道 Bug → Archive MD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="85" y="450" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="bug" value="bug-report&#xa;后端/前端自动路由 → HTML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="bug" value="bug-report&#10;后端/前端自动路由 → HTML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="370" y="450" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="conflict" value="conflict-report&#xa;git 冲突片段 → HTML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="conflict" value="conflict-report&#10;git 冲突片段 → HTML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;strokeWidth=1.6;shadow=1;fontColor=#9A3412;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="655" y="450" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="kk" value="knowledge-keeper&#xa;overview / 术语 / 踩坑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="kk" value="knowledge-keeper&#10;overview / 术语 / 踩坑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.6;shadow=1;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="940" y="450" width="250" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="pw" value="playwright-cli&#xa;library (shared by ui-autotest)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;strokeWidth=1.4;shadow=0;fontColor=#155E75;fontStyle=0;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="pw" value="playwright-cli&#10;library (shared by ui-autotest)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;strokeWidth=1.4;shadow=0;fontColor=#155E75;fontStyle=0;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="1225" y="450" width="250" height="100" as="geometry" />
         </mxCell>
-
-        <mxCell id="rules" value="Rules (two-tier)&#xa;project &gt; global" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="rules" value="Rules (two-tier)&#10;project &gt; global" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="80" y="708" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="repos" value="Read-only repos&#xa;workspace/&lt;project&gt;/.repos/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="repos" value="Read-only repos&#10;workspace/&lt;project&gt;/.repos/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="300" y="708" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="state" value="State (per-env)&#xa;.kata-state-{slug}-{env}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="state" value="State (per-env)&#10;.kata-state-{slug}-{env}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="520" y="708" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="plugins" value="Plugin hooks&#xa;lanhu / zentao / notify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="plugins" value="Plugin hooks&#10;lanhu / zentao / notify" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="740" y="708" width="200" height="70" as="geometry" />
         </mxCell>
-
-        <mxCell id="cli_runner" value="CLI Runner factory&#xa;commander + initEnv + logger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="cli_runner" value="CLI Runner factory&#10;commander + initEnv + logger" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="80" y="810" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="env3" value=".env three-tier&#xa;.env / .env.envs / .env.local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="env3" value=".env three-tier&#10;.env / .env.envs / .env.local" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="300" y="810" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="plan_hydrate" value="plan.md arbitration&#xa;strategy hydrate on resume" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="plan_hydrate" value="plan.md arbitration&#10;strategy hydrate on resume" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="520" y="810" width="200" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="log_level" value="LOG_LEVEL&#xa;debug/info/warn/error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="log_level" value="LOG_LEVEL&#10;debug/info/warn/error" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CBD5E1;strokeWidth=1.4;fontColor=#334155;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="740" y="810" width="200" height="70" as="geometry" />
         </mxCell>
-
-        <mxCell id="workspace" value="workspace/&lt;project&gt;/&#xa;prds / xmind / archive&#xa;issues / history&#xa;reports / tests&#xa;rules / knowledge" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.8;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="workspace" value="workspace/&lt;project&gt;/&#10;prds / xmind / archive&#10;issues / history&#10;reports / tests&#10;rules / knowledge" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=18;fillColor=#FFFFFF;strokeColor=#7C3AED;strokeWidth=1.8;fontColor=#4C1D95;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1100" y="700" width="280" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="notify" value="HTML / IM&#xa;reports &amp; notify&#xa;(DingTalk / Feishu / SMTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.4;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
+        <mxCell id="notify" value="HTML / IM&#10;reports &amp; notify&#10;(DingTalk / Feishu / SMTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F3FF;strokeColor=#8B5CF6;strokeWidth=1.4;fontColor=#5B21B6;fontStyle=1;arcSize=18;" vertex="1" parent="1">
           <mxGeometry x="1400" y="700" width="140" height="160" as="geometry" />
         </mxCell>
-
         <mxCell id="e_user_router" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#64748B;strokeWidth=1.6;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="user_input" target="router">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
         <mxCell id="e_router_setup" value="init / no project" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#64748B;strokeWidth=1.6;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="router" target="setup">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -137,14 +128,12 @@
         <mxCell id="e_router_kk" value="knowledge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#64748B;strokeWidth=1.6;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="router" target="kk">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
         <mxCell id="e_setup_cp" value="delegates skeleton" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#94A3B8;strokeWidth=1.4;endArrow=block;endFill=1;html=1;dashed=1;" edge="1" parent="1" source="setup" target="create_project">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e_ua_pw" value="uses" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#94A3B8;strokeWidth=1.4;endArrow=block;endFill=1;html=1;dashed=1;" edge="1" parent="1" source="ua" target="pw">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
         <mxCell id="e_cp_ws" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#94A3B8;strokeWidth=1.4;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="create_project" target="workspace">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -171,6 +160,9 @@
         </mxCell>
         <mxCell id="e_ws_notify" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#94A3B8;strokeWidth=1.4;endArrow=block;endFill=1;html=1;" edge="1" parent="1" source="workspace" target="notify">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="v_1777456548062366" value="static-scan&amp;#xa;diff-based LLM scan → reproducible bugs" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#06B6D4;fontColor=#155E75;fontStyle=bold;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="85.0" y="555.0" width="250.0" height="60.0" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
