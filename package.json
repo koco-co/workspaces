@@ -1,6 +1,6 @@
 {
   "name": "kata",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "private": true,
   "workspaces": [
@@ -8,6 +8,16 @@
     "engine"
   ],
   "description": "AI-driven QA workflows codified as reusable kata, powered by Claude Code Skills.",
+  "author": "kata contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/kata.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/kata/issues"
+  },
+  "homepage": "https://github.com/your-org/kata#readme",
   "scripts": {
     "check": "biome check .",
     "check:fix": "biome check --fix .",
@@ -23,7 +33,6 @@
     "lint:cases": "kata-cli cases:lint --exit-code --severity fail-only --scope workspace"
   },
   "dependencies": {
-    "@types/nodemailer": "^8.0.0",
     "commander": "^13.1.0",
     "exceljs": "^4.4.0",
     "gray-matter": "^4.0.3",
@@ -40,9 +49,8 @@
     "@types/node": "^25.5.2",
     "allure-commandline": "^2.27.0",
     "allure-playwright": "^2.15.0",
+    "@types/nodemailer": "^8.0.0",
     "monocart-reporter": "^2.10.0",
-    "prettier": "^3.8.3",
-    "tsx": "^4.19.0",
     "typescript": "^5.8.0"
   },
   "engines": {

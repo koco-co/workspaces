@@ -19,6 +19,7 @@ UI自动化、e2e回归、冒烟测试
 
 executor: direct
 指令: .claude/skills/ui-autotest/workflow.md#step-1
+
 > 步骤 1 完成后自动加载 [step-1.5-resume.md](workflow.md#step-1-5) 检查断点续传。
 
 ### 步骤 2: 登录态准备
@@ -46,9 +47,9 @@ executor: subagent
 agent: convergence-agent
 model: sonnet
 指令: .claude/skills/ui-autotest/workflow.md#step-3c
-  - .claude/skills/ui-autotest/workflow.md#step-3b
-  - .claude/skills/ui-autotest/workflow.md#step-3c
-gate 后: gates/R1.md
+
+- .claude/skills/ui-autotest/workflow.md#step-3c
+  gate 后: .claude/skills/ui-autotest/workflow.md#gate-r1
 
 ### 步骤 4: 合并脚本
 
@@ -61,7 +62,7 @@ executor: subagent
 agent: regression-runner-agent
 model: haiku
 指令: .claude/skills/ui-autotest/workflow.md#step-5
-gate 后: gates/R2.md
+gate 后: .claude/skills/ui-autotest/workflow.md#gate-r2
 
 ### 步骤 6: 处理结果与通知
 

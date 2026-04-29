@@ -3,8 +3,8 @@
  * parse-cases.ts — Archive MD 用例解析器
  *
  * 用法：
- *   bun run engine/src/ui-autotest/parse-cases.ts --file workspace/archive/202604/xxx.md
- *   bun run engine/src/ui-autotest/parse-cases.ts --file workspace/archive/202604/xxx.md --priority P0
+ *   bun run engine/src/ui-autotest/parse-cases.ts --file workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md
+ *   bun run engine/src/ui-autotest/parse-cases.ts --file workspace/{{project}}/features/{{ym}}-{{slug}}/archive.md --priority P0
  *   bun run engine/src/ui-autotest/parse-cases.ts --help
  */
 
@@ -110,9 +110,7 @@ export function parseStepTable(tableText: string): ParsedStep[] {
  * 从用例块（H5 标题 + 正文）中提取前置条件。
  */
 export function extractPreconditions(block: string): string {
-  const preMatch = block.match(
-    />\s*前置条件\s*\n+([\s\S]*?)(?=\n>|\n#+|\n\||$)/,
-  );
+  const preMatch = block.match(/>\s*前置条件\s*\n+([\s\S]*?)(?=\n>|\n#+|\n\||$)/);
   if (preMatch) {
     return preMatch[1]
       .split("\n")
@@ -158,9 +156,7 @@ export function parseArchiveMd(content: string, filePath: string): ParseResult {
   const { frontMatter, body } = parseFrontMatter(content);
 
   const suiteName =
-    typeof frontMatter.suite_name === "string"
-      ? frontMatter.suite_name
-      : basename(filePath, ".md");
+    typeof frontMatter.suite_name === "string" ? frontMatter.suite_name : basename(filePath, ".md");
 
   const tasks: ParsedTask[] = [];
   let taskCounter = 0;
@@ -181,14 +177,9 @@ export function parseArchiveMd(content: string, filePath: string): ParseResult {
     const steps = tableMatch ? parseStepTable(tableMatch[1]) : [];
 
     // 如果没有 "用例步骤" 标签，直接搜索块中第一个 Markdown 表格
-    const fallbackTableMatch =
-      steps.length === 0 ? block.match(/(\|[^\n]+\|\s*\n[\s\S]*)/) : null;
+    const fallbackTableMatch = steps.length === 0 ? block.match(/(\|[^\n]+\|\s*\n[\s\S]*)/) : null;
     const finalSteps =
-      steps.length > 0
-        ? steps
-        : fallbackTableMatch
-          ? parseStepTable(fallbackTableMatch[1])
-          : [];
+      steps.length > 0 ? steps : fallbackTableMatch ? parseStepTable(fallbackTableMatch[1]) : [];
 
     const preconditions = extractPreconditions(block);
     const page = findPageForCase(body, rawTitle);
@@ -241,9 +232,7 @@ async function runCli(): Promise<void> {
 
   // 按优先级过滤
   if (opts.priority) {
-    const priorities = opts.priority
-      .split(",")
-      .map((p) => p.trim().toUpperCase());
+    const priorities = opts.priority.split(",").map((p) => p.trim().toUpperCase());
     result.tasks = result.tasks.filter((t) => priorities.includes(t.priority));
     result.stats.total = result.tasks.length;
     result.stats.P0 = result.tasks.filter((t) => t.priority === "P0").length;

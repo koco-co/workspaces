@@ -1,6 +1,6 @@
 ---
 name: bug-reporter-agent
-description: "Bug 报告生成 Agent。将 Playwright 自动化测试失败结果转化为标准 Bug 报告数据。"
+description: "Bug 报告生成 Agent。将 Playwright 自动化测试失败结果转化为标准 Bug 报告数据。由 daily-task bug-report mode 或 ui-autotest step 6 派发。"
 owner_skill: daily-task
 model: haiku
 tools: Read
@@ -56,11 +56,11 @@ tools: Read
 
 **判定标准（基于 Playwright 失败上下文）：**
 
-| 档位     | 触发条件                                                                                     |
-| -------- | -------------------------------------------------------------------------------------------- |
+| 档位     | 触发条件                                                                                                   |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
 | `high`   | 错误信号明确（如 `Timeout` / `toBeVisible` 直命中具体定位器）+ 截图存在 + `root_cause_hint` 与错误类型自洽 |
-| `medium` | 错误类型可识别但缺少截图，或同时出现网络与 UI 错误难以单一归因                              |
-| `low`    | 仅有泛化错误信息（如未分类的脚本异常）/ 截图缺失且 console 无线索 / 失败步骤无法对应到具体定位器 |
+| `medium` | 错误类型可识别但缺少截图，或同时出现网络与 UI 错误难以单一归因                                             |
+| `low`    | 仅有泛化错误信息（如未分类的脚本异常）/ 截图缺失且 console 无线索 / 失败步骤无法对应到具体定位器           |
 
 `confidence_reason` 须列出关键事实，例如：「locator 超时，截图清晰显示元素未渲染」/「断言失败但缺少截图，仅有 console 一条 warn」。
 

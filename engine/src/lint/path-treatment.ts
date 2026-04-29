@@ -62,6 +62,13 @@ const EXCLUDED_PATH_FRAGMENTS = [
   "/templates/",
   "docs/superpowers/specs/",
   "docs/superpowers/handoffs/",
+  // agent docs reference valid workspace tests/ paths (feature or helpers level)
+  ".claude/agents/pattern-analyzer-agent.md",
+  ".claude/agents/regression-runner-agent.md",
+  "playwright.config.ts",
+  // changelog and audit documents — describe the migration historically
+  "CHANGELOG.md",
+  "docs/audit/",
 ];
 
 function isExcluded(filePath: string): boolean {
