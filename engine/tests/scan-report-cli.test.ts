@@ -1,0 +1,88 @@
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { $ } from "bun";
+import { execSync } from "node:child_process";
+import { mkdtempSync, writeFileSync, rmSync, existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { repoRoot } from "../lib/paths.ts";
+
+const CLI = join(repoRoot(), "engine/src/scan-report.ts");
+
+let WS = "";
+let REPO = "";
+const PROJECT = "scan-cli-test";
+
+function git(args: string, cwd: string): string {
+  return execSync(`git -C "${cwd}" ${args}`, { encoding: "utf8" }).trim();
+}
+
+beforeEach(() => {
+  WS = mkdtempSync(join(tmpdir(), "scan-cli-ws-"));
+  process.env.WORKSPACE_DIR = WS;
+
+  // create a fake .repos/{repo} fixture
+  REPO = join(WS, PROJECT, ".repos", "demo");
+  execSync(`mkdir -p "${REPO}"`);
+  execSync(`git init -q -b main "${REPO}"`);
+  git('config user.email "t@t.com"', REPO);
+  git('config user.name "t"', REPO);
+  writeFileSync(join(REPO, "a.txt"), "line1\n");
+  git("add a.txt", REPO);
+  git('commit -q -m initial', REPO);
+  git("checkout -q -b release_6.3.x", REPO);
+  git("checkout -q -b release_6.3.0_dev main", REPO);
+  writeFileSync(join(REPO, "a.txt"), "line1\nline2\n");
+  git("add a.txt", REPO);
+  git('commit -q -m head', REPO);
+});
+
+afterEach(() => {
+  rmSync(WS, { recursive: true, force: true });
+  delete process.env.WORKSPACE_DIR;
+});
+
+describe("scan-report CLI — create", () => {
+  test("create writes meta.json + report.json + diff.patch and prints JSON to stdout", async () => {
+    const r = await $`bun ${CLI} create \
+      --project ${PROJECT} \
+      --repo demo \
+      --base-branch release_6.3.x \
+      --head-branch release_6.3.0_dev \
+      --slug demo-test \
+      --skip-fetch`
+      .quiet()
+      .nothrow();
+    expect(r.exitCode).toBe(0);
+
+    const auditRoot = join(WS, PROJECT, "audits");
+    const dirs = readdirSync(auditRoot);
+    expect(dirs.length).toBe(1);
+    const dir = join(auditRoot, dirs[0]);
+    expect(existsSync(join(dir, "meta.json"))).toBe(true);
+    expect(existsSync(join(dir, "report.json"))).toBe(true);
+    expect(existsSync(join(dir, "diff.patch"))).toBe(true);
+
+    const out = JSON.parse(r.stdout.toString());
+    expect(out.slug).toBe("demo-test");
+    expect(typeof out.diff_files).toBe("number");
+    expect(typeof out.diff_lines).toBe("number");
+    expect(out.audit_dir).toContain("audits/");
+
+    const meta = JSON.parse(readFileSync(join(dir, "meta.json"), "utf8"));
+    expect(meta.repo).toBe("demo");
+    expect(meta.base_branch).toBe("release_6.3.x");
+    expect(meta.head_branch).toBe("release_6.3.0_dev");
+    expect(meta.base_commit.length).toBe(40);
+  });
+
+  test("create errors when repo missing", async () => {
+    const r = await $`bun ${CLI} create \
+      --project ${PROJECT} \
+      --repo not-here \
+      --base-branch a --head-branch b --slug x --skip-fetch`
+      .quiet()
+      .nothrow();
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr.toString()).toContain("not found");
+  });
+});
