@@ -23,6 +23,7 @@ import { createCli } from "../lib/cli-runner.ts";
 import JSZip from "jszip";
 import { repoRoot, validateFilePath } from "../lib/paths.ts";
 import { loadXmindRules } from "../lib/rules.ts";
+import { splitMdTableRow } from "../lib/md-table.ts";
 import type {
   IntermediateJson,
   Meta,
@@ -630,9 +631,7 @@ function parseArchiveBody(body: string): Module[] {
           continue;
         }
         if (headerParsed && line.startsWith("|")) {
-          const cells = line
-            .split("|")
-            .map((c) => c.trim())
+          const cells = splitMdTableRow(line)
             .filter((c) => c.length > 0);
           if (cells.length >= 3) {
             stepsRows.push({

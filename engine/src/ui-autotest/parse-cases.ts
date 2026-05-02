@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { basename, dirname, relative } from "node:path";
 import { Command } from "commander";
 import { parseFrontMatter } from "../../lib/frontmatter.ts";
+import { splitMdTableRow } from "../../lib/md-table.ts";
 import {
   calcStats,
   createTaskState,
@@ -102,10 +103,8 @@ export function parseStepTable(tableText: string): ParsedStep[] {
       continue;
     }
 
-    const cells = line
-      .split("|")
-      .slice(1, -1)
-      .map((c) => c.trim());
+    const cells = splitMdTableRow(line)
+      .slice(1, -1);
 
     // 期望至少 3 列：编号、步骤、预期
     if (cells.length < 3) continue;

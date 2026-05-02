@@ -46,8 +46,15 @@ interface FormatReport {
 
 interface CaseIndex {
   title: string;
+  module: string;
+  page: string;
+  group: string;
   line: number;
   stepLines: Map<number, number>;
+}
+
+function caseIndexKey(title: string, loc: { module: string; page: string; group: string }): string {
+  return `${loc.module}|${loc.page}|${loc.group}|${title}`;
 }
 
 interface LocateResult {
@@ -63,17 +70,42 @@ function buildCaseIndex(mdContent: string): Map<string, CaseIndex> {
   const lines = mdContent.split("\n");
   const index = new Map<string, CaseIndex>();
 
+  let currentModule = "";
+  let currentPage = "";
+  let currentGroup = "";
   let currentCase: CaseIndex | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = i + 1;
 
+    const moduleMatch = line.match(/^#\s+(.+)$/);
+    if (moduleMatch) {
+      currentModule = moduleMatch[1].trim();
+      currentPage = "";
+      currentGroup = "";
+      continue;
+    }
+
+    const pageMatch = line.match(/^##\s+(.+)$/);
+    if (pageMatch) {
+      currentPage = pageMatch[1].trim();
+      currentGroup = "";
+      continue;
+    }
+
+    const groupMatch = line.match(/^###\s+(.+)$/);
+    if (groupMatch) {
+      currentGroup = groupMatch[1].trim();
+      continue;
+    }
+
     const caseMatch = line.match(/^#{5}\s+(.+)$/);
     if (caseMatch) {
       const title = caseMatch[1].trim();
-      currentCase = { title, line: lineNum, stepLines: new Map() };
-      index.set(title, currentCase);
+      const loc = { module: currentModule, page: currentPage, group: currentGroup };
+      currentCase = { title, module: currentModule, page: currentPage, group: currentGroup, line: lineNum, stepLines: new Map() };
+      index.set(caseIndexKey(title, loc), currentCase);
       continue;
     }
 
@@ -93,7 +125,8 @@ function locateLine(
   caseIndex: Map<string, CaseIndex>,
   issue: FormatIssue,
 ): number {
-  const entry = caseIndex.get(issue.case_title);
+  const key = caseIndexKey(issue.case_title, issue.location);
+  const entry = caseIndex.get(key);
   if (!entry) return -1;
 
   if (issue.field === "title" || issue.step_number === null) {
