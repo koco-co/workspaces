@@ -615,7 +615,7 @@ function runWrite(opts: {
     return;
   }
 
-  const snapshotName = saveSnapshot(opts.project, targetPath, beforeContent);
+  const snapshotName = beforeContent ? saveSnapshot(opts.project, targetPath, beforeContent) : null;
   mkdirSync(dirname(targetPath), { recursive: true });
   writeFileSync(targetPath, afterContent);
   writeIndexFile(opts.project);

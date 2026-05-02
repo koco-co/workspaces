@@ -283,7 +283,7 @@ async function main(pwArgs: readonly string[]): Promise<void> {
     getEnv("QA_TENANT") ??
     extractTenantFromCookie(getEnv(`${envKey}_COOKIE`)) ??
     "";
-  const projectLabel = getEnv("QA_PROJECT_LABEL") ?? tenant ?? paths.project;
+  const projectLabel = getEnv("QA_PROJECT_LABEL") || tenant || paths.project;
 
   const durationMs =
     effectiveStats.durationMs > 0
